@@ -77,6 +77,30 @@ p {
   outline-offset: 2px;
 }
 
+.button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.button--commit {
+  border-color: var(--amber);
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.button-row {
+  display: flex;
+  gap: 10px;
+}
+
+.button-row .button {
+  flex: 1 1 0;
+}
+
+.button-row .button--commit {
+  flex: 2 1 0;
+}
+
 .button--primary {
   min-height: 54px;
   padding: 0 34px;
@@ -172,8 +196,102 @@ p {
 }
 
 .vital {
+  position: relative;
   flex: 0 1 300px;
   min-width: 0;
+}
+
+.vital__button {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vital__button:hover .vital__value {
+  text-decoration: underline dotted;
+  text-underline-offset: 5px;
+}
+
+.vital__button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 4px;
+}
+
+.vital__button .label,
+.vital__button .vital__value {
+  display: block;
+}
+
+.vital__change,
+.vital__remark {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.vital__change--good {
+  color: var(--blue);
+}
+
+.vital__change--bad,
+.vital__remark--danger {
+  color: var(--danger);
+}
+
+.vital__remark--warning {
+  color: var(--amber);
+}
+
+.breakdown {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 12px);
+  left: 0;
+  width: 420px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+.breakdown__empty {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.breakdown__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.breakdown__table th {
+  padding: 3px 0;
+  font-weight: 400;
+  text-align: left;
+}
+
+.breakdown__table td {
+  padding: 3px 0;
+  font-family: var(--font-figures);
+  font-weight: 500;
+  text-align: right;
+}
+
+.breakdown__table tfoot th,
+.breakdown__table tfoot td {
+  padding-top: 9px;
+  border-top: 1px solid var(--line-strong);
+  font-weight: 600;
 }
 
 .vital__value {
@@ -259,4 +377,159 @@ p {
 .map__settlement-label--town {
   font-size: 14px;
   font-weight: 600;
+}
+
+/* Section furniture shared by the side columns */
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.section-note,
+.section-empty {
+  font-size: 13px;
+  color: var(--label);
+}
+
+.section-empty {
+  font-size: 15px;
+}
+
+.pending-note {
+  font-size: 13px;
+  color: var(--amber);
+}
+
+.warning-note {
+  font-size: 14.5px;
+  color: var(--danger);
+}
+
+/* Turn reports */
+
+.reports {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.notice {
+  display: flex;
+  gap: 12px;
+}
+
+.notice__mark {
+  flex: 0 0 24px;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: var(--blue);
+}
+
+.notice__mark--warning {
+  color: var(--amber);
+}
+
+.notice__mark--danger {
+  color: var(--danger);
+}
+
+.notice__title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.notice__detail {
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+/* Budget */
+
+.budget {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.totals__value {
+  font-family: var(--font-figures);
+  font-weight: 500;
+  font-size: 22px;
+}
+
+.totals__value--danger {
+  color: var(--danger);
+}
+
+.sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.slider {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-size: 15.5px;
+}
+
+.slider input {
+  width: 100%;
+  accent-color: var(--label);
+}
+
+.slider__value {
+  font-family: var(--font-figures);
+  font-weight: 500;
+  font-size: 15px;
+  text-align: right;
+}
+
+.slider--pending label,
+.slider--pending .slider__value {
+  color: var(--amber);
+}
+
+.slider--pending input {
+  accent-color: var(--amber);
+}
+
+/* Dialogs */
+
+.dialog {
+  width: 520px;
+  padding: 24px 26px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+.dialog::backdrop {
+  background: rgb(8 10 13 / 65%);
+}
+
+.dialog__title {
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.dialog__body {
+  margin: 12px 0 22px;
+  font-size: 16px;
+  color: var(--muted);
 }

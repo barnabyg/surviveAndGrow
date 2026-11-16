@@ -1,9 +1,6 @@
-import { MONEY_PER_MILLION, type Money } from '../sim';
+import { formatMoney, type Money } from '../sim';
 
-const MINUS = '−';
-
-/** Money as the player reads it: `$42.0m`, or `−$5.0m` when negative. */
-export function formatMoney(amount: Money): string {
-  const millions = (Math.abs(amount) / MONEY_PER_MILLION).toFixed(1);
-  return `${amount < 0 ? MINUS : ''}$${millions}m`;
+/** A movement of money with its sign: `+$9.4m`, `−$11.0m`, or `$0.0m` for none. */
+export function formatSigned(amount: Money): string {
+  return `${amount > 0 ? '+' : ''}${formatMoney(amount)}`;
 }

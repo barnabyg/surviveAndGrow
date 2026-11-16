@@ -185,7 +185,9 @@
         [330, 230],
         [318, 150]
       ],
-      "label": [450, 128]
+      "label": [450, 128],
+      "population": 500000,
+      "output": 16
     },
     {
       "id": "salt-coast",
@@ -216,7 +218,9 @@
         [112, 200],
         [128, 160]
       ],
-      "label": [215, 300]
+      "label": [215, 300],
+      "population": 800000,
+      "output": 28
     },
     {
       "id": "lowmere-plains",
@@ -239,7 +243,9 @@
         [340, 340],
         [322, 285]
       ],
-      "label": [648, 276]
+      "label": [648, 276],
+      "population": 1400000,
+      "output": 38
     },
     {
       "id": "dry-east",
@@ -262,7 +268,9 @@
         [720, 240],
         [830, 200]
       ],
-      "label": [845, 395]
+      "label": [845, 395],
+      "population": 600000,
+      "output": 12
     },
     {
       "id": "south-delta",
@@ -291,7 +299,9 @@
         [330, 620],
         [350, 560]
       ],
-      "label": [450, 620]
+      "label": [450, 620],
+      "population": 1000000,
+      "output": 26
     },
     {
       "id": "arden-vale",
@@ -307,7 +317,9 @@
         [425, 455],
         [405, 400]
       ],
-      "label": [462, 447]
+      "label": [462, 447],
+      "population": 900000,
+      "output": 52
     }
   ],
   "settlements": [
@@ -358,6 +370,16 @@
     }
   ],
   "start": {
-    "treasury": 42
+    "treasury": 42,
+    "budget": {
+      "taxRate": 18,
+      "spending": {
+        "agriculture": 11,
+        "foodRelief": 7,
+        "health": 7,
+        "education": 6,
+        "security": 5
+      }
+    }
   }
 }

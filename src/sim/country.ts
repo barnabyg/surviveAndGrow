@@ -1,13 +1,17 @@
+import { balance } from './balance';
+import type { Budget } from './budget';
 import { MONEY_PER_MILLION, type Money } from './types';
 import {
   DECORATION_KINDS,
   LABEL_SIDES,
   MAP_FRAME,
   SETTLEMENT_SIZES,
+  SPENDING_AREAS,
   TERRAINS,
   type DecorationKind,
   type LabelSide,
   type SettlementSize,
+  type SpendingArea,
   type Terrain,
 } from './vocabulary';
 
@@ -25,6 +29,10 @@ export interface Region {
   readonly shape: readonly Point[];
   /** Where the region's name is written. */
   readonly label: Point;
+  /** How many people live in the region when the game starts. */
+  readonly population: number;
+  /** What the region produces in a quarter when the game starts, before tax. */
+  readonly output: Money;
 }
 
 export interface Settlement {
@@ -77,6 +85,8 @@ export interface Country {
   readonly settlements: readonly Settlement[];
   readonly start: {
     readonly treasury: Money;
+    /** The budget in force when the game starts. */
+    readonly budget: Budget;
   };
 }
 
@@ -138,6 +148,18 @@ class Reader {
       return 0;
     }
     return units;
+  }
+
+  /** A whole number no smaller than `min` and, when given, no larger than `max`. */
+  wholeNumber(parent: Json, key: string, path: string, min: number, max?: number): number {
+    const value = this.number(parent, key, path);
+    if (typeof parent[key] !== 'number' || !Number.isFinite(parent[key])) return min;
+    if (Number.isInteger(value) && value >= min && (max === undefined || value <= max)) {
+      return value;
+    }
+    const allowed = max === undefined ? `of at least ${min}` : `from ${min} to ${max}`;
+    this.fault(join(path, key), `is ${value}, but must be a whole number ${allowed}`);
+    return min;
   }
 
   /** One of the engine's own words, such as a terrain. */
@@ -259,6 +281,44 @@ function describe(value: unknown): string {
   return typeof value === 'object' ? 'an object' : 'missing';
 }
 
+/** The starting budget, written with the tax rate in percent and spending in whole millions. */
+function readBudget(reader: Reader, budget: Json, path: string): Budget {
+  const { taxRatePercent, spending: range } = balance.budget;
+  const spendingPath = join(path, 'spending');
+  const written = reader.object(budget, 'spending', path);
+  for (const key of Object.keys(written)) {
+    if (!SPENDING_AREAS.some((area) => area === key)) {
+      reader.fault(
+        join(spendingPath, key),
+        `is not a spending area this game has (${SPENDING_AREAS.join(', ')})`,
+      );
+    }
+  }
+  const spending = Object.fromEntries(
+    SPENDING_AREAS.map((area) => {
+      const millions = reader.wholeNumber(
+        written,
+        area,
+        spendingPath,
+        range.min / MONEY_PER_MILLION,
+        range.max / MONEY_PER_MILLION,
+      );
+      return [area, millions * MONEY_PER_MILLION];
+    }),
+  ) as Record<SpendingArea, Money>;
+
+  return {
+    taxRatePercent: reader.wholeNumber(
+      budget,
+      'taxRate',
+      path,
+      taxRatePercent.min,
+      taxRatePercent.max,
+    ),
+    spending,
+  };
+}
+
 /**
  * Checks a country file and returns the country it describes.
  * @throws CountryFileError naming every fault found.
@@ -284,6 +344,8 @@ export function loadCountry(file: unknown): Country {
     terrain: reader.oneOf(item, 'terrain', path, TERRAINS),
     shape: reader.points(item, 'shape', path, 3),
     label: reader.point(item, 'label', path),
+    population: reader.wholeNumber(item, 'population', path, 1),
+    output: reader.money(item, 'output', path),
   }));
   if (Array.isArray(file.regions) && regions.length === 0) {
     reader.fault('regions', 'must list at least one region');
@@ -340,6 +402,7 @@ export function loadCountry(file: unknown): Country {
     settlements,
     start: {
       treasury: reader.money(start, 'treasury', 'start'),
+      budget: readBudget(reader, reader.object(start, 'budget', 'start'), 'start.budget'),
     },
   };
 

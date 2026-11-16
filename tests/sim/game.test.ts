@@ -1,19 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import {
-  advanceQuarter,
-  createGame,
-  seasonOf,
-  type Decisions,
-  type GameState,
-} from '../../src/sim';
+import { advanceQuarter, createGame, seasonOf, type GameState } from '../../src/sim';
 import { bothCountries, tavara, testland } from './countries';
-
-const noDecisions: Decisions = {};
 
 function play(state: GameState, quarters: number): GameState {
   let current = state;
   for (let i = 0; i < quarters; i += 1) {
-    current = advanceQuarter(current, noDecisions).state;
+    current = advanceQuarter(current, { budget: current.budget }).state;
   }
   return current;
 }
@@ -44,14 +36,17 @@ describe.each(bothCountries)('a new game in %s', (_name, country) => {
   it('reports which quarter was just resolved', () => {
     const game = play(createGame(country(), 7), 3);
 
-    expect(advanceQuarter(game, noDecisions).report.date).toEqual({ year: 1, quarter: 4 });
+    expect(advanceQuarter(game, { budget: game.budget }).report.date).toEqual({
+      year: 1,
+      quarter: 4,
+    });
   });
 
   it('leaves the earlier state untouched', () => {
     const game = createGame(country(), 7);
     const before = structuredClone(game);
 
-    advanceQuarter(game, noDecisions);
+    advanceQuarter(game, { budget: game.budget });
 
     expect(game).toEqual(before);
   });

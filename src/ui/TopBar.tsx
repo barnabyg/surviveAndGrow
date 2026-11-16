@@ -1,13 +1,16 @@
-import { seasonOf, type GameState } from '../sim';
+import { formatMoney, seasonOf, type GameState, type TurnReport } from '../sim';
 import { Crest } from './Crest';
-import { formatMoney } from './format';
+import { formatSigned } from './format';
+import { VitalSign } from './VitalSign';
 
 interface TopBarProps {
   readonly game: GameState;
+  /** The report on the quarter just ended, or null before any quarter has ended. */
+  readonly report: TurnReport | null;
   readonly onEndQuarter: () => void;
 }
 
-export function TopBar({ game, onEndQuarter }: TopBarProps) {
+export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
   const { date } = game;
   return (
     <header className="topbar">
@@ -22,10 +25,13 @@ export function TopBar({ game, onEndQuarter }: TopBarProps) {
       </div>
 
       <div className="vitals">
-        <div className="vital" role="group" aria-label="Treasury">
-          <div className="label">Treasury</div>
-          <div className="vital__value">{formatMoney(game.treasury)}</div>
-        </div>
+        <VitalSign
+          label="Treasury"
+          value={formatMoney(game.treasury)}
+          figure={report?.treasury ?? null}
+          formatChange={formatSigned}
+          breakdownTitle="What moved the treasury"
+        />
       </div>
 
       <button type="button" className="button button--primary" onClick={onEndQuarter}>

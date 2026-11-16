@@ -11,3 +11,21 @@ export interface GameDate {
   readonly year: number;
   readonly quarter: Quarter;
 }
+
+/** One thing that moved a figure, and by how much. */
+export interface Contribution {
+  readonly label: string;
+  readonly amount: number;
+  /** The region it happened in, when it belongs to one place. */
+  readonly regionId?: string;
+}
+
+/**
+ * A figure the player can open. Every derived figure carries the list of what contributed
+ * to its change, and the contributions always add up to the change.
+ */
+export interface Figure {
+  readonly value: number;
+  readonly change: number;
+  readonly contributions: readonly Contribution[];
+}

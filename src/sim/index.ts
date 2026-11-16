@@ -15,20 +15,32 @@ export {
   type Sea,
   type Settlement,
 } from './country';
+export { type Budget, type BudgetOutcome } from './budget';
+export { advanceQuarter, budgetLimits, budgetOutlook, createGame, seasonOf } from './game';
 export {
-  advanceQuarter,
-  createGame,
-  seasonOf,
   type Decisions,
   type GameState,
+  type Notice,
+  type RegionState,
   type TurnReport,
   type TurnResult,
-} from './game';
-export { MONEY_PER_MILLION, type GameDate, type Money, type Quarter } from './types';
+} from './state';
+export { formatMoney } from './text';
+export {
+  MONEY_PER_MILLION,
+  type Contribution,
+  type Figure,
+  type GameDate,
+  type Money,
+  type Quarter,
+} from './types';
 export {
   MAP_FRAME,
+  SPENDING_AREA_NAMES,
+  SPENDING_AREAS,
   type DecorationKind,
   type LabelSide,
   type SettlementSize,
+  type SpendingArea,
   type Terrain,
 } from './vocabulary';

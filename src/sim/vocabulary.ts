@@ -16,3 +16,21 @@ export type SettlementSize = (typeof SETTLEMENT_SIZES)[number];
 
 export const LABEL_SIDES = ['right', 'left', 'above', 'below'] as const;
 export type LabelSide = (typeof LABEL_SIDES)[number];
+
+/** Where the budget can be spent. Each area costs money; what it buys is that area's own rule. */
+export const SPENDING_AREAS = [
+  'agriculture',
+  'foodRelief',
+  'health',
+  'education',
+  'security',
+] as const;
+export type SpendingArea = (typeof SPENDING_AREAS)[number];
+
+export const SPENDING_AREA_NAMES: Readonly<Record<SpendingArea, string>> = {
+  agriculture: 'Agriculture',
+  foodRelief: 'Food relief',
+  health: 'Health',
+  education: 'Education',
+  security: 'Security',
+};

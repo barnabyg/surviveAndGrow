@@ -1,31 +1,9 @@
 import { balance } from './balance';
+import { checkBudget, cutNotice, resolveBudget, type Budget, type BudgetOutcome } from './budget';
 import type { Country } from './country';
-import { seedGenerator, type RngState } from './rng';
-import type { GameDate, Money, Quarter } from './types';
-
-/** Everything about a game in progress. It is never changed in place. */
-export interface GameState {
-  readonly country: Country;
-  /** The seed the game was started from, kept so the same game can be played again. */
-  readonly seed: number;
-  readonly rng: RngState;
-  readonly date: GameDate;
-  readonly treasury: Money;
-}
-
-/** What the player has decided for the quarter being resolved. */
-export type Decisions = Readonly<Record<string, never>>;
-
-/** What happened in a quarter, and why. */
-export interface TurnReport {
-  /** The quarter that was resolved. */
-  readonly date: GameDate;
-}
-
-export interface TurnResult {
-  readonly state: GameState;
-  readonly report: TurnReport;
-}
+import { seedGenerator } from './rng';
+import type { Decisions, GameState, TurnResult } from './state';
+import type { GameDate, Quarter } from './types';
 
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
@@ -35,16 +13,49 @@ export function createGame(country: Country, seed: number): GameState {
     rng: seedGenerator(seed),
     date: { year: 1, quarter: 1 },
     treasury: country.start.treasury,
+    budget: country.start.budget,
+    regions: country.regions.map((region) => ({
+      id: region.id,
+      population: region.population,
+      output: region.output,
+    })),
   };
 }
 
-/** Resolves the current quarter with the player's decisions and moves the date on. */
-export function advanceQuarter(state: GameState, _decisions: Decisions): TurnResult {
+/**
+ * Resolves the current quarter with the player's decisions and moves the date on.
+ * @throws RangeError when a decision is outside what the game allows.
+ */
+export function advanceQuarter(state: GameState, decisions: Decisions): TurnResult {
+  checkBudget(decisions.budget);
+  const finances = resolveBudget(state, decisions.budget);
+
   return {
-    state: { ...state, date: nextDate(state.date) },
-    report: { date: state.date },
+    state: {
+      ...state,
+      date: nextDate(state.date),
+      treasury: finances.treasury,
+      budget: decisions.budget,
+    },
+    report: {
+      date: state.date,
+      treasury: {
+        value: finances.treasury,
+        change: finances.treasury - state.treasury,
+        contributions: finances.contributions,
+      },
+      notices: finances.cut ? [cutNotice(finances)] : [],
+    },
   };
 }
+
+/** What a budget would do to the treasury this quarter. It changes nothing. */
+export function budgetOutlook(state: GameState, budget: Budget): BudgetOutcome {
+  return resolveBudget(state, budget);
+}
+
+/** The ranges the budget may be set within. */
+export const budgetLimits = balance.budget;
 
 export function seasonOf(date: GameDate): string {
   return balance.calendar.seasons[date.quarter];

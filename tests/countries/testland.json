@@ -19,8 +19,14 @@
     ],
     "rivers": [],
     "decorations": [
-      { "kind": "dune", "at": [700, 360] },
-      { "kind": "field", "at": [380, 300] }
+      {
+        "kind": "dune",
+        "at": [700, 360]
+      },
+      {
+        "kind": "field",
+        "at": [380, 300]
+      }
     ]
   },
   "regions": [
@@ -34,7 +40,9 @@
         [540, 570],
         [200, 570]
       ],
-      "label": [370, 200]
+      "label": [370, 200],
+      "population": 300000,
+      "output": 20
     },
     {
       "id": "sandreach",
@@ -46,14 +54,38 @@
         [880, 570],
         [540, 570]
       ],
-      "label": [710, 200]
+      "label": [710, 200],
+      "population": 100000,
+      "output": 5
     }
   ],
   "settlements": [
-    { "id": "alpha", "name": "Alpha", "region": "northfield", "at": [370, 380], "size": "town" },
-    { "id": "beta", "name": "Beta", "region": "sandreach", "at": [710, 420], "size": "village" }
+    {
+      "id": "alpha",
+      "name": "Alpha",
+      "region": "northfield",
+      "at": [370, 380],
+      "size": "town"
+    },
+    {
+      "id": "beta",
+      "name": "Beta",
+      "region": "sandreach",
+      "at": [710, 420],
+      "size": "village"
+    }
   ],
   "start": {
-    "treasury": 10
+    "treasury": 10,
+    "budget": {
+      "taxRate": 20,
+      "spending": {
+        "agriculture": 1,
+        "foodRelief": 0,
+        "health": 1,
+        "education": 1,
+        "security": 1
+      }
+    }
   }
 }
