@@ -1,0 +1,97 @@
+{
+  "formatVersion": 1,
+  "id": "testland",
+  "name": "Testland",
+  "map": {
+    "seas": [],
+    "neighbours": [
+      {
+        "id": "elsewhere",
+        "name": "Elsewhere",
+        "shape": [
+          [0, 0],
+          [1080, 0],
+          [1080, 720],
+          [0, 720]
+        ],
+        "label": [540, 60]
+      }
+    ],
+    "rivers": [],
+    "decorations": [
+      {
+        "kind": "dune",
+        "at": [700, 360]
+      },
+      {
+        "kind": "field",
+        "at": [380, 300]
+      }
+    ]
+  },
+  "regions": [
+    {
+      "id": "northfield",
+      "name": "Northfield",
+      "terrain": "plains",
+      "shape": [
+        [200, 150],
+        [540, 150],
+        [540, 570],
+        [200, 570]
+      ],
+      "label": [370, 200],
+      "population": 300000,
+      "output": 20,
+      "farmland": 70
+    },
+    {
+      "id": "sandreach",
+      "name": "Sandreach",
+      "terrain": "arid",
+      "shape": [
+        [540, 150],
+        [880, 150],
+        [880, 570],
+        [540, 570]
+      ],
+      "label": [710, 200],
+      "population": 100000,
+      "output": 5,
+      "farmland": 52,
+      "eventLikelihood": {
+        "drought": 0.25
+      }
+    }
+  ],
+  "settlements": [
+    {
+      "id": "alpha",
+      "name": "Alpha",
+      "region": "northfield",
+      "at": [370, 380],
+      "size": "town"
+    },
+    {
+      "id": "beta",
+      "name": "Beta",
+      "region": "sandreach",
+      "at": [710, 420],
+      "size": "village"
+    }
+  ],
+  "start": {
+    "treasury": 10,
+    "budget": {
+      "taxRate": 20,
+      "spending": {
+        "agriculture": 1,
+        "foodRelief": 0,
+        "health": 1,
+        "education": 1,
+        "security": 1
+      }
+    },
+    "foodReserve": 30000
+  }
+}
