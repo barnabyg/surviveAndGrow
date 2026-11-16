@@ -1,6 +1,7 @@
 /**
- * The simulation. Everything outside this folder uses it through this file alone:
- * load a country, create a game from it and a seed, and advance one quarter at a time.
+ * The simulation. Everything outside this folder uses it through this file alone. It has
+ * three operations: create a game from a country and a seed, advance one quarter given the
+ * player's decisions, and preview a set of decisions without changing the game.
  */
 export {
   COUNTRY_FORMAT_VERSION,
@@ -15,12 +16,13 @@ export {
   type Sea,
   type Settlement,
 } from './country';
-export { type Budget, type BudgetOutcome } from './budget';
-export { advanceQuarter, budgetLimits, budgetOutlook, createGame, seasonOf } from './game';
+export { type Budget } from './budget';
+export { advanceQuarter, budgetLimits, createGame, previewQuarter, seasonOf } from './game';
 export {
   type Decisions,
   type GameState,
   type Notice,
+  type Preview,
   type RegionState,
   type TurnReport,
   type TurnResult,
@@ -33,6 +35,7 @@ export {
   type GameDate,
   type Money,
   type Quarter,
+  type Range,
 } from './types';
 export {
   MAP_FRAME,

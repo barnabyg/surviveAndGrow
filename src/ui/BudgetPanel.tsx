@@ -1,15 +1,16 @@
 import { useId } from 'react';
 import {
   budgetLimits,
-  budgetOutlook,
   formatMoney,
   MONEY_PER_MILLION,
+  previewQuarter,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
   type Budget,
   type GameState,
+  type Range,
 } from '../sim';
-import { formatSigned } from './format';
+import { formatRange, formatSigned } from './format';
 
 interface BudgetPanelProps {
   readonly game: GameState;
@@ -33,7 +34,9 @@ export function countChanges(pending: Budget, committed: Budget): number {
 export function BudgetPanel(props: BudgetPanelProps) {
   const { game, committed, pending, onChange, onCommit, onReset } = props;
   const changes = countChanges(pending, committed);
-  const outlook = budgetOutlook(game, pending);
+  // The same projection twice: where the committed budget leads, and where the sliders would.
+  const before = previewQuarter(game, { budget: committed });
+  const after = previewQuarter(game, { budget: pending });
   const { taxRatePercent, spending } = budgetLimits;
 
   return (
@@ -49,18 +52,18 @@ export function BudgetPanel(props: BudgetPanelProps) {
         )}
       </div>
 
-      <div className="totals">
-        <Total label="Revenue" value={formatMoney(outlook.revenue)} />
-        <Total label="Spending" value={formatMoney(outlook.spending)} />
+      <div className="totals" role="group" aria-label="Budget totals">
+        <Total label="Revenue" value={formatRange(after.revenue, formatMoney)} />
+        <Total label="Spending" value={formatRange(after.spending, formatMoney)} />
         <Total
           label="Balance"
-          value={formatMoney(outlook.balance)}
-          tone={outlook.balance < 0 ? 'danger' : 'plain'}
+          value={formatRange(after.balance, formatMoney)}
+          tone={after.balance.min < 0 ? 'danger' : 'plain'}
         />
       </div>
-      {outlook.cut && (
+      {after.spendingCut && (
         <p className="warning-note">
-          ▲ The treasury cannot cover {formatMoney(outlook.budgeted)}. Every area would be cut.
+          ▲ The treasury cannot cover this budget. Every area would be cut to what it can afford.
         </p>
       )}
 
@@ -99,6 +102,16 @@ export function BudgetPanel(props: BudgetPanelProps) {
         ))}
       </div>
 
+      <section className="outlook" aria-labelledby="outlook-title">
+        <h3 className={changes > 0 ? 'label label--pending' : 'label'} id="outlook-title">
+          {changes > 0 ? 'If you commit this change' : 'Outlook at the current settings'}
+        </h3>
+        <Projection label="Revenue" before={before.revenue} after={after.revenue} onlyIfMoved />
+        <Projection label="Spending" before={before.spending} after={after.spending} onlyIfMoved />
+        <Projection label="Balance" before={before.balance} after={after.balance} onlyIfMoved />
+        <Projection label="Treasury next quarter" before={before.treasury} after={after.treasury} />
+      </section>
+
       <div className="button-row">
         <button type="button" className="button" disabled={changes === 0} onClick={onReset}>
           Reset
@@ -127,6 +140,37 @@ function Total({ label, value, tone = 'plain' }: TotalProps) {
     <div role="group" aria-label={label}>
       <div className="label">{label}</div>
       <div className={`totals__value totals__value--${tone}`}>{value}</div>
+    </div>
+  );
+}
+
+interface ProjectionProps {
+  readonly label: string;
+  /** Where the committed budget leads. */
+  readonly before: Range;
+  /** Where the budget on the sliders would lead. */
+  readonly after: Range;
+  readonly format?: (value: number) => string;
+  /** Leave the figure out unless the pending change would move it. */
+  readonly onlyIfMoved?: boolean;
+}
+
+/**
+ * One projected figure. A figure the pending change would move is shown as before and
+ * after; one it leaves alone is shown once, or left out when the totals above already
+ * give it. An uncertain figure is shown as a range.
+ */
+function Projection(props: ProjectionProps) {
+  const { label, before, after, format = formatMoney, onlyIfMoved = false } = props;
+  const moved = before.min !== after.min || before.max !== after.max;
+  if (onlyIfMoved && !moved) return null;
+  return (
+    <div className="projection" role="group" aria-label={label}>
+      <span>{label}</span>
+      <span className="projection__value">
+        {moved && <span className="projection__before">{formatRange(before, format)} → </span>}
+        {formatRange(after, format)}
+      </span>
     </div>
   );
 }

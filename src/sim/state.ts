@@ -1,7 +1,7 @@
 import type { Budget } from './budget';
 import type { Country } from './country';
 import type { RngState } from './rng';
-import type { Figure, GameDate, Money } from './types';
+import type { Figure, GameDate, Money, Range } from './types';
 
 /** What is true of one region at one moment. National figures are derived from the regions. */
 export interface RegionState {
@@ -51,4 +51,19 @@ export interface TurnReport {
 export interface TurnResult {
   readonly state: GameState;
   readonly report: TurnReport;
+}
+
+/**
+ * What a set of decisions would do in the quarter being decided. Every figure is a range,
+ * so uncertainty is shown wherever it exists and nowhere else.
+ */
+export interface Preview {
+  readonly revenue: Range;
+  /** What would actually be spent, after any cuts the treasury forces. */
+  readonly spending: Range;
+  readonly balance: Range;
+  /** The treasury once the quarter is over. */
+  readonly treasury: Range;
+  /** True when the treasury could not cover the budget and every area would be cut. */
+  readonly spendingCut: boolean;
 }

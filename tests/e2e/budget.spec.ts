@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { startGame } from './app';
 
 const decisions = (page: Page) => page.getByRole('complementary', { name: 'Decisions' });
+const totals = (page: Page) => decisions(page).getByRole('group', { name: 'Budget totals' });
 const treasury = (page: Page) => page.getByRole('banner').getByRole('group', { name: 'Treasury' });
 const endQuarter = (page: Page) =>
   page.getByRole('banner').getByRole('button', { name: 'End quarter' });
@@ -23,9 +24,9 @@ test('the budget shows a slider for tax and each spending area, with the totals'
     await expect(budget.getByRole('slider', { name })).toBeVisible();
   }
   await expect(budget.getByRole('slider', { name: 'Tax rate' })).toHaveValue('18');
-  await expect(budget.getByRole('group', { name: 'Revenue' })).toContainText('$31.0m');
-  await expect(budget.getByRole('group', { name: 'Spending' })).toContainText('$36.0m');
-  await expect(budget.getByRole('group', { name: 'Balance' })).toContainText('−$5.0m');
+  await expect(totals(page).getByRole('group', { name: 'Revenue' })).toContainText('$31.0m');
+  await expect(totals(page).getByRole('group', { name: 'Spending' })).toContainText('$36.0m');
+  await expect(totals(page).getByRole('group', { name: 'Balance' })).toContainText('−$5.0m');
 });
 
 test('changing a slider, committing and ending the quarter moves the treasury by the balance', async ({
@@ -37,7 +38,7 @@ test('changing a slider, committing and ending the quarter moves the treasury by
   await budget.getByRole('slider', { name: 'Agriculture' }).fill('13');
 
   await expect(budget.getByText('1 change not committed')).toBeVisible();
-  await expect(budget.getByRole('group', { name: 'Balance' })).toContainText('−$7.0m');
+  await expect(totals(page).getByRole('group', { name: 'Balance' })).toContainText('−$7.0m');
 
   await budget.getByRole('button', { name: 'Commit budget' }).click();
 

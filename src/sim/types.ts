@@ -29,3 +29,12 @@ export interface Figure {
   readonly change: number;
   readonly contributions: readonly Contribution[];
 }
+
+/**
+ * A projected figure. When nothing about it is left to chance the two ends are equal;
+ * otherwise what happens will fall somewhere from `min` to `max`.
+ */
+export interface Range {
+  readonly min: number;
+  readonly max: number;
+}

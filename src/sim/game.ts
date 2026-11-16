@@ -1,9 +1,9 @@
 import { balance } from './balance';
-import { checkBudget, cutNotice, resolveBudget, type Budget, type BudgetOutcome } from './budget';
+import { checkBudget, cutNotice, resolveBudget } from './budget';
 import type { Country } from './country';
 import { seedGenerator } from './rng';
-import type { Decisions, GameState, TurnResult } from './state';
-import type { GameDate, Quarter } from './types';
+import type { Decisions, GameState, Preview, TurnResult } from './state';
+import type { GameDate, Quarter, Range } from './types';
 
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
@@ -49,9 +49,26 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   };
 }
 
-/** What a budget would do to the treasury this quarter. It changes nothing. */
-export function budgetOutlook(state: GameState, budget: Budget): BudgetOutcome {
-  return resolveBudget(state, budget);
+/**
+ * Projects what a set of decisions would do in the current quarter. It changes nothing and
+ * draws nothing from the random generator, so previewing never alters the game that follows.
+ * @throws RangeError when a decision is outside what the game allows.
+ */
+export function previewQuarter(state: GameState, decisions: Decisions): Preview {
+  checkBudget(decisions.budget);
+  const finances = resolveBudget(state, decisions.budget);
+  return {
+    revenue: exactly(finances.revenue),
+    spending: exactly(finances.spending),
+    balance: exactly(finances.balance),
+    treasury: exactly(finances.treasury),
+    spendingCut: finances.cut,
+  };
+}
+
+/** A projection with nothing left to chance. */
+function exactly(value: number): Range {
+  return { min: value, max: value };
 }
 
 /** The ranges the budget may be set within. */
