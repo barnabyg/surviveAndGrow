@@ -1,5 +1,4 @@
-import { balance } from './balance';
-import type { Budget } from './budget';
+import { spendingFault, taxRateFault, type Budget } from './budget';
 import { MONEY_PER_MILLION, type Money } from './types';
 import {
   DECORATION_KINDS,
@@ -324,9 +323,11 @@ function readEventLikelihood(
   ) as Record<EventType, number>;
 }
 
-/** The starting budget, written with the tax rate in percent and spending in whole millions. */
+/**
+ * The starting budget, written with the tax rate in percent and spending in millions. It
+ * is held to the same rules as a budget the player sets.
+ */
 function readBudget(reader: Reader, budget: Json, path: string): Budget {
-  const { taxRatePercent, spending: range } = balance.budget;
   const spendingPath = join(path, 'spending');
   const written = reader.object(budget, 'spending', path);
   for (const key of Object.keys(written)) {
@@ -339,27 +340,20 @@ function readBudget(reader: Reader, budget: Json, path: string): Budget {
   }
   const spending = Object.fromEntries(
     SPENDING_AREAS.map((area) => {
-      const millions = reader.wholeNumber(
-        written,
-        area,
-        spendingPath,
-        range.min / MONEY_PER_MILLION,
-        range.max / MONEY_PER_MILLION,
-      );
-      return [area, millions * MONEY_PER_MILLION];
+      const before = reader.faults.length;
+      const amount = reader.money(written, area, spendingPath);
+      const fault = reader.faults.length === before ? spendingFault(amount) : null;
+      if (fault !== null) reader.fault(join(spendingPath, area), fault);
+      return [area, amount];
     }),
   ) as Record<SpendingArea, Money>;
 
-  return {
-    taxRatePercent: reader.wholeNumber(
-      budget,
-      'taxRate',
-      path,
-      taxRatePercent.min,
-      taxRatePercent.max,
-    ),
-    spending,
-  };
+  const before = reader.faults.length;
+  const taxRatePercent = reader.number(budget, 'taxRate', path);
+  const fault = reader.faults.length === before ? taxRateFault(taxRatePercent) : null;
+  if (fault !== null) reader.fault(join(path, 'taxRate'), fault);
+
+  return { taxRatePercent, spending };
 }
 
 /**

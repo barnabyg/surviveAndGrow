@@ -31,27 +31,29 @@ export interface BudgetOutcome {
   readonly contributions: readonly Contribution[];
 }
 
+/** What is wrong with a tax rate, or null when the game allows it. */
+export function taxRateFault(rate: number): string | null {
+  const { min, max } = balance.budget.taxRatePercent;
+  return Number.isInteger(rate) && rate >= min && rate <= max
+    ? null
+    : `must be a whole number from ${min} to ${max}, but is ${rate}`;
+}
+
+/** What is wrong with the spending on one area, or null when the game allows it. */
+export function spendingFault(amount: Money): string | null {
+  const { min, max, step } = balance.budget.spending;
+  return Number.isInteger(amount) && amount >= min && amount <= max && amount % step === 0
+    ? null
+    : `must be from ${formatMoney(min)} to ${formatMoney(max)} in steps of ${formatMoney(step)}, but is ${formatMoney(amount)}`;
+}
+
 /** @throws RangeError when the budget is outside what the game allows. */
 export function checkBudget(budget: Budget): void {
-  const { taxRatePercent, spending } = balance.budget;
-  const rate = budget.taxRatePercent;
-  if (!Number.isInteger(rate) || rate < taxRatePercent.min || rate > taxRatePercent.max) {
-    throw new RangeError(
-      `The tax rate must be a whole number from ${taxRatePercent.min} to ${taxRatePercent.max}, but is ${rate}.`,
-    );
-  }
+  const rateFault = taxRateFault(budget.taxRatePercent);
+  if (rateFault !== null) throw new RangeError(`The tax rate ${rateFault}.`);
   for (const area of SPENDING_AREAS) {
-    const amount = budget.spending[area];
-    const allowed =
-      Number.isInteger(amount) &&
-      amount >= spending.min &&
-      amount <= spending.max &&
-      amount % spending.step === 0;
-    if (!allowed) {
-      throw new RangeError(
-        `${SPENDING_AREA_NAMES[area]} spending must be from ${formatMoney(spending.min)} to ${formatMoney(spending.max)} in steps of ${formatMoney(spending.step)}, but is ${formatMoney(amount)}.`,
-      );
-    }
+    const fault = spendingFault(budget.spending[area]);
+    if (fault !== null) throw new RangeError(`${SPENDING_AREA_NAMES[area]} spending ${fault}.`);
   }
 }
 

@@ -176,7 +176,7 @@ describe('the starting figures in a country file', () => {
     const faults = faultsOf(withValue(tavaraFile, ['start', 'budget', 'taxRate'], 60));
 
     expect(faults).toEqual([
-      'start.budget.taxRate is 60, but must be a whole number from 5 to 40.',
+      'start.budget.taxRate must be a whole number from 5 to 40, but is 60.',
     ]);
   });
 
@@ -186,11 +186,11 @@ describe('the starting figures in a country file', () => {
     expect(faults).toEqual(['start.budget.spending.health is missing.']);
   });
 
-  it('are rejected when spending is not in whole millions within the range', () => {
+  it('are rejected when spending is outside what a budget may hold', () => {
     const faults = faultsOf(withValue(tavaraFile, ['start', 'budget', 'spending', 'security'], 25));
 
     expect(faults).toEqual([
-      'start.budget.spending.security is 25, but must be a whole number from 0 to 20.',
+      'start.budget.spending.security must be from $0.0m to $20.0m in steps of $1.0m, but is $25.0m.',
     ]);
   });
 
