@@ -1,4 +1,5 @@
 import { balance } from './balance';
+import { isHarvestQuarter, nextQuarter, quartersUntilHarvest } from './calendar';
 import type { Country, Region } from './country';
 import type { Notice, RegionShortfall, RegionState } from './state';
 import { formatCount, formatTonnes } from './text';
@@ -85,13 +86,13 @@ export function reliefCapacity(spent: Money): number {
  * last until the next harvest, so a region with too little goes short every quarter and
  * not only at the end. Relief makes up what the chosen region is short of, as far as its
  * capacity and the reserve allow. A region that goes hungry moves one stage towards famine,
- * and one that is fed moves one stage back. In quarter 4 each region then harvests, keeps
+ * and one that is fed moves one stage back. In the harvest quarter each region then harvests, keeps
  * what it needs for the year and sends the rest to the reserve, losing some on the way.
  */
 export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodOutcome {
   const { country, quarter } = situation;
   const { food } = balance;
-  const quartersUntilHarvest = 5 - quarter;
+  const quartersToLast = quartersUntilHarvest(quarter);
   const contributions: Contribution[] = [];
   const notices: Notice[] = [];
   const shortfalls: RegionShortfall[] = [];
@@ -106,7 +107,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const fed = situation.regions.map((region, index): RegionState => {
     const name = regionOf(country, region.id)?.name ?? region.id;
     const need = quarterlyNeed(region.population);
-    const ration = Math.min(need, Math.floor(region.foodStock / quartersUntilHarvest));
+    const ration = Math.min(need, Math.floor(region.foodStock / quartersToLast));
     const shortfall = need - ration;
     if (shortfall > 0) shortfalls.push({ regionId: region.id, shortfall });
 
@@ -152,7 +153,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
     };
   });
 
-  if (quarter !== 4) {
+  if (!isHarvestQuarter(quarter)) {
     return { regions: fed, foodReserve, contributions, harvest: null, shortfalls, relief, notices };
   }
 
@@ -254,7 +255,7 @@ function playToHarvest(
     }
     situation = {
       ...situation,
-      quarter: (situation.quarter + 1) as Quarter,
+      quarter: nextQuarter(situation.quarter),
       regions: outcome.regions,
       foodReserve: outcome.foodReserve,
     };

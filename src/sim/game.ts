@@ -1,4 +1,5 @@
 import { balance } from './balance';
+import { nextDate, quartersUntilHarvest } from './calendar';
 import { checkBudget, cutNotice, resolveBudget, type BudgetOutcome } from './budget';
 import type { Country } from './country';
 import {
@@ -27,7 +28,7 @@ import type {
   RegionState,
   TurnResult,
 } from './state';
-import type { GameDate, Quarter, Range } from './types';
+import type { Range } from './types';
 
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
@@ -177,10 +178,6 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
 /** The ranges the budget may be set within. */
 export const budgetLimits = balance.budget;
 
-export function seasonOf(date: GameDate): string {
-  return balance.calendar.seasons[date.quarter];
-}
-
 function checkDecisions(state: GameState, decisions: Decisions): void {
   if (state.outcome.status !== 'playing') throw new Error('The game is over.');
   checkBudget(decisions.budget);
@@ -206,7 +203,7 @@ function reliefFor(decisions: Decisions, finances: BudgetOutcome): FoodInputs['r
 function financesToHarvest(state: GameState, decisions: Decisions): BudgetOutcome[] {
   const quarterly: BudgetOutcome[] = [];
   let { treasury } = state;
-  for (let quarter = state.date.quarter; quarter <= 4; quarter += 1) {
+  for (let ahead = quartersUntilHarvest(state.date.quarter); ahead > 0; ahead -= 1) {
     const finances = resolveBudget({ ...state, treasury }, decisions.budget);
     quarterly.push(finances);
     treasury = finances.treasury;
@@ -256,10 +253,4 @@ function rollWeather(
 /** A projection with nothing left to chance. */
 function exactly(value: number): Range {
   return { min: value, max: value };
-}
-
-function nextDate(date: GameDate): GameDate {
-  return date.quarter === 4
-    ? { year: date.year + 1, quarter: 1 }
-    : { year: date.year, quarter: (date.quarter + 1) as Quarter };
 }

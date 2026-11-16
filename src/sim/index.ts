@@ -19,7 +19,8 @@ export {
 export { type Budget } from './budget';
 export { describeEvent, type ActiveEvent } from './events';
 export { foodStatus, type FoodStatus, type Harvest, type RegionHarvest } from './food';
-export { advanceQuarter, budgetLimits, createGame, previewQuarter, seasonOf } from './game';
+export { seasonOf } from './calendar';
+export { advanceQuarter, budgetLimits, createGame, previewQuarter } from './game';
 export {
   type Decisions,
   type GameState,

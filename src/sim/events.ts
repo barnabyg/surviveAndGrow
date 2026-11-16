@@ -1,4 +1,5 @@
 import { balance } from './balance';
+import { entersBeforeHarvest } from './calendar';
 import type { Country } from './country';
 import { nextRandom, type RngState } from './rng';
 import type { Notice } from './state';
@@ -100,7 +101,9 @@ export function worstHarvestPermille(
   for (const type of EVENT_TYPES) {
     const definition = definitions[type];
     const mayStillBegin =
-      definition.conditions.beginsInQuarters.some((begins) => begins > quarter) &&
+      definition.conditions.beginsInQuarters.some((begins) =>
+        entersBeforeHarvest(begins, quarter),
+      ) &&
       (region?.eventLikelihood[type] ?? 0) > 0 &&
       !isActive(active, type, regionId);
     if (mayStillBegin) {
