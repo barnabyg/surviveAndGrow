@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "id": "testland",
+  "name": "Testland",
+  "start": {
+    "treasury": 10
+  }
+}

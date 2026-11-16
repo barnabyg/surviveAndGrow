@@ -1,0 +1,8 @@
+{
+  "formatVersion": 1,
+  "id": "tavara",
+  "name": "Republic of Tavara",
+  "start": {
+    "treasury": 42
+  }
+}

@@ -1,0 +1,198 @@
+/* The look settled in the main screen mock-up: dark panels around a lit map. Amber marks the
+   player's pending actions, blue marks positive movement and orange-red marks danger. Shape
+   and text always accompany colour. The screen is designed for 2560 x 1440. */
+:root {
+  --bg: #12161b;
+  --panel: #1a2027;
+  --panel-deep: #161b21;
+  --card: #222a33;
+  --line: #2c3540;
+  --line-strong: #3a4652;
+  --track: #36414d;
+  --text: #e8ecef;
+  --muted: #a3afba;
+  --label: #9aa7b3;
+  --amber: #f2b33d;
+  --blue: #8fd0e6;
+  --danger: #f39a86;
+  --ink: #14181d;
+  --font: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-condensed: 'IBM Plex Sans Condensed', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-figures: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+.label {
+  font-family: var(--font-condensed);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.section-title {
+  font-family: var(--font-condensed);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.button {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font);
+  font-weight: 500;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.button--primary {
+  min-height: 54px;
+  padding: 0 34px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 18px;
+}
+
+/* Start screen */
+
+.start {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px;
+  text-align: center;
+}
+
+.start__title {
+  font-family: var(--font-condensed);
+  font-weight: 600;
+  font-size: 44px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.start__lead {
+  max-width: 34em;
+  font-size: 19px;
+  color: var(--muted);
+}
+
+/* Main screen */
+
+.game {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px 40px;
+  padding: 12px 28px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar__identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar__country {
+  font-family: var(--font-condensed);
+  font-weight: 600;
+  font-size: 21px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.topbar__date {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.vitals {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 12px 36px;
+}
+
+.vital {
+  flex: 0 1 300px;
+  min-width: 0;
+}
+
+.vital__value {
+  font-family: var(--font-figures);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.15;
+}
+
+.columns {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 440px minmax(0, 1fr) 500px;
+  align-items: stretch;
+}
+
+.column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.column--situation,
+.column--decisions {
+  gap: 18px;
+  padding: 20px 24px;
+  background: var(--panel);
+}
+
+.column--situation {
+  border-right: 1px solid var(--line);
+}
+
+.column--decisions {
+  border-left: 1px solid var(--line);
+}
