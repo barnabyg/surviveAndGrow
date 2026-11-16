@@ -1,7 +1,8 @@
 import { balance } from './balance';
 import { sum } from './arithmetic';
 import { regionName, type Country } from './country';
-import type { Notice, RegionState } from './state';
+import type { ReportEntry } from './report';
+import type { RegionState } from './state';
 import { formatMoney } from './text';
 import type { Contribution, Money } from './types';
 import { SPENDING_AREA_NAMES, SPENDING_AREAS, type SpendingArea } from './vocabulary';
@@ -105,12 +106,49 @@ export function resolveBudget(
   };
 }
 
-/** The notice the turn report carries when spending had to be cut. */
-export function cutNotice(outcome: BudgetOutcome): Notice {
+/** What the turn report says when spending had to be cut. */
+export function cutEntry(outcome: BudgetOutcome): ReportEntry {
   return {
-    title: 'Spending was cut',
-    detail: `The treasury could not cover the ${formatMoney(outcome.budgeted)} budget. Every area was cut to what could be afforded: ${formatMoney(outcome.spending)} in all.`,
-    tone: 'danger',
+    kind: 'spendingCut',
+    seriousness: 'serious',
+    headline: 'Spending was cut',
+    cause: `The treasury could not cover the ${formatMoney(outcome.budgeted)} budget. Every area was cut to what could be afforded: ${formatMoney(outcome.spending)} in all.`,
+  };
+}
+
+/**
+ * What the turn report says of the quarter's budget: whether the treasury grew or shrank,
+ * and by what. A deficit also says how long the treasury can go on paying it.
+ */
+export function budgetEntry(outcome: BudgetOutcome): ReportEntry {
+  const revenue = formatMoney(outcome.revenue);
+  const spending = formatMoney(outcome.spending);
+  if (outcome.balance < 0) {
+    const quarters = Math.floor(outcome.treasury / -outcome.balance);
+    const lasts =
+      quarters === 0
+        ? 'The treasury cannot cover another quarter like it.'
+        : `At this deficit the treasury lasts ${quarters} more ${quarters === 1 ? 'quarter' : 'quarters'}.`;
+    return {
+      kind: 'budget',
+      seriousness: 'warning',
+      headline: 'The treasury is shrinking',
+      cause: `Spending of ${spending} outran revenue of ${revenue}. ${lasts}`,
+    };
+  }
+  if (outcome.balance > 0) {
+    return {
+      kind: 'budget',
+      seriousness: 'routine',
+      headline: 'The treasury is growing',
+      cause: `Revenue of ${revenue} outran spending of ${spending}, leaving ${formatMoney(outcome.balance)} over.`,
+    };
+  }
+  return {
+    kind: 'budget',
+    seriousness: 'routine',
+    headline: 'The budget balanced',
+    cause: `Revenue and spending were both ${revenue}.`,
   };
 }
 

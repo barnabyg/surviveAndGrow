@@ -498,38 +498,117 @@ p {
 .reports {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
-.notice {
+.reports__list {
+  margin: 0;
+  padding: 0;
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.report {
+  width: 100%;
+  padding: 6px 8px;
+  display: flex;
+  align-items: flex-start;
   gap: 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
 }
 
-.notice__mark {
+/* A report about one region is a button that picks the region out on the map. */
+.report--place {
+  position: relative;
+  cursor: pointer;
+}
+
+.report--place:hover {
+  background: var(--card);
+}
+
+.report--place:focus-visible {
+  outline: 2px solid var(--blue);
+}
+
+.report--place[aria-pressed='true'] {
+  border-color: var(--amber);
+  background: var(--card);
+}
+
+.report__icon {
   flex: 0 0 24px;
-  font-size: 16px;
-  line-height: 24px;
-  text-align: center;
-  color: var(--blue);
+  width: 24px;
+  height: 24px;
+  margin-top: 2px;
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.notice__mark--warning {
+.report__icon--routine {
+  stroke: var(--muted);
+}
+
+.report__icon--warning {
+  stroke: var(--amber);
+}
+
+.report__icon--serious,
+.report__icon--critical {
+  stroke: var(--danger);
+}
+
+.report__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.report__rank {
+  font-family: var(--font-condensed);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--amber);
 }
 
-.notice__mark--danger {
+.report__rank--serious,
+.report__rank--critical {
   color: var(--danger);
 }
 
-.notice__title {
+.report__headline {
   font-size: 16px;
   font-weight: 600;
 }
 
-.notice__detail {
+.report__cause {
   font-size: 14.5px;
   color: var(--muted);
+}
+
+.report__place {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 12.5px;
+  color: var(--label);
+}
+
+.report--place[aria-pressed='true'] .report__place {
+  color: var(--amber);
 }
 
 /* Budget */

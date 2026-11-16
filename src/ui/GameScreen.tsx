@@ -25,16 +25,32 @@ export function GameScreen({ initialGame, onRestart }: GameScreenProps) {
   const [pending, setPending] = useState(initialGame.budget);
   const [reliefRegionId, setReliefRegionId] = useState<string | null>(null);
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  // The report the player last selected, by its place in the list. It counts as selected
+  // only while its region is still the one picked out on the map.
+  const [reportPicked, setReportPicked] = useState<number | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
 
   const playing = game.outcome.status === 'playing';
   const decisions = { budget: committed, reliefRegionId };
   const preview = playing ? previewQuarter(game, decisions) : null;
+  const selectedEntry =
+    reportPicked !== null && report?.entries[reportPicked]?.regionId === selectedRegionId
+      ? reportPicked
+      : null;
+
+  // Selecting a report picks its region out on the map; selecting it again lets go.
+  const selectEntry = (index: number) => {
+    const regionId = report?.entries[index]?.regionId;
+    if (regionId === undefined) return;
+    setReportPicked(index === selectedEntry ? null : index);
+    setSelectedRegionId(index === selectedEntry ? null : regionId);
+  };
 
   const resolveQuarter = () => {
     const result = advanceQuarter(game, decisions);
     setGame(result.state);
     setReport(result.report);
+    setReportPicked(null);
     setConfirmingEnd(false);
   };
 
@@ -51,7 +67,7 @@ export function GameScreen({ initialGame, onRestart }: GameScreenProps) {
       <TopBar game={game} report={report} onEndQuarter={endQuarter} />
       <div className="columns">
         <aside className="column column--situation" aria-label="Situation">
-          <ReportList report={report} />
+          <ReportList report={report} selectedEntry={selectedEntry} onSelectEntry={selectEntry} />
           <RegionList
             game={game}
             selectedRegionId={selectedRegionId}

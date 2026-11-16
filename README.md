@@ -33,6 +33,10 @@ What is in the game so far:
   relief panel, to send it relief from the national reserve.
 - A famine that lasts two quarters running collapses the state and ends the game.
 - Click the treasury or the food reserve in the top bar to see what moved it.
+- After each quarter the left column reports what happened and why, the most serious first: the
+  budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
+  is a button: select it to pick that region out on the map and open its card. A quarter in which
+  nothing notable happened says so.
 
 ## Write a country
 

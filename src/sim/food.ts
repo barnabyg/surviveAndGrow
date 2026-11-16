@@ -2,7 +2,8 @@ import { sum } from './arithmetic';
 import { balance } from './balance';
 import { isHarvestQuarter, nextQuarter, quartersUntilHarvest } from './calendar';
 import { regionName, type Country, type Region } from './country';
-import type { Notice, RegionShortfall, RegionState, ReliefDelivery } from './state';
+import type { ReportEntry } from './report';
+import type { RegionShortfall, RegionState, ReliefDelivery } from './state';
 import { formatCount, formatTonnes } from './text';
 import type { Contribution, Money, Quarter, Range } from './types';
 import { FOOD_STAGE_NAMES, FOOD_STAGES, type FoodStage } from './vocabulary';
@@ -58,7 +59,8 @@ export interface FoodOutcome {
   /** What each hungry region was short of before any relief. */
   readonly shortfalls: readonly RegionShortfall[];
   readonly relief: ReliefDelivery;
-  readonly notices: readonly Notice[];
+  /** What the turn report says of the quarter's food. */
+  readonly entries: readonly ReportEntry[];
 }
 
 /** Tonnes a population eats in a quarter. */
@@ -94,7 +96,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const { food } = balance;
   const quartersToLast = quartersUntilHarvest(quarter);
   const contributions: Contribution[] = [];
-  const notices: Notice[] = [];
+  const entries: ReportEntry[] = [];
   const shortfalls: RegionShortfall[] = [];
 
   const spoiled = Math.floor(
@@ -132,7 +134,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
       foodStage === 'famine'
         ? Math.floor((region.population * balance.hunger.famineDeathsPermillePerQuarter) / 1000)
         : 0;
-    const notice = hungerNotice({
+    const entry = hungerEntry({
       name,
       regionId: region.id,
       before: region.foodStage,
@@ -141,7 +143,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
       deaths,
       famineQuarters,
     });
-    if (notice !== null) notices.push(notice);
+    if (entry !== null) entries.push(entry);
 
     return {
       ...region,
@@ -154,7 +156,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   });
 
   if (!isHarvestQuarter(quarter)) {
-    return { regions: fed, foodReserve, contributions, harvest: null, shortfalls, relief, notices };
+    return { regions: fed, foodReserve, contributions, harvest: null, shortfalls, relief, entries };
   }
 
   const yieldPermille = agricultureYieldPermille(inputs.agricultureSpentThisYear);
@@ -183,7 +185,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   if (lost > 0) contributions.push({ label: 'Lost in transport', amount: -lost });
   const delivered = sum(harvests.map((harvest) => harvest.surplus)) - lost;
   const harvest = { total: sum(harvests.map((entry) => entry.grown)), regions: harvests };
-  notices.push(harvestNotice(harvest));
+  entries.push(harvestEntry(harvest));
 
   return {
     regions: harvested,
@@ -192,7 +194,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
     harvest,
     shortfalls,
     relief,
-    notices,
+    entries,
   };
 }
 
@@ -312,8 +314,8 @@ interface HungerChange {
   readonly famineQuarters: number;
 }
 
-/** The notice the turn report carries when a region's food stage moves, or famine goes on. */
-function hungerNotice(change: HungerChange): Notice | null {
+/** What the turn report says when a region's food stage moves, or famine goes on. */
+function hungerEntry(change: HungerChange): ReportEntry | null {
   const { name, regionId, before, after, fedPermille, deaths, famineQuarters } = change;
   const ate = `People there ate ${Math.floor(fedPermille / 10)}% of what they need.`;
   if (after === 'famine') {
@@ -323,44 +325,50 @@ function hungerNotice(change: HungerChange): Notice | null {
         ? `If the famine lasts ${left} more ${left === 1 ? 'quarter' : 'quarters'}, the state will collapse.`
         : 'The state cannot survive it.';
     return {
-      title: `Famine in ${name}`,
-      detail: `${ate} ${formatCount(deaths)} people have died. ${warning}`,
-      tone: 'danger',
+      kind: 'hunger',
+      seriousness: 'critical',
+      headline: `Famine in ${name}`,
+      cause: `${ate} ${formatCount(deaths)} people have died. ${warning}`,
       regionId,
     };
   }
   if (after === before) return null;
   if (FOOD_STAGES.indexOf(after) < FOOD_STAGES.indexOf(before)) {
     return {
-      title: after === 'adequate' ? `${name} has enough food again` : `Hunger is easing in ${name}`,
-      detail: `Its food situation is now: ${FOOD_STAGE_NAMES[after]}.`,
-      tone: 'info',
+      kind: 'hunger',
+      seriousness: 'notable',
+      headline:
+        after === 'adequate' ? `${name} has enough food again` : `Hunger is easing in ${name}`,
+      cause: `Its food situation is now: ${FOOD_STAGE_NAMES[after]}.`,
       regionId,
     };
   }
   return after === 'tight'
     ? {
-        title: `Food is tight in ${name}`,
-        detail: `${ate} Left alone, this becomes a shortage.`,
-        tone: 'warning',
+        kind: 'hunger',
+        seriousness: 'warning',
+        headline: `Food is tight in ${name}`,
+        cause: `${ate} Left alone, this becomes a shortage.`,
         regionId,
       }
     : {
-        title: `Food shortage in ${name}`,
-        detail: `${ate} Left alone, a shortage this deep becomes famine.`,
-        tone: 'danger',
+        kind: 'hunger',
+        seriousness: 'serious',
+        headline: `Food shortage in ${name}`,
+        cause: `${ate} Left alone, a shortage this deep becomes famine.`,
         regionId,
       };
 }
 
-/** The notice the turn report carries when the harvest comes in. */
-function harvestNotice(harvest: Harvest): Notice {
+/** What the turn report says when the harvest comes in. */
+function harvestEntry(harvest: Harvest): ReportEntry {
   const lost = sum(harvest.regions.map((region) => region.lost));
   const delivered = sum(harvest.regions.map((region) => region.surplus)) - lost;
   return {
-    title: 'The harvest is in',
-    detail: `The country grew ${formatTonnes(harvest.total)}. ${formatTonnes(delivered)} reached the national reserve, and ${formatTonnes(lost)} was lost on the way.`,
-    tone: 'info',
+    kind: 'harvest',
+    seriousness: 'notable',
+    headline: 'The harvest is in',
+    cause: `The country grew ${formatTonnes(harvest.total)}. ${formatTonnes(delivered)} reached the national reserve, and ${formatTonnes(lost)} was lost on the way.`,
   };
 }
 

@@ -1,12 +1,12 @@
 import { balance } from './balance';
 import { nextDate, quartersUntilHarvest } from './calendar';
-import { checkBudget, cutNotice, resolveBudget, type BudgetOutcome } from './budget';
+import { budgetEntry, checkBudget, cutEntry, resolveBudget, type BudgetOutcome } from './budget';
 import { regionName, type Country } from './country';
 import {
+  beginEntry,
   beginEvents,
-  beginNotice,
+  endEntry,
   endEventsAfterHarvest,
-  endNotice,
   harvestPermille,
   worstHarvestPermille,
 } from './events';
@@ -18,16 +18,9 @@ import {
   type FoodInputs,
   type FoodSituation,
 } from './food';
+import { compileReport, type ReportEntry } from './report';
 import { nextRandom, seedGenerator, type RngState } from './rng';
-import type {
-  Decisions,
-  GameState,
-  Notice,
-  Outcome,
-  Preview,
-  RegionState,
-  TurnResult,
-} from './state';
+import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { exactly } from './types';
 
 /** Starts a game. The same country and seed always start the same game. */
@@ -82,20 +75,15 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   const rolled = beginEvents(state.country, remaining, date, weather.rng);
   const outcome = outcomeOf(state.country, food.regions);
 
-  const notices: Notice[] = [
-    ...(finances.cut ? [cutNotice(finances)] : []),
-    ...food.notices,
-    ...ended.map((event) => endNotice(state.country, event)),
-    ...rolled.begun.map((event) => beginNotice(state.country, event)),
+  // Within one seriousness the report keeps this order, so what ends the game leads it.
+  const entries: ReportEntry[] = [
+    ...(outcome.status === 'lost' ? [collapseEntry(outcome)] : []),
+    ...(finances.cut ? [cutEntry(finances)] : []),
+    ...food.entries,
+    ...ended.map((event) => endEntry(state.country, event)),
+    ...rolled.begun.map((event) => beginEntry(state.country, event)),
+    budgetEntry(finances),
   ];
-  if (outcome.status === 'lost') {
-    notices.push({
-      title: 'The state has collapsed',
-      detail: outcome.summary,
-      tone: 'danger',
-      regionId: outcome.regionId,
-    });
-  }
 
   return {
     state: {
@@ -124,7 +112,7 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
         contributions: food.contributions,
       },
       harvest: food.harvest,
-      notices,
+      entries: compileReport(entries),
     },
   };
 }
@@ -230,6 +218,17 @@ function outcomeOf(country: Country, regions: readonly RegionState[]): Outcome {
     cause: 'famine',
     regionId: stricken.id,
     summary: `Famine held ${regionName(country, stricken.id)} for ${limit} quarters running. The state has collapsed.`,
+  };
+}
+
+/** What the turn report says when the game is lost. */
+function collapseEntry(outcome: Extract<Outcome, { status: 'lost' }>): ReportEntry {
+  return {
+    kind: 'collapse',
+    seriousness: 'critical',
+    headline: 'The state has collapsed',
+    cause: outcome.summary,
+    regionId: outcome.regionId,
   };
 }
 

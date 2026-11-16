@@ -158,6 +158,8 @@ export function MapView(props: MapViewProps) {
               stroke={palette.selection}
               strokeWidth="3"
               strokeLinejoin="round"
+              role="img"
+              aria-label={`${region.name} is picked out`}
             />
           ))}
 

@@ -1,19 +1,14 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, foodReserve, situation, startGame } from './app';
+import {
+  decisions,
+  endQuarters,
+  foodReserve,
+  situation,
+  startGame,
+  tavaraWithDroughtIn,
+} from './app';
 
-/** Tavara as it ships, except that drought strikes the Dry East every year. */
-function tavaraWithDrought(): unknown {
-  const file = path.join(import.meta.dirname, '..', '..', 'src', 'countries', 'tavara.json');
-  const country = JSON.parse(readFileSync(file, 'utf8')) as {
-    regions: { id: string; eventLikelihood: { drought: number } }[];
-  };
-  for (const region of country.regions) {
-    region.eventLikelihood = { drought: region.id === 'dry-east' ? 1 : 0 };
-  }
-  return country;
-}
+const tavaraWithDrought = () => tavaraWithDroughtIn(['dry-east']);
 
 const map = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
 

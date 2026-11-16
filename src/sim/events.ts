@@ -2,7 +2,7 @@ import { balance } from './balance';
 import { entersBeforeHarvest } from './calendar';
 import { regionName, type Country } from './country';
 import { nextRandom, type RngState } from './rng';
-import type { Notice } from './state';
+import type { ReportEntry } from './report';
 import type { GameDate, Quarter } from './types';
 import { EVENT_TYPES, type EventType } from './vocabulary';
 
@@ -123,24 +123,26 @@ function isActive(active: readonly ActiveEvent[], type: EventType, regionId: str
   );
 }
 
-/** The notice the turn report carries when an event begins. */
-export function beginNotice(country: Country, event: ActiveEvent): Notice {
+/** What the turn report says when an event begins. */
+export function beginEntry(country: Country, event: ActiveEvent): ReportEntry {
   const definition = definitions[event.type];
   return {
-    title: `${definition.name} in ${regionName(country, event.regionId)}`,
-    detail: `${definition.announcement.begins} This year’s harvest there will be ${harvestCutPercent(definition)}% smaller than it would have been.`,
-    tone: 'danger',
+    kind: 'event',
+    seriousness: 'serious',
+    headline: `${definition.name} in ${regionName(country, event.regionId)}`,
+    cause: `${definition.announcement.begins} This year’s harvest there will be ${harvestCutPercent(definition)}% smaller than it would have been.`,
     regionId: event.regionId,
   };
 }
 
-/** The notice the turn report carries when an event ends. */
-export function endNotice(country: Country, event: ActiveEvent): Notice {
+/** What the turn report says when an event ends. */
+export function endEntry(country: Country, event: ActiveEvent): ReportEntry {
   const definition = definitions[event.type];
   return {
-    title: `The ${definition.name.toLowerCase()} in ${regionName(country, event.regionId)} has ended`,
-    detail: definition.announcement.ends,
-    tone: 'info',
+    kind: 'event',
+    seriousness: 'notable',
+    headline: `The ${definition.name.toLowerCase()} in ${regionName(country, event.regionId)} has ended`,
+    cause: definition.announcement.ends,
     regionId: event.regionId,
   };
 }

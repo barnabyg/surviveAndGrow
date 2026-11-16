@@ -101,10 +101,12 @@ describe('when the treasury cannot cover the budget', () => {
       expect(amountOf(result, area)).toBe(-101);
     }
     expect(result.state.treasury).toBe(1);
-    expect(result.report.notices).toContainEqual(
+    expect(result.report.entries).toContainEqual(
       expect.objectContaining({
-        title: 'Spending was cut',
-        detail:
+        kind: 'spendingCut',
+        seriousness: 'serious',
+        headline: 'Spending was cut',
+        cause:
           'The treasury could not cover the $100.0m budget. Every area was cut to what could be afforded: $50.5m in all.',
       }),
     );
@@ -121,7 +123,7 @@ describe('when the treasury cannot cover the budget', () => {
   it('says nothing about cuts when the budget is covered', () => {
     const { report } = endQuarter(createGame(tavara(), 1));
 
-    expect(report.notices.map((notice) => notice.title)).not.toContain('Spending was cut');
+    expect(report.entries.map((entry) => entry.headline)).not.toContain('Spending was cut');
   });
 });
 

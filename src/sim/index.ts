@@ -27,11 +27,11 @@ export {
   type RegionHarvest,
 } from './food';
 export { seasonOf } from './calendar';
+export { type ReportEntry } from './report';
 export { advanceQuarter, budgetLimits, createGame, previewQuarter } from './game';
 export {
   type Decisions,
   type GameState,
-  type Notice,
   type Outcome,
   type Preview,
   type RegionShortfall,
@@ -55,12 +55,17 @@ export {
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
   MAP_FRAME,
+  REPORT_KINDS,
+  SERIOUSNESS_LEVELS,
+  SERIOUSNESS_NAMES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
   type DecorationKind,
   type EventType,
   type FoodStage,
   type LabelSide,
+  type ReportKind,
+  type Seriousness,
   type SettlementSize,
   type SpendingArea,
   type Terrain,

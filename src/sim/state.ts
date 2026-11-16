@@ -2,6 +2,7 @@ import type { Budget } from './budget';
 import type { Country } from './country';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
+import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import type { Figure, GameDate, Money, Range } from './types';
 import type { FoodStage } from './vocabulary';
@@ -69,15 +70,6 @@ export interface Decisions {
   readonly reliefRegionId?: string | null;
 }
 
-/** Something the player should be told about a quarter. */
-export interface Notice {
-  readonly title: string;
-  readonly detail: string;
-  readonly tone: 'info' | 'warning' | 'danger';
-  /** The region it happened in, when it belongs to one place. */
-  readonly regionId?: string;
-}
-
 /** What happened in a quarter, and why. */
 export interface TurnReport {
   /** The quarter that was resolved. */
@@ -88,7 +80,11 @@ export interface TurnReport {
   readonly food: Figure;
   /** The harvest, in quarter 4, and null in every other quarter. */
   readonly harvest: Harvest | null;
-  readonly notices: readonly Notice[];
+  /**
+   * What the player is told about the quarter, the most serious first. There is always at
+   * least the budget outcome, and a quarter in which nothing notable happened says so.
+   */
+  readonly entries: readonly ReportEntry[];
 }
 
 export interface TurnResult {

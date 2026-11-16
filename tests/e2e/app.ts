@@ -8,6 +8,21 @@ export function testlandFile(): Record<string, unknown> {
   return JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
 }
 
+/**
+ * Tavara as it ships, except that drought strikes the named regions every year and no
+ * other region ever.
+ */
+export function tavaraWithDroughtIn(regionIds: readonly string[]): unknown {
+  const file = path.join(import.meta.dirname, '..', '..', 'src', 'countries', 'tavara.json');
+  const country = JSON.parse(readFileSync(file, 'utf8')) as {
+    regions: { id: string; eventLikelihood: { drought: number } }[];
+  };
+  for (const region of country.regions) {
+    region.eventLikelihood = { drought: regionIds.includes(region.id) ? 1 : 0 };
+  }
+  return country;
+}
+
 interface StartOptions {
   /** A fixed seed, so every run plays the same game. */
   readonly seed?: number;
@@ -43,6 +58,9 @@ export const treasury = (page: Page): Locator =>
   page.getByRole('banner').getByRole('group', { name: 'Treasury' });
 export const foodReserve = (page: Page): Locator =>
   page.getByRole('banner').getByRole('group', { name: 'Food reserve' });
+/** This quarter's reports, in the left column. */
+export const reports = (page: Page): Locator =>
+  situation(page).getByRole('region', { name: 'This quarter' });
 /** The projection card in the budget panel, whichever of its two headings it carries. */
 export const outlook = (page: Page): Locator =>
   decisions(page).getByRole('region', { name: /Outlook|If you commit/ });
