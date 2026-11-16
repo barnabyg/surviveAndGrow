@@ -22,6 +22,16 @@ This starts the game and opens it in your browser. It is designed for a 2560 x 1
 Add `?seed=7` to the address to replay a known game: the same seed and the same decisions
 always give the same game.
 
+## Write a country
+
+A country is one data file; the engine contains no country-specific code. The country that ships
+is [src/countries/tavara.json](src/countries/tavara.json), and it is the best guide to the format.
+All positions are coordinates in a fixed map frame 1080 wide and 720 high.
+
+To try a country of your own, put the file in `public/countries/` and name it in the address:
+`?country=/countries/mine.json`. The game checks the file as it loads and lists everything that
+is wrong with it.
+
 ## Check it
 
 ```powershell

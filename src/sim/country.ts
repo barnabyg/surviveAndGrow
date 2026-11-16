@@ -1,13 +1,80 @@
 import { MONEY_PER_MILLION, type Money } from './types';
+import {
+  DECORATION_KINDS,
+  LABEL_SIDES,
+  MAP_FRAME,
+  SETTLEMENT_SIZES,
+  TERRAINS,
+  type DecorationKind,
+  type LabelSide,
+  type SettlementSize,
+  type Terrain,
+} from './vocabulary';
 
 /** The version of the country file format this game reads. */
 export const COUNTRY_FORMAT_VERSION = 1;
+
+/** A position in the map frame: x from the left edge, y from the top edge. */
+export type Point = readonly [x: number, y: number];
+
+export interface Region {
+  readonly id: string;
+  readonly name: string;
+  readonly terrain: Terrain;
+  /** The outline of the region, as the corners of a closed shape. */
+  readonly shape: readonly Point[];
+  /** Where the region's name is written. */
+  readonly label: Point;
+}
+
+export interface Settlement {
+  readonly id: string;
+  readonly name: string;
+  readonly regionId: string;
+  readonly at: Point;
+  readonly size: SettlementSize;
+  /** Which side of the settlement its name is written on. */
+  readonly labelSide: LabelSide;
+}
+
+export interface Neighbour {
+  readonly id: string;
+  readonly name: string;
+  readonly shape: readonly Point[];
+  readonly label: Point;
+}
+
+/** Sea is whatever the regions and neighbours leave uncovered. A sea entry only names it. */
+export interface Sea {
+  readonly name: string;
+  readonly label: Point;
+}
+
+export interface River {
+  readonly id: string;
+  readonly name: string;
+  /** The line the river follows, from source to mouth. */
+  readonly course: readonly Point[];
+}
+
+export interface Decoration {
+  readonly kind: DecorationKind;
+  readonly at: Point;
+}
 
 /** A country, checked and ready to start a game from. The engine holds no country of its own. */
 export interface Country {
   readonly formatVersion: number;
   readonly id: string;
   readonly name: string;
+  readonly map: {
+    readonly seas: readonly Sea[];
+    readonly neighbours: readonly Neighbour[];
+    readonly rivers: readonly River[];
+    readonly decorations: readonly Decoration[];
+  };
+  readonly regions: readonly Region[];
+  readonly settlements: readonly Settlement[];
   readonly start: {
     readonly treasury: Money;
   };
@@ -72,6 +139,103 @@ class Reader {
     }
     return units;
   }
+
+  /** One of the engine's own words, such as a terrain. */
+  oneOf<Word extends string>(
+    parent: Json,
+    key: string,
+    path: string,
+    words: readonly [Word, ...Word[]],
+  ): Word {
+    const value = parent[key];
+    const word = words.find((candidate) => candidate === value);
+    if (word !== undefined) return word;
+    this.fault(
+      join(path, key),
+      typeof value === 'string'
+        ? `is "${value}", which is not one of: ${words.join(', ')}`
+        : wrongKind(value, 'text'),
+    );
+    return words[0];
+  }
+
+  /** An identifier, which must not repeat one already seen in the same list. */
+  id(parent: Json, key: string, path: string, seen: Map<string, string>): string {
+    const id = this.text(parent, key, path);
+    if (id === '') return id;
+    const earlier = seen.get(id);
+    if (earlier === undefined) {
+      seen.set(id, path);
+    } else {
+      this.fault(join(path, key), `repeats "${id}", already used by ${earlier}`);
+    }
+    return id;
+  }
+
+  /** A list of objects, each read by `read` with its own path, such as `regions[2]`. */
+  list<Item>(
+    parent: Json,
+    key: string,
+    path: string,
+    read: (item: Json, itemPath: string) => Item,
+  ): Item[] {
+    const value = parent[key];
+    const listPath = join(path, key);
+    if (!Array.isArray(value)) {
+      this.fault(listPath, wrongKind(value, 'a list'));
+      return [];
+    }
+    return value.map((item: unknown, index) => {
+      const itemPath = `${listPath}[${index}]`;
+      if (isRecord(item)) return read(item, itemPath);
+      this.fault(itemPath, wrongKind(item, 'an object'));
+      return read({}, itemPath);
+    });
+  }
+
+  /** A position, which must lie inside the map frame. */
+  point(parent: Json, key: string, path: string): Point {
+    const value = parent[key];
+    if (value === undefined) {
+      this.fault(join(path, key), 'is missing');
+      return [0, 0];
+    }
+    return this.pointAt(value, join(path, key));
+  }
+
+  /** A line or outline, which needs at least `fewest` positions. */
+  points(parent: Json, key: string, path: string, fewest: number): Point[] {
+    const value = parent[key];
+    const listPath = join(path, key);
+    if (!Array.isArray(value)) {
+      this.fault(listPath, wrongKind(value, 'a list of points'));
+      return [];
+    }
+    if (value.length < fewest) {
+      this.fault(listPath, `needs at least ${fewest} points, but has ${value.length}`);
+    }
+    return value.map((item: unknown, index) => this.pointAt(item, `${listPath}[${index}]`));
+  }
+
+  private pointAt(value: unknown, path: string): Point {
+    if (!Array.isArray(value) || value.length !== 2) {
+      this.fault(path, 'must be a pair of numbers [x, y]');
+      return [0, 0];
+    }
+    const pair: readonly unknown[] = value;
+    const [x, y] = pair;
+    if (typeof x !== 'number' || typeof y !== 'number' || !isFinite(x) || !isFinite(y)) {
+      this.fault(path, 'must be a pair of numbers [x, y]');
+      return [0, 0];
+    }
+    if (x < 0 || x > MAP_FRAME.width || y < 0 || y > MAP_FRAME.height) {
+      this.fault(
+        path,
+        `is (${x}, ${y}), outside the ${MAP_FRAME.width} by ${MAP_FRAME.height} map frame`,
+      );
+    }
+    return [x, y];
+  }
 }
 
 function isRecord(value: unknown): value is Json {
@@ -105,6 +269,7 @@ export function loadCountry(file: unknown): Country {
   }
   const reader = new Reader();
 
+  // A file written for another version cannot be judged by this version's rules.
   const formatVersion = reader.number(file, 'formatVersion', '');
   if (file.formatVersion !== undefined && formatVersion !== COUNTRY_FORMAT_VERSION) {
     throw new CountryFileError([
@@ -112,11 +277,67 @@ export function loadCountry(file: unknown): Country {
     ]);
   }
 
+  const regionIds = new Map<string, string>();
+  const regions = reader.list(file, 'regions', '', (item, path): Region => ({
+    id: reader.id(item, 'id', path, regionIds),
+    name: reader.text(item, 'name', path),
+    terrain: reader.oneOf(item, 'terrain', path, TERRAINS),
+    shape: reader.points(item, 'shape', path, 3),
+    label: reader.point(item, 'label', path),
+  }));
+  if (Array.isArray(file.regions) && regions.length === 0) {
+    reader.fault('regions', 'must list at least one region');
+  }
+
+  const settlementIds = new Map<string, string>();
+  const settlements = reader.list(file, 'settlements', '', (item, path): Settlement => {
+    const regionId = reader.text(item, 'region', path);
+    if (regionId !== '' && !regionIds.has(regionId)) {
+      reader.fault(join(path, 'region'), `is "${regionId}", which is not the id of a region`);
+    }
+    return {
+      id: reader.id(item, 'id', path, settlementIds),
+      name: reader.text(item, 'name', path),
+      regionId,
+      at: reader.point(item, 'at', path),
+      size: reader.oneOf(item, 'size', path, SETTLEMENT_SIZES),
+      labelSide:
+        item.labelSide === undefined ? 'right' : reader.oneOf(item, 'labelSide', path, LABEL_SIDES),
+    };
+  });
+
+  const map = reader.object(file, 'map', '');
+  const neighbourIds = new Map<string, string>();
+  const riverIds = new Map<string, string>();
   const start = reader.object(file, 'start', '');
+
   const country: Country = {
     formatVersion,
     id: reader.text(file, 'id', ''),
     name: reader.text(file, 'name', ''),
+    map: {
+      seas: reader.list(map, 'seas', 'map', (item, path): Sea => ({
+        name: reader.text(item, 'name', path),
+        label: reader.point(item, 'label', path),
+      })),
+      neighbours: reader.list(map, 'neighbours', 'map', (item, path): Neighbour => ({
+        id: reader.id(item, 'id', path, neighbourIds),
+        name: reader.text(item, 'name', path),
+        shape: reader.points(item, 'shape', path, 3),
+        label: reader.point(item, 'label', path),
+      })),
+      rivers: reader.list(map, 'rivers', 'map', (item, path): River => ({
+        id: reader.id(item, 'id', path, riverIds),
+        name: reader.text(item, 'name', path),
+        course: reader.points(item, 'course', path, 2),
+      })),
+      decorations: reader.list(map, 'decorations', 'map', (item, path): Decoration => ({
+        kind: reader.oneOf(item, 'kind', path, DECORATION_KINDS),
+        at: reader.point(item, 'at', path),
+      })),
+    },
+    regions,
+    settlements,
     start: {
       treasury: reader.money(start, 'treasury', 'start'),
     },

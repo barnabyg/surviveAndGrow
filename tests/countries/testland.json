@@ -2,6 +2,57 @@
   "formatVersion": 1,
   "id": "testland",
   "name": "Testland",
+  "map": {
+    "seas": [],
+    "neighbours": [
+      {
+        "id": "elsewhere",
+        "name": "Elsewhere",
+        "shape": [
+          [0, 0],
+          [1080, 0],
+          [1080, 720],
+          [0, 720]
+        ],
+        "label": [540, 60]
+      }
+    ],
+    "rivers": [],
+    "decorations": [
+      { "kind": "dune", "at": [700, 360] },
+      { "kind": "field", "at": [380, 300] }
+    ]
+  },
+  "regions": [
+    {
+      "id": "northfield",
+      "name": "Northfield",
+      "terrain": "plains",
+      "shape": [
+        [200, 150],
+        [540, 150],
+        [540, 570],
+        [200, 570]
+      ],
+      "label": [370, 200]
+    },
+    {
+      "id": "sandreach",
+      "name": "Sandreach",
+      "terrain": "arid",
+      "shape": [
+        [540, 150],
+        [880, 150],
+        [880, 570],
+        [540, 570]
+      ],
+      "label": [710, 200]
+    }
+  ],
+  "settlements": [
+    { "id": "alpha", "name": "Alpha", "region": "northfield", "at": [370, 380], "size": "town" },
+    { "id": "beta", "name": "Beta", "region": "sandreach", "at": [710, 420], "size": "village" }
+  ],
   "start": {
     "treasury": 10
   }

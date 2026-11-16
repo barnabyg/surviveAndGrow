@@ -115,6 +115,20 @@ p {
   color: var(--muted);
 }
 
+.faults {
+  max-width: 60em;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  font-family: var(--font-figures);
+  font-size: 16px;
+  color: var(--danger);
+  text-align: left;
+}
+
 /* Main screen */
 
 .game {
@@ -195,4 +209,54 @@ p {
 
 .column--decisions {
   border-left: 1px solid var(--line);
+}
+
+.column--country {
+  background: var(--panel-deep);
+}
+
+/* The map */
+
+.map {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font);
+}
+
+.map__region-label,
+.map__neighbour-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-anchor: middle;
+  text-transform: uppercase;
+}
+
+.map__region-label {
+  fill-opacity: 0.7;
+}
+
+.map__neighbour-label {
+  letter-spacing: 4px;
+}
+
+.map__sea-label {
+  font-size: 12px;
+  font-style: italic;
+  letter-spacing: 3px;
+  text-anchor: middle;
+}
+
+.map__settlement-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  paint-order: stroke;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+.map__settlement-label--town {
+  font-size: 14px;
+  font-weight: 600;
 }

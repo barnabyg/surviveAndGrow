@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { advanceQuarter, type GameState } from '../sim';
+import { MapView } from './MapView';
 import { TopBar } from './TopBar';
 
 export function GameScreen({ initialGame }: { readonly initialGame: GameState }) {
@@ -16,7 +17,9 @@ export function GameScreen({ initialGame }: { readonly initialGame: GameState })
         <aside className="column column--situation" aria-label="Situation">
           <h2 className="section-title">This quarter</h2>
         </aside>
-        <main className="column column--country" aria-label="Country" />
+        <main className="column column--country" aria-label="Country">
+          <MapView country={game.country} />
+        </main>
         <aside className="column column--decisions" aria-label="Decisions">
           <h2 className="section-title">Budget</h2>
         </aside>
