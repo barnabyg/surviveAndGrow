@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import {
   budgetLimits,
+  foodStatus,
   formatMoney,
   MONEY_PER_MILLION,
   previewQuarter,
@@ -10,7 +11,7 @@ import {
   type GameState,
   type Range,
 } from '../sim';
-import { formatRange, formatSigned } from './format';
+import { formatRange, formatSigned, monthsOfFood } from './format';
 
 interface BudgetPanelProps {
   readonly game: GameState;
@@ -38,6 +39,7 @@ export function BudgetPanel(props: BudgetPanelProps) {
   const before = previewQuarter(game, { budget: committed });
   const after = previewQuarter(game, { budget: pending });
   const { taxRatePercent, spending } = budgetLimits;
+  const food = foodStatus(game);
 
   return (
     <section className="budget" aria-labelledby="budget-title">
@@ -110,6 +112,24 @@ export function BudgetPanel(props: BudgetPanelProps) {
         <Projection label="Spending" before={before.spending} after={after.spending} onlyIfMoved />
         <Projection label="Balance" before={before.balance} after={after.balance} onlyIfMoved />
         <Projection label="Treasury next quarter" before={before.treasury} after={after.treasury} />
+        <Projection
+          label="Harvest forecast"
+          before={before.harvest}
+          after={after.harvest}
+          format={(tonnes) => (tonnes / 1_000_000).toFixed(2)}
+          unit="Mt"
+        />
+        <Projection
+          label="Food reserve after harvest"
+          before={before.foodReserveAfterHarvest}
+          after={after.foodReserveAfterHarvest}
+          format={(tonnes) => monthsOfFood(tonnes, food).toFixed(1)}
+          unit="months"
+        />
+        <p className="outlook__note">
+          The country eats {((food.quarterlyConsumption * 4) / 1_000_000).toFixed(2)} Mt a year.
+          Forecasts assume spending stays as shown.
+        </p>
       </section>
 
       <div className="button-row">
@@ -151,6 +171,8 @@ interface ProjectionProps {
   /** Where the budget on the sliders would lead. */
   readonly after: Range;
   readonly format?: (value: number) => string;
+  /** The unit the figure is counted in, when the format does not write it. */
+  readonly unit?: string;
   /** Leave the figure out unless the pending change would move it. */
   readonly onlyIfMoved?: boolean;
 }
@@ -161,15 +183,17 @@ interface ProjectionProps {
  * give it. An uncertain figure is shown as a range.
  */
 function Projection(props: ProjectionProps) {
-  const { label, before, after, format = formatMoney, onlyIfMoved = false } = props;
+  const { label, before, after, format = formatMoney, unit = '', onlyIfMoved = false } = props;
   const moved = before.min !== after.min || before.max !== after.max;
   if (onlyIfMoved && !moved) return null;
   return (
     <div className="projection" role="group" aria-label={label}>
       <span>{label}</span>
       <span className="projection__value">
-        {moved && <span className="projection__before">{formatRange(before, format)} → </span>}
-        {formatRange(after, format)}
+        {moved && (
+          <span className="projection__before">{formatRange(before, format, unit)} → </span>
+        )}
+        {formatRange(after, format, unit)}
       </span>
     </div>
   );

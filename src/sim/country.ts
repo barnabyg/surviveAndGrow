@@ -33,6 +33,8 @@ export interface Region {
   readonly population: number;
   /** What the region produces in a quarter when the game starts, before tax. */
   readonly output: Money;
+  /** The region's farmland, in units of 1,000 hectares. */
+  readonly farmland: number;
 }
 
 export interface Settlement {
@@ -87,6 +89,8 @@ export interface Country {
     readonly treasury: Money;
     /** The budget in force when the game starts. */
     readonly budget: Budget;
+    /** The national food reserve when the game starts, in tonnes. */
+    readonly foodReserve: number;
   };
 }
 
@@ -346,6 +350,7 @@ export function loadCountry(file: unknown): Country {
     label: reader.point(item, 'label', path),
     population: reader.wholeNumber(item, 'population', path, 1),
     output: reader.money(item, 'output', path),
+    farmland: reader.wholeNumber(item, 'farmland', path, 0),
   }));
   if (Array.isArray(file.regions) && regions.length === 0) {
     reader.fault('regions', 'must list at least one region');
@@ -403,6 +408,7 @@ export function loadCountry(file: unknown): Country {
     start: {
       treasury: reader.money(start, 'treasury', 'start'),
       budget: readBudget(reader, reader.object(start, 'budget', 'start'), 'start.budget'),
+      foodReserve: reader.wholeNumber(start, 'foodReserve', 'start', 0),
     },
   };
 

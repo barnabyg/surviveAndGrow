@@ -17,6 +17,7 @@ export {
   type Settlement,
 } from './country';
 export { type Budget } from './budget';
+export { foodStatus, type FoodStatus, type Harvest, type RegionHarvest } from './food';
 export { advanceQuarter, budgetLimits, createGame, previewQuarter, seasonOf } from './game';
 export {
   type Decisions,
@@ -27,7 +28,7 @@ export {
   type TurnReport,
   type TurnResult,
 } from './state';
-export { formatMoney } from './text';
+export { formatMoney, formatTonnes } from './text';
 export {
   MONEY_PER_MILLION,
   type Contribution,

@@ -301,6 +301,11 @@ p {
   line-height: 1.15;
 }
 
+.vital__unit {
+  font-size: 15px;
+  color: var(--muted);
+}
+
 .columns {
   flex: 1 1 auto;
   display: grid;
@@ -532,6 +537,11 @@ p {
   font-family: var(--font-figures);
   font-weight: 500;
   text-align: right;
+}
+
+.outlook__note {
+  font-size: 13.5px;
+  color: var(--muted);
 }
 
 .projection__before {

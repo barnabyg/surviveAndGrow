@@ -42,7 +42,8 @@
       ],
       "label": [370, 200],
       "population": 300000,
-      "output": 20
+      "output": 20,
+      "farmland": 70
     },
     {
       "id": "sandreach",
@@ -56,7 +57,8 @@
       ],
       "label": [710, 200],
       "population": 100000,
-      "output": 5
+      "output": 5,
+      "farmland": 44
     }
   ],
   "settlements": [
@@ -86,6 +88,7 @@
         "education": 1,
         "security": 1
       }
-    }
+    },
+    "foodReserve": 30000
   }
 }

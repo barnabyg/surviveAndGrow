@@ -1,6 +1,6 @@
-import { formatMoney, seasonOf, type GameState, type TurnReport } from '../sim';
+import { foodStatus, formatMoney, seasonOf, type GameState, type TurnReport } from '../sim';
 import { Crest } from './Crest';
-import { formatSigned } from './format';
+import { formatSigned, formatSignedTonnes, monthsOfFood } from './format';
 import { VitalSign } from './VitalSign';
 
 interface TopBarProps {
@@ -12,6 +12,7 @@ interface TopBarProps {
 
 export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
   const { date } = game;
+  const food = foodStatus(game);
   return (
     <header className="topbar">
       <div className="topbar__identity">
@@ -30,7 +31,22 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
           value={formatMoney(game.treasury)}
           figure={report?.treasury ?? null}
           formatChange={formatSigned}
+          formatMovement={formatMoney}
           breakdownTitle="What moved the treasury"
+        />
+        <VitalSign
+          label="Food reserve"
+          value={food.reserveMonths.toFixed(1)}
+          unit="months"
+          figure={report?.food ?? null}
+          formatChange={formatSignedTonnes}
+          formatMovement={(tonnes) => `${monthsOfFood(tonnes, food).toFixed(1)} months`}
+          remark={
+            food.belowSafeLevel
+              ? { text: `Below the ${food.safeReserveMonths}-month safe level`, tone: 'warning' }
+              : undefined
+          }
+          breakdownTitle="What moved the food reserve"
         />
       </div>
 

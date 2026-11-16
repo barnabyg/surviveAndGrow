@@ -1,5 +1,6 @@
 import type { Budget } from './budget';
 import type { Country } from './country';
+import type { Harvest } from './food';
 import type { RngState } from './rng';
 import type { Figure, GameDate, Money, Range } from './types';
 
@@ -9,6 +10,13 @@ export interface RegionState {
   readonly population: number;
   /** What the region produces in a quarter, before tax. */
   readonly output: Money;
+  /** The food the region holds for its own people, in tonnes. */
+  readonly foodStock: number;
+  /**
+   * How far this growing year's weather has moved the coming harvest so far, in thousandths.
+   * It builds up quarter by quarter and starts afresh after each harvest.
+   */
+  readonly weather: number;
 }
 
 /** Everything about a game in progress. It is never changed in place. */
@@ -21,6 +29,10 @@ export interface GameState {
   readonly treasury: Money;
   /** The budget in force: the one the last quarter was resolved with. */
   readonly budget: Budget;
+  /** The national food reserve, in tonnes. */
+  readonly foodReserve: number;
+  /** Agriculture spending since the last harvest. It sets how much the next harvest yields. */
+  readonly agricultureSpentThisYear: Money;
   /** One entry for each region of the country, in the country file's order. */
   readonly regions: readonly RegionState[];
 }
@@ -45,6 +57,10 @@ export interface TurnReport {
   readonly date: GameDate;
   /** The treasury after the quarter, with everything that moved it. */
   readonly treasury: Figure;
+  /** The national food reserve after the quarter, in tonnes, with everything that moved it. */
+  readonly food: Figure;
+  /** The harvest, in quarter 4, and null in every other quarter. */
+  readonly harvest: Harvest | null;
   readonly notices: readonly Notice[];
 }
 
@@ -66,4 +82,11 @@ export interface Preview {
   readonly treasury: Range;
   /** True when the treasury could not cover the budget and every area would be cut. */
   readonly spendingCut: boolean;
+  /**
+   * What the coming harvest will bring in across the country, in tonnes, if agriculture
+   * spending stays as decided. The weather still to come makes it a range.
+   */
+  readonly harvest: Range;
+  /** The national reserve once the coming harvest is in, in tonnes, on the same footing. */
+  readonly foodReserveAfterHarvest: Range;
 }
