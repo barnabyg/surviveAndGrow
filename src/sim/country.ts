@@ -368,8 +368,11 @@ export function loadCountry(file: unknown): Country {
   const reader = new Reader();
 
   // A file written for another version cannot be judged by this version's rules.
-  const formatVersion = reader.number(file, 'formatVersion', '');
-  if (file.formatVersion !== undefined && formatVersion !== COUNTRY_FORMAT_VERSION) {
+  const { formatVersion } = file;
+  if (typeof formatVersion !== 'number') {
+    throw new CountryFileError([`formatVersion ${wrongKind(formatVersion, 'a number')}.`]);
+  }
+  if (formatVersion !== COUNTRY_FORMAT_VERSION) {
     throw new CountryFileError([
       `formatVersion is ${formatVersion}, but this game reads version ${COUNTRY_FORMAT_VERSION}.`,
     ]);

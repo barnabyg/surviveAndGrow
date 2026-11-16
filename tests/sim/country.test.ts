@@ -57,6 +57,12 @@ describe('an invalid country file is rejected with a message naming the fault', 
     expect(faultsOf(file)).toEqual(['formatVersion is 2, but this game reads version 1.']);
   });
 
+  it('when its format version is not a number', () => {
+    const file = withValue(testlandFile, ['formatVersion'], '1');
+
+    expect(faultsOf(file)).toEqual(['formatVersion must be a number, but is text.']);
+  });
+
   it('when a terrain is not one the game knows', () => {
     const file = withValue(testlandFile, ['regions', 1, 'terrain'], 'swamp');
 
