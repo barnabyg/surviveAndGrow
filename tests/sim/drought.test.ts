@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
-  CountryFileError,
   createGame,
   loadCountry,
   previewQuarter,
@@ -14,6 +13,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
+import { faultsOf, withValue } from './files';
 
 /** A country file with the yearly chance of drought set for each region; unnamed regions get none. */
 function withDroughtChance(
@@ -331,20 +331,6 @@ describe('food relief in Tavara', () => {
 });
 
 describe('event likelihoods in a country file', () => {
-  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access --
-     These tests break a country file on purpose, in ways the types would not allow. */
-  function faultsWith(change: (file: any) => void): readonly string[] {
-    const file: any = structuredClone(tavaraFile);
-    change(file);
-    try {
-      loadCountry(file);
-    } catch (error) {
-      if (error instanceof CountryFileError) return error.faults;
-      throw error;
-    }
-    throw new Error('The country file was accepted');
-  }
-
   it('set how likely a drought is in each region of Tavara', () => {
     const likelihoods = loadCountry(tavaraFile).regions.map((entry) => [
       entry.name,
@@ -356,9 +342,9 @@ describe('event likelihoods in a country file', () => {
   });
 
   it('are rejected for an event the game does not have', () => {
-    const faults = faultsWith((file) => {
-      file.regions[0].eventLikelihood = { locusts: 0.2 };
-    });
+    const faults = faultsOf(
+      withValue(tavaraFile, ['regions', 0, 'eventLikelihood'], { locusts: 0.2 }),
+    );
 
     expect(faults).toEqual([
       'regions[0].eventLikelihood.locusts is not an event this game has (drought).',
@@ -366,9 +352,9 @@ describe('event likelihoods in a country file', () => {
   });
 
   it('are rejected when they are not a chance from 0 to 1', () => {
-    const faults = faultsWith((file) => {
-      file.regions[3].eventLikelihood = { drought: 1.5 };
-    });
+    const faults = faultsOf(
+      withValue(tavaraFile, ['regions', 3, 'eventLikelihood'], { drought: 1.5 }),
+    );
 
     expect(faults).toEqual([
       'regions[3].eventLikelihood.drought is 1.5, but must be a chance from 0 to 1.',

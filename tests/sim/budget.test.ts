@@ -2,14 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   createGame,
-  CountryFileError,
-  loadCountry,
   type Budget,
   type GameState,
   type TurnResult,
 } from '../../src/sim';
 import tavaraFile from '../../src/countries/tavara.json';
 import { bothCountries, tavara, testland } from './countries';
+import { faultsOf, withValue, without } from './files';
 import { steward } from './players';
 
 /** Ends a quarter with the given budget. Money is in units of $100,000. */
@@ -167,20 +166,6 @@ describe.each(bothCountries)('the budget in %s', (_name, country) => {
 });
 
 describe('the starting figures in a country file', () => {
-  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access --
-     These tests break a country file on purpose, in ways the types would not allow. */
-  function faultsWith(change: (file: any) => void): readonly string[] {
-    const file: any = structuredClone(tavaraFile);
-    change(file);
-    try {
-      loadCountry(file);
-    } catch (error) {
-      if (error instanceof CountryFileError) return error.faults;
-      throw error;
-    }
-    throw new Error('The country file was accepted');
-  }
-
   it('give each region a population and an output', () => {
     const [highlands] = tavara().regions;
 
@@ -188,9 +173,7 @@ describe('the starting figures in a country file', () => {
   });
 
   it('are rejected when a tax rate is out of range', () => {
-    const faults = faultsWith((file) => {
-      file.start.budget.taxRate = 60;
-    });
+    const faults = faultsOf(withValue(tavaraFile, ['start', 'budget', 'taxRate'], 60));
 
     expect(faults).toEqual([
       'start.budget.taxRate is 60, but must be a whole number from 5 to 40.',
@@ -198,17 +181,13 @@ describe('the starting figures in a country file', () => {
   });
 
   it('are rejected when a spending area is left out', () => {
-    const faults = faultsWith((file) => {
-      delete file.start.budget.spending.health;
-    });
+    const faults = faultsOf(without(tavaraFile, ['start', 'budget', 'spending', 'health']));
 
     expect(faults).toEqual(['start.budget.spending.health is missing.']);
   });
 
   it('are rejected when spending is not in whole millions within the range', () => {
-    const faults = faultsWith((file) => {
-      file.start.budget.spending.security = 25;
-    });
+    const faults = faultsOf(withValue(tavaraFile, ['start', 'budget', 'spending', 'security'], 25));
 
     expect(faults).toEqual([
       'start.budget.spending.security is 25, but must be a whole number from 0 to 20.',
@@ -216,9 +195,7 @@ describe('the starting figures in a country file', () => {
   });
 
   it('are rejected when the budget names a spending area the game does not have', () => {
-    const faults = faultsWith((file) => {
-      file.start.budget.spending.palaces = 3;
-    });
+    const faults = faultsOf(withValue(tavaraFile, ['start', 'budget', 'spending', 'palaces'], 3));
 
     expect(faults).toEqual([
       'start.budget.spending.palaces is not a spending area this game has (agriculture, foodRelief, health, education, security).',
@@ -226,9 +203,7 @@ describe('the starting figures in a country file', () => {
   });
 
   it('are rejected when a region has no people', () => {
-    const faults = faultsWith((file) => {
-      file.regions[0].population = 0;
-    });
+    const faults = faultsOf(withValue(tavaraFile, ['regions', 0, 'population'], 0));
 
     expect(faults).toEqual([
       'regions[0].population is 0, but must be a whole number of at least 1.',

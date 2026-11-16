@@ -1,28 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { CountryFileError, loadCountry, MAP_FRAME } from '../../src/sim';
+import { loadCountry, MAP_FRAME } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { tavara, testland } from './countries';
-
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call --
-   These tests break a country file on purpose, in ways the types would not allow. */
-type LooseFile = any;
-
-/** A valid country file with one thing changed. */
-function fileWith(change: (file: LooseFile) => void): unknown {
-  const file: LooseFile = structuredClone(testlandFile);
-  change(file);
-  return file;
-}
-
-function faultsOf(file: unknown): readonly string[] {
-  try {
-    loadCountry(file);
-  } catch (error) {
-    if (error instanceof CountryFileError) return error.faults;
-    throw error;
-  }
-  throw new Error('The country file was accepted');
-}
+import { faultsOf, valueAt, withValue, without } from './files';
 
 describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
@@ -60,31 +40,25 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when a field is missing', () => {
-    const file = fileWith((f) => delete f.regions[0].name);
+    const file = without(testlandFile, ['regions', 0, 'name']);
 
     expect(faultsOf(file)).toEqual(['regions[0].name is missing.']);
   });
 
   it('when a field is the wrong kind of value', () => {
-    const file = fileWith((f) => {
-      f.name = 42;
-    });
+    const file = withValue(testlandFile, ['name'], 42);
 
     expect(faultsOf(file)).toEqual(['name must be text, but is a number.']);
   });
 
   it('when it is written for another version of the format', () => {
-    const file = fileWith((f) => {
-      f.formatVersion = 2;
-    });
+    const file = withValue(testlandFile, ['formatVersion'], 2);
 
     expect(faultsOf(file)).toEqual(['formatVersion is 2, but this game reads version 1.']);
   });
 
   it('when a terrain is not one the game knows', () => {
-    const file = fileWith((f) => {
-      f.regions[1].terrain = 'swamp';
-    });
+    const file = withValue(testlandFile, ['regions', 1, 'terrain'], 'swamp');
 
     expect(faultsOf(file)).toEqual([
       'regions[1].terrain is "swamp", which is not one of: plains, highlands, coast, arid, delta, valley.',
@@ -92,9 +66,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when two regions share an identifier', () => {
-    const file = fileWith((f) => {
-      f.regions[1].id = f.regions[0].id;
-    });
+    const file = withValue(testlandFile, ['regions', 1, 'id'], 'northfield');
 
     // The settlement that named the overwritten identifier is reported as well.
     expect(faultsOf(file)).toContain(
@@ -103,9 +75,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when two settlements share an identifier', () => {
-    const file = fileWith((f) => {
-      f.settlements[1].id = f.settlements[0].id;
-    });
+    const file = withValue(testlandFile, ['settlements', 1, 'id'], 'alpha');
 
     expect(faultsOf(file)).toEqual([
       'settlements[1].id repeats "alpha", already used by settlements[0].',
@@ -113,9 +83,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when a shape reaches outside the map frame', () => {
-    const file = fileWith((f) => {
-      f.regions[0].shape[2] = [1200, 50];
-    });
+    const file = withValue(testlandFile, ['regions', 0, 'shape', 2], [1200, 50]);
 
     expect(faultsOf(file)).toEqual([
       'regions[0].shape[2] is (1200, 50), outside the 1080 by 720 map frame.',
@@ -123,9 +91,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when a settlement sits outside the map frame', () => {
-    const file = fileWith((f) => {
-      f.settlements[0].at = [300, -1];
-    });
+    const file = withValue(testlandFile, ['settlements', 0, 'at'], [300, -1]);
 
     expect(faultsOf(file)).toEqual([
       'settlements[0].at is (300, -1), outside the 1080 by 720 map frame.',
@@ -133,17 +99,14 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when a shape has too few points to enclose anything', () => {
-    const file = fileWith((f) => {
-      f.regions[0].shape = f.regions[0].shape.slice(0, 2);
-    });
+    const corners = valueAt(testlandFile, ['regions', 0, 'shape']) as unknown[];
+    const file = withValue(testlandFile, ['regions', 0, 'shape'], corners.slice(0, 2));
 
     expect(faultsOf(file)).toEqual(['regions[0].shape needs at least 3 points, but has 2.']);
   });
 
   it('when a point is not a pair of coordinates', () => {
-    const file = fileWith((f) => {
-      f.map.neighbours[0].shape[1] = [10];
-    });
+    const file = withValue(testlandFile, ['map', 'neighbours', 0, 'shape', 1], [10]);
 
     expect(faultsOf(file)).toEqual([
       'map.neighbours[0].shape[1] must be a pair of numbers [x, y].',
@@ -151,9 +114,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when a settlement names a region that does not exist', () => {
-    const file = fileWith((f) => {
-      f.settlements[0].region = 'atlantis';
-    });
+    const file = withValue(testlandFile, ['settlements', 0, 'region'], 'atlantis');
 
     expect(faultsOf(file)).toEqual([
       'settlements[0].region is "atlantis", which is not the id of a region.',
@@ -161,9 +122,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when a terrain decoration is of a kind the game does not know', () => {
-    const file = fileWith((f) => {
-      f.map.decorations[0].kind = 'volcano';
-    });
+    const file = withValue(testlandFile, ['map', 'decorations', 0, 'kind'], 'volcano');
 
     expect(faultsOf(file)).toEqual([
       'map.decorations[0].kind is "volcano", which is not one of: mountain, dune, field.',
@@ -171,26 +130,23 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it has no regions', () => {
-    const file = fileWith((f) => {
-      f.regions = [];
-      f.settlements = [];
-    });
+    const file = withValue(withValue(testlandFile, ['regions'], []), ['settlements'], []);
 
     expect(faultsOf(file)).toEqual(['regions must list at least one region.']);
   });
 
   it('and every fault is reported at once', () => {
-    const file = fileWith((f) => {
-      delete f.name;
-      f.regions[0].terrain = 'swamp';
-      f.start.treasury = -5;
-    });
+    const file = withValue(
+      withValue(without(testlandFile, ['name']), ['regions', 0, 'terrain'], 'swamp'),
+      ['start', 'treasury'],
+      -5,
+    );
 
     expect(faultsOf(file)).toHaveLength(3);
   });
 
   it('with all the faults in the message of the error', () => {
-    const file = fileWith((f) => delete f.name);
+    const file = without(testlandFile, ['name']);
 
     expect(() => loadCountry(file)).toThrow('The country file cannot be used. name is missing.');
   });
