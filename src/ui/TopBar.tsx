@@ -11,8 +11,11 @@ import {
   type GameState,
   type TurnReport,
 } from '../sim';
+import { strikeMark } from './ApprovalChart';
 import { Crest } from './Crest';
 import { formatPoints, formatSigned, formatSignedPoints, formatSignedTonnes } from './format';
+import { recent, type Mark } from './trend';
+import { TrendLine } from './TrendLine';
 import { VitalSign } from './VitalSign';
 
 interface TopBarProps {
@@ -38,6 +41,12 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
+  const shown = recent(game.history);
+  const safeLevel: Mark = {
+    value: food.safeReserveMonths,
+    label: `Safe level: ${food.safeReserveMonths} months`,
+    name: `the ${food.safeReserveMonths}-month safe level`,
+  };
   return (
     <header className="topbar">
       <div className="topbar__identity">
@@ -58,6 +67,13 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
           formatChange={formatSigned}
           formatMovement={formatMoney}
           breakdownTitle="What moved the treasury"
+          trend={
+            <TrendLine
+              subject="Treasury"
+              values={shown.map((record) => record.treasury)}
+              format={formatMoney}
+            />
+          }
         />
         <VitalSign
           label="Food reserve"
@@ -73,7 +89,18 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
               ? { text: `Below the ${food.safeReserveMonths}-month safe level`, tone: 'warning' }
               : undefined
           }
+          note={safeLevel.label}
           breakdownTitle="What moved the food reserve"
+          trend={
+            <TrendLine
+              subject="Food reserve"
+              values={shown.map((record) =>
+                monthsOfFood(record.foodReserve, record.quarterlyConsumption),
+              )}
+              format={(value) => `${value.toFixed(1)} months`}
+              mark={safeLevel}
+            />
+          }
         />
         <VitalSign
           label="Approval"
@@ -84,6 +111,14 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
           remark={unrestRemark(game, approval)}
           note={`Strikes below ${formatPercent(approval.strikesBelow, 0)}`}
           breakdownTitle="What moved approval"
+          trend={
+            <TrendLine
+              subject="Approval"
+              values={shown.map((record) => record.approval)}
+              format={formatPercent}
+              mark={strikeMark(approval.strikesBelow)}
+            />
+          }
         >
           <h2 className="label">What approval is made of</h2>
           <table className="breakdown__table" aria-label="What approval is made of">

@@ -41,6 +41,9 @@ What is in the game so far:
   treasury tax. Below 30% it protests and produces 30% less. Both end when approval recovers.
 - Click the treasury, the food reserve or approval in the top bar to see what moved it. Approval
   also lists what it is made of.
+- A short trend line beside the treasury, the food reserve and approval shows the last eight
+  quarters, with the food reserve's safe level and the strike threshold drawn as dashed lines. The
+  left column has a larger approval chart with the strike threshold and the 50% line marked.
 - After each quarter the left column reports what happened and why, the most serious first: the
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
   is a button: select it to pick that region out on the map and open its card. A quarter in which

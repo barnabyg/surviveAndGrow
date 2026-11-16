@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { advanceQuarter, previewQuarter, type GameState, type TurnReport } from '../sim';
+import { ApprovalChart } from './ApprovalChart';
 import { BudgetPanel, countChanges } from './BudgetPanel';
 import { ConfirmDialog } from './ConfirmDialog';
 import { GameOverDialog } from './GameOverDialog';
@@ -73,6 +74,7 @@ export function GameScreen({ initialGame, onRestart }: GameScreenProps) {
             selectedRegionId={selectedRegionId}
             onSelectRegion={setSelectedRegionId}
           />
+          <ApprovalChart game={game} />
         </aside>
         <main className="column column--country" aria-label="Country">
           <div className="map-frame">

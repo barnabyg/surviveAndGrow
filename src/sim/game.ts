@@ -19,6 +19,7 @@ import {
   type FoodInputs,
   type FoodSituation,
 } from './food';
+import { vitalSigns } from './history';
 import { compileReport, type ReportEntry } from './report';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
@@ -27,16 +28,11 @@ import { exactly } from './types';
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
   const approval = startingApproval(country);
-  return {
-    country,
-    seed,
-    rng: seedGenerator(seed),
+  const opening = {
     date: { year: 1, quarter: 1 },
     treasury: country.start.treasury,
-    budget: country.start.budget,
     foodReserve: country.start.foodReserve,
-    agricultureSpentThisYear: 0,
-    regions: country.regions.map((region) => ({
+    regions: country.regions.map((region): RegionState => ({
       id: region.id,
       population: region.population,
       output: region.output,
@@ -46,7 +42,16 @@ export function createGame(country: Country, seed: number): GameState {
       famineQuarters: 0,
       ...approval,
     })),
+  } as const;
+  return {
+    country,
+    seed,
+    rng: seedGenerator(seed),
+    ...opening,
+    budget: country.start.budget,
+    agricultureSpentThisYear: 0,
     events: [],
+    history: [vitalSigns(opening)],
     outcome: { status: 'playing' },
   };
 }
@@ -109,6 +114,15 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
       regions: approval.regions,
       events: [...remaining, ...rolled.begun],
+      history: [
+        ...state.history,
+        vitalSigns({
+          date,
+          treasury: finances.treasury,
+          foodReserve: food.foodReserve,
+          regions: approval.regions,
+        }),
+      ],
       outcome,
     },
     report: {

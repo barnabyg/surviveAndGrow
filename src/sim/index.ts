@@ -35,6 +35,7 @@ export {
   type RegionHarvest,
 } from './food';
 export { seasonOf } from './calendar';
+export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
 export { advanceQuarter, budgetLimits, createGame, previewQuarter } from './game';
 export {

@@ -3,6 +3,7 @@ import type { Budget } from './budget';
 import type { Country } from './country';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
+import type { VitalSigns } from './history';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import type { Figure, GameDate, Money, Range } from './types';
@@ -69,6 +70,11 @@ export interface GameState {
   readonly regions: readonly RegionState[];
   /** The events now in force, each in one region. */
   readonly events: readonly ActiveEvent[];
+  /**
+   * The vital signs as each quarter began, from the start of the game to the quarter now
+   * being decided, in order. The last record is the position now.
+   */
+  readonly history: readonly VitalSigns[];
   readonly outcome: Outcome;
 }
 

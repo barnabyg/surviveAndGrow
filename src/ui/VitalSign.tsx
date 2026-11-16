@@ -16,6 +16,8 @@ interface VitalSignProps {
   readonly remark?: { readonly text: string; readonly tone: 'warning' | 'danger' } | undefined;
   /** A standing fact worth keeping in view, such as the level at which trouble begins. */
   readonly note?: string | undefined;
+  /** The figure's trend line, drawn beside it. */
+  readonly trend?: ReactNode;
   /** The heading of the breakdown, such as "What moved the treasury". */
   readonly breakdownTitle: string;
   /** More to show in the breakdown, beneath what moved the figure. */
@@ -28,33 +30,36 @@ interface VitalSignProps {
  */
 export function VitalSign(props: VitalSignProps) {
   const { label, value, unit, figure, formatChange, formatMovement, breakdownTitle } = props;
-  const { remark, note, children } = props;
+  const { remark, note, trend, children } = props;
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const titleId = useId();
 
   return (
     <div className="vital" role="group" aria-label={label}>
-      <button
-        type="button"
-        className="vital__button"
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={() => {
-          setOpen(!open);
-        }}
-      >
-        <span className="label">{label}</span>
-        <span className="vital__value">
-          {value}
-          {unit !== undefined && <span className="vital__unit"> {unit}</span>}
-        </span>
-      </button>
-      <Movement figure={figure} formatMovement={formatMovement} />
-      {remark && (
-        <div className={`vital__remark vital__remark--${remark.tone}`}>▲ {remark.text}</div>
-      )}
-      {note !== undefined && <div className="vital__note">{note}</div>}
+      <div className="vital__figures">
+        <button
+          type="button"
+          className="vital__button"
+          aria-expanded={open}
+          aria-controls={panelId}
+          onClick={() => {
+            setOpen(!open);
+          }}
+        >
+          <span className="label">{label}</span>
+          <span className="vital__value">
+            {value}
+            {unit !== undefined && <span className="vital__unit"> {unit}</span>}
+          </span>
+        </button>
+        <Movement figure={figure} formatMovement={formatMovement} />
+        {remark && (
+          <div className={`vital__remark vital__remark--${remark.tone}`}>▲ {remark.text}</div>
+        )}
+        {note !== undefined && <div className="vital__note">{note}</div>}
+      </div>
+      {trend}
 
       {open && (
         <section className="breakdown" id={panelId} aria-labelledby={titleId}>
