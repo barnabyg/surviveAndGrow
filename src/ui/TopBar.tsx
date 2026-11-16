@@ -1,13 +1,18 @@
 import {
+  approvalStatus,
   foodStatus,
   formatMoney,
+  formatPercent,
   monthsOfFood,
+  regionName,
   seasonOf,
+  UNREST_NAMES,
+  type ApprovalStatus,
   type GameState,
   type TurnReport,
 } from '../sim';
 import { Crest } from './Crest';
-import { formatSigned, formatSignedTonnes } from './format';
+import { formatPoints, formatSigned, formatSignedPoints, formatSignedTonnes } from './format';
 import { VitalSign } from './VitalSign';
 
 interface TopBarProps {
@@ -17,9 +22,22 @@ interface TopBarProps {
   readonly onEndQuarter: () => void;
 }
 
+/** What the approval figure says while regions are striking or protesting. */
+function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
+  const [first] = unrest;
+  if (first === undefined) return undefined;
+  const tone = unrest.some((entry) => entry.unrest === 'protests') ? 'danger' : 'warning';
+  const text =
+    unrest.length === 1
+      ? `${UNREST_NAMES[first.unrest]} in ${regionName(game.country, first.regionId)}`
+      : `Unrest in ${unrest.length} regions`;
+  return { text, tone } as const;
+}
+
 export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
   const { date } = game;
   const food = foodStatus(game);
+  const approval = approvalStatus(game);
   return (
     <header className="topbar">
       <div className="topbar__identity">
@@ -57,6 +75,42 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
           }
           breakdownTitle="What moved the food reserve"
         />
+        <VitalSign
+          label="Approval"
+          value={formatPercent(approval.approval)}
+          figure={report?.approval ?? null}
+          formatChange={formatSignedPoints}
+          formatMovement={formatPoints}
+          remark={unrestRemark(game, approval)}
+          note={`Strikes below ${formatPercent(approval.strikesBelow, 0)}`}
+          breakdownTitle="What moved approval"
+        >
+          <h2 className="label">What approval is made of</h2>
+          <table className="breakdown__table" aria-label="What approval is made of">
+            <tbody>
+              {approval.causes.map((cause, index) => (
+                <tr key={cause.label}>
+                  <th scope="row">{cause.label}</th>
+                  <td>
+                    {index === 0 ? formatPercent(cause.amount) : formatSignedPoints(cause.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Approval now</th>
+                <td>{formatPercent(approval.approval)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <p className="breakdown__empty">
+            Approval moves a part of the way each quarter towards where the budget and the food
+            situation would settle it. A region strikes below{' '}
+            {formatPercent(approval.strikesBelow, 0)} and protests below{' '}
+            {formatPercent(approval.protestsBelow, 0)}.
+          </p>
+        </VitalSign>
       </div>
 
       <button

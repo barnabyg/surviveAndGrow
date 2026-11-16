@@ -1,3 +1,4 @@
+import { approvalStatus, resolveApproval, startingApproval, type ApprovalInputs } from './approval';
 import { balance } from './balance';
 import { nextDate, quartersUntilHarvest } from './calendar';
 import { budgetEntry, checkBudget, cutEntry, resolveBudget, type BudgetOutcome } from './budget';
@@ -25,6 +26,7 @@ import { exactly } from './types';
 
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
+  const approval = startingApproval(country);
   return {
     country,
     seed,
@@ -42,6 +44,7 @@ export function createGame(country: Country, seed: number): GameState {
       weather: 0,
       foodStage: 'adequate',
       famineQuarters: 0,
+      ...approval,
     })),
     events: [],
     outcome: { status: 'playing' },
@@ -65,6 +68,14 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
     harvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
     relief: reliefFor(decisions, finances),
   });
+  // Strikes in force as the quarter began have already cut its revenue. The approval the
+  // quarter leaves behind decides who strikes in the next.
+  const approval = resolveApproval(
+    state.country,
+    state.regions,
+    food.regions,
+    approvalInputs(decisions, finances),
+  );
 
   // A harvest ends the events that were waiting on it; then the new quarter may bring more.
   const date = nextDate(state.date);
@@ -73,13 +84,14 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
       ? { ended: [], remaining: state.events }
       : endEventsAfterHarvest(state.events);
   const rolled = beginEvents(state.country, remaining, date, weather.rng);
-  const outcome = outcomeOf(state.country, food.regions);
+  const outcome = outcomeOf(state.country, approval.regions);
 
   // Within one seriousness the report keeps this order, so what ends the game leads it.
   const entries: ReportEntry[] = [
     ...(outcome.status === 'lost' ? [collapseEntry(outcome)] : []),
     ...(finances.cut ? [cutEntry(finances)] : []),
     ...food.entries,
+    ...approval.entries,
     ...ended.map((event) => endEntry(state.country, event)),
     ...rolled.begun.map((event) => beginEntry(state.country, event)),
     budgetEntry(finances),
@@ -95,7 +107,7 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
       foodReserve: food.foodReserve,
       // The growing year ends with the harvest.
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
-      regions: food.regions,
+      regions: approval.regions,
       events: [...remaining, ...rolled.begun],
       outcome,
     },
@@ -111,6 +123,7 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
         change: food.foodReserve - state.foodReserve,
         contributions: food.contributions,
       },
+      approval: approval.approval,
       harvest: food.harvest,
       entries: compileReport(entries),
     },
@@ -149,6 +162,13 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
     ),
     bestHarvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
   });
+  // Nothing in approval turns on the weather either, so it is projected exactly.
+  const approval = resolveApproval(
+    state.country,
+    state.regions,
+    thisQuarter.regions,
+    approvalInputs(decisions, finances),
+  );
 
   return {
     revenue: exactly(finances.revenue),
@@ -160,6 +180,9 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
     foodReserveAfterHarvest: forecast.reserveAfterHarvest,
     shortfalls: thisQuarter.shortfalls,
     relief: thisQuarter.relief,
+    approval: exactly(approval.approval.value),
+    approvalHeading: exactly(approval.heading),
+    unrest: approvalStatus({ regions: approval.regions }).unrest,
   };
 }
 
@@ -181,6 +204,11 @@ function reliefFor(decisions: Decisions, finances: BudgetOutcome): FoodInputs['r
     regionId: decisions.reliefRegionId ?? null,
     capacity: reliefCapacity(finances.spent.foodRelief),
   };
+}
+
+/** Approval answers to the tax rate decided and to what was actually spent. */
+function approvalInputs(decisions: Decisions, finances: BudgetOutcome): ApprovalInputs {
+  return { taxRatePercent: decisions.budget.taxRatePercent, spent: finances.spent };
 }
 
 /**

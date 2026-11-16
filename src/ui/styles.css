@@ -234,6 +234,11 @@ p {
   color: var(--muted);
 }
 
+.vital__note {
+  font-size: 14px;
+  color: var(--label);
+}
+
 .vital__change--good {
   color: var(--blue);
 }
@@ -367,7 +372,7 @@ p {
 .region-card__facts {
   margin: 0;
   display: flex;
-  gap: 24px;
+  gap: 20px;
   font-size: 15px;
 }
 

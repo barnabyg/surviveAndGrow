@@ -17,6 +17,14 @@ export {
   type Sea,
   type Settlement,
 } from './country';
+export {
+  approvalStatus,
+  describeUnrest,
+  nationalApproval,
+  type ApprovalEffects,
+  type ApprovalStatus,
+  type RegionUnrest,
+} from './approval';
 export { type Budget } from './budget';
 export { describeEvent, type ActiveEvent } from './events';
 export {
@@ -40,7 +48,7 @@ export {
   type TurnReport,
   type TurnResult,
 } from './state';
-export { formatCount, formatMoney, formatTonnes } from './text';
+export { formatCount, formatMoney, formatPercent, formatTonnes } from './text';
 export {
   exactly,
   MONEY_PER_MILLION,
@@ -52,6 +60,8 @@ export {
   type Range,
 } from './types';
 export {
+  APPROVAL_DRIVER_NAMES,
+  APPROVAL_DRIVERS,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
   MAP_FRAME,
@@ -60,6 +70,9 @@ export {
   SERIOUSNESS_NAMES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
+  UNREST_LEVELS,
+  UNREST_NAMES,
+  type ApprovalDriver,
   type DecorationKind,
   type EventType,
   type FoodStage,
@@ -69,4 +82,5 @@ export {
   type SettlementSize,
   type SpendingArea,
   type Terrain,
+  type Unrest,
 } from './vocabulary';

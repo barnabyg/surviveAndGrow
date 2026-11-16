@@ -1,7 +1,9 @@
 import {
   describeEvent,
+  describeUnrest,
   FOOD_STAGE_NAMES,
   formatCount,
+  formatPercent,
   formatTonnes,
   type GameState,
   type Preview,
@@ -28,6 +30,7 @@ export function RegionCard(props: RegionCardProps) {
   const events = game.events.filter((event) => event.regionId === regionId);
   const shortfall = preview.shortfalls.find((entry) => entry.regionId === regionId)?.shortfall;
   const relieved = reliefRegionId === regionId;
+  const unrest = describeUnrest(state.unrest);
 
   return (
     <section className="region-card" aria-labelledby="region-card-title">
@@ -50,7 +53,12 @@ export function RegionCard(props: RegionCardProps) {
           <dt>In store</dt>
           <dd>{formatTonnes(state.foodStock)}</dd>
         </div>
+        <div>
+          <dt>Approval</dt>
+          <dd>{formatPercent(state.approval)}</dd>
+        </div>
       </dl>
+      {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
       {events.map((event) => (
         <p key={event.type} className="warning-note">
           ▲ {describeEvent(event)}

@@ -17,3 +17,11 @@ export function formatTonnes(tonnes: number): string {
 export function formatCount(count: number): string {
   return count.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
+
+/**
+ * A share written in thousandths as the player reads it: `54.3%`. Marks that are whole
+ * numbers by design, such as a threshold, are written without the decimal: `40%`.
+ */
+export function formatPercent(permille: number, decimals: 0 | 1 = 1): string {
+  return `${permille < 0 ? MINUS : ''}${(Math.abs(permille) / 10).toFixed(decimals)}%`;
+}

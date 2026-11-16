@@ -4,15 +4,18 @@ import {
   exactly,
   foodStatus,
   formatMoney,
+  formatPercent,
   formatTonnes,
   MONEY_PER_MILLION,
   monthsOfFood,
   previewQuarter,
+  regionName,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
   type Budget,
   type GameState,
   type Range,
+  type RegionUnrest,
 } from '../sim';
 import { formatRange, formatSigned } from './format';
 
@@ -118,6 +121,29 @@ export function BudgetPanel(props: BudgetPanelProps) {
         <Projection label="Balance" before={before.balance} after={after.balance} onlyIfMoved />
         <Projection label="Treasury next quarter" before={before.treasury} after={after.treasury} />
         <Projection
+          label="Approval next quarter"
+          before={before.approval}
+          after={after.approval}
+          format={formatPercent}
+        />
+        <Projection
+          label="Approval is heading for"
+          before={before.approvalHeading}
+          after={after.approvalHeading}
+          format={formatPercent}
+        />
+        {(['strikes', 'protests'] as const).map((unrest) => {
+          const regions = regionsIn(after.unrest, unrest);
+          return (
+            regions.length > 0 && (
+              <p key={unrest} className="warning-note">
+                ▲ When the quarter ends, {unrest} in{' '}
+                {regions.map((regionId) => regionName(game.country, regionId)).join(', ')}.
+              </p>
+            )
+          );
+        })}
+        <Projection
           label="Harvest forecast"
           before={before.harvest}
           after={after.harvest}
@@ -161,6 +187,11 @@ export function BudgetPanel(props: BudgetPanelProps) {
       </div>
     </section>
   );
+}
+
+/** The regions that will be in one kind of unrest. */
+function regionsIn(unrest: readonly RegionUnrest[], kind: RegionUnrest['unrest']): string[] {
+  return unrest.filter((entry) => entry.unrest === kind).map((entry) => entry.regionId);
 }
 
 interface TotalProps {

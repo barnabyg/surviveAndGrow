@@ -1,3 +1,4 @@
+import { outputPermille } from './approval';
 import { balance } from './balance';
 import { sum } from './arithmetic';
 import { regionName, type Country } from './country';
@@ -5,7 +6,7 @@ import type { ReportEntry } from './report';
 import type { RegionState } from './state';
 import { formatMoney } from './text';
 import type { Contribution, Money } from './types';
-import { SPENDING_AREA_NAMES, SPENDING_AREAS, type SpendingArea } from './vocabulary';
+import { SPENDING_AREA_NAMES, SPENDING_AREAS, UNREST_NAMES, type SpendingArea } from './vocabulary';
 
 /** The player's budget: a tax rate and an amount for each spending area, per quarter. */
 export interface Budget {
@@ -64,16 +65,33 @@ interface Finances {
   readonly regions: readonly RegionState[];
 }
 
-/** Works out one quarter of revenue and spending. The same sums serve the turn and the preview. */
+/**
+ * Works out one quarter of revenue and spending. The same sums serve the turn and the
+ * preview. A region that is striking or protesting as the quarter begins produces less,
+ * and the tax that costs is shown as a loss beside what it would have paid.
+ */
 export function resolveBudget(
   { country, treasury, regions }: Finances,
   budget: Budget,
 ): BudgetOutcome {
-  const taxes = regions.map((region): Contribution => ({
-    label: `Tax from ${regionName(country, region.id)}`,
-    amount: percentOf(region.output, budget.taxRatePercent),
-    regionId: region.id,
-  }));
+  const taxes = regions.flatMap((region): Contribution[] => {
+    const name = regionName(country, region.id);
+    const inFull = percentOf(region.output, budget.taxRatePercent);
+    const produced = Math.floor((region.output * outputPermille(region.unrest)) / 1000);
+    const lost = inFull - percentOf(produced, budget.taxRatePercent);
+    return [
+      { label: `Tax from ${name}`, amount: inFull, regionId: region.id },
+      ...(lost > 0
+        ? [
+            {
+              label: `Lost to ${UNREST_NAMES[region.unrest].toLowerCase()} in ${name}`,
+              amount: -lost,
+              regionId: region.id,
+            },
+          ]
+        : []),
+    ];
+  });
   const revenue = sum(taxes.map((tax) => tax.amount));
   const budgeted = sum(SPENDING_AREAS.map((area) => budget.spending[area]));
 

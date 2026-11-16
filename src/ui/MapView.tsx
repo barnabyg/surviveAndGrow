@@ -1,5 +1,6 @@
 import {
   describeEvent,
+  describeUnrest,
   FOOD_STAGE_NAMES,
   MAP_FRAME,
   type Decoration,
@@ -197,12 +198,15 @@ interface RegionShapeProps {
 
 /** The land of one region. It is a button: picking it opens the region's card. */
 function RegionShape({ region, game, palette, selected, relieved, onSelect }: RegionShapeProps) {
-  const stage = game.regions.find((state) => state.id === region.id)?.foodStage ?? 'adequate';
+  const state = game.regions.find((candidate) => candidate.id === region.id);
+  const stage = state?.foodStage ?? 'adequate';
+  const unrest = describeUnrest(state?.unrest ?? 'calm');
   const events = game.events.filter((event) => event.regionId === region.id);
   const description = [
     region.name,
     `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
     ...events.map((event) => describeEvent(event)),
+    ...(unrest === null ? [] : [unrest]),
     ...(relieved ? ['food relief being sent'] : []),
   ].join(', ');
   return (
@@ -241,12 +245,15 @@ interface RegionLabelProps {
  */
 function RegionLabel({ region, game, palette, relieved }: RegionLabelProps) {
   const [x, y] = region.label;
-  const stage = game.regions.find((state) => state.id === region.id)?.foodStage ?? 'adequate';
+  const state = game.regions.find((candidate) => candidate.id === region.id);
+  const stage = state?.foodStage ?? 'adequate';
+  const unrest = describeUnrest(state?.unrest ?? 'calm');
   const tags = [
     ...(stage === 'adequate' ? [] : [`▲ Food: ${FOOD_STAGE_NAMES[stage]}`]),
     ...game.events
       .filter((event) => event.regionId === region.id)
       .map((event) => describeEvent(event)),
+    ...(unrest === null ? [] : [`▲ ${unrest}`]),
     ...(relieved ? ['Food relief on its way'] : []),
   ];
   return (

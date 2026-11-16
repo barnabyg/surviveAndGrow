@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import type { Figure } from '../sim';
 
 interface VitalSignProps {
@@ -14,8 +14,12 @@ interface VitalSignProps {
   readonly formatMovement: (size: number) => string;
   /** A standing remark beneath the figure, such as a warning that it is below a safe level. */
   readonly remark?: { readonly text: string; readonly tone: 'warning' | 'danger' } | undefined;
+  /** A standing fact worth keeping in view, such as the level at which trouble begins. */
+  readonly note?: string | undefined;
   /** The heading of the breakdown, such as "What moved the treasury". */
   readonly breakdownTitle: string;
+  /** More to show in the breakdown, beneath what moved the figure. */
+  readonly children?: ReactNode;
 }
 
 /**
@@ -24,7 +28,7 @@ interface VitalSignProps {
  */
 export function VitalSign(props: VitalSignProps) {
   const { label, value, unit, figure, formatChange, formatMovement, breakdownTitle } = props;
-  const { remark } = props;
+  const { remark, note, children } = props;
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const titleId = useId();
@@ -50,6 +54,7 @@ export function VitalSign(props: VitalSignProps) {
       {remark && (
         <div className={`vital__remark vital__remark--${remark.tone}`}>▲ {remark.text}</div>
       )}
+      {note !== undefined && <div className="vital__note">{note}</div>}
 
       {open && (
         <section className="breakdown" id={panelId} aria-labelledby={titleId}>
@@ -59,7 +64,7 @@ export function VitalSign(props: VitalSignProps) {
           {figure === null ? (
             <p className="breakdown__empty">Nothing has moved it yet. End a quarter to see.</p>
           ) : (
-            <table className="breakdown__table">
+            <table className="breakdown__table" aria-labelledby={titleId}>
               <tbody>
                 {figure.contributions.map((line) => (
                   <tr key={line.label}>
@@ -76,6 +81,7 @@ export function VitalSign(props: VitalSignProps) {
               </tfoot>
             </table>
           )}
+          {children}
         </section>
       )}
     </div>

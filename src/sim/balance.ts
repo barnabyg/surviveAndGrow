@@ -1,5 +1,5 @@
 import type { EventDefinition } from './events';
-import type { EventType } from './vocabulary';
+import type { EventType, FoodStage, SpendingArea } from './vocabulary';
 
 /**
  * Every value that tunes the game lives here as data. The rules in the rest of the
@@ -63,6 +63,48 @@ export const balance = {
     famineDeathsPermillePerQuarter: 30,
     /** The state collapses when one region has been in famine this many quarters running. */
     collapseAfterFamineQuarters: 2,
+  },
+  approval: {
+    /** Where a region's approval stands when nothing pushes it either way, in thousandths. */
+    baselinePermille: 540,
+    /**
+     * Approval does not jump. Each quarter, the effect of each thing that moves it closes
+     * this share, in thousandths, of the gap to where that thing would settle it.
+     */
+    adjustPermillePerQuarter: 300,
+    /** Where a region's food situation settles its approval, in thousandths. */
+    food: { adequate: 0, tight: -60, shortage: -150, famine: -300 } satisfies Record<
+      FoodStage,
+      number
+    >,
+    tax: {
+      /** The tax rate people accept without complaint, as a whole percentage. */
+      neutralPercent: 18,
+      /** Thousandths of approval lost for each point of tax above that, or won for each below. */
+      permillePerPoint: 12,
+    },
+    /**
+     * The spending that serves the public. People expect a certain amount per head: spend
+     * nothing and approval settles the whole weight lower, spend double what is expected
+     * or more and it settles the whole weight higher, and in between in proportion.
+     */
+    services: {
+      /** Expected spending is in Money units ($100,000) a quarter for each million people. */
+      health: { expectedPerMillionPeople: 12, weightPermille: 60 },
+      education: { expectedPerMillionPeople: 12, weightPermille: 40 },
+      security: { expectedPerMillionPeople: 10, weightPermille: 40 },
+    } satisfies Partial<
+      Record<SpendingArea, { expectedPerMillionPeople: number; weightPermille: number }>
+    >,
+  },
+  unrest: {
+    /**
+     * A region strikes while its approval is below `belowPermille`, and protests while it
+     * is below the lower mark. While either lasts the region produces only `outputPermille`
+     * thousandths of its output, which is what it pays tax on.
+     */
+    strikes: { belowPermille: 400, outputPermille: 850 },
+    protests: { belowPermille: 300, outputPermille: 700 },
   },
   events: {
     drought: {

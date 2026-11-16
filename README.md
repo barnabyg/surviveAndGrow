@@ -32,7 +32,15 @@ What is in the game so far:
   goes from adequate to tight, to shortage, to famine. Pick the region on the map, or in the food
   relief panel, to send it relief from the national reserve.
 - A famine that lasts two quarters running collapses the state and ends the game.
-- Click the treasury or the food reserve in the top bar to see what moved it.
+- Approval is the third vital sign. Each region has its own, and the national figure is their
+  average by population. It answers to the region's food situation, the tax rate, and health,
+  education and security spending per head, and it moves a part of the way each quarter towards
+  where those would settle it. The budget panel shows what a change would do to approval next
+  quarter and where it is heading.
+- A region whose approval falls below 40% goes on strike and produces 15% less, which costs the
+  treasury tax. Below 30% it protests and produces 30% less. Both end when approval recovers.
+- Click the treasury, the food reserve or approval in the top bar to see what moved it. Approval
+  also lists what it is made of.
 - After each quarter the left column reports what happened and why, the most serious first: the
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
   is a button: select it to pick that region out on the map and open its card. A quarter in which

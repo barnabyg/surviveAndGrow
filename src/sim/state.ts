@@ -1,3 +1,4 @@
+import type { ApprovalEffects, RegionUnrest } from './approval';
 import type { Budget } from './budget';
 import type { Country } from './country';
 import type { ActiveEvent } from './events';
@@ -5,7 +6,7 @@ import type { Harvest } from './food';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import type { Figure, GameDate, Money, Range } from './types';
-import type { FoodStage } from './vocabulary';
+import type { FoodStage, Unrest } from './vocabulary';
 
 /** What is true of one region at one moment. National figures are derived from the regions. */
 export interface RegionState {
@@ -24,6 +25,18 @@ export interface RegionState {
   readonly foodStage: FoodStage;
   /** How many quarters running the region has been in famine. */
   readonly famineQuarters: number;
+  /**
+   * How far the region's people approve of the government, in thousandths. It is the
+   * baseline plus the effects below, held between nothing and everyone.
+   */
+  readonly approval: number;
+  /** What each driver now adds to or takes from the region's approval, in thousandths. */
+  readonly approvalEffects: ApprovalEffects;
+  /**
+   * Whether the region is striking or protesting. It is read off approval when a quarter
+   * ends and holds through the next, cutting what the region produces.
+   */
+  readonly unrest: Unrest;
 }
 
 /** Whether the game is still being played, and if not, how it ended. */
@@ -78,6 +91,10 @@ export interface TurnReport {
   readonly treasury: Figure;
   /** The national food reserve after the quarter, in tonnes, with everything that moved it. */
   readonly food: Figure;
+  /**
+   * National approval after the quarter, in thousandths, with everything that moved it.
+   */
+  readonly approval: Figure;
   /** The harvest, in quarter 4, and null in every other quarter. */
   readonly harvest: Harvest | null;
   /**
@@ -116,6 +133,16 @@ export interface Preview {
   readonly shortfalls: readonly RegionShortfall[];
   /** What food relief will do this quarter. */
   readonly relief: ReliefDelivery;
+  /** National approval once the quarter is over, in thousandths. */
+  readonly approval: Range;
+  /**
+   * Where national approval settles, in thousandths, if the decisions and the food
+   * situation stay as they will be when the quarter ends. Approval moves there over
+   * several quarters, so this is further off than the figure above.
+   */
+  readonly approvalHeading: Range;
+  /** The regions that will be striking or protesting once the quarter is over. */
+  readonly unrest: readonly RegionUnrest[];
 }
 
 /** What food relief does in a quarter, in tonnes. */

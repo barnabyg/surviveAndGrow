@@ -58,6 +58,8 @@ export const treasury = (page: Page): Locator =>
   page.getByRole('banner').getByRole('group', { name: 'Treasury' });
 export const foodReserve = (page: Page): Locator =>
   page.getByRole('banner').getByRole('group', { name: 'Food reserve' });
+export const approval = (page: Page): Locator =>
+  page.getByRole('banner').getByRole('group', { name: 'Approval' });
 /** This quarter's reports, in the left column. */
 export const reports = (page: Page): Locator =>
   situation(page).getByRole('region', { name: 'This quarter' });

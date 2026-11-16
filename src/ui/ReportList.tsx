@@ -130,6 +130,16 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Event report',
     path: 'M10,6.5 A3.5,3.5 0 1 1 9.99,6.5 M10,2 V4.5 M10,15.5 V18 M2,10 H4.5 M15.5,10 H18 M4.4,4.4 L6.1,6.1 M13.9,13.9 L15.6,15.6 M4.4,15.6 L6.1,13.9 M13.9,6.1 L15.6,4.4',
   },
+  // A raised placard.
+  strike: {
+    label: 'Strike report',
+    path: 'M5,3 H15 V10 H5 Z M10,10 V18 M7.5,6.5 H12.5',
+  },
+  // A crowd of raised arms.
+  protest: {
+    label: 'Protest report',
+    path: 'M4,18 V11 M4,11 L2,6 M10,18 V9 M10,9 L10,3 M16,18 V11 M16,11 L18,6 M7,18 V14 M13,18 V14',
+  },
   // A broken column.
   collapse: {
     label: 'Collapse report',
