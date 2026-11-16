@@ -57,6 +57,23 @@ export default defineConfig(
     },
   },
   {
+    // Everything outside the simulation reaches it through src/sim/index.ts alone.
+    files: ['src/ui/**/*.{ts,tsx}', 'src/main.tsx', 'tests/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '/sim/.+',
+              message: 'Import from the simulation through src/sim (its index) only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.js'],
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: { globals: globals.node },
