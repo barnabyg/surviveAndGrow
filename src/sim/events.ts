@@ -17,6 +17,8 @@ export interface EventDefinition {
   };
   /** The event lasts until the next harvest is in. */
   readonly endsAfterHarvest: boolean;
+  /** What the turn report says of the event when it begins and when it ends. */
+  readonly announcement: { readonly begins: string; readonly ends: string };
   readonly effects: {
     /** What is left of the region's harvest while the event lasts, in thousandths. */
     readonly harvestPermille: number;
@@ -83,31 +85,29 @@ export function harvestPermille(active: readonly ActiveEvent[], regionId: string
 }
 
 /**
- * The least and most that events could leave of a region's coming harvest, in thousandths:
- * those now in force, and at the extremes those that could still begin before the harvest.
+ * The least that events could leave of a region's coming harvest, in thousandths: what
+ * those now in force leave, cut again by every event that could still begin before the
+ * harvest. The forecast uses it so that a drought yet to come cannot fall outside its range.
  */
-export function harvestPermilleRange(
+export function worstHarvestPermille(
   country: Country,
   active: readonly ActiveEvent[],
   regionId: string,
   quarter: Quarter,
-): { readonly worst: number; readonly best: number } {
-  const now = harvestPermille(active, regionId);
+): number {
   const region = country.regions.find((candidate) => candidate.id === regionId);
-  let worst = now;
-  let best = now;
+  let worst = harvestPermille(active, regionId);
   for (const type of EVENT_TYPES) {
     const definition = definitions[type];
     const mayStillBegin =
       definition.conditions.beginsInQuarters.some((begins) => begins > quarter) &&
       (region?.eventLikelihood[type] ?? 0) > 0 &&
       !isActive(active, type, regionId);
-    if (!mayStillBegin) continue;
-    const effect = definition.effects.harvestPermille;
-    if (effect < 1000) worst = Math.floor((worst * effect) / 1000);
-    if (effect > 1000) best = Math.floor((best * effect) / 1000);
+    if (mayStillBegin) {
+      worst = Math.floor((worst * definition.effects.harvestPermille) / 1000);
+    }
   }
-  return { worst, best };
+  return worst;
 }
 
 /** Whether an event of one type is under way in a region. */
@@ -123,10 +123,9 @@ function isActive(active: readonly ActiveEvent[], type: EventType, regionId: str
 /** The notice the turn report carries when an event begins. */
 export function beginNotice(country: Country, event: ActiveEvent): Notice {
   const definition = definitions[event.type];
-  const cut = Math.round((1000 - definition.effects.harvestPermille) / 10);
   return {
     title: `${definition.name} in ${regionName(country, event.regionId)}`,
-    detail: `The rains have failed. This year’s harvest there will be ${cut}% smaller than it would have been.`,
+    detail: `${definition.announcement.begins} This year’s harvest there will be ${harvestCutPercent(definition)}% smaller than it would have been.`,
     tone: 'danger',
     regionId: event.regionId,
   };
@@ -134,20 +133,24 @@ export function beginNotice(country: Country, event: ActiveEvent): Notice {
 
 /** The notice the turn report carries when an event ends. */
 export function endNotice(country: Country, event: ActiveEvent): Notice {
-  const name = definitions[event.type].name.toLowerCase();
+  const definition = definitions[event.type];
   return {
-    title: `The ${name} in ${regionName(country, event.regionId)} has ended`,
-    detail: 'The harvest it spoiled is in, and the next growing year starts afresh.',
+    title: `The ${definition.name.toLowerCase()} in ${regionName(country, event.regionId)} has ended`,
+    detail: definition.announcement.ends,
     tone: 'info',
     regionId: event.regionId,
   };
 }
 
-/** How an event in force is labelled on the map, such as "Drought · harvest −40%". */
+/** An event in force and what it does, in a few words: "Drought · harvest −40%". */
 export function describeEvent(event: ActiveEvent): string {
   const definition = definitions[event.type];
-  const cut = Math.round((1000 - definition.effects.harvestPermille) / 10);
-  return `${definition.name} · harvest −${cut}%`;
+  return `${definition.name} · harvest −${harvestCutPercent(definition)}%`;
+}
+
+/** How much of a harvest the event takes, as a whole percentage. */
+function harvestCutPercent(definition: EventDefinition): number {
+  return Math.round((1000 - definition.effects.harvestPermille) / 10);
 }
 
 function regionName(country: Country, regionId: string): string {

@@ -69,6 +69,10 @@ export const balance = {
       conditions: { beginsInQuarters: [2] },
       endsAfterHarvest: true,
       effects: { harvestPermille: 600 },
+      announcement: {
+        begins: 'The rains have failed.',
+        ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',
+      },
     },
   } satisfies Record<EventType, EventDefinition>,
 } as const;

@@ -7,7 +7,7 @@ import {
   endEventsAfterHarvest,
   endNotice,
   harvestPermille,
-  harvestPermilleRange,
+  worstHarvestPermille,
 } from './events';
 import {
   forecastFood,
@@ -148,14 +148,14 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
     harvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
     relief,
   });
-  const possible = state.regions.map((region) =>
-    harvestPermilleRange(state.country, state.events, region.id, quarter),
-  );
   const forecast = forecastFood(situation, {
     agricultureSpentSoFar: state.agricultureSpentThisYear,
     agriculturePerQuarter: finances.spent.agriculture,
-    worstHarvestPermille: possible.map((range) => range.worst),
-    bestHarvestPermille: possible.map((range) => range.best),
+    // At worst, every event that could still begin this growing year does.
+    worstHarvestPermille: state.regions.map((region) =>
+      worstHarvestPermille(state.country, state.events, region.id, quarter),
+    ),
+    bestHarvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
     relief,
   });
 
