@@ -12,8 +12,8 @@ export function StartScreen({ country, onStart }: StartScreenProps) {
       <Crest size={96} />
       <h1 className="start__title">Survive and Grow</h1>
       <p className="start__lead">
-        You lead the {country.name}. Raise its living standards, and stay in office long enough to
-        see it done.
+        {country.name} is yours to lead. Raise its living standards, and stay in office long enough
+        to see it done.
       </p>
       <button type="button" className="button button--primary" onClick={onStart}>
         Start new game
