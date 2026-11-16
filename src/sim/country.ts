@@ -189,17 +189,17 @@ class Reader {
     return words[0];
   }
 
-  /** An identifier, which must not repeat one already seen in the same list. */
-  id(parent: Json, key: string, path: string, seen: Map<string, string>): string {
-    const id = this.text(parent, key, path);
-    if (id === '') return id;
-    const earlier = seen.get(id);
+  /** Text that must not repeat one already seen in the same list, such as an identifier. */
+  unique(parent: Json, key: string, path: string, seen: Map<string, string>): string {
+    const value = this.text(parent, key, path);
+    if (value === '') return value;
+    const earlier = seen.get(value);
     if (earlier === undefined) {
-      seen.set(id, path);
+      seen.set(value, path);
     } else {
-      this.fault(join(path, key), `repeats "${id}", already used by ${earlier}`);
+      this.fault(join(path, key), `repeats "${value}", already used by ${earlier}`);
     }
-    return id;
+    return value;
   }
 
   /** A list of objects, each read by `read` with its own path, such as `regions[2]`. */
@@ -378,10 +378,12 @@ export function loadCountry(file: unknown): Country {
     ]);
   }
 
+  // Reports and breakdowns name regions, so two regions may not share a name.
   const regionIds = new Map<string, string>();
+  const regionNames = new Map<string, string>();
   const regions = reader.list(file, 'regions', '', (item, path): Region => ({
-    id: reader.id(item, 'id', path, regionIds),
-    name: reader.text(item, 'name', path),
+    id: reader.unique(item, 'id', path, regionIds),
+    name: reader.unique(item, 'name', path, regionNames),
     terrain: reader.oneOf(item, 'terrain', path, TERRAINS),
     shape: reader.points(item, 'shape', path, 3),
     label: reader.point(item, 'label', path),
@@ -401,7 +403,7 @@ export function loadCountry(file: unknown): Country {
       reader.fault(join(path, 'region'), `is "${regionId}", which is not the id of a region`);
     }
     return {
-      id: reader.id(item, 'id', path, settlementIds),
+      id: reader.unique(item, 'id', path, settlementIds),
       name: reader.text(item, 'name', path),
       regionId,
       at: reader.point(item, 'at', path),
@@ -426,13 +428,13 @@ export function loadCountry(file: unknown): Country {
         label: reader.point(item, 'label', path),
       })),
       neighbours: reader.list(map, 'neighbours', 'map', (item, path): Neighbour => ({
-        id: reader.id(item, 'id', path, neighbourIds),
+        id: reader.unique(item, 'id', path, neighbourIds),
         name: reader.text(item, 'name', path),
         shape: reader.points(item, 'shape', path, 3),
         label: reader.point(item, 'label', path),
       })),
       rivers: reader.list(map, 'rivers', 'map', (item, path): River => ({
-        id: reader.id(item, 'id', path, riverIds),
+        id: reader.unique(item, 'id', path, riverIds),
         name: reader.text(item, 'name', path),
         course: reader.points(item, 'course', path, 2),
       })),

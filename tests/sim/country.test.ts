@@ -80,6 +80,14 @@ describe('an invalid country file is rejected with a message naming the fault', 
     );
   });
 
+  it('when two regions share a name', () => {
+    const file = withValue(testlandFile, ['regions', 1, 'name'], 'Northfield');
+
+    expect(faultsOf(file)).toEqual([
+      'regions[1].name repeats "Northfield", already used by regions[0].',
+    ]);
+  });
+
   it('when two settlements share an identifier', () => {
     const file = withValue(testlandFile, ['settlements', 1, 'id'], 'alpha');
 
