@@ -97,5 +97,12 @@ export function App() {
       />
     );
   }
-  return <GameScreen initialGame={game} />;
+  return (
+    <GameScreen
+      initialGame={game}
+      onRestart={() => {
+        setGame(null);
+      }}
+    />
+  );
 }

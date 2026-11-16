@@ -10,10 +10,11 @@ import {
 } from '../../src/sim';
 import tavaraFile from '../../src/countries/tavara.json';
 import { bothCountries, tavara, testland } from './countries';
+import { steward } from './players';
 
 /** Ends a quarter with the given budget. Money is in units of $100,000. */
 function endQuarter(game: GameState, budget: Budget = game.budget): TurnResult {
-  return advanceQuarter(game, { budget });
+  return advanceQuarter(game, steward(game, budget));
 }
 
 function amountOf(result: TurnResult, label: string): number | undefined {

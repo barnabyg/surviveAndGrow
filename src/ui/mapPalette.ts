@@ -22,6 +22,14 @@ export interface MapPalette {
   readonly mountainLine: string;
   readonly dune: string;
   readonly field: string;
+  /** The wash and the hatched edge laid over a region that an event has struck. */
+  readonly eventTint: string;
+  readonly eventLine: string;
+  /** The outline of the region the player has picked out. */
+  readonly selection: string;
+  /** The dark tags that carry warnings on the map. */
+  readonly tagBackground: string;
+  readonly tagText: string;
 }
 
 /** Tier 1, Subsistence: a flat, sun-bleached survey map. Neighbours and sea are muted. */
@@ -50,4 +58,9 @@ export const tierOnePalette: MapPalette = {
   mountainLine: '#6b634e',
   dune: '#a88a58',
   field: '#9c8c5e',
+  eventTint: '#e0762f',
+  eventLine: '#c9581c',
+  selection: '#f2b33d',
+  tagBackground: '#2a1a12',
+  tagText: '#ffb58a',
 };

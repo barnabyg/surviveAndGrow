@@ -22,6 +22,18 @@ This starts the game and opens it in your browser. It is designed for a 2560 x 1
 Add `?seed=7` to the address to replay a known game: the same seed and the same decisions
 always give the same game.
 
+What is in the game so far:
+
+- Set the tax rate and the spending for each area in the right column. The panel shows what a
+  change would do before you commit it. End the quarter with the button in the top bar.
+- Each region feeds itself from its own harvest, which comes in quarter 4, and sends its surplus
+  to the national food reserve. The harvest forecast is a range that narrows through the year.
+- A drought cuts a region's harvest and is announced two quarters ahead. A region that runs short
+  goes from adequate to tight, to shortage, to famine. Pick the region on the map, or in the food
+  relief panel, to send it relief from the national reserve.
+- A famine that lasts two quarters running collapses the state and ends the game.
+- Click the treasury or the food reserve in the top bar to see what moved it.
+
 ## Write a country
 
 A country is one data file; the engine contains no country-specific code. The country that ships

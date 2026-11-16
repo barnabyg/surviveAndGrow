@@ -58,7 +58,10 @@
       "label": [710, 200],
       "population": 100000,
       "output": 5,
-      "farmland": 44
+      "farmland": 52,
+      "eventLikelihood": {
+        "drought": 0.25
+      }
     }
   ],
   "settlements": [

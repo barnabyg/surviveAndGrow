@@ -13,6 +13,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland } from './countries';
+import { steward } from './players';
 
 const seeds = Array.from({ length: 30 }, (_, index) => index + 1);
 
@@ -44,14 +45,23 @@ function harvestOf(year: Year): NonNullable<TurnReport['harvest']> {
   return harvest;
 }
 
+function withRelief(budget: Budget, foodRelief: number): Budget {
+  return { ...budget, spending: { ...budget.spending, foodRelief } };
+}
+
 function withAgriculture(budget: Budget, agriculture: number): Budget {
   return { ...budget, spending: { ...budget.spending, agriculture } };
 }
 
-/** Testland with the same farmland in both regions, so only the terrain differs. */
+/** Testland with the same farmland in both regions and no droughts, so only the terrain differs. */
 function evenTestland(): Country {
-  const file = structuredClone(testlandFile);
-  for (const region of file.regions) region.farmland = 100;
+  const file = structuredClone(testlandFile) as {
+    regions: { farmland: number; eventLikelihood?: Record<string, number> }[];
+  };
+  for (const region of file.regions) {
+    region.farmland = 100;
+    region.eventLikelihood = {};
+  }
   return loadCountry(file);
 }
 
@@ -210,8 +220,10 @@ describe('the national reserve', () => {
 describe.each(bothCountries)('food in %s', (_name, country) => {
   it('explains the whole change in the reserve, every quarter', () => {
     let game = createGame(country(), 4);
+    // Enough food relief spending to carry a region through a drought.
+    const budget = withRelief(game.budget, 20);
     for (let quarter = 0; quarter < 12; quarter += 1) {
-      const { state, report } = advanceQuarter(game, { budget: game.budget });
+      const { state, report } = advanceQuarter(game, steward(game, budget));
       const explained = report.food.contributions.reduce((sum, line) => sum + line.amount, 0);
 
       expect(explained).toBe(report.food.change);

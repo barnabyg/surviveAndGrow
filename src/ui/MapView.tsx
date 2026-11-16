@@ -1,15 +1,32 @@
 import {
+  describeEvent,
+  FOOD_STAGE_NAMES,
   MAP_FRAME,
-  type Country,
   type Decoration,
+  type GameState,
   type LabelSide,
   type Point,
+  type Region,
   type Settlement,
 } from '../sim';
 import { tierOnePalette, type MapPalette } from './mapPalette';
 
-/** The country, drawn entirely from its country file. Nothing here knows any one country. */
-export function MapView({ country }: { readonly country: Country }) {
+interface MapViewProps {
+  readonly game: GameState;
+  /** The region the player has picked out, if any. */
+  readonly selectedRegionId: string | null;
+  /** The region food relief is being sent to, if any. */
+  readonly reliefRegionId: string | null;
+  readonly onSelectRegion: (regionId: string) => void;
+}
+
+/**
+ * The country, drawn entirely from its country file and the state of the game. Nothing
+ * here knows any one country.
+ */
+export function MapView(props: MapViewProps) {
+  const { game, selectedRegionId, reliefRegionId, onSelectRegion } = props;
+  const { country } = game;
   const palette = tierOnePalette;
   const terrainOf = new Map(country.regions.map((region) => [region.id, region.terrain]));
 
@@ -73,60 +90,193 @@ export function MapView({ country }: { readonly country: Country }) {
         ))}
       </g>
       {country.regions.map((region) => (
-        <polygon
+        <RegionShape
           key={region.id}
-          points={outline(region.shape)}
-          fill={palette.terrain[region.terrain]}
-        />
-      ))}
-
-      <g aria-hidden="true">
-        {country.map.decorations.map((decoration, index) => (
-          <DecorationMark key={index} decoration={decoration} palette={palette} />
-        ))}
-      </g>
-
-      <g
-        fill="none"
-        stroke={palette.regionBorder}
-        strokeWidth="1.2"
-        strokeDasharray="5 4"
-        strokeOpacity="0.75"
-        aria-hidden="true"
-      >
-        {country.regions.map((region) => (
-          <polygon key={region.id} points={outline(region.shape)} />
-        ))}
-      </g>
-
-      <g fill="none" stroke={palette.river} strokeWidth="3" strokeLinecap="round">
-        {country.map.rivers.map((river) => (
-          <path key={river.id} d={flowing(river.course)}>
-            <title>{river.name}</title>
-          </path>
-        ))}
-      </g>
-
-      {country.regions.map((region) => (
-        <text
-          key={region.id}
-          className="map__region-label"
-          {...at(region.label)}
-          fill={palette.regionLabel}
-        >
-          {region.name}
-        </text>
-      ))}
-
-      {country.settlements.map((settlement) => (
-        <SettlementMark
-          key={settlement.id}
-          settlement={settlement}
+          region={region}
+          game={game}
           palette={palette}
-          ground={palette.terrain[terrainOf.get(settlement.regionId) ?? 'plains']}
+          selected={region.id === selectedRegionId}
+          relieved={region.id === reliefRegionId}
+          onSelect={onSelectRegion}
         />
       ))}
+
+      {/* Everything from here down is drawn over the regions and lets clicks through. */}
+      <g className="map__overlay">
+        {/* A region struck by an event is tinted and hatched round its edge. */}
+        {game.events.map((event) => {
+          const region = country.regions.find((candidate) => candidate.id === event.regionId);
+          return (
+            region && (
+              <polygon
+                key={`${event.type}-${event.regionId}`}
+                points={outline(region.shape)}
+                fill={palette.eventTint}
+                fillOpacity="0.18"
+                stroke={palette.eventLine}
+                strokeWidth="2"
+                strokeDasharray="2 5"
+              />
+            )
+          );
+        })}
+
+        <g aria-hidden="true">
+          {country.map.decorations.map((decoration, index) => (
+            <DecorationMark key={index} decoration={decoration} palette={palette} />
+          ))}
+        </g>
+
+        <g
+          fill="none"
+          stroke={palette.regionBorder}
+          strokeWidth="1.2"
+          strokeDasharray="5 4"
+          strokeOpacity="0.75"
+          aria-hidden="true"
+        >
+          {country.regions.map((region) => (
+            <polygon key={region.id} points={outline(region.shape)} />
+          ))}
+        </g>
+
+        <g fill="none" stroke={palette.river} strokeWidth="3" strokeLinecap="round">
+          {country.map.rivers.map((river) => (
+            <path key={river.id} d={flowing(river.course)}>
+              <title>{river.name}</title>
+            </path>
+          ))}
+        </g>
+
+        {country.regions
+          .filter((region) => region.id === selectedRegionId)
+          .map((region) => (
+            <polygon
+              key={region.id}
+              points={outline(region.shape)}
+              fill="none"
+              stroke={palette.selection}
+              strokeWidth="3"
+              strokeLinejoin="round"
+            />
+          ))}
+
+        {country.settlements.map((settlement) => (
+          <SettlementMark
+            key={settlement.id}
+            settlement={settlement}
+            palette={palette}
+            ground={palette.terrain[terrainOf.get(settlement.regionId) ?? 'plains']}
+          />
+        ))}
+
+        {country.regions.map((region) => (
+          <RegionLabel
+            key={region.id}
+            region={region}
+            game={game}
+            palette={palette}
+            relieved={region.id === reliefRegionId}
+          />
+        ))}
+      </g>
     </svg>
+  );
+}
+
+interface RegionShapeProps {
+  readonly region: Region;
+  readonly game: GameState;
+  readonly palette: MapPalette;
+  readonly selected: boolean;
+  readonly relieved: boolean;
+  readonly onSelect: (regionId: string) => void;
+}
+
+/** The land of one region. It is a button: picking it opens the region's card. */
+function RegionShape({ region, game, palette, selected, relieved, onSelect }: RegionShapeProps) {
+  const stage = game.regions.find((state) => state.id === region.id)?.foodStage ?? 'adequate';
+  const events = game.events.filter((event) => event.regionId === region.id);
+  const description = [
+    region.name,
+    `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
+    ...events.map((event) => describeEvent(event)),
+    ...(relieved ? ['food relief being sent'] : []),
+  ].join(', ');
+  return (
+    <polygon
+      className="map__region"
+      points={outline(region.shape)}
+      fill={palette.terrain[region.terrain]}
+      role="button"
+      tabIndex={0}
+      aria-label={description}
+      aria-pressed={selected}
+      onClick={() => {
+        onSelect(region.id);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect(region.id);
+        }
+      }}
+    />
+  );
+}
+
+interface RegionLabelProps {
+  readonly region: Region;
+  readonly game: GameState;
+  readonly palette: MapPalette;
+  readonly relieved: boolean;
+}
+
+/**
+ * A region's name, with its food stage beneath and a tag for each event and for relief.
+ * A region in trouble gets a dark tag with a warning mark, so the stage never rests on
+ * colour alone.
+ */
+function RegionLabel({ region, game, palette, relieved }: RegionLabelProps) {
+  const [x, y] = region.label;
+  const stage = game.regions.find((state) => state.id === region.id)?.foodStage ?? 'adequate';
+  const tags = [
+    ...(stage === 'adequate' ? [] : [`▲ Food: ${FOOD_STAGE_NAMES[stage]}`]),
+    ...game.events
+      .filter((event) => event.regionId === region.id)
+      .map((event) => describeEvent(event)),
+    ...(relieved ? ['Food relief on its way'] : []),
+  ];
+  return (
+    <g>
+      <text className="map__region-label" x={x} y={y} fill={palette.regionLabel}>
+        {region.name}
+      </text>
+      {stage === 'adequate' && (
+        <text className="map__region-stage" x={x} y={y + 15} fill={palette.regionLabel}>
+          Food: {FOOD_STAGE_NAMES[stage]}
+        </text>
+      )}
+      {tags.map((tag, index) => {
+        const top = y + (stage === 'adequate' ? 22 : 7) + index * 26;
+        const width = tag.length * 6.7 + 22;
+        return (
+          <g key={tag}>
+            <rect
+              x={x - width / 2}
+              y={top}
+              width={width}
+              height="22"
+              rx="11"
+              fill={palette.tagBackground}
+            />
+            <text className="map__tag" x={x} y={top + 15.5} fill={palette.tagText}>
+              {tag}
+            </text>
+          </g>
+        );
+      })}
+    </g>
   );
 }
 

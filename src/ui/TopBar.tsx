@@ -50,7 +50,12 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
         />
       </div>
 
-      <button type="button" className="button button--primary" onClick={onEndQuarter}>
+      <button
+        type="button"
+        className="button button--primary"
+        disabled={game.outcome.status !== 'playing'}
+        onClick={onEndQuarter}
+      >
         End quarter
       </button>
     </header>

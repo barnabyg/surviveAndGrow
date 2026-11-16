@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, seasonOf, type GameState } from '../../src/sim';
 import { bothCountries, tavara, testland } from './countries';
+import { steward } from './players';
 
 function play(state: GameState, quarters: number): GameState {
   let current = state;
   for (let i = 0; i < quarters; i += 1) {
-    current = advanceQuarter(current, { budget: current.budget }).state;
+    current = advanceQuarter(current, steward(current)).state;
   }
   return current;
 }
@@ -64,6 +65,35 @@ describe.each(bothCountries)('a new game in %s', (_name, country) => {
 
     expect(second).not.toEqual(first);
   });
+});
+
+describe.each(bothCountries)('a careful player in %s', (_name, country) => {
+  it.each([1, 2, 3, 4, 5, 6])(
+    'can play a whole term without the engine failing (seed %i)',
+    (seed) => {
+      let game = createGame(country(), seed);
+      // A solvent budget with money for food relief.
+      const budget = {
+        taxRatePercent: 30,
+        spending: { ...game.budget.spending, foodRelief: 70, security: 0 },
+      };
+
+      for (let quarter = 0; quarter < 20 && game.outcome.status === 'playing'; quarter += 1) {
+        game = advanceQuarter(game, steward(game, budget)).state;
+
+        expect(game.treasury).toBeGreaterThanOrEqual(0);
+        expect(game.foodReserve).toBeGreaterThanOrEqual(0);
+        for (const region of game.regions) {
+          expect(region.population).toBeGreaterThan(0);
+          expect(region.foodStock).toBeGreaterThanOrEqual(0);
+        }
+      }
+
+      // Five years on, the first election is due and the government is still standing.
+      expect(game.outcome).toEqual({ status: 'playing' });
+      expect(game.date).toEqual({ year: 6, quarter: 1 });
+    },
+  );
 });
 
 describe('the country files', () => {

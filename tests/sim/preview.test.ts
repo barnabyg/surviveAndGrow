@@ -8,6 +8,7 @@ import {
   type GameState,
 } from '../../src/sim';
 import { bothCountries, tavara } from './countries';
+import { steward } from './players';
 
 const generous: Budget = {
   taxRatePercent: 5,
@@ -70,7 +71,7 @@ describe.each(bothCountries)('previewing a quarter in %s', (_name, country) => {
     let previewed = createGame(country(), 11);
 
     for (let quarter = 0; quarter < 10; quarter += 1) {
-      const decisions: Decisions = { budget: budgetFor(plain, quarter) };
+      const decisions: Decisions = steward(plain, budgetFor(plain, quarter));
       plain = advanceQuarter(plain, decisions).state;
 
       previewQuarter(previewed, { budget: generous });
@@ -85,7 +86,10 @@ describe.each(bothCountries)('previewing a quarter in %s', (_name, country) => {
     let game = createGame(country(), 11);
 
     for (let quarter = 0; quarter < 10; quarter += 1) {
-      const decisions: Decisions = { budget: quarter === 7 ? generous : budgetFor(game, quarter) };
+      const decisions: Decisions = steward(
+        game,
+        quarter === 7 ? generous : budgetFor(game, quarter),
+      );
       const preview = previewQuarter(game, decisions);
       const { state, report } = advanceQuarter(game, decisions);
 

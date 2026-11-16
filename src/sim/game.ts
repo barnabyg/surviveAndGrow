@@ -1,9 +1,32 @@
 import { balance } from './balance';
-import { checkBudget, cutNotice, resolveBudget } from './budget';
+import { checkBudget, cutNotice, resolveBudget, type BudgetOutcome } from './budget';
 import type { Country } from './country';
-import { forecastFood, harvestNotice, resolveFood, startingStock } from './food';
+import {
+  beginEvents,
+  beginNotice,
+  endEventsAfterHarvest,
+  endNotice,
+  harvestPermille,
+  harvestPermilleRange,
+} from './events';
+import {
+  forecastFood,
+  reliefCapacity,
+  resolveFood,
+  startingStock,
+  type FoodInputs,
+  type FoodSituation,
+} from './food';
 import { nextRandom, seedGenerator, type RngState } from './rng';
-import type { Decisions, GameState, Notice, Preview, TurnResult } from './state';
+import type {
+  Decisions,
+  GameState,
+  Notice,
+  Outcome,
+  Preview,
+  RegionState,
+  TurnResult,
+} from './state';
 import type { GameDate, Quarter, Range } from './types';
 
 /** Starts a game. The same country and seed always start the same game. */
@@ -23,37 +46,69 @@ export function createGame(country: Country, seed: number): GameState {
       output: region.output,
       foodStock: startingStock(region.population),
       weather: 0,
+      foodStage: 'adequate',
+      famineQuarters: 0,
     })),
+    events: [],
+    outcome: { status: 'playing' },
   };
 }
 
 /**
  * Resolves the current quarter with the player's decisions and moves the date on.
  * @throws RangeError when a decision is outside what the game allows.
+ * @throws Error when the game is already over.
  */
 export function advanceQuarter(state: GameState, decisions: Decisions): TurnResult {
-  checkBudget(decisions.budget);
+  checkDecisions(state, decisions);
   const finances = resolveBudget(state, decisions.budget);
 
   const weather = rollWeather(state.rng, state.regions.length);
   const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
-  const food = resolveFood(foodSituation(state), agricultureSpent, weather.shocks);
+  const food = resolveFood(foodSituation(state), {
+    agricultureSpentThisYear: agricultureSpent,
+    weatherShocks: weather.shocks,
+    harvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
+    relief: reliefFor(decisions, finances),
+  });
 
-  const notices: Notice[] = [];
-  if (finances.cut) notices.push(cutNotice(finances));
-  if (food.harvest !== null) notices.push(harvestNotice(food.harvest));
+  // A harvest ends the events that were waiting on it; then the new quarter may bring more.
+  const date = nextDate(state.date);
+  const { ended, remaining } =
+    food.harvest === null
+      ? { ended: [], remaining: state.events }
+      : endEventsAfterHarvest(state.events);
+  const rolled = beginEvents(state.country, remaining, date, weather.rng);
+  const outcome = outcomeOf(state.country, food.regions);
+
+  const notices: Notice[] = [
+    ...(finances.cut ? [cutNotice(finances)] : []),
+    ...food.notices,
+    ...ended.map((event) => endNotice(state.country, event)),
+    ...rolled.begun.map((event) => beginNotice(state.country, event)),
+  ];
+  if (outcome.status === 'lost') {
+    notices.push({
+      title: 'The state has collapsed',
+      detail: outcome.summary,
+      tone: 'danger',
+      regionId: outcome.regionId,
+    });
+  }
 
   return {
     state: {
       ...state,
-      rng: weather.rng,
-      date: nextDate(state.date),
+      rng: rolled.rng,
+      date,
       treasury: finances.treasury,
       budget: decisions.budget,
       foodReserve: food.foodReserve,
       // The growing year ends with the harvest.
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
       regions: food.regions,
+      events: [...remaining, ...rolled.begun],
+      outcome,
     },
     report: {
       date: state.date,
@@ -77,23 +132,43 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
  * Projects what a set of decisions would do in the current quarter. It changes nothing and
  * draws nothing from the random generator, so previewing never alters the game that follows.
  * @throws RangeError when a decision is outside what the game allows.
+ * @throws Error when the game is already over.
  */
 export function previewQuarter(state: GameState, decisions: Decisions): Preview {
-  checkBudget(decisions.budget);
+  checkDecisions(state, decisions);
   const finances = resolveBudget(state, decisions.budget);
-  const food = forecastFood(
-    foodSituation(state),
-    state.agricultureSpentThisYear,
-    finances.spent.agriculture,
+  const situation = foodSituation(state);
+  const relief = reliefFor(decisions, finances);
+  const { quarter } = state.date;
+
+  // Who goes short this quarter, and what relief reaches them, does not turn on the weather.
+  const thisQuarter = resolveFood(situation, {
+    agricultureSpentThisYear: state.agricultureSpentThisYear + finances.spent.agriculture,
+    weatherShocks: [],
+    harvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
+    relief,
+  });
+  const possible = state.regions.map((region) =>
+    harvestPermilleRange(state.country, state.events, region.id, quarter),
   );
+  const forecast = forecastFood(situation, {
+    agricultureSpentSoFar: state.agricultureSpentThisYear,
+    agriculturePerQuarter: finances.spent.agriculture,
+    worstHarvestPermille: possible.map((range) => range.worst),
+    bestHarvestPermille: possible.map((range) => range.best),
+    relief,
+  });
+
   return {
     revenue: exactly(finances.revenue),
     spending: exactly(finances.spending),
     balance: exactly(finances.balance),
     treasury: exactly(finances.treasury),
     spendingCut: finances.cut,
-    harvest: food.harvest,
-    foodReserveAfterHarvest: food.reserveAfterHarvest,
+    harvest: forecast.harvest,
+    foodReserveAfterHarvest: forecast.reserveAfterHarvest,
+    shortfalls: thisQuarter.shortfalls,
+    relief: thisQuarter.relief,
   };
 }
 
@@ -104,12 +179,43 @@ export function seasonOf(date: GameDate): string {
   return balance.calendar.seasons[date.quarter];
 }
 
-function foodSituation(state: GameState) {
+function checkDecisions(state: GameState, decisions: Decisions): void {
+  if (state.outcome.status !== 'playing') throw new Error('The game is over.');
+  checkBudget(decisions.budget);
+  const target = decisions.reliefRegionId ?? null;
+  if (target !== null && !state.regions.some((region) => region.id === target)) {
+    throw new RangeError(`There is no region "${target}" to send food relief to.`);
+  }
+}
+
+/** Relief goes where the player sends it, as far as what was actually spent on it can move. */
+function reliefFor(decisions: Decisions, finances: BudgetOutcome): FoodInputs['relief'] {
+  return {
+    regionId: decisions.reliefRegionId ?? null,
+    capacity: reliefCapacity(finances.spent.foodRelief),
+  };
+}
+
+function foodSituation(state: GameState): FoodSituation {
   return {
     country: state.country,
     quarter: state.date.quarter,
     regions: state.regions,
     foodReserve: state.foodReserve,
+  };
+}
+
+/** The state collapses when famine has held one region for too many quarters running. */
+function outcomeOf(country: Country, regions: readonly RegionState[]): Outcome {
+  const limit = balance.hunger.collapseAfterFamineQuarters;
+  const stricken = regions.find((region) => region.famineQuarters >= limit);
+  if (stricken === undefined) return { status: 'playing' };
+  const name = country.regions.find((region) => region.id === stricken.id)?.name ?? stricken.id;
+  return {
+    status: 'lost',
+    cause: 'famine',
+    regionId: stricken.id,
+    summary: `Famine held ${name} for ${limit} quarters running. The state has collapsed.`,
   };
 }
 

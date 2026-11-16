@@ -188,7 +188,10 @@
       "label": [450, 128],
       "population": 500000,
       "output": 16,
-      "farmland": 180
+      "farmland": 180,
+      "eventLikelihood": {
+        "drought": 0.1
+      }
     },
     {
       "id": "salt-coast",
@@ -222,7 +225,10 @@
       "label": [215, 300],
       "population": 800000,
       "output": 28,
-      "farmland": 200
+      "farmland": 200,
+      "eventLikelihood": {
+        "drought": 0
+      }
     },
     {
       "id": "lowmere-plains",
@@ -248,7 +254,10 @@
       "label": [648, 276],
       "population": 1400000,
       "output": 38,
-      "farmland": 320
+      "farmland": 320,
+      "eventLikelihood": {
+        "drought": 0
+      }
     },
     {
       "id": "dry-east",
@@ -274,7 +283,10 @@
       "label": [845, 395],
       "population": 600000,
       "output": 12,
-      "farmland": 260
+      "farmland": 260,
+      "eventLikelihood": {
+        "drought": 0.3
+      }
     },
     {
       "id": "south-delta",
@@ -306,7 +318,10 @@
       "label": [450, 620],
       "population": 1000000,
       "output": 26,
-      "farmland": 200
+      "farmland": 200,
+      "eventLikelihood": {
+        "drought": 0
+      }
     },
     {
       "id": "arden-vale",
@@ -325,7 +340,10 @@
       "label": [462, 447],
       "population": 900000,
       "output": 52,
-      "farmland": 130
+      "farmland": 130,
+      "eventLikelihood": {
+        "drought": 0
+      }
     }
   ],
   "settlements": [

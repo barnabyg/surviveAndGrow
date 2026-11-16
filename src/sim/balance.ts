@@ -1,3 +1,6 @@
+import type { EventDefinition } from './events';
+import type { EventType } from './vocabulary';
+
 /**
  * Every value that tunes the game lives here as data. The rules in the rest of the
  * simulation read these values and hold none of their own.
@@ -45,4 +48,27 @@ export const balance = {
     /** The reserve is safe when it holds at least this many months of what the country eats. */
     safeReserveMonths: 3,
   },
+  relief: {
+    /** Tonnes of food that one Money unit ($100,000) of food relief spending can move. */
+    tonnesPerMoney: 200,
+  },
+  hunger: {
+    /** A region is fed when its people eat at least this share of their needs, in thousandths. */
+    fedSharePermille: 950,
+    /** A shortage deepens into famine only when people eat less than this share. */
+    famineSharePermille: 800,
+    /** The share of a region's people who die in each quarter of famine, in thousandths. */
+    famineDeathsPermillePerQuarter: 30,
+    /** The state collapses when one region has been in famine this many quarters running. */
+    collapseAfterFamineQuarters: 2,
+  },
+  events: {
+    drought: {
+      name: 'Drought',
+      // It begins in the planting season, two quarters before the harvest it spoils.
+      conditions: { beginsInQuarters: [2] },
+      endsAfterHarvest: true,
+      effects: { harvestPermille: 600 },
+    },
+  } satisfies Record<EventType, EventDefinition>,
 } as const;

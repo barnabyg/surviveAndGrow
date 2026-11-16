@@ -10,8 +10,10 @@ export function formatMoney(amount: Money): string {
 
 /** A weight of food as the player reads it: `1,262,660 t`, or `−14,560 t` when negative. */
 export function formatTonnes(tonnes: number): string {
-  const digits = Math.abs(tonnes)
-    .toFixed(0)
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return `${tonnes < 0 ? MINUS : ''}${digits} t`;
+  return `${tonnes < 0 ? MINUS : ''}${formatCount(Math.abs(tonnes))} t`;
+}
+
+/** A whole number with its thousands marked off: `18,000`. */
+export function formatCount(count: number): string {
+  return count.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }

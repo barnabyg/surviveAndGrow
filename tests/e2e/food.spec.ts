@@ -81,13 +81,14 @@ test('the harvest forecast is a range, and agriculture spending moves it and the
   const forecast = outlook(page).getByRole('group', { name: 'Harvest forecast' });
   const reserve = outlook(page).getByRole('group', { name: 'Food reserve after harvest' });
 
-  // With a year of weather still to come the range is wide.
-  await expect(forecast).toHaveText('Harvest forecast1.06 to 1.46 Mt');
+  // With a year of weather still to come, and droughts that could yet begin in the two
+  // regions prone to them, the range is wide.
+  await expect(forecast).toHaveText('Harvest forecast0.98 to 1.46 Mt');
   await expect(reserve).toHaveText('Food reserve after harvest2.2 to 5.7 months');
 
   await decisions(page).getByRole('slider', { name: 'Agriculture' }).fill('20');
 
-  await expect(forecast).toHaveText('Harvest forecast1.06 to 1.46 Mt → 1.20 to 1.66 Mt');
+  await expect(forecast).toHaveText('Harvest forecast0.98 to 1.46 Mt → 1.11 to 1.66 Mt');
   await expect(reserve).toHaveText(
     /Food reserve after harvest2\.2 to 5\.7 months → \d\.\d to \d\.\d months/,
   );

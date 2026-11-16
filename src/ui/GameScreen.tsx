@@ -1,22 +1,38 @@
 import { useState } from 'react';
-import { advanceQuarter, type GameState, type TurnReport } from '../sim';
+import { advanceQuarter, previewQuarter, type GameState, type TurnReport } from '../sim';
 import { BudgetPanel, countChanges } from './BudgetPanel';
 import { ConfirmDialog } from './ConfirmDialog';
+import { GameOverDialog } from './GameOverDialog';
 import { MapView } from './MapView';
+import { RegionCard } from './RegionCard';
+import { RegionList } from './RegionList';
+import { ReliefPanel } from './ReliefPanel';
 import { ReportList } from './ReportList';
 import { TopBar } from './TopBar';
 
-export function GameScreen({ initialGame }: { readonly initialGame: GameState }) {
+interface GameScreenProps {
+  readonly initialGame: GameState;
+  /** Leaves this game for the start screen. */
+  readonly onRestart: () => void;
+}
+
+export function GameScreen({ initialGame, onRestart }: GameScreenProps) {
   const [game, setGame] = useState(initialGame);
   const [report, setReport] = useState<TurnReport | null>(null);
   // The committed budget is what the quarter will be resolved with. The pending budget is
   // what the sliders show, and it counts for nothing until the player commits it.
   const [committed, setCommitted] = useState(initialGame.budget);
   const [pending, setPending] = useState(initialGame.budget);
+  const [reliefRegionId, setReliefRegionId] = useState<string | null>(null);
+  const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
 
+  const playing = game.outcome.status === 'playing';
+  const decisions = { budget: committed, reliefRegionId };
+  const preview = playing ? previewQuarter(game, decisions) : null;
+
   const resolveQuarter = () => {
-    const result = advanceQuarter(game, { budget: committed });
+    const result = advanceQuarter(game, decisions);
     setGame(result.state);
     setReport(result.report);
     setConfirmingEnd(false);
@@ -36,23 +52,59 @@ export function GameScreen({ initialGame }: { readonly initialGame: GameState })
       <div className="columns">
         <aside className="column column--situation" aria-label="Situation">
           <ReportList report={report} />
+          <RegionList
+            game={game}
+            selectedRegionId={selectedRegionId}
+            onSelectRegion={setSelectedRegionId}
+          />
         </aside>
         <main className="column column--country" aria-label="Country">
-          <MapView country={game.country} />
+          <div className="map-frame">
+            <MapView
+              game={game}
+              selectedRegionId={selectedRegionId}
+              reliefRegionId={reliefRegionId}
+              onSelectRegion={setSelectedRegionId}
+            />
+            {preview !== null && selectedRegionId !== null && (
+              <RegionCard
+                game={game}
+                regionId={selectedRegionId}
+                preview={preview}
+                reliefRegionId={reliefRegionId}
+                onSendRelief={setReliefRegionId}
+                onClose={() => {
+                  setSelectedRegionId(null);
+                }}
+              />
+            )}
+          </div>
         </main>
         <aside className="column column--decisions" aria-label="Decisions">
-          <BudgetPanel
-            game={game}
-            committed={committed}
-            pending={pending}
-            onChange={setPending}
-            onCommit={() => {
-              setCommitted(pending);
-            }}
-            onReset={() => {
-              setPending(committed);
-            }}
-          />
+          {preview !== null && (
+            <>
+              <BudgetPanel
+                game={game}
+                committed={committed}
+                pending={pending}
+                reliefRegionId={reliefRegionId}
+                onChange={setPending}
+                onCommit={() => {
+                  setCommitted(pending);
+                }}
+                onReset={() => {
+                  setPending(committed);
+                }}
+              />
+              <ReliefPanel
+                game={game}
+                preview={preview}
+                reliefSpending={committed.spending.foodRelief}
+                reliefRegionId={reliefRegionId}
+                onSendRelief={setReliefRegionId}
+              />
+            </>
+          )}
         </aside>
       </div>
 
@@ -70,6 +122,7 @@ export function GameScreen({ initialGame }: { readonly initialGame: GameState })
           resolved with the last budget you committed, and the changes stay pending.
         </ConfirmDialog>
       )}
+      {!playing && <GameOverDialog game={game} onRestart={onRestart} />}
     </div>
   );
 }

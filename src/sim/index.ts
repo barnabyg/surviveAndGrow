@@ -17,18 +17,21 @@ export {
   type Settlement,
 } from './country';
 export { type Budget } from './budget';
+export { describeEvent, type ActiveEvent } from './events';
 export { foodStatus, type FoodStatus, type Harvest, type RegionHarvest } from './food';
 export { advanceQuarter, budgetLimits, createGame, previewQuarter, seasonOf } from './game';
 export {
   type Decisions,
   type GameState,
   type Notice,
+  type Outcome,
   type Preview,
+  type RegionShortfall,
   type RegionState,
   type TurnReport,
   type TurnResult,
 } from './state';
-export { formatMoney, formatTonnes } from './text';
+export { formatCount, formatMoney, formatTonnes } from './text';
 export {
   MONEY_PER_MILLION,
   type Contribution,
@@ -39,10 +42,14 @@ export {
   type Range,
 } from './types';
 export {
+  FOOD_STAGE_NAMES,
+  FOOD_STAGES,
   MAP_FRAME,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
   type DecorationKind,
+  type EventType,
+  type FoodStage,
   type LabelSide,
   type SettlementSize,
   type SpendingArea,

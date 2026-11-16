@@ -34,3 +34,18 @@ export const SPENDING_AREA_NAMES: Readonly<Record<SpendingArea, string>> = {
   education: 'Education',
   security: 'Security',
 };
+
+/** The kinds of event the engine knows. A country file says how likely each is, region by region. */
+export const EVENT_TYPES = ['drought'] as const;
+export type EventType = (typeof EVENT_TYPES)[number];
+
+/** The stages of a region's food situation, from the best to the worst. */
+export const FOOD_STAGES = ['adequate', 'tight', 'shortage', 'famine'] as const;
+export type FoodStage = (typeof FOOD_STAGES)[number];
+
+export const FOOD_STAGE_NAMES: Readonly<Record<FoodStage, string>> = {
+  adequate: 'Adequate',
+  tight: 'Tight',
+  shortage: 'Shortage',
+  famine: 'Famine',
+};

@@ -3,12 +3,14 @@ import type { Budget } from './budget';
 import { MONEY_PER_MILLION, type Money } from './types';
 import {
   DECORATION_KINDS,
+  EVENT_TYPES,
   LABEL_SIDES,
   MAP_FRAME,
   SETTLEMENT_SIZES,
   SPENDING_AREAS,
   TERRAINS,
   type DecorationKind,
+  type EventType,
   type LabelSide,
   type SettlementSize,
   type SpendingArea,
@@ -35,6 +37,8 @@ export interface Region {
   readonly output: Money;
   /** The region's farmland, in units of 1,000 hectares. */
   readonly farmland: number;
+  /** The chance, from 0 to 1, that each kind of event strikes the region in a year. */
+  readonly eventLikelihood: Readonly<Record<EventType, number>>;
 }
 
 export interface Settlement {
@@ -285,6 +289,36 @@ function describe(value: unknown): string {
   return typeof value === 'object' ? 'an object' : 'missing';
 }
 
+/** How likely each event is in a region. An event the file does not mention never strikes. */
+function readEventLikelihood(
+  reader: Reader,
+  region: Json,
+  path: string,
+): Record<EventType, number> {
+  const likelihoodPath = join(path, 'eventLikelihood');
+  const written =
+    region.eventLikelihood === undefined ? {} : reader.object(region, 'eventLikelihood', path);
+  for (const key of Object.keys(written)) {
+    if (!EVENT_TYPES.some((type) => type === key)) {
+      reader.fault(
+        join(likelihoodPath, key),
+        `is not an event this game has (${EVENT_TYPES.join(', ')})`,
+      );
+    }
+  }
+  return Object.fromEntries(
+    EVENT_TYPES.map((type) => {
+      if (written[type] === undefined) return [type, 0];
+      const chance = reader.number(written, type, likelihoodPath);
+      if (chance < 0 || chance > 1) {
+        reader.fault(join(likelihoodPath, type), `is ${chance}, but must be a chance from 0 to 1`);
+        return [type, 0];
+      }
+      return [type, chance];
+    }),
+  ) as Record<EventType, number>;
+}
+
 /** The starting budget, written with the tax rate in percent and spending in whole millions. */
 function readBudget(reader: Reader, budget: Json, path: string): Budget {
   const { taxRatePercent, spending: range } = balance.budget;
@@ -351,6 +385,7 @@ export function loadCountry(file: unknown): Country {
     population: reader.wholeNumber(item, 'population', path, 1),
     output: reader.money(item, 'output', path),
     farmland: reader.wholeNumber(item, 'farmland', path, 0),
+    eventLikelihood: readEventLikelihood(reader, item, path),
   }));
   if (Array.isArray(file.regions) && regions.length === 0) {
     reader.fault('regions', 'must list at least one region');

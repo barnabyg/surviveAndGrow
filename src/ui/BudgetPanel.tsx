@@ -3,6 +3,7 @@ import {
   budgetLimits,
   foodStatus,
   formatMoney,
+  formatTonnes,
   MONEY_PER_MILLION,
   previewQuarter,
   SPENDING_AREA_NAMES,
@@ -19,9 +20,16 @@ interface BudgetPanelProps {
   readonly committed: Budget;
   /** What the sliders show. It differs from the committed budget until the player commits. */
   readonly pending: Budget;
+  /** Where food relief is being sent, which bears on the food projections. */
+  readonly reliefRegionId: string | null;
   readonly onChange: (pending: Budget) => void;
   readonly onCommit: () => void;
   readonly onReset: () => void;
+}
+
+/** A projection with nothing left to chance. */
+function exactly(value: number): Range {
+  return { min: value, max: value };
 }
 
 /** How many sliders differ between two budgets. */
@@ -33,11 +41,11 @@ export function countChanges(pending: Budget, committed: Budget): number {
 }
 
 export function BudgetPanel(props: BudgetPanelProps) {
-  const { game, committed, pending, onChange, onCommit, onReset } = props;
+  const { game, committed, pending, reliefRegionId, onChange, onCommit, onReset } = props;
   const changes = countChanges(pending, committed);
   // The same projection twice: where the committed budget leads, and where the sliders would.
-  const before = previewQuarter(game, { budget: committed });
-  const after = previewQuarter(game, { budget: pending });
+  const before = previewQuarter(game, { budget: committed, reliefRegionId });
+  const after = previewQuarter(game, { budget: pending, reliefRegionId });
   const { taxRatePercent, spending } = budgetLimits;
   const food = foodStatus(game);
 
@@ -126,6 +134,15 @@ export function BudgetPanel(props: BudgetPanelProps) {
           format={(tonnes) => monthsOfFood(tonnes, food).toFixed(1)}
           unit="months"
         />
+        {reliefRegionId !== null && (
+          <Projection
+            label="Food relief this quarter"
+            before={exactly(before.relief.delivered)}
+            after={exactly(after.relief.delivered)}
+            format={formatTonnes}
+            onlyIfMoved
+          />
+        )}
         <p className="outlook__note">
           The country eats {((food.quarterlyConsumption * 4) / 1_000_000).toFixed(2)} Mt a year.
           Forecasts assume spending stays as shown.
