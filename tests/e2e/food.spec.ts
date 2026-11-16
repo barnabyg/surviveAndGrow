@@ -1,17 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { startGame } from './app';
-
-const foodReserve = (page: Page) =>
-  page.getByRole('banner').getByRole('group', { name: 'Food reserve' });
-const decisions = (page: Page) => page.getByRole('complementary', { name: 'Decisions' });
-const outlook = (page: Page) =>
-  decisions(page).getByRole('region', { name: /Outlook|If you commit/ });
-
-async function endQuarters(page: Page, count: number): Promise<void> {
-  for (let quarter = 0; quarter < count; quarter += 1) {
-    await page.getByRole('banner').getByRole('button', { name: 'End quarter' }).click();
-  }
-}
+import { expect, test, type Locator } from '@playwright/test';
+import { decisions, endQuarters, foodReserve, outlook, startGame } from './app';
 
 /** The reserve as the top bar states it, in months. */
 async function monthsShown(vital: Locator): Promise<number> {

@@ -1,11 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { startGame } from './app';
+import { decisions, endQuarters, startGame, treasury } from './app';
 
-const decisions = (page: Page) => page.getByRole('complementary', { name: 'Decisions' });
 const totals = (page: Page) => decisions(page).getByRole('group', { name: 'Budget totals' });
-const treasury = (page: Page) => page.getByRole('banner').getByRole('group', { name: 'Treasury' });
-const endQuarter = (page: Page) =>
-  page.getByRole('banner').getByRole('button', { name: 'End quarter' });
 
 test('the budget shows a slider for tax and each spending area, with the totals', async ({
   page,
@@ -45,7 +41,7 @@ test('changing a slider, committing and ending the quarter moves the treasury by
   await expect(budget.getByText('1 change not committed')).toHaveCount(0);
   await expect(treasury(page)).toContainText('$42.0m');
 
-  await endQuarter(page).click();
+  await endQuarters(page, 1);
 
   // $42.0m less the $7.0m the panel stated.
   await expect(treasury(page)).toContainText('$35.0m');
@@ -71,7 +67,7 @@ test('ending the quarter with uncommitted changes warns first', async ({ page })
   await startGame(page);
   await decisions(page).getByRole('slider', { name: 'Tax rate' }).fill('30');
 
-  await endQuarter(page).click();
+  await endQuarters(page, 1);
 
   const warning = page.getByRole('dialog', { name: 'You have changes you have not committed' });
   await expect(warning).toBeVisible();
@@ -82,7 +78,7 @@ test('ending the quarter with uncommitted changes warns first', async ({ page })
   await expect(page.getByRole('banner').getByText('Year 1 · Quarter 1')).toBeVisible();
 
   // Carrying on resolves the quarter with the committed budget, not the pending one.
-  await endQuarter(page).click();
+  await endQuarters(page, 1);
   await warning.getByRole('button', { name: 'End quarter anyway' }).click();
   await expect(page.getByRole('banner').getByText('Year 1 · Quarter 2')).toBeVisible();
   await expect(treasury(page)).toContainText('$37.0m');
@@ -90,7 +86,7 @@ test('ending the quarter with uncommitted changes warns first', async ({ page })
 
 test('opening the treasury figure lists what moved it', async ({ page }) => {
   await startGame(page);
-  await endQuarter(page).click();
+  await endQuarters(page, 1);
 
   await treasury(page)
     .getByRole('button', { name: /Treasury/ })
@@ -115,7 +111,7 @@ test('the turn report says when spending had to be cut', async ({ page }) => {
   }
   await budget.getByRole('button', { name: 'Commit budget' }).click();
 
-  await endQuarter(page).click();
+  await endQuarters(page, 1);
 
   const situation = page.getByRole('complementary', { name: 'Situation' });
   await expect(situation.getByText('Spending was cut')).toBeVisible();

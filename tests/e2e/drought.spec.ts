@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { startGame } from './app';
+import { decisions, endQuarters, foodReserve, situation, startGame } from './app';
 
 /** Tavara as it ships, except that drought strikes the Dry East every year. */
 function tavaraWithDrought(): unknown {
@@ -16,14 +16,6 @@ function tavaraWithDrought(): unknown {
 }
 
 const map = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
-const situation = (page: Page) => page.getByRole('complementary', { name: 'Situation' });
-const decisions = (page: Page) => page.getByRole('complementary', { name: 'Decisions' });
-
-async function endQuarters(page: Page, count: number): Promise<void> {
-  for (let quarter = 0; quarter < count; quarter += 1) {
-    await page.getByRole('banner').getByRole('button', { name: 'End quarter' }).click();
-  }
-}
 
 test('a drought appears on the map, and relief sent to the region carries it through', async ({
   page,
@@ -81,9 +73,7 @@ test('a drought left alone worsens by stages to famine and ends the game', async
   await expect(map(page).getByText('▲ Food: Tight')).toBeVisible();
   await expect(situation(page).getByText('Food is tight in The Dry East')).toBeVisible();
   // The country as a whole still has food.
-  await expect(
-    page.getByRole('banner').getByRole('group', { name: 'Food reserve' }).getByRole('button'),
-  ).not.toContainText('0.0 months');
+  await expect(foodReserve(page).getByRole('button')).not.toContainText('0.0 months');
 
   await endQuarters(page, 1);
   await expect(map(page).getByText('▲ Food: Shortage')).toBeVisible();

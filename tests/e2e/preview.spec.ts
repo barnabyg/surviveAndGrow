@@ -1,10 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { startGame } from './app';
-
-const decisions = (page: Page) => page.getByRole('complementary', { name: 'Decisions' });
-const outlook = (page: Page) =>
-  decisions(page).getByRole('region', { name: /Outlook|If you commit/ });
-const treasury = (page: Page) => page.getByRole('banner').getByRole('group', { name: 'Treasury' });
+import { expect, test } from '@playwright/test';
+import { decisions, outlook, startGame, treasury } from './app';
 
 test('with no pending changes the panel shows the outlook at the current settings', async ({
   page,
