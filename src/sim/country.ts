@@ -98,6 +98,11 @@ export interface Country {
   };
 }
 
+/** The name of a region, as reports and the interface write it. */
+export function regionName(country: Country, regionId: string): string {
+  return country.regions.find((region) => region.id === regionId)?.name ?? regionId;
+}
+
 /** Thrown when a country file is rejected. Each fault names where it is and what is wrong. */
 export class CountryFileError extends Error {
   readonly faults: readonly string[];

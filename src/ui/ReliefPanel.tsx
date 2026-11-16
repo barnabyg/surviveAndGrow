@@ -1,4 +1,12 @@
-import { FOOD_STAGE_NAMES, formatMoney, formatTonnes, type GameState, type Preview } from '../sim';
+import {
+  FOOD_STAGE_NAMES,
+  formatMoney,
+  formatTonnes,
+  regionName,
+  type GameState,
+  type Preview,
+  type ReliefDelivery,
+} from '../sim';
 
 interface ReliefPanelProps {
   readonly game: GameState;
@@ -13,9 +21,8 @@ interface ReliefPanelProps {
 /** Where food relief goes. It takes effect when the quarter ends, without being committed. */
 export function ReliefPanel(props: ReliefPanelProps) {
   const { game, preview, reliefSpending, reliefRegionId, onSendRelief } = props;
-  const nameOf = (regionId: string) =>
-    game.country.regions.find((region) => region.id === regionId)?.name ?? regionId;
-  const { capacity, shortfall, delivered } = preview.relief;
+  const nameOf = (regionId: string) => regionName(game.country, regionId);
+  const { relief } = preview;
 
   return (
     <section className="relief" aria-labelledby="relief-title">
@@ -24,7 +31,7 @@ export function ReliefPanel(props: ReliefPanelProps) {
           Food relief
         </h2>
         <span className="section-note">
-          {formatMoney(reliefSpending)} moves {formatTonnes(capacity)} a quarter
+          {formatMoney(reliefSpending)} moves {formatTonnes(relief.capacity)} a quarter
         </span>
       </div>
 
@@ -59,8 +66,8 @@ export function ReliefPanel(props: ReliefPanelProps) {
       </div>
 
       {reliefRegionId !== null && (
-        <p className={delivered < shortfall ? 'warning-note' : 'relief__result'}>
-          {reliefResult(nameOf(reliefRegionId), capacity, shortfall, delivered)}
+        <p className={relief.delivered < relief.shortfall ? 'warning-note' : 'relief__result'}>
+          {reliefResult(nameOf(reliefRegionId), relief)}
         </p>
       )}
     </section>
@@ -68,7 +75,7 @@ export function ReliefPanel(props: ReliefPanelProps) {
 }
 
 /** What relief will do this quarter, and what is holding it back when it falls short. */
-function reliefResult(name: string, capacity: number, shortfall: number, delivered: number) {
+function reliefResult(name: string, { capacity, shortfall, delivered }: ReliefDelivery) {
   if (shortfall === 0) return `${name} is not short of food this quarter, so nothing will be sent.`;
   if (delivered === shortfall) {
     return `Relief will deliver all ${formatTonnes(delivered)} that ${name} is short of.`;

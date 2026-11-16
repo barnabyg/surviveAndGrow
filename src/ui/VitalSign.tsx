@@ -12,8 +12,6 @@ interface VitalSignProps {
   readonly formatChange: (change: number) => string;
   /** How the size of the quarter's change is written beneath the figure, without a sign. */
   readonly formatMovement: (size: number) => string;
-  /** Whether a rise in this figure is good news. */
-  readonly riseIsGood?: boolean;
   /** A standing remark beneath the figure, such as a warning that it is below a safe level. */
   readonly remark?: { readonly text: string; readonly tone: 'warning' | 'danger' } | undefined;
   /** The heading of the breakdown, such as "What moved the treasury". */
@@ -26,7 +24,7 @@ interface VitalSignProps {
  */
 export function VitalSign(props: VitalSignProps) {
   const { label, value, unit, figure, formatChange, formatMovement, breakdownTitle } = props;
-  const { riseIsGood = true, remark } = props;
+  const { remark } = props;
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const titleId = useId();
@@ -48,7 +46,7 @@ export function VitalSign(props: VitalSignProps) {
           {unit !== undefined && <span className="vital__unit"> {unit}</span>}
         </span>
       </button>
-      <Movement figure={figure} formatMovement={formatMovement} riseIsGood={riseIsGood} />
+      <Movement figure={figure} formatMovement={formatMovement} />
       {remark && (
         <div className={`vital__remark vital__remark--${remark.tone}`}>▲ {remark.text}</div>
       )}
@@ -87,18 +85,16 @@ export function VitalSign(props: VitalSignProps) {
 interface MovementProps {
   readonly figure: Figure | null;
   readonly formatMovement: (size: number) => string;
-  readonly riseIsGood: boolean;
 }
 
 /** The change this quarter. An arrow and words carry the direction; colour only adds to them. */
-function Movement({ figure, formatMovement, riseIsGood }: MovementProps) {
+function Movement({ figure, formatMovement }: MovementProps) {
   if (figure === null) return <div className="vital__change">Opening position</div>;
   if (figure.change === 0) return <div className="vital__change">No change this quarter</div>;
   const rose = figure.change > 0;
-  const tone = rose === riseIsGood ? 'good' : 'bad';
   // The arrow gives the direction, so the amount is written without a sign.
   return (
-    <div className={`vital__change vital__change--${tone}`}>
+    <div className={`vital__change vital__change--${rose ? 'good' : 'bad'}`}>
       {rose ? '▲' : '▼'} {formatMovement(Math.abs(figure.change))} this quarter
     </div>
   );

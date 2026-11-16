@@ -1,6 +1,13 @@
-import { foodStatus, formatMoney, seasonOf, type GameState, type TurnReport } from '../sim';
+import {
+  foodStatus,
+  formatMoney,
+  monthsOfFood,
+  seasonOf,
+  type GameState,
+  type TurnReport,
+} from '../sim';
 import { Crest } from './Crest';
-import { formatSigned, formatSignedTonnes, monthsOfFood } from './format';
+import { formatSigned, formatSignedTonnes } from './format';
 import { VitalSign } from './VitalSign';
 
 interface TopBarProps {
@@ -40,7 +47,9 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
           unit="months"
           figure={report?.food ?? null}
           formatChange={formatSignedTonnes}
-          formatMovement={(tonnes) => `${monthsOfFood(tonnes, food).toFixed(1)} months`}
+          formatMovement={(tonnes) =>
+            `${monthsOfFood(tonnes, food.quarterlyConsumption).toFixed(1)} months`
+          }
           remark={
             food.belowSafeLevel
               ? { text: `Below the ${food.safeReserveMonths}-month safe level`, tone: 'warning' }

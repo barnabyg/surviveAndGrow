@@ -1,4 +1,4 @@
-import { FOOD_STAGE_NAMES, type GameState } from '../sim';
+import { FOOD_STAGE_NAMES, regionName, type GameState } from '../sim';
 
 interface RegionListProps {
   readonly game: GameState;
@@ -17,8 +17,6 @@ export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionLis
       </div>
       <ul>
         {game.regions.map((region) => {
-          const name =
-            game.country.regions.find((candidate) => candidate.id === region.id)?.name ?? region.id;
           const troubled = region.foodStage !== 'adequate';
           return (
             <li key={region.id}>
@@ -30,7 +28,7 @@ export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionLis
                   onSelectRegion(region.id);
                 }}
               >
-                <span>{name}</span>
+                <span>{regionName(game.country, region.id)}</span>
                 <span>
                   {troubled && '▲ '}
                   {FOOD_STAGE_NAMES[region.foodStage]}

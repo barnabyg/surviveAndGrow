@@ -7,6 +7,7 @@ export {
   COUNTRY_FORMAT_VERSION,
   CountryFileError,
   loadCountry,
+  regionName,
   type Country,
   type Decoration,
   type Neighbour,
@@ -18,7 +19,13 @@ export {
 } from './country';
 export { type Budget } from './budget';
 export { describeEvent, type ActiveEvent } from './events';
-export { foodStatus, type FoodStatus, type Harvest, type RegionHarvest } from './food';
+export {
+  foodStatus,
+  monthsOfFood,
+  type FoodStatus,
+  type Harvest,
+  type RegionHarvest,
+} from './food';
 export { seasonOf } from './calendar';
 export { advanceQuarter, budgetLimits, createGame, previewQuarter } from './game';
 export {
@@ -29,11 +36,13 @@ export {
   type Preview,
   type RegionShortfall,
   type RegionState,
+  type ReliefDelivery,
   type TurnReport,
   type TurnResult,
 } from './state';
 export { formatCount, formatMoney, formatTonnes } from './text';
 export {
+  exactly,
   MONEY_PER_MILLION,
   type Contribution,
   type Figure,

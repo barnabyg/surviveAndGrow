@@ -1,7 +1,7 @@
 import { balance } from './balance';
 import { nextDate, quartersUntilHarvest } from './calendar';
 import { checkBudget, cutNotice, resolveBudget, type BudgetOutcome } from './budget';
-import type { Country } from './country';
+import { regionName, type Country } from './country';
 import {
   beginEvents,
   beginNotice,
@@ -14,7 +14,7 @@ import {
   forecastFood,
   reliefCapacity,
   resolveFood,
-  startingStock,
+  regionKeep,
   type FoodInputs,
   type FoodSituation,
 } from './food';
@@ -28,7 +28,7 @@ import type {
   RegionState,
   TurnResult,
 } from './state';
-import type { Range } from './types';
+import { exactly } from './types';
 
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
@@ -45,7 +45,7 @@ export function createGame(country: Country, seed: number): GameState {
       id: region.id,
       population: region.population,
       output: region.output,
-      foodStock: startingStock(region.population),
+      foodStock: regionKeep(region.population),
       weather: 0,
       foodStage: 'adequate',
       famineQuarters: 0,
@@ -145,7 +145,7 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
   // Who goes short this quarter, and what relief reaches them, does not turn on the weather.
   const thisQuarter = resolveFood(situation, {
     agricultureSpentThisYear: state.agricultureSpentThisYear + finances.spent.agriculture,
-    weatherShocks: [],
+    weatherShocks: state.regions.map(() => 0),
     harvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
     relief,
   });
@@ -225,12 +225,11 @@ function outcomeOf(country: Country, regions: readonly RegionState[]): Outcome {
   const limit = balance.hunger.collapseAfterFamineQuarters;
   const stricken = regions.find((region) => region.famineQuarters >= limit);
   if (stricken === undefined) return { status: 'playing' };
-  const name = country.regions.find((region) => region.id === stricken.id)?.name ?? stricken.id;
   return {
     status: 'lost',
     cause: 'famine',
     regionId: stricken.id,
-    summary: `Famine held ${name} for ${limit} quarters running. The state has collapsed.`,
+    summary: `Famine held ${regionName(country, stricken.id)} for ${limit} quarters running. The state has collapsed.`,
   };
 }
 
@@ -248,9 +247,4 @@ function rollWeather(
     current = roll.state;
   }
   return { shocks, rng: current };
-}
-
-/** A projection with nothing left to chance. */
-function exactly(value: number): Range {
-  return { min: value, max: value };
 }

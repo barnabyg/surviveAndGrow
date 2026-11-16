@@ -1,5 +1,6 @@
 import { balance } from './balance';
-import type { Country } from './country';
+import { sum } from './arithmetic';
+import { regionName, type Country } from './country';
 import type { Notice, RegionState } from './state';
 import { formatMoney } from './text';
 import type { Contribution, Money } from './types';
@@ -65,14 +66,11 @@ export function resolveBudget(
   { country, treasury, regions }: Finances,
   budget: Budget,
 ): BudgetOutcome {
-  const taxes = regions.map((region): Contribution => {
-    const name = country.regions.find((candidate) => candidate.id === region.id)?.name ?? region.id;
-    return {
-      label: `Tax from ${name}`,
-      amount: percentOf(region.output, budget.taxRatePercent),
-      regionId: region.id,
-    };
-  });
+  const taxes = regions.map((region): Contribution => ({
+    label: `Tax from ${regionName(country, region.id)}`,
+    amount: percentOf(region.output, budget.taxRatePercent),
+    regionId: region.id,
+  }));
   const revenue = sum(taxes.map((tax) => tax.amount));
   const budgeted = sum(SPENDING_AREAS.map((area) => budget.spending[area]));
 
@@ -117,8 +115,4 @@ export function cutNotice(outcome: BudgetOutcome): Notice {
 /** A whole percentage of an amount, rounded to the nearest unit using whole-number sums. */
 function percentOf(amount: Money, percent: number): Money {
   return Math.floor((amount * percent + 50) / 100);
-}
-
-function sum(amounts: readonly number[]): number {
-  return amounts.reduce((total, amount) => total + amount, 0);
 }

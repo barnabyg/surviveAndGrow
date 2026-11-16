@@ -38,3 +38,8 @@ export interface Range {
   readonly min: number;
   readonly max: number;
 }
+
+/** A projection with nothing left to chance. */
+export function exactly(value: number): Range {
+  return { min: value, max: value };
+}

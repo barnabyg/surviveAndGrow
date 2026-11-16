@@ -1,7 +1,8 @@
+import { sum } from './arithmetic';
 import { balance } from './balance';
 import { isHarvestQuarter, nextQuarter, quartersUntilHarvest } from './calendar';
-import type { Country, Region } from './country';
-import type { Notice, RegionShortfall, RegionState } from './state';
+import { regionName, type Country, type Region } from './country';
+import type { Notice, RegionShortfall, RegionState, ReliefDelivery } from './state';
 import { formatCount, formatTonnes } from './text';
 import type { Contribution, Money, Quarter, Range } from './types';
 import { FOOD_STAGE_NAMES, FOOD_STAGES, type FoodStage } from './vocabulary';
@@ -56,11 +57,7 @@ export interface FoodOutcome {
   readonly harvest: Harvest | null;
   /** What each hungry region was short of before any relief. */
   readonly shortfalls: readonly RegionShortfall[];
-  readonly relief: {
-    readonly capacity: number;
-    readonly shortfall: number;
-    readonly delivered: number;
-  };
+  readonly relief: ReliefDelivery;
   readonly notices: readonly Notice[];
 }
 
@@ -69,8 +66,11 @@ export function quarterlyNeed(population: number): number {
   return Math.floor((population * balance.food.consumptionKgPerPersonPerQuarter) / 1000);
 }
 
-/** The food a region holds when a game starts: what it keeps back from a harvest. */
-export function startingStock(population: number): number {
+/**
+ * The food a region keeps back from a harvest for its own people. It is also what each
+ * region holds when a game starts.
+ */
+export function regionKeep(population: number): number {
   return quarterlyNeed(population) * balance.food.regionKeepQuarters;
 }
 
@@ -102,10 +102,10 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   );
   if (spoiled > 0) contributions.push({ label: 'Spoiled in store', amount: -spoiled });
   let foodReserve = situation.foodReserve - spoiled;
-  let relief = { capacity: inputs.relief.capacity, shortfall: 0, delivered: 0 };
+  let relief: ReliefDelivery = { capacity: inputs.relief.capacity, shortfall: 0, delivered: 0 };
 
   const fed = situation.regions.map((region, index): RegionState => {
-    const name = regionOf(country, region.id)?.name ?? region.id;
+    const name = regionName(country, region.id);
     const need = quarterlyNeed(region.population);
     const ration = Math.min(need, Math.floor(region.foodStock / quartersToLast));
     const shortfall = need - ration;
@@ -165,13 +165,12 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
       land === undefined
         ? 0
         : grow(land, region.weather, yieldPermille, inputs.harvestPermille[index] ?? 1000);
-    const keep = quarterlyNeed(region.population) * food.regionKeepQuarters;
-    const surplus = Math.max(0, region.foodStock + grown - keep);
+    const surplus = Math.max(0, region.foodStock + grown - regionKeep(region.population));
     const lost = Math.floor((surplus * food.transportLossPermille) / 1000);
     harvests.push({ regionId: region.id, grown, surplus, lost });
     if (surplus > 0) {
       contributions.push({
-        label: `Surplus from ${land?.name ?? region.id}`,
+        label: `Surplus from ${regionName(country, region.id)}`,
         amount: surplus,
         regionId: region.id,
       });
@@ -280,11 +279,15 @@ export function foodStatus(situation: Pick<FoodSituation, 'regions' | 'foodReser
   const { safeReserveMonths } = balance.food;
   return {
     quarterlyConsumption,
-    reserveMonths:
-      quarterlyConsumption === 0 ? 0 : (situation.foodReserve * 3) / quarterlyConsumption,
+    reserveMonths: monthsOfFood(situation.foodReserve, quarterlyConsumption),
     safeReserveMonths,
     belowSafeLevel: situation.foodReserve * 3 < safeReserveMonths * quarterlyConsumption,
   };
+}
+
+/** A weight of food as months of what a population eats, given what it eats in a quarter. */
+export function monthsOfFood(tonnes: number, quarterlyConsumption: number): number {
+  return quarterlyConsumption === 0 ? 0 : (tonnes * 3) / quarterlyConsumption;
 }
 
 /**
@@ -382,8 +385,4 @@ function grow(
 
 function regionOf(country: Country, regionId: string): Region | undefined {
   return country.regions.find((region) => region.id === regionId);
-}
-
-function sum(amounts: readonly number[]): number {
-  return amounts.reduce((total, amount) => total + amount, 0);
 }

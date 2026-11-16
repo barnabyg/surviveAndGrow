@@ -118,15 +118,18 @@ export interface Preview {
   readonly foodReserveAfterHarvest: Range;
   /** What each hungry region will be short of this quarter before any relief, in tonnes. */
   readonly shortfalls: readonly RegionShortfall[];
-  /** What food relief will do this quarter, in tonnes. */
-  readonly relief: {
-    /** The most that food relief spending can move in the quarter. */
-    readonly capacity: number;
-    /** What the chosen region is short of, or 0 when no region is chosen. */
-    readonly shortfall: number;
-    /** What will actually reach it, given the capacity and the national reserve. */
-    readonly delivered: number;
-  };
+  /** What food relief will do this quarter. */
+  readonly relief: ReliefDelivery;
+}
+
+/** What food relief does in a quarter, in tonnes. */
+export interface ReliefDelivery {
+  /** The most that food relief spending can move in the quarter. */
+  readonly capacity: number;
+  /** What the chosen region is short of, or 0 when no region is chosen. */
+  readonly shortfall: number;
+  /** What actually reaches it, given the capacity and the national reserve. */
+  readonly delivered: number;
 }
 
 export interface RegionShortfall {

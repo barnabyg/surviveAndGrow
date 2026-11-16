@@ -1,10 +1,12 @@
 import { useId } from 'react';
 import {
   budgetLimits,
+  exactly,
   foodStatus,
   formatMoney,
   formatTonnes,
   MONEY_PER_MILLION,
+  monthsOfFood,
   previewQuarter,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
@@ -12,7 +14,7 @@ import {
   type GameState,
   type Range,
 } from '../sim';
-import { formatRange, formatSigned, monthsOfFood } from './format';
+import { formatRange, formatSigned } from './format';
 
 interface BudgetPanelProps {
   readonly game: GameState;
@@ -25,11 +27,6 @@ interface BudgetPanelProps {
   readonly onChange: (pending: Budget) => void;
   readonly onCommit: () => void;
   readonly onReset: () => void;
-}
-
-/** A projection with nothing left to chance. */
-function exactly(value: number): Range {
-  return { min: value, max: value };
 }
 
 /** How many sliders differ between two budgets. */
@@ -131,7 +128,7 @@ export function BudgetPanel(props: BudgetPanelProps) {
           label="Food reserve after harvest"
           before={before.foodReserveAfterHarvest}
           after={after.foodReserveAfterHarvest}
-          format={(tonnes) => monthsOfFood(tonnes, food).toFixed(1)}
+          format={(tonnes) => monthsOfFood(tonnes, food.quarterlyConsumption).toFixed(1)}
           unit="months"
         />
         {reliefRegionId !== null && (

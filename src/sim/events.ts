@@ -1,6 +1,6 @@
 import { balance } from './balance';
 import { entersBeforeHarvest } from './calendar';
-import type { Country } from './country';
+import { regionName, type Country } from './country';
 import { nextRandom, type RngState } from './rng';
 import type { Notice } from './state';
 import type { GameDate, Quarter } from './types';
@@ -154,8 +154,4 @@ export function describeEvent(event: ActiveEvent): string {
 /** How much of a harvest the event takes, as a whole percentage. */
 function harvestCutPercent(definition: EventDefinition): number {
   return Math.round((1000 - definition.effects.harvestPermille) / 10);
-}
-
-function regionName(country: Country, regionId: string): string {
-  return country.regions.find((region) => region.id === regionId)?.name ?? regionId;
 }

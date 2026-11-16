@@ -1,4 +1,4 @@
-import { formatMoney, formatTonnes, type FoodStatus, type Money, type Range } from '../sim';
+import { formatMoney, formatTonnes, type Money, type Range } from '../sim';
 
 /** A movement of money with its sign: `+$9.4m`, `−$11.0m`, or `$0.0m` for none. */
 export function formatSigned(amount: Money): string {
@@ -8,11 +8,6 @@ export function formatSigned(amount: Money): string {
 /** A movement of food with its sign: `+118,240 t` or `−14,560 t`. */
 export function formatSignedTonnes(tonnes: number): string {
   return `${tonnes > 0 ? '+' : ''}${formatTonnes(tonnes)}`;
-}
-
-/** A weight of food as months of what the whole country eats. */
-export function monthsOfFood(tonnes: number, food: FoodStatus): number {
-  return food.quarterlyConsumption === 0 ? 0 : (tonnes * 3) / food.quarterlyConsumption;
 }
 
 /**
