@@ -200,19 +200,23 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
 export interface ForecastInputs {
   /** Agriculture spending since the last harvest, before this quarter. */
   readonly agricultureSpentSoFar: Money;
-  /** Agriculture spending in this quarter and each one after it. */
-  readonly agriculturePerQuarter: Money;
+  /**
+   * What the decisions will bring in each quarter from this one to the harvest, if they
+   * are left as they are: the agriculture spending and the relief the treasury can pay for.
+   */
+  readonly quarters: readonly {
+    readonly agricultureSpent: Money;
+    readonly relief: FoodInputs['relief'];
+  }[];
   /** The least that events could leave of each region's harvest, in thousandths. */
   readonly worstHarvestPermille: readonly number[];
   /** The most that events could leave of each region's harvest, in thousandths. */
   readonly bestHarvestPermille: readonly number[];
-  /** Relief as decided for this quarter, taken to carry on. */
-  readonly relief: FoodInputs['relief'];
 }
 
 /**
  * The range the coming harvest will fall in, and the national reserve once it is in, if
- * the decisions carry on unchanged. It plays out the rest of the growing year twice, once
+ * the decisions are left as they are. It plays out the rest of the growing year twice, once
  * with the worst weather and events still possible and once with the best, so the real
  * harvest always falls inside the range. It draws nothing from the random generator.
  */
@@ -237,13 +241,13 @@ function playToHarvest(
 ): { readonly harvest: number; readonly foodReserve: number } {
   let situation = start;
   let spent = inputs.agricultureSpentSoFar;
-  for (;;) {
-    spent += inputs.agriculturePerQuarter;
+  for (const quarter of inputs.quarters) {
+    spent += quarter.agricultureSpent;
     const outcome = resolveFood(situation, {
       agricultureSpentThisYear: spent,
       weatherShocks: situation.regions.map(() => shock),
       harvestPermille,
-      relief: inputs.relief,
+      relief: quarter.relief,
     });
     if (outcome.harvest !== null) {
       return { harvest: outcome.harvest.total, foodReserve: outcome.foodReserve };
@@ -255,6 +259,7 @@ function playToHarvest(
       foodReserve: outcome.foodReserve,
     };
   }
+  throw new Error('The forecast was not given every quarter up to the harvest.');
 }
 
 /** How the national reserve stands against what the country eats. */

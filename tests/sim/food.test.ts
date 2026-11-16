@@ -244,6 +244,30 @@ describe.each(bothCountries)('food in %s', (_name, country) => {
     }
   });
 
+  it.each(seeds)(
+    'keeps the harvest inside the forecast when the treasury runs dry mid-year (seed %i)',
+    (seed) => {
+      const game = createGame(country(), seed);
+      // Taxed too lightly to pay for itself: the treasury empties within the year, and
+      // agriculture is then cut along with everything else.
+      const budget: Budget = {
+        taxRatePercent: 5,
+        spending: { ...game.budget.spending, agriculture: 200, health: 100 },
+      };
+
+      const year = playYear(game, budget);
+      const { total } = harvestOf(year);
+
+      expect(year.reports.some((report) => report.notices[0]?.title === 'Spending was cut')).toBe(
+        true,
+      );
+      for (const preview of year.previews) {
+        expect(total).toBeGreaterThanOrEqual(preview.harvest.min);
+        expect(total).toBeLessThanOrEqual(preview.harvest.max);
+      }
+    },
+  );
+
   it('narrows the forecast as the harvest approaches', () => {
     const { previews } = playYear(createGame(country(), 9));
     const widths = previews.map((preview) => preview.harvest.max - preview.harvest.min);

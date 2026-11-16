@@ -150,13 +150,15 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
   });
   const forecast = forecastFood(situation, {
     agricultureSpentSoFar: state.agricultureSpentThisYear,
-    agriculturePerQuarter: finances.spent.agriculture,
+    quarters: financesToHarvest(state, decisions).map((quarterly) => ({
+      agricultureSpent: quarterly.spent.agriculture,
+      relief: reliefFor(decisions, quarterly),
+    })),
     // At worst, every event that could still begin this growing year does.
     worstHarvestPermille: state.regions.map((region) =>
       worstHarvestPermille(state.country, state.events, region.id, quarter),
     ),
     bestHarvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
-    relief,
   });
 
   return {
@@ -194,6 +196,22 @@ function reliefFor(decisions: Decisions, finances: BudgetOutcome): FoodInputs['r
     regionId: decisions.reliefRegionId ?? null,
     capacity: reliefCapacity(finances.spent.foodRelief),
   };
+}
+
+/**
+ * What the budget will bring in and pay out in each quarter from this one to the harvest
+ * if it is left as it is. A treasury that runs dry on the way cuts the later quarters'
+ * spending, and the forecast must know it.
+ */
+function financesToHarvest(state: GameState, decisions: Decisions): BudgetOutcome[] {
+  const quarterly: BudgetOutcome[] = [];
+  let { treasury } = state;
+  for (let quarter = state.date.quarter; quarter <= 4; quarter += 1) {
+    const finances = resolveBudget({ ...state, treasury }, decisions.budget);
+    quarterly.push(finances);
+    treasury = finances.treasury;
+  }
+  return quarterly;
 }
 
 function foodSituation(state: GameState): FoodSituation {
