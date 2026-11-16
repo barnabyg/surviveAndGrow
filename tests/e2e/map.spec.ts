@@ -41,6 +41,23 @@ test('a second country is drawn through the same code', async ({ page }) => {
   }
 });
 
+test('a country file is only read from the site the game is served from', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+
+  await page.goto('/?country=https://countries.example/mine.json');
+
+  await expect(
+    page.getByRole('heading', { name: 'This country file cannot be used' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(
+      'Country files are read from this site only, and https://countries.example/mine.json is elsewhere.',
+    ),
+  ).toBeVisible();
+  expect(requests.filter((url) => new URL(url).hostname === 'countries.example')).toEqual([]);
+});
+
 test('a country author is told what is wrong with their file', async ({ page }) => {
   const file = testlandFile();
   delete file.name;

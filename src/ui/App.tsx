@@ -22,17 +22,27 @@ function readCountry(file: unknown): CountrySource {
 /**
  * The country to play. It is the one that ships, unless the address names another country
  * file (`?country=/countries/mine.json`), which is how a country author tries out their work.
+ * The file must be served by this site: the game does not fetch from anywhere else.
  */
 function useCountry(): CountrySource {
   const [address] = useState(() => new URLSearchParams(window.location.search).get('country'));
-  const [source, setSource] = useState<CountrySource>(() =>
-    address === null ? readCountry(tavaraFile) : { status: 'loading' },
-  );
+  const [source, setSource] = useState<CountrySource>(() => {
+    if (address === null) return readCountry(tavaraFile);
+    if (new URL(address, window.location.href).origin !== window.location.origin) {
+      return {
+        status: 'rejected',
+        faults: [`Country files are read from this site only, and ${address} is elsewhere.`],
+      };
+    }
+    return { status: 'loading' };
+  });
 
   useEffect(() => {
     if (address === null) return;
+    const location = new URL(address, window.location.href);
+    if (location.origin !== window.location.origin) return;
     let wanted = true;
-    fetch(address)
+    fetch(location)
       .then((response) => response.json() as Promise<unknown>)
       .then(
         (file) => readCountry(file),
