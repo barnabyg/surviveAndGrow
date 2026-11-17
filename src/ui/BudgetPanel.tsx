@@ -4,6 +4,7 @@ import {
   exactly,
   foodStatus,
   formatMoney,
+  formatIndex,
   formatPercent,
   formatTonnes,
   MONEY_PER_MILLION,
@@ -156,6 +157,12 @@ export function BudgetPanel(props: BudgetPanelProps) {
           before={before.approvalHeading}
           after={after.approvalHeading}
           format={formatPercent}
+        />
+        <Projection
+          label="Prosperity next quarter"
+          before={before.prosperity}
+          after={after.prosperity}
+          format={(value) => formatIndex(value)}
         />
         <Projection
           label="Vote share forecast"

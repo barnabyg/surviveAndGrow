@@ -1,5 +1,8 @@
 import { nationalApproval } from './approval';
+import type { Country } from './country';
 import { foodStatus } from './food';
+import type { Project } from './projects';
+import { prosperityStatus } from './prosperity';
 import type { RegionState } from './state';
 import type { GameDate, Money } from './types';
 
@@ -18,10 +21,17 @@ export interface VitalSigns {
   readonly quarterlyConsumption: number;
   /** National approval, in thousandths. */
   readonly approval: number;
+  /**
+   * National prosperity, in thousandths, or null for a quarter recorded by a release that
+   * did not yet measure it.
+   */
+  readonly prosperity: number | null;
 }
 
 /** The vital signs of a country at one moment. */
 export function vitalSigns(position: {
+  readonly country: Country;
+  readonly projects: readonly Project[];
   readonly date: GameDate;
   readonly treasury: Money;
   readonly foodReserve: number;
@@ -33,5 +43,6 @@ export function vitalSigns(position: {
     foodReserve: position.foodReserve,
     quarterlyConsumption: foodStatus(position).quarterlyConsumption,
     approval: nationalApproval(position.regions),
+    prosperity: prosperityStatus(position).value,
   };
 }

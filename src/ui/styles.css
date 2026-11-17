@@ -1566,9 +1566,40 @@ p {
   border-color: var(--amber);
 }
 
-.region-row--troubled span:last-child {
+.region-row > span:first-child {
+  flex: 1;
+  text-align: left;
+}
+
+.region-row--troubled .region-row__food {
   color: var(--danger);
   font-weight: 600;
+}
+
+.region-list__key {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.region-row__standard {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 82px;
+  font-variant-numeric: tabular-nums;
+}
+
+.region-row__bar {
+  width: 40px;
+  height: 6px;
+  background: var(--line);
+}
+
+.region-row__bar span {
+  display: block;
+  height: 100%;
+  background: var(--blue);
 }
 
 /* Food relief */

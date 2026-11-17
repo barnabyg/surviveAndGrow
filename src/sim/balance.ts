@@ -4,7 +4,9 @@ import type {
   DilemmaType,
   EventType,
   FoodStage,
+  LastingService,
   Likelihood,
+  ProsperityPart,
   SiteEffect,
   SiteType,
   SpendingArea,
@@ -180,6 +182,64 @@ export const balance = {
     farmRoad: { cost: 100, buildQuarters: 3, effects: { transportLoss: 500 } },
     grainStore: { cost: 60, buildQuarters: 2, effects: { reserveSpoilage: 750 } },
   } satisfies Record<SiteType, SiteBalance>,
+  /**
+   * Living standards and prosperity. Every score is in thousandths: a region's living
+   * standard is its five parts' scores weighted by `weightsPermille`, which add up to 1000.
+   * National prosperity is the regions' living standards averaged by population.
+   */
+  prosperity: {
+    weightsPermille: {
+      food: 150,
+      income: 250,
+      health: 200,
+      education: 200,
+      infrastructure: 200,
+    } satisfies Record<ProsperityPart, number>,
+    /** Food security by the region's food situation. */
+    food: { adequate: 1000, tight: 600, shortage: 250, famine: 0 } satisfies Record<
+      FoodStage,
+      number
+    >,
+    /** Income per head scores in full at this many dollars per person a quarter, and in proportion below. */
+    fullIncomeDollarsPerPersonPerQuarter: 250,
+    /**
+     * Health and education are levels in each region. Spending sets where a level is
+     * heading: this many thousandths for each Money unit ($100,000) spent a quarter on each
+     * million people, up to the whole. Each quarter the level closes a share of the gap, in
+     * thousandths: `buildPermillePerQuarter` while it rises, `wearPermillePerQuarter` while it
+     * falls. A game starts with each level where its starting budget would hold it.
+     */
+    services: {
+      health: {
+        permillePerMoneyPerMillionPeople: 11,
+        buildPermillePerQuarter: 50,
+        wearPermillePerQuarter: 50,
+      },
+      education: {
+        permillePerMoneyPerMillionPeople: 11,
+        buildPermillePerQuarter: 40,
+        wearPermillePerQuarter: 40,
+      },
+    } satisfies Record<
+      LastingService,
+      {
+        permillePerMoneyPerMillionPeople: number;
+        buildPermillePerQuarter: number;
+        wearPermillePerQuarter: number;
+      }
+    >,
+    /**
+     * Infrastructure access: what each site in use in a region adds to its score, by type,
+     * up to the whole. A route counts for the region it belongs to.
+     */
+    infrastructurePermillePerSite: {
+      irrigation: 100,
+      farmRoad: 150,
+      grainStore: 100,
+    } satisfies Record<SiteType, number>,
+    /** The prosperity the country is aiming for, in thousandths. */
+    targetPermille: 700,
+  },
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */
     earliestQuarter: 2,

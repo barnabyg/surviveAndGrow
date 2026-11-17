@@ -93,7 +93,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(1);
+    expect(save.formatVersion).toBe(2);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(1);
     expect(save.seed).toBe(2026);
@@ -268,8 +268,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 2))).toBe(
-      'The saved game was written by a newer release of the game (save format 2; this release reads format 1). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 3))).toBe(
+      'The saved game was written by a newer release of the game (save format 3; this release reads format 2). Open it with that release.',
     );
   });
 
@@ -507,10 +507,13 @@ describe.each(countries)('a save of a game in $name with a dilemma is refused', 
 });
 
 describe.each(bothCountries)('a save of a game in %s from an older format', (_name, country) => {
+  /** The format before the current one. */
+  const previous = SAVE_FORMAT_VERSION - 1;
+
   /** The save as an imagined earlier format wrote it: the treasury was called the purse. */
   function olderSave(save: unknown): unknown {
     const purse = withValue(save, ['state', 'purse'], valueAt(save, ['state', 'treasury']));
-    return withValue(without(purse, ['state', 'treasury']), ['formatVersion'], 0);
+    return withValue(without(purse, ['state', 'treasury']), ['formatVersion'], previous);
   }
 
   /** What a release does when it renames something: it lifts the old save to the new shape. */
@@ -522,33 +525,33 @@ describe.each(bothCountries)('a save of a game in %s from an older format', (_na
   it('is lifted to the current format by the migration for its version, and then opens', () => {
     const { game, report, save } = midGameSave(country);
 
-    expect(loadSave(olderSave(save), { 0: renamePurse })).toEqual({ game, report });
+    expect(loadSave(olderSave(save), { [previous]: renamePurse })).toEqual({ game, report });
   });
 
   it('is lifted one version at a time, in order, when it is several formats old', () => {
     const { game, save } = midGameSave(country);
     const lifted: number[] = [];
-    const oldest = withValue(olderSave(save), ['formatVersion'], -1);
+    const oldest = withValue(olderSave(save), ['formatVersion'], previous - 1);
 
     const restored = loadSave(oldest, {
-      [-1]: (older) => {
-        lifted.push(-1);
+      [previous - 1]: (older) => {
+        lifted.push(previous - 1);
         return older;
       },
-      0: (older) => {
-        lifted.push(0);
+      [previous]: (older) => {
+        lifted.push(previous);
         return renamePurse(older);
       },
     });
 
-    expect(lifted).toEqual([-1, 0]);
+    expect(lifted).toEqual([previous - 1, previous]);
     expect(restored.game).toEqual(game);
   });
 
   it('is refused when the lift leaves it short of what the current format holds', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(olderSave(save), { 0: (older) => older })).toBe(
+    expect(refusal(olderSave(save), { [previous]: (older) => older })).toBe(
       'The saved game is damaged and cannot be opened: state.treasury is missing or is not a whole number.',
     );
   });
@@ -557,7 +560,7 @@ describe.each(bothCountries)('a save of a game in %s from an older format', (_na
     const { game, save } = midGameSave(country);
 
     const restored = loadSave(save, {
-      0: () => {
+      [previous]: () => {
         throw new Error('A current save was migrated');
       },
     });
@@ -642,13 +645,24 @@ describe('the save kept from save format 1', () => {
     expect(game.history.length).toBeGreaterThan(4);
   });
 
-  // This holds for as long as format 1 is the current format: saving must write exactly
-  // what the kept save holds. If it fails, what a save holds has changed, which needs a new
-  // format version and a migration, and then this check moves to the newer kept save.
-  it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(1);
+  it('is lifted to format 2 with health and education where its budget held them', () => {
     const { game, report } = loadSave(format1Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format1Save);
+    // Health 0.7 and education 0.6 Money units for 5.2 million people.
+    expect(game.regions.map((region) => [region.health, region.education])).toEqual(
+      game.regions.map(() => [148, 126]),
+    );
+    // Nothing recorded before format 2 measured prosperity.
+    expect(game.history.map((signs) => signs.prosperity)).toEqual([null, null, null, null]);
+    expect(report?.prosperity).toBeNull();
+  });
+
+  it('measures prosperity from the quarter it is played on', () => {
+    const { game } = loadSave(format1Save);
+
+    const next = advanceQuarter(game, answering(game, steward(game)));
+
+    expect(next.state.history.at(-1)?.prosperity).toEqual(expect.any(Number));
+    expect(next.report.prosperity?.value).toBe(next.state.history.at(-1)?.prosperity);
   });
 });

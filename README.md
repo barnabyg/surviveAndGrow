@@ -83,10 +83,19 @@ What is in the game:
   quarter and where it is heading.
 - A region whose approval falls below 40% goes on strike and produces 30% less, which costs the
   treasury tax. Below 30% it protests and produces 60% less. Both end when approval recovers.
-- Click the treasury, the food reserve or approval in the top bar to see what moved it. Approval
-  also lists what it is made of.
-- A short trend line beside the treasury, the food reserve and approval shows the last eight
-  quarters, with the food reserve's safe level and the strike threshold drawn as dashed lines. The
+- Prosperity, the game's objective, is the fourth figure in the top bar, on a scale of 0 to 100
+  against the target of 70. Each region has a living standard built from food security, income
+  per head, health, education and infrastructure access (the sites in use there), and prosperity
+  is the regions' living standards averaged by population. The region list in the left column
+  shows each region's living standard as a figure and a bar, so inequality shows at a glance.
+- Health and education are lasting levels in each region. Spending on them builds the levels up
+  over many quarters, and they wear down without it; a game starts with them where the starting
+  budget holds them. Their spending still moves approval at once, as before.
+- Click the treasury, the food reserve, approval or prosperity in the top bar to see what moved
+  it. Approval and prosperity also list what they are made of.
+- A short trend line beside the treasury, the food reserve, approval and prosperity shows the last
+  eight quarters, with the food reserve's safe level, the strike threshold and the prosperity
+  target drawn as dashed lines. The
   left column has a larger approval chart with the strike threshold and the 50% line marked.
 - After each quarter the left column reports what happened and why, the most serious first: the
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region

@@ -140,6 +140,31 @@ export const SITE_STATE_NAMES: Readonly<Record<SiteState, string>> = {
   operating: 'Operating',
 };
 
+/**
+ * The parts a region's living standard is built from. National prosperity is the regions'
+ * living standards averaged by population, and is built from the same parts.
+ */
+export const PROSPERITY_PARTS = [
+  'food',
+  'income',
+  'health',
+  'education',
+  'infrastructure',
+] as const;
+export type ProsperityPart = (typeof PROSPERITY_PARTS)[number];
+
+export const PROSPERITY_PART_NAMES: Readonly<Record<ProsperityPart, string>> = {
+  food: 'Food security',
+  income: 'Income per head',
+  health: 'Health',
+  education: 'Education',
+  infrastructure: 'Infrastructure access',
+};
+
+/** The public services whose level in each region lasts, built up by spending over time. */
+export const LASTING_SERVICES = ['health', 'education'] as const;
+export type LastingService = (typeof LASTING_SERVICES)[number];
+
 /** The stages of a region's food situation, from the best to the worst. */
 export const FOOD_STAGES = ['adequate', 'tight', 'shortage', 'famine'] as const;
 export type FoodStage = (typeof FOOD_STAGES)[number];

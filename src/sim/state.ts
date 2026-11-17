@@ -41,6 +41,13 @@ export interface RegionState {
    * ends and holds through the next, cutting what the region produces.
    */
   readonly unrest: Unrest;
+  /**
+   * The level of health care in the region, in thousandths. Spending builds it up over
+   * quarters and it wears down without it.
+   */
+  readonly health: number;
+  /** The level of education in the region, in thousandths, built and worn like health. */
+  readonly education: number;
 }
 
 /** How a finished game ended, in words the player can be shown whatever the cause. */
@@ -146,6 +153,11 @@ export interface TurnReport {
    * National approval after the quarter, in thousandths, with everything that moved it.
    */
   readonly approval: Figure;
+  /**
+   * National prosperity after the quarter, in thousandths, with what each of its parts did
+   * to it. A report carried over from a save written before prosperity existed has none.
+   */
+  readonly prosperity: Figure | null;
   /** The harvest, in quarter 4, and null in every other quarter. */
   readonly harvest: Harvest | null;
   /**
@@ -205,6 +217,11 @@ export interface Preview {
    * several quarters, so this is further off than the figure above.
    */
   readonly approvalHeading: Range;
+  /**
+   * National prosperity once the quarter is over, in thousandths. Nothing left to chance
+   * this quarter bears on it, so the two ends are equal.
+   */
+  readonly prosperity: Range;
   /** The regions that will be striking or protesting once the quarter is over. */
   readonly unrest: readonly RegionUnrest[];
   /**

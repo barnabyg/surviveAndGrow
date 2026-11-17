@@ -1,4 +1,4 @@
-import { FOOD_STAGE_NAMES, regionName, type GameState } from '../sim';
+import { FOOD_STAGE_NAMES, formatIndex, livingStandards, regionName, type GameState } from '../sim';
 
 interface RegionListProps {
   readonly game: GameState;
@@ -6,18 +6,26 @@ interface RegionListProps {
   readonly onSelectRegion: (regionId: string) => void;
 }
 
-/** Every region's food situation at a glance. Picking one picks it out on the map. */
+/**
+ * Every region's food situation and living standard at a glance, so that inequality shows.
+ * Picking one picks it out on the map.
+ */
 export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionListProps) {
+  const standards = livingStandards(game);
   return (
     <section className="region-list" aria-labelledby="region-list-title">
       <div className="section-head">
         <h2 className="section-title" id="region-list-title">
-          Food by region
+          Regions
         </h2>
+        <span className="region-list__key" aria-hidden="true">
+          Food · Living standard
+        </span>
       </div>
       <ul>
-        {game.regions.map((region) => {
+        {game.regions.map((region, index) => {
           const troubled = region.foodStage !== 'adequate';
+          const standard = standards[index]?.value ?? 0;
           return (
             <li key={region.id}>
               <button
@@ -29,9 +37,18 @@ export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionLis
                 }}
               >
                 <span>{regionName(game.country, region.id)}</span>
-                <span>
+                <span className="region-row__food">
                   {troubled && '▲ '}
                   {FOOD_STAGE_NAMES[region.foodStage]}
+                </span>
+                <span
+                  className="region-row__standard"
+                  aria-label={`Living standard ${formatIndex(standard)}`}
+                >
+                  <span className="region-row__bar" aria-hidden="true">
+                    <span style={{ width: `${standard / 10}%` }} />
+                  </span>
+                  {formatIndex(standard)}
                 </span>
               </button>
             </li>

@@ -55,6 +55,19 @@ export function formatSignedPoints(permille: number): string {
 }
 
 /**
+ * A prosperity index or living standard, written from thousandths on a scale of 0 to 100:
+ * `23.7`. Marks that are whole numbers by design, such as the target, can drop the decimal.
+ */
+export function formatIndex(permille: number, decimals: 0 | 1 = 1): string {
+  return `${permille < 0 ? MINUS : ''}${(Math.abs(permille) / 10).toFixed(decimals)}`;
+}
+
+/** A movement of the index with its sign: `+1.2`, `−0.4`, `0.0`. */
+export function formatSignedIndex(permille: number): string {
+  return `${permille > 0 ? '+' : ''}${formatIndex(permille)}`;
+}
+
+/**
  * A share written in thousandths as the player reads it: `54.3%`. Marks that are whole
  * numbers by design, such as a threshold, are written without the decimal: `40%`.
  */

@@ -2,11 +2,14 @@ import {
   approvalStatus,
   electionStatus,
   foodStatus,
+  formatIndex,
   formatMoney,
   formatPercent,
   formatPoints,
+  formatSignedIndex,
   formatSignedPoints,
   monthsOfFood,
+  prosperityStatus,
   regionName,
   seasonOf,
   UNREST_NAMES,
@@ -48,6 +51,12 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
   const food = foodStatus(game);
   const approval = approvalStatus(game);
   const election = electionStatus(game);
+  const prosperity = prosperityStatus(game);
+  const target: Mark = {
+    value: prosperity.target,
+    label: `Target: ${formatIndex(prosperity.target, 0)}`,
+    name: `the target of ${formatIndex(prosperity.target, 0)}`,
+  };
   const shown = recent(game.history);
   const safeLevel: Mark = {
     value: food.safeReserveMonths,
@@ -151,6 +160,49 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
             situation would settle it. A region strikes below{' '}
             {formatPercent(approval.strikesBelow, 0)} and protests below{' '}
             {formatPercent(approval.protestsBelow, 0)}.
+          </p>
+        </VitalSign>
+        <VitalSign
+          label="Prosperity"
+          value={formatIndex(prosperity.value)}
+          unit={`of ${formatIndex(prosperity.target, 0)}`}
+          figure={report?.prosperity ?? null}
+          formatChange={formatSignedIndex}
+          formatMovement={formatIndex}
+          note={`${formatIndex(Math.max(0, prosperity.target - prosperity.value))} to the target`}
+          breakdownTitle="What moved prosperity"
+          trend={
+            <TrendLine
+              subject="Prosperity"
+              // Quarters recorded before prosperity was measured are left out.
+              values={shown.flatMap((record) =>
+                record.prosperity === null ? [] : [record.prosperity],
+              )}
+              format={(value) => formatIndex(value)}
+              mark={target}
+            />
+          }
+        >
+          <h2 className="label">What prosperity is made of</h2>
+          <table className="breakdown__table" aria-label="What prosperity is made of">
+            <tbody>
+              {prosperity.parts.map((part) => (
+                <tr key={part.label}>
+                  <th scope="row">{part.label}</th>
+                  <td>{formatIndex(part.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Prosperity now</th>
+                <td>{formatIndex(prosperity.value)}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <p className="breakdown__empty">
+            Prosperity is the regions’ living standards averaged by population. Health and education
+            build up slowly with spending and wear down without it.
           </p>
         </VitalSign>
         {/* The election is a date, not a figure that moves, so it opens to nothing. */}
