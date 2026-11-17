@@ -7,6 +7,7 @@ import type { Project } from './projects';
 import type { VitalSigns } from './history';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
+import type { SiteSchedule } from './timeline';
 import type { Figure, GameDate, Money, Range } from './types';
 import type { FoodStage, Unrest } from './vocabulary';
 
@@ -155,6 +156,12 @@ export interface Preview {
   readonly projectSpending: Range;
   /** The sites where building will pause this quarter because the treasury cannot pay. */
   readonly pausedSites: readonly string[];
+  /**
+   * When each project is built and comes into use: those there are and those about to be
+   * started, in the order they were started. A site that will pause this quarter opens a
+   * quarter later for it.
+   */
+  readonly schedule: readonly SiteSchedule[];
   readonly balance: Range;
   /** The treasury once the quarter is over. */
   readonly treasury: Range;

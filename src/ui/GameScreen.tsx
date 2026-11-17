@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { advanceQuarter, previewQuarter, type GameState, type TurnReport } from '../sim';
+import {
+  advanceQuarter,
+  previewQuarter,
+  siteSchedule,
+  type GameState,
+  type TurnReport,
+} from '../sim';
 import { ApprovalChart } from './ApprovalChart';
 import { BudgetPanel, countChanges } from './BudgetPanel';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -13,6 +19,7 @@ import { RegionList } from './RegionList';
 import { ReliefPanel } from './ReliefPanel';
 import { ReportList } from './ReportList';
 import { SiteCard } from './SiteCard';
+import { Timeline } from './Timeline';
 import { TopBar } from './TopBar';
 
 interface GameScreenProps {
@@ -45,6 +52,14 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
   const playing = game.outcome.status === 'playing';
   const decisions = { budget: committed, reliefRegionId, startProjects: plannedSiteIds };
   const preview = playing ? previewQuarter(game, decisions) : null;
+  // The timeline shows every project, and the site picked out on the map if it is still
+  // empty and unplanned, as if building there began now.
+  const schedule =
+    preview?.schedule ?? game.projects.map((project) => siteSchedule(game, project.siteId));
+  const considered =
+    playing && selectedSiteId !== null && !schedule.some((entry) => entry.siteId === selectedSiteId)
+      ? siteSchedule(game, selectedSiteId)
+      : null;
   const selectedEntry =
     reportPicked !== null && report?.entries[reportPicked]?.regionId === selectedRegionId
       ? reportPicked
@@ -109,40 +124,49 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
         </aside>
         <main className="column column--country" aria-label="Country">
           <div className="map-frame">
-            <MapView
-              game={game}
-              selectedRegionId={selectedRegionId}
-              reliefRegionId={reliefRegionId}
-              onSelectRegion={selectRegion}
-              selectedSiteId={selectedSiteId}
-              onSelectSite={selectSite}
-              plannedSiteIds={plannedSiteIds}
-            />
-            {preview !== null && selectedRegionId !== null && (
-              <RegionCard
+            <div className="map-stage">
+              <MapView
                 game={game}
-                regionId={selectedRegionId}
-                preview={preview}
+                selectedRegionId={selectedRegionId}
                 reliefRegionId={reliefRegionId}
-                onSendRelief={setReliefRegionId}
-                onClose={() => {
-                  selectRegion(null);
-                }}
-              />
-            )}
-            {selectedSiteId !== null && (
-              <SiteCard
-                game={game}
-                siteId={selectedSiteId}
+                onSelectRegion={selectRegion}
+                selectedSiteId={selectedSiteId}
+                onSelectSite={selectSite}
                 plannedSiteIds={plannedSiteIds}
-                onPlan={planSite}
-                onClose={() => {
-                  selectSite(null);
-                }}
               />
-            )}
+              {preview !== null && selectedRegionId !== null && (
+                <RegionCard
+                  game={game}
+                  regionId={selectedRegionId}
+                  preview={preview}
+                  reliefRegionId={reliefRegionId}
+                  onSendRelief={setReliefRegionId}
+                  onClose={() => {
+                    selectRegion(null);
+                  }}
+                />
+              )}
+              {selectedSiteId !== null && (
+                <SiteCard
+                  game={game}
+                  siteId={selectedSiteId}
+                  plannedSiteIds={plannedSiteIds}
+                  onPlan={planSite}
+                  onClose={() => {
+                    selectSite(null);
+                  }}
+                />
+              )}
+            </div>
           </div>
           <div className="map-footer">
+            <Timeline
+              game={game}
+              schedule={schedule}
+              considered={considered}
+              pausedSites={preview?.pausedSites ?? []}
+              onSelectSite={selectSite}
+            />
             <MapLegend />
           </div>
         </main>

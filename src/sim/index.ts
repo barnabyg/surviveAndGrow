@@ -41,6 +41,13 @@ export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
 export { siteTerms, type SiteTerms } from './sites';
+export {
+  siteSchedule,
+  termCalendar,
+  type SiteSchedule,
+  type TermCalendar,
+  type TermQuarter,
+} from './timeline';
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,

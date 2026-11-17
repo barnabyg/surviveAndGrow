@@ -41,6 +41,7 @@ import {
 import { compileReport, type ReportEntry } from './report';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
+import { scheduleAhead } from './timeline';
 import { exactly } from './types';
 
 /** Starts a game. The same country and seed always start the same game. */
@@ -234,6 +235,7 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
     spending: exactly(finances.spending),
     projectSpending: exactly(building.paid),
     pausedSites: building.paused,
+    schedule: scheduleAhead(state, decisions.startProjects ?? [], building.paused),
     balance: exactly(finances.balance),
     treasury: exactly(finances.treasury),
     spendingCut: finances.cut,

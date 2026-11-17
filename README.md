@@ -69,7 +69,14 @@ What is in the game so far:
   drought move its region's harvest; a farm road halves the share of its region's surplus lost on
   the way to the reserve; a grain store cuts what spoils in the national reserve by a quarter.
   Several of one type multiply together.
-- The side columns scroll on their own when they run long, so the map never moves.
+- Under the map a timeline shows the whole term: every quarter to the election, with the past
+  hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
+  it is built in, followed by a bar that says how many quarters it will be in use before the
+  vote. Pick out an empty site on the map and the timeline shows, dashed, what building there
+  would mean if it began now, or says that it would not be finished before the vote. A project
+  the treasury cannot pay for opens a quarter later for each quarter it waits.
+- The side columns scroll on their own when they run long, and the map gives up height to the
+  timeline, so the whole screen stays in view.
 
 ## Write a country
 
