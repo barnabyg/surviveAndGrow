@@ -91,7 +91,7 @@ describe('the types of site', () => {
       effect: 'Weather and drought move its region’s harvest 50% less.',
     });
     expect(siteTerms('farmRoad')).toEqual({
-      cost: 90,
+      cost: 100,
       buildQuarters: 3,
       effect: '50% less of its region’s surplus is lost on the way to the national reserve.',
     });
@@ -246,6 +246,14 @@ describe('an invalid country file is rejected with a message naming the fault', 
 
     expect(faultsOf(file)).toEqual([
       'sites[1].id repeats "north-irrigation", already used by sites[0].',
+    ]);
+  });
+
+  it('when two sites share a name', () => {
+    const file = withValue(testlandFile, ['sites', 1, 'name'], 'North irrigation');
+
+    expect(faultsOf(file)).toEqual([
+      'sites[1].name repeats "North irrigation", already used by sites[0].',
     ]);
   });
 

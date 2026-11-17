@@ -18,10 +18,29 @@ export function MapLegend() {
         Empty site
       </li>
       <li>
+        <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+          <circle r="6.5" fill="none" stroke="var(--amber)" strokeWidth="2.5" />
+          <circle r="3" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+        Under construction
+      </li>
+      <li>
+        <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+          <circle r="6.5" fill="currentColor" />
+        </svg>
+        Operating
+      </li>
+      <li>
         <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
           <path d="M1,8 H25" stroke="currentColor" strokeWidth="2" strokeDasharray="7 5" />
         </svg>
         Possible route
+      </li>
+      <li>
+        <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
+          <path d="M2,8 H24" stroke="#f1e6c6" strokeWidth="3.5" strokeLinecap="round" />
+        </svg>
+        Road
       </li>
     </ul>
   );

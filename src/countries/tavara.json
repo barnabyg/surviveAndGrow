@@ -410,7 +410,7 @@
       "type": "irrigation",
       "name": "Lowmere irrigation",
       "region": "lowmere-plains",
-      "at": [578, 352]
+      "at": [395, 300]
     },
     {
       "id": "lowmere-store",
@@ -424,7 +424,7 @@
       "type": "irrigation",
       "name": "Dustwell irrigation",
       "region": "dry-east",
-      "at": [795, 345]
+      "at": [775, 290]
     },
     {
       "id": "southbank-store",

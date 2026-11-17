@@ -58,6 +58,21 @@ export const SITE_FORMS: Readonly<Record<SiteType, SiteForm>> = {
   grainStore: 'place',
 };
 
+/** How a project stands: being built, held up for want of money, or built and in use. */
+export const PROJECT_STATUSES = ['building', 'paused', 'operating'] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
+
+/** How a site stands: empty until a project is started on it, and then as the project stands. */
+export const SITE_STATES = ['empty', ...PROJECT_STATUSES] as const;
+export type SiteState = (typeof SITE_STATES)[number];
+
+export const SITE_STATE_NAMES: Readonly<Record<SiteState, string>> = {
+  empty: 'Empty',
+  building: 'Under construction',
+  paused: 'Paused',
+  operating: 'Operating',
+};
+
 /** The stages of a region's food situation, from the best to the worst. */
 export const FOOD_STAGES = ['adequate', 'tight', 'shortage', 'famine'] as const;
 export type FoodStage = (typeof FOOD_STAGES)[number];
@@ -114,6 +129,9 @@ export const REPORT_KINDS = [
   'event',
   'strike',
   'protest',
+  'projectStarted',
+  'projectPaused',
+  'projectCompleted',
   'election',
   'collapse',
   'quiet',

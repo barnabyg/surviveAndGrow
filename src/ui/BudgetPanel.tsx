@@ -27,6 +27,8 @@ interface BudgetPanelProps {
   readonly pending: Budget;
   /** Where food relief is being sent, which bears on the food projections. */
   readonly reliefRegionId: string | null;
+  /** The sites building is to start on this quarter, whose instalments are a fixed cost. */
+  readonly startProjects: readonly string[];
   readonly onChange: (pending: Budget) => void;
   readonly onCommit: () => void;
   readonly onReset: () => void;
@@ -41,11 +43,13 @@ export function countChanges(pending: Budget, committed: Budget): number {
 }
 
 export function BudgetPanel(props: BudgetPanelProps) {
-  const { game, committed, pending, reliefRegionId, onChange, onCommit, onReset } = props;
+  const { game, committed, pending, reliefRegionId, startProjects } = props;
+  const { onChange, onCommit, onReset } = props;
   const changes = countChanges(pending, committed);
   // The same projection twice: where the committed budget leads, and where the sliders would.
-  const before = previewQuarter(game, { budget: committed, reliefRegionId });
-  const after = previewQuarter(game, { budget: pending, reliefRegionId });
+  const before = previewQuarter(game, { budget: committed, reliefRegionId, startProjects });
+  const after = previewQuarter(game, { budget: pending, reliefRegionId, startProjects });
+  const building = after.projectSpending.max > 0 || after.pausedSites.length > 0;
   const { taxRatePercent, spending } = budgetLimits;
   const food = foodStatus(game);
 
@@ -111,6 +115,23 @@ export function BudgetPanel(props: BudgetPanelProps) {
           />
         ))}
       </div>
+
+      {building && (
+        <div className="fixed-costs" role="group" aria-label="Fixed costs">
+          <div className="fixed-costs__row">
+            <span>Projects</span>
+            <span className="fixed-costs__note">Fixed: instalments on what is being built</span>
+            <span className="slider__value">{formatRange(after.projectSpending, formatMoney)}</span>
+          </div>
+          {after.pausedSites.map((siteId) => (
+            <p key={siteId} className="warning-note">
+              ▲ Building will pause at{' '}
+              {game.country.sites.find((site) => site.id === siteId)?.name ?? siteId}: the treasury
+              cannot cover its instalment.
+            </p>
+          ))}
+        </div>
+      )}
 
       <section className="outlook" aria-labelledby="outlook-title">
         <h3 className={changes > 0 ? 'label label--pending' : 'label'} id="outlook-title">

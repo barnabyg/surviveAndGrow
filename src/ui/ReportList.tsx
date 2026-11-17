@@ -140,6 +140,21 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Protest report',
     path: 'M4,18 V11 M4,11 L2,6 M10,18 V9 M10,9 L10,3 M16,18 V11 M16,11 L18,6 M7,18 V14 M13,18 V14',
   },
+  // A frame going up, with an arrow rising from it.
+  projectStarted: {
+    label: 'Building report',
+    path: 'M3,17 H17 M5,17 V9 H15 V17 M5,13 H15 M10,9 V3 M7,5.5 L10,3 L13,5.5',
+  },
+  // The same frame with work stopped: two upright bars.
+  projectPaused: {
+    label: 'Paused building report',
+    path: 'M3,17 H17 M5,17 V7 H15 V17 M8.5,10 V14 M11.5,10 V14',
+  },
+  // A finished building, ticked.
+  projectCompleted: {
+    label: 'Finished building report',
+    path: 'M3,17 H17 M5,17 V9 L10,4 L15,9 V17 M7.5,12.5 L9.5,14.5 L13,10.5',
+  },
   // A ballot dropping into a box.
   election: {
     label: 'Election report',

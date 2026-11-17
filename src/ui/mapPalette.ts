@@ -28,6 +28,11 @@ export interface MapPalette {
   /** The round marker of a site, and the dark line of its edge, its symbol and its route. */
   readonly site: string;
   readonly siteLine: string;
+  /** A built road: a pale line in a dark casing. */
+  readonly road: string;
+  readonly roadCasing: string;
+  /** The part of a route still to be built once work is planned or under way. */
+  readonly construction: string;
   /** The outline of the region or site the player has picked out. */
   readonly selection: string;
   /** The dark tags that carry warnings on the map. */
@@ -65,6 +70,9 @@ export const tierOnePalette: MapPalette = {
   eventLine: '#c9581c',
   site: '#f4ecd6',
   siteLine: '#2b2a22',
+  road: '#f1e6c6',
+  roadCasing: '#3a3226',
+  construction: '#b86a00',
   selection: '#f2b33d',
   tagBackground: '#2a1a12',
   tagText: '#ffb58a',

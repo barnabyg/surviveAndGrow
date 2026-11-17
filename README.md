@@ -58,6 +58,18 @@ What is in the game so far:
   grain store. An empty site is a dashed round marker with the symbol of its type, and a possible
   road is a dashed line. Select one to open a card with its cost, build time and effect. The
   legend under the map explains the marks.
+- Start a project from a site's card, or from the list of what the treasury can afford in the
+  right column. The treasury must hold the whole cost, which is then paid in instalments over the
+  build time, as a fixed cost shown apart from the budget's sliders. Building starts when the
+  quarter ends, so until then the plan can be taken back.
+- The budget's own spending is paid first and instalments out of what is left, the oldest project
+  first. A project the treasury cannot pay for pauses for the quarter and carries on when it can
+  be paid. The map shows how far each has got, and a road is drawn along the part that is built.
+- A finished site is in use from the next quarter. Irrigation halves how far the weather and
+  drought move its region's harvest; a farm road halves the share of its region's surplus lost on
+  the way to the reserve; a grain store cuts what spoils in the national reserve by a quarter.
+  Several of one type multiply together.
+- The side columns scroll on their own when they run long, so the map never moves.
 
 ## Write a country
 

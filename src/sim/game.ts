@@ -1,16 +1,25 @@
 import { approvalStatus, resolveApproval, startingApproval, type ApprovalInputs } from './approval';
 import { balance } from './balance';
 import { nextDate, quartersUntilHarvest } from './calendar';
-import { budgetEntry, checkBudget, cutEntry, resolveBudget, type BudgetOutcome } from './budget';
+import {
+  budgetEntry,
+  checkBudget,
+  cutEntry,
+  resolveBudget,
+  withFixedCosts,
+  type BudgetOutcome,
+} from './budget';
 import { regionName, type Country } from './country';
 import { forecastVoteShare, holdElection, isElectionQuarter } from './election';
 import {
   beginEntry,
   beginEvents,
+  describeEventWithHold,
   endEntry,
   endEventsAfterHarvest,
   harvestPermille,
   worstHarvestPermille,
+  type ActiveEvent,
 } from './events';
 import {
   forecastFood,
@@ -21,6 +30,14 @@ import {
   type FoodSituation,
 } from './food';
 import { vitalSigns } from './history';
+import {
+  resolveProjects,
+  siteEffects,
+  startFault,
+  type BuildingOutcome,
+  type Project,
+  type SiteEffects,
+} from './projects';
 import { compileReport, type ReportEntry } from './report';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
@@ -52,6 +69,7 @@ export function createGame(country: Country, seed: number): GameState {
     budget: country.start.budget,
     agricultureSpentThisYear: 0,
     events: [],
+    projects: [],
     history: [vitalSigns(opening)],
     outcome: { status: 'playing' },
   };
@@ -64,14 +82,17 @@ export function createGame(country: Country, seed: number): GameState {
  */
 export function advanceQuarter(state: GameState, decisions: Decisions): TurnResult {
   checkDecisions(state, decisions);
-  const finances = resolveBudget(state, decisions.budget);
+  const { budget, building, finances } = resolveMoney(state, decisions);
 
   const weather = rollWeather(state.rng, state.regions.length);
   const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
+  // The sites in use as the quarter begins are the ones that bear on it.
+  const sites = siteEffects(state);
   const food = resolveFood(foodSituation(state), {
     agricultureSpentThisYear: agricultureSpent,
     weatherShocks: weather.shocks,
-    harvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
+    harvestPermille: eventsLeave(state, sites),
+    sites,
     relief: reliefFor(decisions, finances),
   });
   // Strikes in force as the quarter began have already cut its revenue. The approval the
@@ -102,11 +123,14 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   const entries: ReportEntry[] = [
     ...(collapse === null ? [] : [collapseEntry(collapse)]),
     ...(election === null ? [] : [election.entry]),
-    ...(finances.cut ? [cutEntry(finances)] : []),
+    ...(budget.cut ? [cutEntry(budget)] : []),
     ...food.entries,
     ...approval.entries,
+    ...building.entries,
     ...ended.map((event) => endEntry(state.country, event)),
-    ...rolled.begun.map((event) => beginEntry(state.country, event)),
+    ...rolled.begun.map((event) =>
+      beginEntry(state.country, event, holdOn(state.country, building.projects, event.regionId)),
+    ),
     budgetEntry(finances),
   ];
 
@@ -122,6 +146,7 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
       regions: approval.regions,
       events: [...remaining, ...rolled.begun],
+      projects: building.projects,
       history: [
         ...state.history,
         vitalSigns({
@@ -160,29 +185,41 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
  */
 export function previewQuarter(state: GameState, decisions: Decisions): Preview {
   checkDecisions(state, decisions);
-  const finances = resolveBudget(state, decisions.budget);
+  const { building, finances } = resolveMoney(state, decisions);
   const situation = foodSituation(state);
   const relief = reliefFor(decisions, finances);
   const { quarter } = state.date;
 
   // Who goes short this quarter, and what relief reaches them, does not turn on the weather.
+  const sites = siteEffects(state);
   const thisQuarter = resolveFood(situation, {
     agricultureSpentThisYear: state.agricultureSpentThisYear + finances.spent.agriculture,
     weatherShocks: state.regions.map(() => 0),
-    harvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
+    harvestPermille: eventsLeave(state, sites),
+    sites,
     relief,
   });
+  const ahead = quartersToHarvest(state, decisions);
+  // The harvest answers to the sites in use in the quarter it comes in.
+  const atHarvest = ahead.at(-1)?.sites ?? sites;
   const forecast = forecastFood(situation, {
     agricultureSpentSoFar: state.agricultureSpentThisYear,
-    quarters: financesToHarvest(state, decisions).map((quarterly) => ({
-      agricultureSpent: quarterly.spent.agriculture,
-      relief: reliefFor(decisions, quarterly),
+    quarters: ahead.map((quarterly) => ({
+      agricultureSpent: quarterly.finances.spent.agriculture,
+      relief: reliefFor(decisions, quarterly.finances),
+      sites: quarterly.sites,
     })),
     // At worst, every event that could still begin this growing year does.
-    worstHarvestPermille: state.regions.map((region) =>
-      worstHarvestPermille(state.country, state.events, region.id, quarter),
+    worstHarvestPermille: state.regions.map((region, index) =>
+      worstHarvestPermille(
+        state.country,
+        state.events,
+        region.id,
+        quarter,
+        atHarvest.weatherPermille[index] ?? 1000,
+      ),
     ),
-    bestHarvestPermille: state.regions.map((region) => harvestPermille(state.events, region.id)),
+    bestHarvestPermille: eventsLeave(state, atHarvest),
   });
   // Nothing in approval turns on the weather either, so it is projected exactly.
   const approval = resolveApproval(
@@ -195,6 +232,8 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
   return {
     revenue: exactly(finances.revenue),
     spending: exactly(finances.spending),
+    projectSpending: exactly(building.paid),
+    pausedSites: building.paused,
     balance: exactly(finances.balance),
     treasury: exactly(finances.treasury),
     spendingCut: finances.cut,
@@ -209,6 +248,17 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
   };
 }
 
+/**
+ * An event in force and what it does to its region as things stand, in a few words:
+ * "Drought · harvest −40%", or less where irrigation is in use.
+ */
+export function describeEvent(
+  state: Pick<GameState, 'country' | 'projects'>,
+  event: ActiveEvent,
+): string {
+  return describeEventWithHold(event, holdOn(state.country, state.projects, event.regionId));
+}
+
 /** The ranges the budget may be set within. */
 export const budgetLimits = balance.budget;
 
@@ -219,6 +269,35 @@ function checkDecisions(state: GameState, decisions: Decisions): void {
   if (target !== null && !state.regions.some((region) => region.id === target)) {
     throw new RangeError(`There is no region "${target}" to send food relief to.`);
   }
+  const fault = startFault(state, decisions.startProjects ?? []);
+  if (fault !== null) throw new RangeError(fault);
+}
+
+interface QuarterMoney {
+  /** What the budget alone did: revenue, and spending on the areas it sets. */
+  readonly budget: BudgetOutcome;
+  /** What building did with the money the budget left. */
+  readonly building: BuildingOutcome;
+  /** The two together: the quarter's whole effect on the treasury. */
+  readonly finances: BudgetOutcome;
+}
+
+/**
+ * One quarter of money. The budget's own spending comes first, cut if the treasury cannot
+ * cover it; then the instalments on projects are paid out of what is left.
+ */
+function resolveMoney(
+  state: Pick<GameState, 'country' | 'treasury' | 'regions' | 'projects' | 'date'>,
+  decisions: Decisions,
+  starts: readonly string[] = decisions.startProjects ?? [],
+): QuarterMoney {
+  const budget = resolveBudget(state, decisions.budget);
+  const building = resolveProjects(state, starts, state.date, budget.treasury);
+  return {
+    budget,
+    building,
+    finances: withFixedCosts(budget, building.paid, building.contributions),
+  };
 }
 
 /** Relief goes where the player sends it, as far as what was actually spent on it can move. */
@@ -234,18 +313,43 @@ function approvalInputs(decisions: Decisions, finances: BudgetOutcome): Approval
   return { taxRatePercent: decisions.budget.taxRatePercent, spent: finances.spent };
 }
 
+/** What the events in force leave of each region's harvest, given the sites in use. */
+function eventsLeave(state: Pick<GameState, 'regions' | 'events'>, sites: SiteEffects): number[] {
+  return state.regions.map((region, index) =>
+    harvestPermille(state.events, region.id, sites.weatherPermille[index] ?? 1000),
+  );
+}
+
+/** What irrigation in use leaves of the weather's and of events' hold on one region. */
+function holdOn(country: Country, projects: readonly Project[], regionId: string): number {
+  const index = country.regions.findIndex((region) => region.id === regionId);
+  return siteEffects({ country, projects }).weatherPermille[index] ?? 1000;
+}
+
+interface QuarterAhead {
+  readonly finances: BudgetOutcome;
+  /** The sites in use as that quarter begins. */
+  readonly sites: SiteEffects;
+}
+
 /**
  * What the budget will bring in and pay out in each quarter from this one to the harvest
- * if it is left as it is. A treasury that runs dry on the way cuts the later quarters'
- * spending, and the forecast must know it.
+ * if it is left as it is, and the sites that will be in use by then. A treasury that runs
+ * dry on the way cuts the later quarters' spending and pauses building, and the forecast
+ * must know it.
  */
-function financesToHarvest(state: GameState, decisions: Decisions): BudgetOutcome[] {
-  const quarterly: BudgetOutcome[] = [];
-  let { treasury } = state;
+function quartersToHarvest(state: GameState, decisions: Decisions): QuarterAhead[] {
+  const quarterly: QuarterAhead[] = [];
+  let { treasury, date } = state;
+  let projects: readonly Project[] = state.projects;
   for (let ahead = quartersUntilHarvest(state.date.quarter); ahead > 0; ahead -= 1) {
-    const finances = resolveBudget({ ...state, treasury }, decisions.budget);
-    quarterly.push(finances);
-    treasury = finances.treasury;
+    // Projects are started in the quarter being decided, and in none after it.
+    const starts = quarterly.length === 0 ? undefined : [];
+    const money = resolveMoney({ ...state, treasury, projects, date }, decisions, starts);
+    quarterly.push({ finances: money.finances, sites: siteEffects({ ...state, projects }) });
+    ({ treasury } = money.finances);
+    ({ projects } = money.building);
+    date = nextDate(date);
   }
   return quarterly;
 }

@@ -20,8 +20,13 @@ export interface BudgetOutcome {
   readonly revenue: Money;
   /** What the budget asks to spend. */
   readonly budgeted: Money;
-  /** What is actually spent, which is less than budgeted when the treasury falls short. */
+  /**
+   * What is actually spent, which is less than budgeted when the treasury falls short. It
+   * counts the fixed costs once they have been added.
+   */
   readonly spending: Money;
+  /** The part of spending that is fixed and not the budget's to set: instalments on projects. */
+  readonly fixed: Money;
   readonly spent: Readonly<Record<SpendingArea, Money>>;
   /** Revenue less spending. */
   readonly balance: Money;
@@ -110,6 +115,7 @@ export function resolveBudget(
     revenue,
     budgeted,
     spending,
+    fixed: 0,
     spent,
     balance: revenue - spending,
     treasury: treasury + revenue - spending,
@@ -124,13 +130,32 @@ export function resolveBudget(
   };
 }
 
+/**
+ * Adds the quarter's fixed costs to what the budget did. They were paid out of what the
+ * budget's own spending left in the treasury.
+ */
+export function withFixedCosts(
+  outcome: BudgetOutcome,
+  paid: Money,
+  contributions: readonly Contribution[],
+): BudgetOutcome {
+  return {
+    ...outcome,
+    spending: outcome.spending + paid,
+    fixed: outcome.fixed + paid,
+    balance: outcome.balance - paid,
+    treasury: outcome.treasury - paid,
+    contributions: [...outcome.contributions, ...contributions],
+  };
+}
+
 /** What the turn report says when spending had to be cut. */
 export function cutEntry(outcome: BudgetOutcome): ReportEntry {
   return {
     kind: 'spendingCut',
     seriousness: 'serious',
     headline: 'Spending was cut',
-    cause: `The treasury could not cover the ${formatMoney(outcome.budgeted)} budget. Every area was cut to what could be afforded: ${formatMoney(outcome.spending)} in all.`,
+    cause: `The treasury could not cover the ${formatMoney(outcome.budgeted)} budget. Every area was cut to what could be afforded: ${formatMoney(outcome.spending - outcome.fixed)} in all.`,
   };
 }
 

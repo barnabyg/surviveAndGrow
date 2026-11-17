@@ -2,6 +2,7 @@ import { sum } from './arithmetic';
 import { balance } from './balance';
 import { isHarvestQuarter, nextQuarter, quartersUntilHarvest } from './calendar';
 import { regionName, type Country, type Region } from './country';
+import type { SiteEffects } from './projects';
 import type { ReportEntry } from './report';
 import type { RegionShortfall, RegionState, ReliefDelivery } from './state';
 import { formatCount, formatTonnes } from './text';
@@ -41,6 +42,8 @@ export interface FoodInputs {
   readonly weatherShocks: readonly number[];
   /** What events leave of each region's harvest, in thousandths. */
   readonly harvestPermille: readonly number[];
+  /** What the sites in use as the quarter begins do to the weather, to transport and to spoilage. */
+  readonly sites: SiteEffects;
   readonly relief: {
     /** The region relief is sent to, or null to send none. */
     readonly regionId: string | null;
@@ -100,7 +103,10 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const shortfalls: RegionShortfall[] = [];
 
   const spoiled = Math.floor(
-    (situation.foodReserve * food.reserveSpoilagePermillePerQuarter) / 1000,
+    (situation.foodReserve *
+      food.reserveSpoilagePermillePerQuarter *
+      inputs.sites.spoilagePermille) /
+      1_000_000,
   );
   if (spoiled > 0) contributions.push({ label: 'Spoiled in store', amount: -spoiled });
   let foodReserve = situation.foodReserve - spoiled;
@@ -163,12 +169,19 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const harvests: RegionHarvest[] = [];
   const harvested = fed.map((region, index): RegionState => {
     const land = regionOf(country, region.id);
+    // Irrigation leaves the weather only a part of its hold on the harvest.
+    const weather = Math.trunc(
+      (region.weather * (inputs.sites.weatherPermille[index] ?? 1000)) / 1000,
+    );
     const grown =
       land === undefined
         ? 0
-        : grow(land, region.weather, yieldPermille, inputs.harvestPermille[index] ?? 1000);
+        : grow(land, weather, yieldPermille, inputs.harvestPermille[index] ?? 1000);
     const surplus = Math.max(0, region.foodStock + grown - regionKeep(region.population));
-    const lost = Math.floor((surplus * food.transportLossPermille) / 1000);
+    const lost = Math.floor(
+      (surplus * food.transportLossPermille * (inputs.sites.transportLossPermille[index] ?? 1000)) /
+        1_000_000,
+    );
     harvests.push({ regionId: region.id, grown, surplus, lost });
     if (surplus > 0) {
       contributions.push({
@@ -209,6 +222,8 @@ export interface ForecastInputs {
   readonly quarters: readonly {
     readonly agricultureSpent: Money;
     readonly relief: FoodInputs['relief'];
+    /** The sites that will be in use as that quarter begins. */
+    readonly sites: SiteEffects;
   }[];
   /** The least that events could leave of each region's harvest, in thousandths. */
   readonly worstHarvestPermille: readonly number[];
@@ -249,6 +264,7 @@ function playToHarvest(
       agricultureSpentThisYear: spent,
       weatherShocks: situation.regions.map(() => shock),
       harvestPermille,
+      sites: quarter.sites,
       relief: quarter.relief,
     });
     if (outcome.harvest !== null) {

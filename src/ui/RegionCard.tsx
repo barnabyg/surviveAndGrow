@@ -61,7 +61,7 @@ export function RegionCard(props: RegionCardProps) {
       {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
       {events.map((event) => (
         <p key={event.type} className="warning-note">
-          ▲ {describeEvent(event)}
+          ▲ {describeEvent(game, event)}
         </p>
       ))}
       <p className={shortfall === undefined ? 'map-card__note' : 'warning-note'}>

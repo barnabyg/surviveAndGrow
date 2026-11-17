@@ -129,7 +129,7 @@ export const balance = {
       weatherPermille: 500,
     },
     farmRoad: {
-      cost: 90,
+      cost: 100,
       buildQuarters: 3,
       /** What is left of the share of its region's surplus lost in transport, in thousandths. */
       transportLossPermille: 500,

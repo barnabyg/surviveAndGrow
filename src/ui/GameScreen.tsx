@@ -7,6 +7,7 @@ import { ElectionPanel } from './ElectionPanel';
 import { GameSummary } from './GameSummary';
 import { MapLegend } from './MapLegend';
 import { MapView } from './MapView';
+import { ProjectsPanel } from './ProjectsPanel';
 import { RegionCard } from './RegionCard';
 import { RegionList } from './RegionList';
 import { ReliefPanel } from './ReliefPanel';
@@ -33,13 +34,16 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
   // One thing is picked out on the map at a time: a region or a site. Its card is the one shown.
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  // The sites the player means to start building on. Building begins when the quarter
+  // ends, so until then a plan can be taken back, like the relief target.
+  const [plannedSiteIds, setPlannedSiteIds] = useState<readonly string[]>([]);
   // The report the player last selected, by its place in the list. It counts as selected
   // only while its region is still the one picked out on the map.
   const [reportPicked, setReportPicked] = useState<number | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
 
   const playing = game.outcome.status === 'playing';
-  const decisions = { budget: committed, reliefRegionId };
+  const decisions = { budget: committed, reliefRegionId, startProjects: plannedSiteIds };
   const preview = playing ? previewQuarter(game, decisions) : null;
   const selectedEntry =
     reportPicked !== null && report?.entries[reportPicked]?.regionId === selectedRegionId
@@ -55,6 +59,16 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
     setSelectedRegionId(null);
   };
 
+  // Planning a project picks its site out on the map, so the player sees where it will stand.
+  const planSite = (siteId: string, planned: boolean) => {
+    setPlannedSiteIds(
+      planned
+        ? [...plannedSiteIds.filter((id) => id !== siteId), siteId]
+        : plannedSiteIds.filter((id) => id !== siteId),
+    );
+    if (planned) selectSite(siteId);
+  };
+
   // Selecting a report picks its region out on the map; selecting it again lets go.
   const selectEntry = (index: number) => {
     const regionId = report?.entries[index]?.regionId;
@@ -68,6 +82,7 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
     setGame(result.state);
     setReport(result.report);
     setReportPicked(null);
+    setPlannedSiteIds([]);
     setConfirmingEnd(false);
   };
 
@@ -101,6 +116,7 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
               onSelectRegion={selectRegion}
               selectedSiteId={selectedSiteId}
               onSelectSite={selectSite}
+              plannedSiteIds={plannedSiteIds}
             />
             {preview !== null && selectedRegionId !== null && (
               <RegionCard
@@ -118,6 +134,8 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
               <SiteCard
                 game={game}
                 siteId={selectedSiteId}
+                plannedSiteIds={plannedSiteIds}
+                onPlan={planSite}
                 onClose={() => {
                   selectSite(null);
                 }}
@@ -136,6 +154,7 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
                 committed={committed}
                 pending={pending}
                 reliefRegionId={reliefRegionId}
+                startProjects={plannedSiteIds}
                 onChange={setPending}
                 onCommit={() => {
                   setCommitted(pending);
@@ -144,6 +163,7 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
                   setPending(committed);
                 }}
               />
+              <ProjectsPanel game={game} plannedSiteIds={plannedSiteIds} onPlan={planSite} />
               <ReliefPanel
                 game={game}
                 preview={preview}

@@ -40,7 +40,7 @@ test('a possible route is a site too, and can be selected from the keyboard', as
   await expect(route).toHaveAttribute('aria-pressed', 'true');
   const card = page.getByRole('region', { name: 'Farm road, Arden to Lowmere' });
   await expect(card).toContainText('Farm road · possible route');
-  await expect(card.getByRole('group', { name: 'Cost' })).toContainText('$9.0m');
+  await expect(card.getByRole('group', { name: 'Cost' })).toContainText('$10.0m');
   await expect(card.getByRole('group', { name: 'Build time' })).toContainText('3 quarters');
 });
 
@@ -67,7 +67,13 @@ test('the map shows one card at a time, for a site or for a region', async ({ pa
 test('a legend explains the marks for sites and routes', async ({ page }) => {
   await startGame(page);
 
-  await expect(legend(page).getByRole('listitem')).toHaveText(['Empty site', 'Possible route']);
+  await expect(legend(page).getByRole('listitem')).toHaveText([
+    'Empty site',
+    'Under construction',
+    'Operating',
+    'Possible route',
+    'Road',
+  ]);
 });
 
 test('the sites of a second country are drawn and selected through the same code', async ({

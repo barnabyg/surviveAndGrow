@@ -3,6 +3,7 @@ import type { Budget } from './budget';
 import type { Country } from './country';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
+import type { Project } from './projects';
 import type { VitalSigns } from './history';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
@@ -87,6 +88,8 @@ export interface GameState {
   readonly regions: readonly RegionState[];
   /** The events now in force, each in one region. */
   readonly events: readonly ActiveEvent[];
+  /** Every project started, in the order they were started: those being built and those in use. */
+  readonly projects: readonly Project[];
   /**
    * The vital signs as each quarter began, from the start of the game to the quarter now
    * being decided, in order. The last record is the position now.
@@ -104,6 +107,11 @@ export interface Decisions {
    * out, or null, sends relief nowhere.
    */
   readonly reliefRegionId?: string | null;
+  /**
+   * The sites to start building on this quarter. Each must be empty, and the treasury must
+   * hold the whole cost of them all. The first instalment is paid as the quarter ends.
+   */
+  readonly startProjects?: readonly string[];
 }
 
 /** What happened in a quarter, and why. */
@@ -138,8 +146,15 @@ export interface TurnResult {
  */
 export interface Preview {
   readonly revenue: Range;
-  /** What would actually be spent, after any cuts the treasury forces. */
+  /**
+   * What would actually be spent, after any cuts the treasury forces. It counts the
+   * instalments on projects, which are a fixed cost beyond the budget's own spending.
+   */
   readonly spending: Range;
+  /** The part of spending that goes on instalments for projects under way or starting. */
+  readonly projectSpending: Range;
+  /** The sites where building will pause this quarter because the treasury cannot pay. */
+  readonly pausedSites: readonly string[];
   readonly balance: Range;
   /** The treasury once the quarter is over. */
   readonly treasury: Range;

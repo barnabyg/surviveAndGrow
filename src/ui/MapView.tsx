@@ -3,6 +3,7 @@ import {
   describeUnrest,
   FOOD_STAGE_NAMES,
   MAP_FRAME,
+  siteStatus,
   type Decoration,
   type GameState,
   type LabelSide,
@@ -23,6 +24,8 @@ interface MapViewProps {
   /** The site the player has picked out, if any. */
   readonly selectedSiteId: string | null;
   readonly onSelectSite: (siteId: string) => void;
+  /** The sites the player means to start building on when the quarter ends. */
+  readonly plannedSiteIds: readonly string[];
 }
 
 /**
@@ -31,7 +34,7 @@ interface MapViewProps {
  */
 export function MapView(props: MapViewProps) {
   const { game, selectedRegionId, reliefRegionId, onSelectRegion } = props;
-  const { selectedSiteId, onSelectSite } = props;
+  const { selectedSiteId, onSelectSite, plannedSiteIds } = props;
   const { country } = game;
   const palette = tierOnePalette;
   const terrainOf = new Map(country.regions.map((region) => [region.id, region.terrain]));
@@ -194,6 +197,8 @@ export function MapView(props: MapViewProps) {
         <SiteMark
           key={site.id}
           site={site}
+          status={siteStatus(game, site.id)}
+          planned={plannedSiteIds.includes(site.id)}
           palette={palette}
           selected={site.id === selectedSiteId}
           onSelect={onSelectSite}
@@ -221,7 +226,7 @@ function RegionShape({ region, game, palette, selected, relieved, onSelect }: Re
   const description = [
     region.name,
     `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
-    ...events.map((event) => describeEvent(event)),
+    ...events.map((event) => describeEvent(game, event)),
     ...(unrest === null ? [] : [unrest]),
     ...(relieved ? ['food relief being sent'] : []),
   ].join(', ');
@@ -268,7 +273,7 @@ function RegionLabel({ region, game, palette, relieved }: RegionLabelProps) {
     ...(stage === 'adequate' ? [] : [`▲ Food: ${FOOD_STAGE_NAMES[stage]}`]),
     ...game.events
       .filter((event) => event.regionId === region.id)
-      .map((event) => describeEvent(event)),
+      .map((event) => describeEvent(game, event)),
     ...(unrest === null ? [] : [`▲ ${unrest}`]),
     ...(relieved ? ['Food relief on its way'] : []),
   ];

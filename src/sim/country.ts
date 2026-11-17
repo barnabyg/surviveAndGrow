@@ -360,6 +360,7 @@ function readSite(
   path: string,
   regions: readonly Region[],
   ids: Map<string, string>,
+  names: Map<string, string>,
 ): Site {
   const regionId = reader.text(site, 'region', path);
   const named = regions.find((candidate) => candidate.id === regionId);
@@ -373,7 +374,7 @@ function readSite(
   const details: SiteDetails = {
     id: reader.unique(site, 'id', path, ids),
     type: reader.oneOf(site, 'type', path, SITE_TYPES),
-    name: reader.text(site, 'name', path),
+    name: reader.unique(site, 'name', path, names),
     regionId,
   };
   // A type the game does not know says nothing about how the site should be given.
@@ -510,9 +511,11 @@ export function loadCountry(file: unknown): Country {
     };
   });
 
+  // Reports and the treasury's breakdown name sites, so two sites may not share a name.
   const siteIds = new Map<string, string>();
+  const siteNames = new Map<string, string>();
   const sites = reader.list(file, 'sites', '', (item, path) =>
-    readSite(reader, item, path, regions, siteIds),
+    readSite(reader, item, path, regions, siteIds, siteNames),
   );
 
   const map = reader.object(file, 'map', '');

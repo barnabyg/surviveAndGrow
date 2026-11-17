@@ -28,7 +28,7 @@ export {
 } from './approval';
 export { type Budget } from './budget';
 export { electionStatus, type ElectionStatus } from './election';
-export { describeEvent, type ActiveEvent } from './events';
+export { type ActiveEvent } from './events';
 export {
   foodStatus,
   monthsOfFood,
@@ -39,8 +39,9 @@ export {
 export { seasonOf } from './calendar';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
+export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
 export { siteTerms, type SiteTerms } from './sites';
-export { advanceQuarter, budgetLimits, createGame, previewQuarter } from './game';
+export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,
   type GameState,
@@ -79,6 +80,8 @@ export {
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SERIOUSNESS_NAMES,
+  SITE_STATE_NAMES,
+  SITE_STATES,
   SITE_TYPE_NAMES,
   SITE_TYPES,
   SPENDING_AREA_NAMES,
@@ -90,10 +93,12 @@ export {
   type EventType,
   type FoodStage,
   type LabelSide,
+  type ProjectStatus,
   type ReportKind,
   type Seriousness,
   type SettlementSize,
   type SiteForm,
+  type SiteState,
   type SiteType,
   type SpendingArea,
   type Terrain,

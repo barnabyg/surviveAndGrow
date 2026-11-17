@@ -156,9 +156,10 @@ p {
 /* Main screen */
 
 .game {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .topbar {
@@ -353,15 +354,25 @@ p {
 
 .columns {
   flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: 440px minmax(0, 1fr) 500px;
   align-items: stretch;
 }
 
+/* Each column scrolls on its own when it runs long, so the page itself never scrolls. */
 .column {
   min-width: 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.column > * {
+  flex-shrink: 0;
 }
 
 .column--situation,
@@ -430,8 +441,13 @@ p {
 
 .map-card__facts {
   display: flex;
-  gap: 28px;
+  flex-wrap: wrap;
+  gap: 8px 24px;
   font-size: 15px;
+}
+
+.map-card__value {
+  white-space: nowrap;
 }
 
 .map-card__note {
@@ -773,6 +789,119 @@ p {
 
 .slider--pending input {
   accent-color: var(--amber);
+}
+
+/* A cost the sliders do not set: instalments on projects */
+
+.fixed-costs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line-strong);
+}
+
+.fixed-costs__row {
+  display: grid;
+  grid-template-columns: 124px minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  font-size: 15.5px;
+}
+
+.fixed-costs__note {
+  font-size: 13.5px;
+  color: var(--label);
+}
+
+/* Projects under way and those the treasury can cover */
+
+.projects {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.project {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  background: var(--card);
+  border-radius: 10px;
+}
+
+.project__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 15.5px;
+}
+
+.project__name {
+  font-weight: 600;
+}
+
+.project__progress {
+  font-family: var(--font-figures);
+  font-weight: 500;
+  color: var(--amber);
+  white-space: nowrap;
+}
+
+.project__bar {
+  height: 8px;
+  background: var(--track);
+  border-radius: 4px;
+}
+
+.project__bar div {
+  height: 8px;
+  background: var(--amber);
+  border-radius: 4px;
+}
+
+.project__note,
+.projects__terms,
+.projects__in-use {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.project__planned {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.projects__offers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.projects__offers li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.projects__name {
+  font-size: 15.5px;
+  font-weight: 500;
+}
+
+.projects .button {
+  min-height: 44px;
+  font-size: 15px;
 }
 
 .label--pending {
