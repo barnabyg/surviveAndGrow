@@ -17,7 +17,10 @@ The design is in [docs/design.md](docs/design.md).
 npm run play
 ```
 
-This starts the game and opens it in your browser. It is designed for a 2560 x 1440 display.
+Or double-click `run.bat`, which also installs the dependencies if they are missing.
+
+This starts the game at http://localhost:41730 and opens it in your browser. It is designed for a
+2560 x 1440 display.
 
 Add `?seed=7` to the address to replay a known game: the same seed and the same decisions
 always give the same game. The summary at the end of a game gives its seed and offers to replay it.
