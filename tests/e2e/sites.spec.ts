@@ -28,6 +28,19 @@ test('selecting an empty site opens a card with its cost, build time and effect'
   await expect(site).toHaveAttribute('aria-pressed', 'false');
 });
 
+test('hovering a site that could be built tells its cost without opening the card', async ({
+  page,
+}) => {
+  await startGame(page);
+  const tavara = map(page, 'Republic of Tavara');
+  const store = tavara.getByRole('button', { name: /^Lowmere grain store/ });
+  const route = tavara.getByRole('button', { name: /^Farm road, Arden to Lowmere/ });
+
+  await expect(store.locator(':scope > title')).toHaveText('Lowmere grain store · $6.0m');
+  await expect(store).toHaveAccessibleName('Lowmere grain store, grain store, empty site, $6.0m');
+  await expect(route.locator(':scope > title')).toHaveText('Farm road, Arden to Lowmere · $10.0m');
+});
+
 test('a possible route is a site too, and can be selected from the keyboard', async ({ page }) => {
   await startGame(page);
   const route = map(page, 'Republic of Tavara').getByRole('button', {

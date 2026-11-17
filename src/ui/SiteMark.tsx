@@ -1,4 +1,6 @@
 import {
+  formatMoney,
+  siteTerms,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   type Point,
@@ -57,11 +59,14 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
   const [x, y] = markerPlace(site);
   const underWay = status.state === 'building' || status.state === 'paused';
   const inUse = status.state === 'operating';
+  // A site not yet begun still has its whole cost to pay, so it says what that is.
+  const cost = status.state === 'empty' ? formatMoney(siteTerms(site.type).cost) : null;
   const description = [
     site.name,
     SITE_TYPE_NAMES[site.type].toLowerCase(),
     siteStateName(site, status, planned).toLowerCase(),
     ...(underWay ? [`${progressOf(status)} quarters built`] : []),
+    ...(cost === null ? [] : [cost]),
   ].join(', ');
   const tags = [
     ...(planned ? [{ text: 'Planned', fill: palette.selection }] : []),
@@ -88,7 +93,7 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
         }
       }}
     >
-      <title>{site.name}</title>
+      <title>{cost === null ? site.name : `${site.name} · ${cost}`}</title>
       {site.form === 'route' && (
         <RouteLine
           route={site.route}
