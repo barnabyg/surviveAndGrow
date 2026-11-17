@@ -13,6 +13,7 @@ const SCALE_TITLES: Readonly<Record<Lens, string>> = {
   country: 'Land',
   food: 'Food situation',
   approval: 'Approval',
+  living: 'Living standard',
 };
 
 /**

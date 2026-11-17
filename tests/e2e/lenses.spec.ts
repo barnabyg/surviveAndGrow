@@ -14,6 +14,18 @@ const region = (page: Page, name: string, country?: string) =>
 
 /** The colour a region is filled with on the map. */
 const fillOf = (shape: Locator) => shape.evaluate((element) => getComputedStyle(element).fill);
+/** The contrast between two colours written as `rgb(r, g, b)`, as WCAG works it out. */
+function contrast(first: string, second: string): number {
+  const luminance = (colour: string) => {
+    const [r = 0, g = 0, b = 0] = (colour.match(/\d+/g) ?? []).map((channel) => {
+      const value = Number(channel) / 255;
+      return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [lighter, darker] = [luminance(first), luminance(second)].sort((a, b) => b - a);
+  return ((lighter ?? 0) + 0.05) / ((darker ?? 0) + 0.05);
+}
 /** The colour the scale gives for one of its steps. */
 const swatchOf = (steps: Locator, step: string) =>
   steps
@@ -28,10 +40,16 @@ test('lens buttons sit above the map, and the country view is the one chosen fir
 }) => {
   await startGame(page);
 
-  await expect(lenses(page).getByRole('button')).toHaveText(['Country', 'Food', 'Approval']);
+  await expect(lenses(page).getByRole('button')).toHaveText([
+    'Country',
+    'Food',
+    'Approval',
+    'Living standards',
+  ]);
   await expect(lens(page, 'Country')).toHaveAttribute('aria-pressed', 'true');
-  await expect(lens(page, 'Food')).toHaveAttribute('aria-pressed', 'false');
-  await expect(lens(page, 'Approval')).toHaveAttribute('aria-pressed', 'false');
+  for (const name of ['Food', 'Approval', 'Living standards']) {
+    await expect(lens(page, name)).toHaveAttribute('aria-pressed', 'false');
+  }
 
   const buttons = await lenses(page).boundingBox();
   const drawn = await map(page).boundingBox();
@@ -129,6 +147,57 @@ test('the approval lens colours each region by approval, labels it with the figu
   await expect(map(page).getByText('▲ Strikes · output −30%')).toHaveCount(6);
 });
 
+test('the living-standards lens colours each region by its living standard, and settlements dim as it falls', async ({
+  page,
+}) => {
+  await startGame(page, { countryFile: tavaraWithDroughtIn(['dry-east']) });
+
+  await lens(page, 'Living standards').click();
+
+  await expect(lens(page, 'Living standards')).toHaveAttribute('aria-pressed', 'true');
+  const steps = scale(page, 'Living standards');
+  await expect(steps.getByRole('listitem')).toHaveText([
+    'Under 20',
+    '20 to 25',
+    '25 to 35',
+    '35 to 45',
+    '45 to 70',
+    '70 and over',
+  ]);
+  // Every region carries its living standard as text, and its colour is the one the scale gives it.
+  await expect(map(page).getByText(/^Living standard: /)).toHaveCount(6);
+  await expect(region(page, 'Arden Vale')).toHaveAccessibleName('Arden Vale, living standard 26.2');
+  await expect(map(page).getByText('Living standard: 22.4', { exact: true })).toBeVisible();
+  expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '25 to 35'));
+  expect(await fillOf(region(page, 'The Dry East'))).toBe(await swatchOf(steps, '20 to 25'));
+
+  // The richest region's town is more built up and better lit than a poorer region's village.
+  const settlement = (name: string) =>
+    map(page).getByRole('img', { name: new RegExp(`^${name}:`) });
+  await expect(settlement('Arden')).toHaveAccessibleName('Arden: 9 buildings, 3 lit');
+  await expect(settlement('Dustwell')).toHaveAccessibleName('Dustwell: 4 buildings, 1 lit');
+  await expect(settlement('Westhaven')).toHaveAccessibleName('Westhaven: 4 buildings, 1 lit');
+
+  // A drought left alone: by the sixth quarter the Dry East is in shortage, its living
+  // standard has fallen, and Dustwell's lights have gone out while Westhaven's stay on.
+  await endQuarters(page, 6);
+  await expect(map(page).getByText('▲ Food: Shortage', { exact: true })).toBeVisible();
+  expect(await fillOf(region(page, 'The Dry East'))).toBe(await swatchOf(steps, 'Under 20'));
+  await expect(settlement('Dustwell')).toHaveAccessibleName('Dustwell: 3 buildings, 0 lit');
+  await expect(settlement('Westhaven')).toHaveAccessibleName('Westhaven: 4 buildings, 1 lit');
+
+  // Every region's lettering stands out from its lens colour at 4.5 to 1 or better.
+  for (const name of [
+    ...['Korr Highlands', 'Salt Coast', 'Lowmere Plains'],
+    ...['The Dry East', 'South Delta', 'Arden Vale'],
+  ]) {
+    const ink = await map(page)
+      .getByText(name, { exact: true })
+      .evaluate((element) => getComputedStyle(element).fill);
+    expect(contrast(ink, await fillOf(region(page, name)))).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
 test('the chosen lens stays from quarter to quarter, with sites, events and relief still shown', async ({
   page,
 }) => {
@@ -182,5 +251,16 @@ test('a second country is seen through the same lenses', async ({ page }) => {
   await expect(map(page, 'Testland').getByText('Food: Adequate', { exact: true })).toHaveCount(2);
   expect(await fillOf(region(page, 'Sandreach', 'Testland'))).toBe(
     await swatchOf(scale(page, 'Food'), 'Adequate'),
+  );
+
+  await lens(page, 'Living standards').click();
+  await expect(
+    map(page, 'Testland').getByText('Living standard: 32.6', { exact: true }),
+  ).toBeVisible();
+  expect(await fillOf(region(page, 'Northfield', 'Testland'))).toBe(
+    await swatchOf(scale(page, 'Living standards'), '25 to 35'),
+  );
+  await expect(map(page, 'Testland').getByRole('img', { name: /^Alpha:/ })).toHaveAccessibleName(
+    'Alpha: 9 buildings, 4 lit',
   );
 });

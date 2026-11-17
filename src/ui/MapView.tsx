@@ -2,9 +2,12 @@ import { Fragment, useId } from 'react';
 import {
   describeEvent,
   describeUnrest,
+  drawAt,
   FOOD_STAGE_NAMES,
+  formatIndex,
   formatPercent,
   MAP_FRAME,
+  settlementLooks,
   siteStatus,
   UNREST_NAMES,
   type Decoration,
@@ -13,9 +16,10 @@ import {
   type Point,
   type Region,
   type Settlement,
+  type SettlementLook,
   UNREST_KINDS,
 } from '../sim';
-import { lensFill, needsLightInk, type Lens } from './lens';
+import { lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
 import { TIER_PALETTES, type MapPalette } from './mapPalette';
 import { SiteMark } from './SiteMark';
 
@@ -69,6 +73,10 @@ export function MapView(props: MapViewProps) {
   );
   const paint = (regionId: string): Paint =>
     paintOf.get(regionId) ?? { fill: palette.terrain.plains, ink: palette.regionLabel };
+  // Settlements are built up and lit by their region's living standard, under every lens.
+  const looks = settlementLooks(game);
+  const lookOf = (settlementId: string): SettlementLook =>
+    looks.find((look) => look.settlementId === settlementId) ?? { buildings: 0, lit: 0 };
 
   return (
     <svg
@@ -79,7 +87,8 @@ export function MapView(props: MapViewProps) {
       data-tier={game.tier}
       style={{ background: palette.sea }}
     >
-      {/* The hatching for strikes, and the cross-hatching for protests. */}
+      {/* The hatching for strikes, the cross-hatching for protests, and the glow of lit
+          settlements. */}
       <defs>
         {UNREST_KINDS.map((unrest) => (
           <pattern
@@ -98,6 +107,11 @@ export function MapView(props: MapViewProps) {
             />
           </pattern>
         ))}
+        {/* The glow behind a lit settlement, fading out from its centre. */}
+        <radialGradient id={`${hatchId}-glow`}>
+          <stop offset="0" stopColor={palette.settlementGlow} stopOpacity="0.75" />
+          <stop offset="1" stopColor={palette.settlementGlow} stopOpacity="0" />
+        </radialGradient>
       </defs>
       {/* Shallow water: a soft glow where land meets the sea. */}
       <g fill="none" stroke={palette.coastGlow} strokeLinejoin="round" aria-hidden="true">
@@ -256,7 +270,9 @@ export function MapView(props: MapViewProps) {
           <SettlementMark
             key={settlement.id}
             settlement={settlement}
+            look={lookOf(settlement.id)}
             palette={palette}
+            glowId={`${hatchId}-glow`}
             ground={paint(settlement.regionId).fill}
             ink={plain ? null : paint(settlement.regionId).ink}
           />
@@ -315,7 +331,9 @@ function RegionShape(props: RegionShapeProps) {
     region.name,
     lens === 'approval'
       ? `approval ${formatPercent(state?.approval ?? 0)}`
-      : `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
+      : lens === 'living'
+        ? `living standard ${formatIndex(livingStandardOf(game, region.id))}`
+        : `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
     ...events.map((event) => describeEvent(game, event)),
     ...(unrest === null ? [] : [unrest]),
     ...(relieved ? ['food relief being sent'] : []),
@@ -353,7 +371,7 @@ interface RegionLabelProps {
 
 /**
  * A region's name, with the figure the lens shows beneath: its approval under the approval
- * lens, and its food stage otherwise. Then a tag for hunger, for each event, for unrest and
+ * lens, its living standard under the living-standards lens, and its food stage otherwise. Then a tag for hunger, for each event, for unrest and
  * for relief. A region in trouble gets a dark tag with a warning mark, so its state never
  * rests on colour alone.
  */
@@ -377,9 +395,11 @@ function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLab
   const figure =
     lens === 'approval'
       ? `Approval: ${formatPercent(state?.approval ?? 0)}`
-      : stage === 'adequate'
-        ? `Food: ${FOOD_STAGE_NAMES[stage]}`
-        : null;
+      : lens === 'living'
+        ? `Living standard: ${formatIndex(livingStandardOf(game, region.id))}`
+        : stage === 'adequate'
+          ? `Food: ${FOOD_STAGE_NAMES[stage]}`
+          : null;
   return (
     <g>
       <text
@@ -489,24 +509,36 @@ function DecorationMark({ decoration, palette }: DecorationMarkProps) {
   }
 }
 
-/** Where each small building of a settlement sits, relative to its centre. */
-const BUILDINGS = {
-  town: [
-    [-10, -6],
-    [-4, -9],
-    [2, -6],
-    [-8, 0],
-    [-2, -2],
-    [4, 0],
-    [-4, 5],
-    [3, 6],
-  ],
-  village: [
-    [-6, -4],
-    [0, -6],
-    [-2, 2],
-  ],
-} as const;
+/** The spacing of the plots a settlement's buildings stand on, and the size of a building. */
+const PLOT = 6;
+const BUILDING = 5;
+/** How far from a settlement's centre its plots reach, in plots. */
+const PLOT_REACH = 3;
+
+/**
+ * Where a settlement's buildings stand, relative to its centre, in the order they are built:
+ * plots on a small grid, each row set half a plot along from the last, taken from the centre
+ * outwards with a twist of chance so that each settlement has its own street plan. The chance
+ * is drawn from the settlement's id, so the plan is the same every time, a settlement grows
+ * and shrinks at its edges, and no country needs anything drawn for it.
+ */
+function plotsOf(settlement: Settlement): Point[] {
+  // The id folded into one number (FNV-1a), as the seed of the plan's chance.
+  let seed = 2166136261;
+  for (let index = 0; index < settlement.id.length; index += 1) {
+    seed = Math.imul(seed ^ settlement.id.charCodeAt(index), 16777619) >>> 0;
+  }
+  const plots: { at: Point; order: number }[] = [];
+  for (let row = -PLOT_REACH; row <= PLOT_REACH; row += 1) {
+    for (let column = -PLOT_REACH; column <= PLOT_REACH; column += 1) {
+      const x = (column + (row % 2 === 0 ? 0 : 0.5)) * PLOT;
+      const y = row * PLOT;
+      const order = Math.hypot(x, y) + drawAt(seed, row + PLOT_REACH, column + PLOT_REACH) * PLOT;
+      plots.push({ at: [x - BUILDING / 2, y - BUILDING / 2], order });
+    }
+  }
+  return plots.sort((a, b) => a.order - b.order).map((plot) => plot.at);
+}
 
 const LABEL_PLACES: Readonly<
   Record<LabelSide, { dx: number; dy: number; anchor: 'start' | 'middle' | 'end' }>
@@ -519,22 +551,70 @@ const LABEL_PLACES: Readonly<
 
 interface SettlementMarkProps {
   readonly settlement: Settlement;
+  /** How built up and lit the settlement is at its region's living standard. */
+  readonly look: SettlementLook;
   readonly palette: MapPalette;
+  /** The id of the glow laid behind a settlement with lights on. */
+  readonly glowId: string;
   /** The colour of the land beneath, used as a halo so the name stays readable. */
   readonly ground: string;
   /** The colour to letter in over a lens's colour, or null to use the palette's own. */
   readonly ink: string | null;
 }
 
-function SettlementMark({ settlement, palette, ground, ink }: SettlementMarkProps) {
+/**
+ * A settlement: as many buildings as its region's living standard gives it, the ones nearest
+ * its centre lit first, and a glow behind it that brightens with the share lit. Lit buildings
+ * are outlined as well as coloured, and the count is in the mark's name, so its state never
+ * rests on colour alone.
+ */
+function SettlementMark({ settlement, look, palette, glowId, ground, ink }: SettlementMarkProps) {
   const [x, y] = settlement.at;
   const place = LABEL_PLACES[settlement.labelSide];
+  const plots = plotsOf(settlement).slice(0, look.buildings);
+  const reach = Math.max(0, ...plots.map(([dx, dy]) => Math.hypot(dx, dy))) + PLOT * 2;
+  const dark = ink ?? palette.settlement;
   return (
     <g>
-      <g fill={ink ?? palette.settlement} aria-hidden="true">
-        {BUILDINGS[settlement.size].map(([dx, dy]) => (
-          <rect key={`${dx},${dy}`} x={x + dx} y={y + dy} width="5" height="5" />
-        ))}
+      {look.lit > 0 && (
+        <circle
+          cx={x}
+          cy={y}
+          r={reach}
+          fill={`url(#${glowId})`}
+          opacity={0.4 + (0.6 * look.lit) / look.buildings}
+          aria-hidden="true"
+        />
+      )}
+      <g
+        role="img"
+        aria-label={`${settlement.name}: ${look.buildings} buildings, ${look.lit} lit`}
+        data-buildings={look.buildings}
+        data-lit={look.lit}
+      >
+        {plots.map(([dx, dy], index) =>
+          index < look.lit ? (
+            <rect
+              key={`${dx},${dy}`}
+              x={x + dx + 0.5}
+              y={y + dy + 0.5}
+              width={BUILDING - 1}
+              height={BUILDING - 1}
+              fill={palette.settlementLit}
+              stroke={dark}
+              strokeWidth="1"
+            />
+          ) : (
+            <rect
+              key={`${dx},${dy}`}
+              x={x + dx}
+              y={y + dy}
+              width={BUILDING}
+              height={BUILDING}
+              fill={dark}
+            />
+          ),
+        )}
       </g>
       <text
         className={`map__settlement-label map__settlement-label--${settlement.size}`}

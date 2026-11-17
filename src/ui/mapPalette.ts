@@ -18,6 +18,9 @@ export interface MapPalette {
   readonly river: string;
   readonly settlement: string;
   readonly settlementLabel: string;
+  /** A lit building, and the glow laid behind a settlement with lights on. */
+  readonly settlementLit: string;
+  readonly settlementGlow: string;
   readonly mountain: string;
   readonly mountainLine: string;
   readonly dune: string;
@@ -29,11 +32,16 @@ export interface MapPalette {
   readonly foodLens: Readonly<Record<FoodStage, string>>;
   /** The approval lens, from the lowest approval to the highest, each step darker. */
   readonly approvalLens: readonly string[];
+  /**
+   * The living-standards lens, from the lowest living standard to the highest, each step
+   * darker, so that the steps can be told apart by lightness and not by hue alone.
+   */
+  readonly livingLens: readonly string[];
   /** The hatching laid over a region with strikes or protests on the approval lens. */
   readonly unrestMark: string;
   /**
    * Lettering over a lens colour: dark as a rule, and light over a colour too dark for
-   * that. Every step of both lenses is light or dark enough for one of them to stand out
+   * that. Every step of every lens is light or dark enough for one of them to stand out
    * at 4.5 to 1 or better.
    */
   readonly lensLabelDark: string;
@@ -80,12 +88,15 @@ export const tierOnePalette: MapPalette = {
   river: '#4f7f8f',
   settlement: '#54483a',
   settlementLabel: '#2b2619',
+  settlementLit: '#f3cf72',
+  settlementGlow: '#f6c95a',
   mountain: '#b9b19c',
   mountainLine: '#6b634e',
   dune: '#a88a58',
   field: '#9c8c5e',
   foodLens: { adequate: '#ece3c8', tight: '#e2b565', shortage: '#c96f35', famine: '#74291c' },
   approvalLens: ['#f4f0e7', '#bcd0db', '#8fb3c8', '#5b8fad', '#28536f'],
+  livingLens: ['#f2ecdc', '#dfdcae', '#b8cc8a', '#7aa86e', '#3a7350', '#1b4a39'],
   unrestMark: '#7a2716',
   lensLabelDark: '#14181d',
   lensLabelLight: '#fff6e6',
@@ -144,6 +155,8 @@ export const tierThreePalette: MapPalette = {
   regionBorder: '#5f6440',
   river: '#438fb0',
   settlement: '#7d3f2a',
+  settlementLit: '#ffd97a',
+  settlementGlow: '#ffd060',
   field: '#7f8f4a',
 };
 
@@ -164,6 +177,8 @@ export const tierFourPalette: MapPalette = {
   regionBorder: '#55603f',
   river: '#3d97c0',
   settlement: '#8a3a26',
+  settlementLit: '#ffe38f',
+  settlementGlow: '#ffd96e',
   field: '#73904a',
 };
 
