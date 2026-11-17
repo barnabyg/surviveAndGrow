@@ -2,6 +2,7 @@ import {
   formatMoney,
   isInUseState,
   siteTerms,
+  SITE_POWER_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   type Point,
@@ -135,6 +136,7 @@ export function SiteMark(props: SiteMarkProps) {
           started={planned || underWay}
           missing={missingLink}
           closed={closed}
+          power={SITE_POWER_ROLES[site.type] === 'line'}
           palette={palette}
           selected={selected}
         />
@@ -241,6 +243,18 @@ function MissingCross({ palette }: { readonly palette: MapPalette }) {
   );
 }
 
+/** How the part of a route still to build is drawn: a power line finer than a road. */
+const UNBUILT = {
+  road: {
+    width: { started: 3, other: 2 },
+    dashes: { started: '5 4', closed: '2 5', possible: '7 6' },
+  },
+  power: {
+    width: { started: 2, other: 1.5 },
+    dashes: { started: '3 3', closed: '1.5 5', possible: '3 4' },
+  },
+} as const;
+
 interface RouteLineProps {
   readonly route: readonly Point[];
   /** The share of the route that is built, from none (0) to all of it (1). */
@@ -251,6 +265,8 @@ interface RouteLineProps {
   readonly missing: boolean;
   /** Whether one of its alternatives has closed the route, which leaves it faint and finely dashed. */
   readonly closed: boolean;
+  /** Whether the route is a power line, which is finely dashed in every state. */
+  readonly power: boolean;
   readonly palette: MapPalette;
   readonly selected: boolean;
 }
@@ -260,16 +276,25 @@ interface RouteLineProps {
  * still to build is dashed, in amber once work is planned or under way. A route that is a
  * missing link in the chain picked out is dotted instead, in round dots over a dark line,
  * which no dash of a possible or started route resembles. A closed route is faint and
- * finely dashed.
+ * finely dashed. A power line is drawn finer: short dashes while it is still to build, and
+ * once built, pale dashes along a thin dark line, which no road resembles.
  */
-function RouteLine({ route, built, started, missing, closed, palette, selected }: RouteLineProps) {
+function RouteLine(props: RouteLineProps) {
+  const { route, built, started, missing, closed, power, palette, selected } = props;
   const [road, rest] = splitAt(route, built);
+  const unbuilt = UNBUILT[power ? 'power' : 'road'];
   return (
-    <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <g
+      className={power ? 'map__power-line' : undefined}
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       {/* A wide unseen line, so the route is easy to hit. */}
       <polyline points={line(route)} stroke="transparent" strokeWidth="16" />
       {selected && (
         <polyline
+          className="map__route-halo"
           points={line(route)}
           stroke={palette.selection}
           strokeOpacity="0.55"
@@ -299,12 +324,29 @@ function RouteLine({ route, built, started, missing, closed, palette, selected }
           points={line(rest)}
           stroke={started ? palette.construction : palette.siteLine}
           strokeOpacity={started || selected ? 1 : closed ? 0.3 : 0.55}
-          strokeWidth={started ? 3 : 2}
-          strokeDasharray={started ? '5 4' : closed ? '2 5' : '7 6'}
+          strokeWidth={unbuilt.width[started ? 'started' : 'other']}
+          strokeDasharray={unbuilt.dashes[started ? 'started' : closed ? 'closed' : 'possible']}
           strokeLinecap="butt"
         />
       )}
-      {built > 0 && (
+      {built > 0 && power && (
+        <>
+          <polyline
+            className="map__power-casing"
+            points={line(road)}
+            stroke={palette.roadCasing}
+            strokeWidth="3"
+          />
+          <polyline
+            points={line(road)}
+            stroke={palette.road}
+            strokeWidth="1.5"
+            strokeDasharray="3 2"
+            strokeLinecap="butt"
+          />
+        </>
+      )}
+      {built > 0 && !power && (
         <>
           <polyline points={line(road)} stroke={palette.roadCasing} strokeWidth="5" />
           <polyline points={line(road)} stroke={palette.road} strokeWidth="2.6" />

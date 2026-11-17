@@ -70,6 +70,12 @@ export function MapLegend() {
       </li>
       <li>
         <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
+          <path d="M2,8 H24" stroke="#f1e6c6" strokeWidth="1.5" strokeDasharray="3 2" />
+        </svg>
+        Power line
+      </li>
+      <li>
+        <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
           <path
             d="M3,8 H23"
             stroke="currentColor"

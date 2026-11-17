@@ -498,8 +498,8 @@
       "id": "korr-falls-station",
       "type": "powerStation",
       "name": "Korr Falls power station",
-      "region": "lowmere-plains",
-      "at": [585, 292]
+      "region": "korr-highlands",
+      "at": [645, 200]
     },
     {
       "id": "arden-power-line",
@@ -507,9 +507,9 @@
       "name": "Power line, Korr Falls to Arden",
       "region": "arden-vale",
       "route": [
-        [575, 302],
-        [535, 352],
-        [497, 392]
+        [640, 212],
+        [575, 290],
+        [505, 390]
       ],
       "dependsOn": ["korr-falls-station"]
     },
@@ -519,9 +519,10 @@
       "name": "Power line, Korr Falls to Lowmere",
       "region": "lowmere-plains",
       "route": [
-        [597, 302],
-        [622, 352],
-        [636, 392]
+        [652, 214],
+        [705, 300],
+        [690, 360],
+        [645, 393]
       ],
       "dependsOn": ["korr-falls-station"]
     },
@@ -531,9 +532,9 @@
       "name": "Power line, Korr Falls to Korrgate",
       "region": "korr-highlands",
       "route": [
-        [575, 282],
-        [520, 232],
-        [472, 196]
+        [633, 200],
+        [555, 206],
+        [476, 192]
       ],
       "dependsOn": ["korr-falls-station"]
     }

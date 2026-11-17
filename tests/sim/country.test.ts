@@ -55,7 +55,7 @@ describe('a valid country file', () => {
       ['Trunk road, Korrgate mine to Saltmouth', 'trunkRoad', 'salt-coast', 'route'],
       ['Saltmouth port', 'port', 'salt-coast', 'place'],
       ['Saltmouth quay', 'shallowPort', 'salt-coast', 'place'],
-      ['Korr Falls power station', 'powerStation', 'lowmere-plains', 'place'],
+      ['Korr Falls power station', 'powerStation', 'korr-highlands', 'place'],
       ['Power line, Korr Falls to Arden', 'powerLine', 'arden-vale', 'route'],
       ['Power line, Korr Falls to Lowmere', 'powerLine', 'lowmere-plains', 'route'],
       ['Power line, Korr Falls to Korrgate', 'powerLine', 'korr-highlands', 'route'],

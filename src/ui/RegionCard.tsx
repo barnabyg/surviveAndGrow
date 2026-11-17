@@ -1,13 +1,17 @@
 import {
+  DECAYING_SHARE,
   describeEvent,
   describeUnrest,
   FOOD_STAGE_NAMES,
   formatCount,
+  formatMoney,
   formatPercent,
   formatIndex,
   formatTonnes,
   livingStandards,
+  type Contribution,
   type GameState,
+  type LivingStandard,
   type Preview,
   type TurnReport,
 } from '../sim';
@@ -79,6 +83,23 @@ export function RegionCard(props: RegionCardProps) {
           <dd>{formatPercent(state.approval)}</dd>
         </div>
       </dl>
+      {standard !== undefined && <PowerNote game={game} standard={standard} />}
+      {standard !== undefined && (
+        <div className="map-card__parts">
+          <Parts
+            title="Output a quarter"
+            parts={standard.output}
+            total={standard.output.reduce((total, part) => total + part.amount, 0)}
+            format={formatMoney}
+          />
+          <Parts
+            title="Infrastructure access"
+            parts={standard.infrastructure}
+            total={standard.scores.infrastructure}
+            format={(permille) => formatIndex(permille)}
+          />
+        </div>
+      )}
       {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
       {events.map((event) => (
         <p key={event.type} className="warning-note">
@@ -106,5 +127,61 @@ export function RegionCard(props: RegionCardProps) {
         </button>
       </div>
     </section>
+  );
+}
+
+/** Whether power reaches the region, from which station along which line, and how well. */
+function PowerNote({ game, standard }: { game: GameState; standard: LivingStandard }) {
+  const { power } = standard;
+  const nameOf = (id: string | null) =>
+    game.country.sites.find((site) => site.id === id)?.name ?? '';
+  if (power.stationId === null) {
+    return (
+      <p className="map-card__note" role="status" aria-label="Power">
+        Not powered: no power line in use links it to a power station.
+      </p>
+    );
+  }
+  const from = `${nameOf(power.stationId)}, along ${nameOf(power.lineId)}`;
+  return power.weakened ? (
+    <p className="warning-note" role="status" aria-label="Power">
+      ▲ Power weakened: the power from {from} runs through a decaying site, so it gives only{' '}
+      {DECAYING_SHARE} of what it gives in good repair.
+    </p>
+  ) : (
+    <p className="map-card__note" role="status" aria-label="Power">
+      Powered from {from}.
+    </p>
+  );
+}
+
+interface PartsProps {
+  readonly title: string;
+  readonly parts: readonly Contribution[];
+  /** What the parts come to, which may be capped below their sum. */
+  readonly total: number;
+  readonly format: (amount: number) => string;
+}
+
+/** A figure of the region's and what it is made of, line by line. */
+function Parts({ title, parts, total, format }: PartsProps) {
+  return (
+    <table className="breakdown__table" aria-label={title}>
+      <caption className="map-card__term">{title}</caption>
+      <tbody>
+        {parts.map((part) => (
+          <tr key={part.label}>
+            <th scope="row">{part.label}</th>
+            <td>{format(part.amount)}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total</th>
+          <td>{format(total)}</td>
+        </tr>
+      </tfoot>
+    </table>
   );
 }

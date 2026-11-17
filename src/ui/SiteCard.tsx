@@ -3,6 +3,8 @@ import {
   DECAYING_SHARE,
   formatMoney,
   regionName,
+  regionPower,
+  SITE_POWER_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   siteStatus,
@@ -121,6 +123,9 @@ export function SiteCard(props: SiteCardProps) {
       {status.opened !== null && (
         <p className="map-card__note">In use since {formatDate(status.opened)}.</p>
       )}
+      {SITE_POWER_ROLES[site.type] !== null && status.opened !== null && (
+        <PowerReach game={game} siteId={site.id} />
+      )}
       {status.state === 'decaying' && (
         <p className="warning-note" role="status">
           ▲ Decaying: upkeep fell short, so it does only {DECAYING_SHARE} of what it does in good
@@ -232,6 +237,23 @@ function ChainList({ game, chain, siteId }: ChainListProps) {
         </p>
       )}
     </section>
+  );
+}
+
+/** The regions a power station or line in use brings power to, or why it brings none. */
+function PowerReach({ game, siteId }: { readonly game: GameState; readonly siteId: string }) {
+  const reached = regionPower(game)
+    .filter((power) => power.stationId === siteId || power.lineId === siteId)
+    .map((power) => regionName(game.country, power.regionId));
+  return reached.length > 0 ? (
+    <p className="map-card__note" role="status">
+      Powering {listed(reached)}.
+    </p>
+  ) : (
+    <p className="warning-note" role="status">
+      ▲ Powering no region: power reaches a region only along a power line in use that links it to a
+      power station in use.
+    </p>
   );
 }
 

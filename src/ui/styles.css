@@ -596,6 +596,17 @@ p {
   color: var(--muted);
 }
 
+.map-card__parts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.map-card__parts caption {
+  text-align: left;
+  font-size: 15px;
+}
+
 .map-card__chain {
   display: flex;
   flex-direction: column;
