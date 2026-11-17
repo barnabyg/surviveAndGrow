@@ -38,7 +38,9 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
   const underway = sites.filter(
     ({ status, planned }) => planned || status.state === 'building' || status.state === 'paused',
   );
-  const inUse = sites.filter(({ status }) => status.state === 'operating');
+  const inUse = sites.filter(
+    ({ status }) => status.state === 'operating' || status.state === 'decaying',
+  );
   const affordable = sites.filter(
     ({ site, status, planned }) =>
       status.state === 'empty' &&
@@ -79,7 +81,14 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
         />
       ))}
       {inUse.length > 0 && (
-        <p className="projects__in-use">In use: {inUse.map(({ site }) => site.name).join(' · ')}</p>
+        <p className="projects__in-use">
+          In use:{' '}
+          {inUse
+            .map(({ site, status }) =>
+              status.state === 'decaying' ? `${site.name} (▲ decaying)` : site.name,
+            )
+            .join(' · ')}
+        </p>
       )}
 
       <h3 className="label" id="affordable-title">

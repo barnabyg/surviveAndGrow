@@ -16,10 +16,16 @@ test('the budget shows a slider for tax and each spending area, with the totals'
     'Health',
     'Education',
     'Security',
+    'Upkeep',
   ]) {
     await expect(budget.getByRole('slider', { name })).toBeVisible();
   }
   await expect(budget.getByRole('slider', { name: 'Tax rate' })).toHaveValue('18');
+  // Enough upkeep to keep every site in good repair, though nothing is built yet to need it.
+  await expect(budget.getByRole('slider', { name: 'Upkeep' })).toHaveValue('3');
+  await expect(budget.getByRole('group', { name: 'Upkeep needed' })).toContainText(
+    'No site is in use yet, so upkeep costs nothing',
+  );
   await expect(totals(page).getByRole('group', { name: 'Revenue' })).toContainText('$31.0m');
   await expect(totals(page).getByRole('group', { name: 'Spending' })).toContainText('$36.0m');
   await expect(totals(page).getByRole('group', { name: 'Balance' })).toContainText('−$5.0m');

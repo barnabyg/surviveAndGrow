@@ -136,6 +136,7 @@ test('a road is built along its route, and the legend explains every state', asy
     'Empty site',
     'Under construction',
     'Operating',
+    'Decaying',
     'Possible route',
     'Road',
   ]);

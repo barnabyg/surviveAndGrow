@@ -31,6 +31,18 @@ export function MapLegend() {
         Operating
       </li>
       <li>
+        <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+          <circle r="5" cx="-1.5" cy="1.5" fill="currentColor" />
+          <path
+            d="M3,-7.5 L7.5,0.5 H-1.5 Z"
+            fill="var(--amber)"
+            stroke="currentColor"
+            strokeWidth="1"
+          />
+        </svg>
+        Decaying
+      </li>
+      <li>
         <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
           <path d="M1,8 H25" stroke="currentColor" strokeWidth="2" strokeDasharray="7 5" />
         </svg>

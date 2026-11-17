@@ -53,12 +53,14 @@ interface SiteMarkProps {
 /**
  * One site on the map. It is a button: picking it opens the site's card. Each state has
  * its own shape as well as its own colour: an empty site is a dashed marker, one being
- * built wears a ring and says how far it has got, and one in use is solid.
+ * built wears a ring and says how far it has got, and one in use is solid. One in use that
+ * is decaying for want of upkeep also wears the warning triangle and a tag that says so.
  */
 export function SiteMark({ site, status, planned, palette, selected, onSelect }: SiteMarkProps) {
   const [x, y] = markerPlace(site);
   const underWay = status.state === 'building' || status.state === 'paused';
-  const inUse = status.state === 'operating';
+  const decaying = status.state === 'decaying';
+  const inUse = status.state === 'operating' || decaying;
   // A site not yet begun still has its whole cost to pay, so it says what that is.
   const cost = status.state === 'empty' ? formatMoney(siteTerms(site.type).cost) : null;
   const description = [
@@ -74,6 +76,7 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
     ...(status.state === 'paused'
       ? [{ text: `▲ Paused · ${progressOf(status)}`, fill: palette.tagText }]
       : []),
+    ...(decaying ? [{ text: '▲ Decaying', fill: palette.tagText }] : []),
     ...(selected ? [{ text: site.name, fill: palette.selection }] : []),
   ];
   return (
@@ -131,6 +134,7 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        {decaying && <WarningTriangle palette={palette} />}
       </g>
       {tags.map((tag, index) => {
         const width = tag.text.length * 6.7 + 22;
@@ -151,6 +155,27 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
           </g>
         );
       })}
+    </g>
+  );
+}
+
+/** The warning triangle, worn at the top right of a site's marker while it decays. */
+function WarningTriangle({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <g className="map__site-warning" transform="translate(12,-12)">
+      <path
+        d="M0,-9 L9,7 H-9 Z"
+        fill={palette.tagBackground}
+        stroke={palette.tagText}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M0,-3 V2 M0,4.5 V4.6"
+        stroke={palette.tagText}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
     </g>
   );
 }

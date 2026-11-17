@@ -73,6 +73,7 @@ export {
   type SaveMigration,
 } from './save';
 export { siteTerms, type SiteTerms } from './sites';
+export { DECAYING_SHARE, UPKEEP_ORDER_RULE } from './upkeep';
 export {
   siteSchedule,
   termCalendar,
