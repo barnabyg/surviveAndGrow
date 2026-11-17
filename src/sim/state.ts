@@ -40,17 +40,34 @@ export interface RegionState {
   readonly unrest: Unrest;
 }
 
-/** Whether the game is still being played, and if not, how it ended. */
+/** How a finished game ended, in words the player can be shown whatever the cause. */
+interface Ending {
+  /** What happened, in a few words: "You won the election". */
+  readonly headline: string;
+  /** Why the game ended as it did. */
+  readonly summary: string;
+}
+
+/**
+ * Whether the game is still being played, and if not, how it ended. The game is won by
+ * winning the election at the end of the term, and lost by losing it or by famine.
+ */
 export type Outcome =
   | { readonly status: 'playing' }
-  | {
+  | (Ending & {
       readonly status: 'lost';
       readonly cause: 'famine';
       /** The region where the famine took hold. */
       readonly regionId: string;
-      /** Why the game ended, in words for the player. */
-      readonly summary: string;
-    };
+    })
+  | (Ending & {
+      readonly status: 'won' | 'lost';
+      readonly cause: 'election';
+      /** The share of the vote the government took, in thousandths. */
+      readonly voteShare: number;
+      /** The share it needed to stay in office, in thousandths. */
+      readonly needed: number;
+    });
 
 /** Everything about a game in progress. It is never changed in place. */
 export interface GameState {
@@ -149,6 +166,11 @@ export interface Preview {
   readonly approvalHeading: Range;
   /** The regions that will be striking or protesting once the quarter is over. */
   readonly unrest: readonly RegionUnrest[];
+  /**
+   * The share of the vote an election would give, in thousandths, if it were held on
+   * approval as this quarter will leave it. The campaign's swing makes it a range.
+   */
+  readonly voteShare: Range;
 }
 
 /** What food relief does in a quarter, in tonnes. */

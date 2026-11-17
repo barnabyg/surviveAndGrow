@@ -18,6 +18,16 @@ export function formatCount(count: number): string {
   return count.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/** A size in points of approval, written from thousandths: `1.2 points`, `1.0 point`. */
+export function formatPoints(permille: number): string {
+  return `${(permille / 10).toFixed(1)} ${permille === 10 ? 'point' : 'points'}`;
+}
+
+/** A movement in points with its sign: `+1.2 points`, `−3.6 points`, `0.0 points`. */
+export function formatSignedPoints(permille: number): string {
+  return `${permille > 0 ? '+' : permille < 0 ? MINUS : ''}${formatPoints(Math.abs(permille))}`;
+}
+
 /**
  * A share written in thousandths as the player reads it: `54.3%`. Marks that are whole
  * numbers by design, such as a threshold, are written without the decimal: `40%`.

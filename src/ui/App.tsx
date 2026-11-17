@@ -65,6 +65,18 @@ function useCountry(): CountrySource {
   return source;
 }
 
+/**
+ * Names a seed in the address, or with null takes the seed out of it. The address names a
+ * seed exactly when the player has asked for a known game, so reloading the page and
+ * replaying from the summary screen agree on which game that is.
+ */
+function writeSeedToAddress(seed: number | null): void {
+  const address = new URL(window.location.href);
+  if (seed === null) address.searchParams.delete('seed');
+  else address.searchParams.set('seed', String(seed));
+  window.history.replaceState(null, '', address);
+}
+
 /** A seed from the address (`?seed=7`) replays a known game. Otherwise each game is new. */
 function chooseSeed(): number {
   const fromAddress = new URLSearchParams(window.location.search).get('seed');
@@ -76,6 +88,9 @@ function chooseSeed(): number {
 export function App() {
   const source = useCountry();
   const [game, setGame] = useState<GameState | null>(null);
+  // Counts the games started, so that each one gets a screen of its own with nothing
+  // carried over from the last.
+  const [gameNumber, setGameNumber] = useState(0);
 
   if (source.status === 'loading') {
     return (
@@ -109,8 +124,16 @@ export function App() {
   }
   return (
     <GameScreen
+      key={gameNumber}
       initialGame={game}
-      onRestart={() => {
+      onReplay={() => {
+        writeSeedToAddress(game.seed);
+        setGame(createGame(game.country, game.seed));
+        setGameNumber(gameNumber + 1);
+      }}
+      onNewGame={() => {
+        // A new game is a different game, so the address stops naming this one's seed.
+        writeSeedToAddress(null);
         setGame(null);
       }}
     />

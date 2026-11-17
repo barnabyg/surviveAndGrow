@@ -140,6 +140,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Protest report',
     path: 'M4,18 V11 M4,11 L2,6 M10,18 V9 M10,9 L10,3 M16,18 V11 M16,11 L18,6 M7,18 V14 M13,18 V14',
   },
+  // A ballot dropping into a box.
+  election: {
+    label: 'Election report',
+    path: 'M3,10 H17 V17 H3 Z M7,10 V4 H13 V10 M8.5,6.5 L10,8 L12,5.5',
+  },
   // A broken column.
   collapse: {
     label: 'Collapse report',

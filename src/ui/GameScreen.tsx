@@ -3,7 +3,8 @@ import { advanceQuarter, previewQuarter, type GameState, type TurnReport } from 
 import { ApprovalChart } from './ApprovalChart';
 import { BudgetPanel, countChanges } from './BudgetPanel';
 import { ConfirmDialog } from './ConfirmDialog';
-import { GameOverDialog } from './GameOverDialog';
+import { ElectionPanel } from './ElectionPanel';
+import { GameSummary } from './GameSummary';
 import { MapView } from './MapView';
 import { RegionCard } from './RegionCard';
 import { RegionList } from './RegionList';
@@ -13,11 +14,13 @@ import { TopBar } from './TopBar';
 
 interface GameScreenProps {
   readonly initialGame: GameState;
-  /** Leaves this game for the start screen. */
-  readonly onRestart: () => void;
+  /** Starts the same game again from its first quarter. */
+  readonly onReplay: () => void;
+  /** Leaves this game for the start screen, where a new one begins. */
+  readonly onNewGame: () => void;
 }
 
-export function GameScreen({ initialGame, onRestart }: GameScreenProps) {
+export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps) {
   const [game, setGame] = useState(initialGame);
   const [report, setReport] = useState<TurnReport | null>(null);
   // The committed budget is what the quarter will be resolved with. The pending budget is
@@ -121,6 +124,7 @@ export function GameScreen({ initialGame, onRestart }: GameScreenProps) {
                 reliefRegionId={reliefRegionId}
                 onSendRelief={setReliefRegionId}
               />
+              <ElectionPanel game={game} preview={preview} />
             </>
           )}
         </aside>
@@ -140,7 +144,7 @@ export function GameScreen({ initialGame, onRestart }: GameScreenProps) {
           resolved with the last budget you committed, and the changes stay pending.
         </ConfirmDialog>
       )}
-      {!playing && <GameOverDialog game={game} onRestart={onRestart} />}
+      {!playing && <GameSummary game={game} onReplay={onReplay} onNewGame={onNewGame} />}
     </div>
   );
 }

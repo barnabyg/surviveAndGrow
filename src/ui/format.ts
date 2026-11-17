@@ -1,4 +1,14 @@
-import { formatMoney, formatTonnes, type Money, type Range } from '../sim';
+import { formatMoney, formatTonnes, type GameDate, type Money, type Range } from '../sim';
+
+/** A date as a sentence writes it: `Year 5, Quarter 4`. */
+export function formatDate(date: GameDate): string {
+  return `Year ${date.year}, Quarter ${date.quarter}`;
+}
+
+/** A count of quarters: `1 quarter`, `19 quarters`. */
+export function formatQuarters(count: number): string {
+  return `${count} ${count === 1 ? 'quarter' : 'quarters'}`;
+}
 
 /** A movement of money with its sign: `+$9.4m`, `−$11.0m`, or `$0.0m` for none. */
 export function formatSigned(amount: Money): string {
@@ -8,16 +18,6 @@ export function formatSigned(amount: Money): string {
 /** A movement of food with its sign: `+118,240 t` or `−14,560 t`. */
 export function formatSignedTonnes(tonnes: number): string {
   return `${tonnes > 0 ? '+' : ''}${formatTonnes(tonnes)}`;
-}
-
-/** A movement of approval with its sign, in points: `+1.2 points`, `−3.6 points`. */
-export function formatSignedPoints(permille: number): string {
-  return `${permille > 0 ? '+' : permille < 0 ? '−' : ''}${formatPoints(Math.abs(permille))}`;
-}
-
-/** A size in points of approval, written from thousandths: `1.2 points`, `1.0 point`. */
-export function formatPoints(permille: number): string {
-  return `${(permille / 10).toFixed(1)} ${permille === 10 ? 'point' : 'points'}`;
 }
 
 /**

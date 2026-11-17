@@ -132,6 +132,13 @@ export function BudgetPanel(props: BudgetPanelProps) {
           after={after.approvalHeading}
           format={formatPercent}
         />
+        <Projection
+          label="Vote share forecast"
+          before={before.voteShare}
+          after={after.voteShare}
+          format={formatPercent}
+          onlyIfMoved
+        />
         {(['strikes', 'protests'] as const).map((unrest) => {
           const regions = regionsIn(after.unrest, unrest);
           return (

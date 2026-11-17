@@ -95,6 +95,7 @@ export const REPORT_KINDS = [
   'event',
   'strike',
   'protest',
+  'election',
   'collapse',
   'quiet',
 ] as const;

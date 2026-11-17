@@ -1,4 +1,4 @@
-import { approvalStatus, formatPercent, type GameState } from '../sim';
+import { approvalStatus, electionStatus, formatPercent, type GameState } from '../sim';
 import { describeTrend, hasTrend, recent, TREND_QUARTERS, verticalScale, type Mark } from './trend';
 
 /** The level below which a region strikes, as charts mark it. */
@@ -11,8 +11,11 @@ export function strikeMark(strikesBelow: number): Mark {
   };
 }
 
-/** Half the country: the line approval must hold to keep a majority behind the government. */
-const HALF: Mark = { value: 500, label: '50% line', name: 'the 50% line' };
+/** The share of the vote the election needs, which approval must hold to win it. */
+function electionMark(needed: number): Mark {
+  const level = formatPercent(needed, 0);
+  return { value: needed, label: `${level} line`, name: `the ${level} line` };
+}
 
 // The chart is drawn in a frame of this size and scaled to the column's width.
 const FRAME = { width: 400, height: 170 } as const;
@@ -22,13 +25,16 @@ const GRID_STEP = 100;
 
 /**
  * National approval over the last eight quarters, against the two levels that matter: the
- * strike threshold and the 50% line. Each mark has its own dash pattern and is labelled in
+ * strike threshold and the share the election needs. Each mark has its own dash pattern and is labelled in
  * words, and the whole chart is described in a sentence for anyone who cannot see it.
  */
 export function ApprovalChart({ game }: { readonly game: GameState }) {
   const shown = recent(game.history);
   const values = shown.map((record) => record.approval);
-  const marks = [strikeMark(approvalStatus(game).strikesBelow), HALF];
+  const marks = [
+    strikeMark(approvalStatus(game).strikesBelow),
+    electionMark(electionStatus(game).needed),
+  ];
   const quarters = values.length - 1;
 
   return (

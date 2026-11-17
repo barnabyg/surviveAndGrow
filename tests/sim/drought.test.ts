@@ -125,10 +125,14 @@ describe.each(scenarios)('a drought in $name', ({ file, regionId, regionName }) 
   });
 
   it('never comes where the country file gives it no chance', () => {
-    const { states } = play(createGame(spared(), 1), 40, (game) => ({
-      budget: reliefBudget(game, 0),
-      reliefRegionId: null,
-    }));
+    // Two whole terms, each of which ends with its election after 20 quarters.
+    const states = [1, 2].flatMap(
+      (seed) =>
+        play(createGame(spared(), seed), 20, (game) => ({
+          budget: reliefBudget(game, 0),
+          reliefRegionId: null,
+        })).states,
+    );
 
     expect(states).toHaveLength(40);
     expect(states.every((state) => state.events.length === 0)).toBe(true);
@@ -185,6 +189,7 @@ describe.each(scenarios)('a drought in $name', ({ file, regionId, regionName }) 
         status: 'lost',
         cause: 'famine',
         regionId,
+        headline: 'The state has collapsed',
         summary: `Famine held ${regionName} for 2 quarters running. The state has collapsed.`,
       });
       expect(played.reports.at(-1)?.entries.map((entry) => entry.headline)).toContain(

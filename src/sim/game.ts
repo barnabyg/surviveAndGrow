@@ -3,6 +3,7 @@ import { balance } from './balance';
 import { nextDate, quartersUntilHarvest } from './calendar';
 import { budgetEntry, checkBudget, cutEntry, resolveBudget, type BudgetOutcome } from './budget';
 import { regionName, type Country } from './country';
+import { forecastVoteShare, holdElection, isElectionQuarter } from './election';
 import {
   beginEntry,
   beginEvents,
@@ -89,11 +90,18 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
       ? { ended: [], remaining: state.events }
       : endEventsAfterHarvest(state.events);
   const rolled = beginEvents(state.country, remaining, date, weather.rng);
-  const outcome = outcomeOf(state.country, approval.regions);
+  const collapse = collapseOf(state.country, approval.regions);
+  // The vote is held as the term's last quarter ends, unless the state has already fallen.
+  const election =
+    collapse === null && isElectionQuarter(state.date)
+      ? holdElection(approval.regions, rolled.rng)
+      : null;
+  const outcome: Outcome = collapse ?? election?.outcome ?? { status: 'playing' };
 
   // Within one seriousness the report keeps this order, so what ends the game leads it.
   const entries: ReportEntry[] = [
-    ...(outcome.status === 'lost' ? [collapseEntry(outcome)] : []),
+    ...(collapse === null ? [] : [collapseEntry(collapse)]),
+    ...(election === null ? [] : [election.entry]),
     ...(finances.cut ? [cutEntry(finances)] : []),
     ...food.entries,
     ...approval.entries,
@@ -105,7 +113,7 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   return {
     state: {
       ...state,
-      rng: rolled.rng,
+      rng: election?.rng ?? rolled.rng,
       date,
       treasury: finances.treasury,
       budget: decisions.budget,
@@ -197,6 +205,7 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
     approval: exactly(approval.approval.value),
     approvalHeading: exactly(approval.heading),
     unrest: approvalStatus({ regions: approval.regions }).unrest,
+    voteShare: forecastVoteShare(approval.approval.value),
   };
 }
 
@@ -250,25 +259,28 @@ function foodSituation(state: GameState): FoodSituation {
   };
 }
 
+type Collapse = Extract<Outcome, { readonly cause: 'famine' }>;
+
 /** The state collapses when famine has held one region for too many quarters running. */
-function outcomeOf(country: Country, regions: readonly RegionState[]): Outcome {
+function collapseOf(country: Country, regions: readonly RegionState[]): Collapse | null {
   const limit = balance.hunger.collapseAfterFamineQuarters;
   const stricken = regions.find((region) => region.famineQuarters >= limit);
-  if (stricken === undefined) return { status: 'playing' };
+  if (stricken === undefined) return null;
   return {
     status: 'lost',
     cause: 'famine',
     regionId: stricken.id,
+    headline: 'The state has collapsed',
     summary: `Famine held ${regionName(country, stricken.id)} for ${limit} quarters running. The state has collapsed.`,
   };
 }
 
-/** What the turn report says when the game is lost. */
-function collapseEntry(outcome: Extract<Outcome, { status: 'lost' }>): ReportEntry {
+/** What the turn report says when famine brings the state down. */
+function collapseEntry(outcome: Collapse): ReportEntry {
   return {
     kind: 'collapse',
     seriousness: 'critical',
-    headline: 'The state has collapsed',
+    headline: outcome.headline,
     cause: outcome.summary,
     regionId: outcome.regionId,
   };

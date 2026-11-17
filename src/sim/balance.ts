@@ -106,6 +106,17 @@ export const balance = {
     strikes: { belowPermille: 400, outputPermille: 850 },
     protests: { belowPermille: 300, outputPermille: 700 },
   },
+  election: {
+    /** The government's term, in quarters. The vote is held when the last of them ends. */
+    termQuarters: 20,
+    /** The share of the vote the government needs to stay in office, in thousandths. */
+    winSharePermille: 500,
+    /**
+     * People vote as they approve, and the campaign then moves the result by up to this
+     * many thousandths either way, by the seed.
+     */
+    swingPermille: 30,
+  },
   events: {
     drought: {
       name: 'Drought',

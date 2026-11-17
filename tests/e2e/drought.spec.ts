@@ -85,7 +85,17 @@ test('a drought left alone worsens by stages to famine and ends the game', async
     'Famine held The Dry East for 2 quarters running. The state has collapsed.',
   );
 
-  // The only way on is a new game.
+  // It is the same summary an election ends in: the outcome, its cause and the term's figures.
+  await expect(gameOver).toContainText('You have lost');
+  await expect(gameOver).toContainText(
+    'Your government fell after 8 quarters of a 20-quarter term.',
+  );
+  await expect(gameOver).toContainText('food relief sent in time would have held the famine off');
+  const figures = gameOver.getByRole('table', { name: 'The term in figures' });
+  await expect(figures.getByRole('row', { name: 'Treasury' })).toContainText('$42.0m');
+  await expect(gameOver.getByRole('button', { name: 'Replay this game' })).toBeVisible();
+
+  // The way on is the same game again or a new one.
   await gameOver.getByRole('button', { name: 'Start a new game' }).click();
   await expect(page.getByRole('button', { name: 'Start new game' })).toBeVisible();
 });

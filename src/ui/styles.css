@@ -830,6 +830,15 @@ p {
   stroke-width: 1.6;
 }
 
+/* Labels keep a rim of the panel's colour, so a line crossing one does not blot it out. */
+.chart__mark-label,
+.chart__value {
+  paint-order: stroke;
+  stroke: var(--panel);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
 .chart__mark-label {
   font-size: 12px;
   fill: var(--blue);
@@ -943,6 +952,132 @@ p {
 .label--danger {
   color: var(--danger);
   font-weight: 600;
+}
+
+.label--good {
+  color: var(--blue);
+  font-weight: 600;
+}
+
+/* The end-of-game summary */
+
+.dialog--summary {
+  width: 860px;
+}
+
+.term-figures {
+  width: 100%;
+  margin-bottom: 18px;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.term-figures th {
+  padding: 6px 10px 6px 0;
+  font-weight: 400;
+  text-align: left;
+  color: var(--muted);
+}
+
+.term-figures thead th {
+  font-family: var(--font-condensed);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--label);
+}
+
+.term-figures tbody th {
+  color: var(--text);
+}
+
+.term-figures td {
+  padding: 6px 0 6px 14px;
+  font-family: var(--font-figures);
+  font-weight: 500;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.term-figures tbody tr {
+  border-top: 1px solid var(--line);
+}
+
+.term-figures__trend .trend {
+  display: block;
+  margin: 0 0 0 auto;
+}
+
+.dialog__seed {
+  margin-bottom: 18px;
+  font-size: 14px;
+  color: var(--label);
+}
+
+/* The election */
+
+.vital--election {
+  flex: 0 1 220px;
+}
+
+.vital--election .label,
+.vital--election .vital__value {
+  display: block;
+}
+
+.election {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.election__forecast {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.election__share {
+  margin-left: auto;
+  font-family: var(--font-figures);
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.election__needed {
+  font-size: 13px;
+  color: var(--label);
+}
+
+.election__bar {
+  display: block;
+  width: 100%;
+  height: 14px;
+}
+
+.election__track {
+  fill: var(--track);
+}
+
+.election__range {
+  fill: var(--text);
+}
+
+.election__line {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 1;
+}
+
+.election__verdict {
+  font-size: 14.5px;
+  color: var(--blue);
 }
 
 .dialog--danger {

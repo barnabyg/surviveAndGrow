@@ -26,6 +26,7 @@ export {
   type RegionUnrest,
 } from './approval';
 export { type Budget } from './budget';
+export { electionStatus, type ElectionStatus } from './election';
 export { describeEvent, type ActiveEvent } from './events';
 export {
   foodStatus,
@@ -49,7 +50,14 @@ export {
   type TurnReport,
   type TurnResult,
 } from './state';
-export { formatCount, formatMoney, formatPercent, formatTonnes } from './text';
+export {
+  formatCount,
+  formatMoney,
+  formatPercent,
+  formatPoints,
+  formatSignedPoints,
+  formatTonnes,
+} from './text';
 export {
   exactly,
   MONEY_PER_MILLION,

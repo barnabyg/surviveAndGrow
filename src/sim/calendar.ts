@@ -17,6 +17,16 @@ export function nextDate(date: GameDate): GameDate {
   };
 }
 
+/** Which quarter of the game a date is, counting the first quarter of year 1 as quarter 1. */
+export function quarterNumber(date: GameDate): number {
+  return (date.year - 1) * 4 + date.quarter;
+}
+
+/** The date of a quarter of the game, counted the same way. */
+export function dateOfQuarter(number: number): GameDate {
+  return { year: Math.floor((number - 1) / 4) + 1, quarter: (((number - 1) % 4) + 1) as Quarter };
+}
+
 /** Whether the harvest comes in when this quarter is resolved. */
 export function isHarvestQuarter(quarter: Quarter): boolean {
   return quarter === balance.calendar.harvestQuarter;

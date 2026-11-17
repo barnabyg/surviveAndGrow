@@ -1,8 +1,11 @@
 import {
   approvalStatus,
+  electionStatus,
   foodStatus,
   formatMoney,
   formatPercent,
+  formatPoints,
+  formatSignedPoints,
   monthsOfFood,
   regionName,
   seasonOf,
@@ -13,7 +16,7 @@ import {
 } from '../sim';
 import { strikeMark } from './ApprovalChart';
 import { Crest } from './Crest';
-import { formatPoints, formatSigned, formatSignedPoints, formatSignedTonnes } from './format';
+import { formatDate, formatSigned, formatSignedTonnes } from './format';
 import { recent, type Mark } from './trend';
 import { TrendLine } from './TrendLine';
 import { VitalSign } from './VitalSign';
@@ -41,6 +44,7 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
+  const election = electionStatus(game);
   const shown = recent(game.history);
   const safeLevel: Mark = {
     value: food.safeReserveMonths,
@@ -146,6 +150,32 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
             {formatPercent(approval.protestsBelow, 0)}.
           </p>
         </VitalSign>
+        {/* The election is a date, not a figure that moves, so it opens to nothing. */}
+        <div className="vital vital--election" role="group" aria-label="Next election">
+          <div className="vital__figures">
+            <span className="label">Next election</span>
+            <span className="vital__value">
+              {game.outcome.status !== 'playing' ? (
+                game.outcome.cause === 'election' ? (
+                  'Held'
+                ) : (
+                  'Not held'
+                )
+              ) : election.quartersAway === 0 ? (
+                'This quarter'
+              ) : (
+                <>
+                  {election.quartersAway}
+                  <span className="vital__unit">
+                    {' '}
+                    {election.quartersAway === 1 ? 'quarter' : 'quarters'}
+                  </span>
+                </>
+              )}
+            </span>
+            <div className="vital__note">{formatDate(election.date)}</div>
+          </div>
+        </div>
       </div>
 
       <button

@@ -20,7 +20,7 @@ npm run play
 This starts the game and opens it in your browser. It is designed for a 2560 x 1440 display.
 
 Add `?seed=7` to the address to replay a known game: the same seed and the same decisions
-always give the same game.
+always give the same game. The summary at the end of a game gives its seed and offers to replay it.
 
 What is in the game so far:
 
@@ -32,6 +32,12 @@ What is in the game so far:
   goes from adequate to tight, to shortage, to famine. Pick the region on the map, or in the food
   relief panel, to send it relief from the national reserve.
 - A famine that lasts two quarters running collapses the state and ends the game.
+- The term is 20 quarters, and the election is held when the last of them ends. The vote share is
+  national approval on polling day, moved up to 3 points either way by the campaign. With 50% or
+  more you win the game; with less you lose it. The top bar counts down to the election, and the
+  right column forecasts the vote as a range against the 50% needed.
+- However the game ends, a summary gives the outcome, its cause and the treasury, food reserve
+  and approval over the term. From it you can replay the same game or start a new one.
 - Approval is the third vital sign. Each region has its own, and the national figure is their
   average by population. It answers to the region's food situation, the tax rate, and health,
   education and security spending per head, and it moves a part of the way each quarter towards

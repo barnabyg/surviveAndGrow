@@ -89,9 +89,10 @@ describe.each(bothCountries)('a careful player in %s', (_name, country) => {
         }
       }
 
-      // Five years on, the first election is due and the government is still standing.
-      expect(game.outcome).toEqual({ status: 'playing' });
+      // Five years on, the term has run its course: nothing but the election ended it.
       expect(game.date).toEqual({ year: 6, quarter: 1 });
+      expect(game.history).toHaveLength(21);
+      expect(game.outcome).toMatchObject({ cause: 'election' });
     },
   );
 });
