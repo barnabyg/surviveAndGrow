@@ -36,7 +36,7 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         {title}
       </h2>
       <div className="dialog__body">{children}</div>
-      <div className="button-row">
+      <div className="button-row dialog__actions">
         <button type="button" className="button" onClick={onCancel}>
           {cancelLabel}
         </button>
