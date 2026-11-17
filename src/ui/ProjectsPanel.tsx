@@ -12,6 +12,7 @@ import {
 } from '../sim';
 import { opening } from './schedule';
 import { progressOf } from './SiteMark';
+import { Panel } from './Panel';
 
 interface ProjectsPanelProps {
   readonly game: GameState;
@@ -53,18 +54,18 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
   };
 
   return (
-    <section className="projects" aria-labelledby="projects-title">
-      <div className="section-head">
-        <h2 className="section-title" id="projects-title">
-          Projects
-        </h2>
+    <Panel
+      id="projects"
+      title="Projects"
+      className="projects"
+      note={
         <span className="section-note">
           {underway.length === 0
             ? 'None underway'
             : `${underway.length} underway · ${formatMoney(preview.projectSpending.min)} this quarter`}
         </span>
-      </div>
-
+      }
+    >
       {underway.map(({ site, status, planned }) => (
         <ProjectCard
           key={site.id}
@@ -119,7 +120,7 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
           })}
         </ul>
       )}
-    </section>
+    </Panel>
   );
 }
 

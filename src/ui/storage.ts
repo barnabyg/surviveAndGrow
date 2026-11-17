@@ -67,3 +67,29 @@ export function discardStoredGame(key: string): boolean {
     return false;
   }
 }
+
+/** Where the decision panels the player has collapsed are remembered, for every country. */
+const CLOSED_PANELS_KEY = 'survive-and-grow/closed-panels';
+
+/** The panels the player has collapsed. Storage that cannot be read leaves every panel open. */
+export function readClosedPanels(): readonly string[] {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(CLOSED_PANELS_KEY) ?? '[]') as unknown;
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Remembers whether a panel is collapsed. If the browser refuses, it is simply forgotten. */
+export function storePanelClosed(panelId: string, closed: boolean): void {
+  const others = readClosedPanels().filter((id) => id !== panelId);
+  try {
+    window.localStorage.setItem(
+      CLOSED_PANELS_KEY,
+      JSON.stringify(closed ? [...others, panelId] : others),
+    );
+  } catch {
+    // Storage full, blocked, or a private window: the panel stays as it is for this visit.
+  }
+}

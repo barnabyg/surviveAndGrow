@@ -7,6 +7,7 @@ import {
   type Preview,
   type ReliefDelivery,
 } from '../sim';
+import { Panel } from './Panel';
 
 interface ReliefPanelProps {
   readonly game: GameState;
@@ -25,16 +26,16 @@ export function ReliefPanel(props: ReliefPanelProps) {
   const { relief } = preview;
 
   return (
-    <section className="relief" aria-labelledby="relief-title">
-      <div className="section-head">
-        <h2 className="section-title" id="relief-title">
-          Food relief
-        </h2>
+    <Panel
+      id="relief"
+      title="Food relief"
+      className="relief"
+      note={
         <span className="section-note">
           {formatMoney(reliefSpending)} moves {formatTonnes(relief.capacity)} a quarter
         </span>
-      </div>
-
+      }
+    >
       {preview.shortfalls.length === 0 ? (
         <p className="section-empty">No region will go short of food this quarter.</p>
       ) : (
@@ -70,7 +71,7 @@ export function ReliefPanel(props: ReliefPanelProps) {
           {reliefResult(nameOf(reliefRegionId), relief)}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 
