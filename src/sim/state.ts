@@ -82,6 +82,11 @@ export interface GameState {
   readonly treasury: Money;
   /** The budget in force: the one the last quarter was resolved with. */
   readonly budget: Budget;
+  /**
+   * Where food relief stands directed: the region the last quarter's decisions sent it to,
+   * or null for nowhere. Like the budget in force, it is what the next quarter starts from.
+   */
+  readonly reliefRegionId: string | null;
   /** The national food reserve, in tonnes. */
   readonly foodReserve: number;
   /** Agriculture spending since the last harvest. It sets how much the next harvest yields. */

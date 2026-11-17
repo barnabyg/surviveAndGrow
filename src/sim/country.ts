@@ -128,6 +128,11 @@ export interface Country {
     /** The national food reserve when the game starts, in tonnes. */
     readonly foodReserve: number;
   };
+  /**
+   * The country file this country was read from, as its author wrote it. A saved game
+   * carries it, and reading it again gives this same country.
+   */
+  readonly source: unknown;
 }
 
 /** The name of a region, as reports and the interface write it. */
@@ -573,6 +578,8 @@ export function loadCountry(file: unknown): Country {
       budget: readBudget(reader, reader.object(start, 'budget', 'start'), 'start.budget'),
       foodReserve: reader.wholeNumber(start, 'foodReserve', 'start', 0),
     },
+    // A copy, so that nothing done to the file afterwards reaches the country.
+    source: JSON.parse(JSON.stringify(file)) as unknown,
   };
 
   if (reader.faults.length > 0) throw new CountryFileError(reader.faults);

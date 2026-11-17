@@ -7,6 +7,10 @@ const baseURL = `http://localhost:${port}`;
 export default defineConfig({
   // Seam 2: the running app in a browser, at the size the game is designed for.
   testDir: 'tests/e2e',
+  // The game saves to the browser's storage. Playwright gives every test a browser context
+  // of its own, with empty storage, so tests running in parallel never see each other's
+  // saves and no test starts with a saved game it did not make. Keep it that way: do not
+  // share a context or a storage state between tests.
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   // Stop at the first failure in continuous integration only; report everything locally.

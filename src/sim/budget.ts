@@ -1,6 +1,6 @@
 import { outputPermille } from './approval';
 import { balance } from './balance';
-import { sum } from './arithmetic';
+import { clamp, sum } from './arithmetic';
 import { regionName, type Country } from './country';
 import type { ReportEntry } from './report';
 import type { RegionState } from './state';
@@ -52,6 +52,24 @@ export function spendingFault(amount: Money): string | null {
   return Number.isInteger(amount) && amount >= min && amount <= max && amount % step === 0
     ? null
     : `must be from ${formatMoney(min)} to ${formatMoney(max)} in steps of ${formatMoney(step)}, but is ${formatMoney(amount)}`;
+}
+
+/**
+ * The nearest budget the game allows to the one given: the tax rate and each area's spending
+ * brought inside their limits, and spending brought down onto a step. A budget the game
+ * already allows comes back as it is.
+ */
+export function fitBudget(budget: Budget): Budget {
+  const { taxRatePercent, spending } = balance.budget;
+  return {
+    taxRatePercent: clamp(budget.taxRatePercent, taxRatePercent.min, taxRatePercent.max),
+    spending: Object.fromEntries(
+      SPENDING_AREAS.map((area) => {
+        const amount = clamp(budget.spending[area], spending.min, spending.max);
+        return [area, amount - ((amount - spending.min) % spending.step)];
+      }),
+    ) as Record<SpendingArea, Money>,
+  };
 }
 
 /** @throws RangeError when the budget is outside what the game allows. */
@@ -124,7 +142,8 @@ export function resolveBudget(
       ...taxes,
       ...SPENDING_AREAS.map((area): Contribution => ({
         label: SPENDING_AREA_NAMES[area],
-        amount: -spent[area],
+        // Taken from nothing, so that an area with no spending reads 0 and never −0.
+        amount: 0 - spent[area],
       })),
     ],
   };

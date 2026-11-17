@@ -22,6 +22,24 @@ This starts the game and opens it in your browser. It is designed for a 2560 x 1
 Add `?seed=7` to the address to replay a known game: the same seed and the same decisions
 always give the same game. The summary at the end of a game gives its seed and offers to replay it.
 
+The game saves itself in your browser as each quarter ends. Open it again and it offers to resume
+the saved game or to start a new one:
+
+- A new game replaces the saved one when its own first quarter ends, and not before.
+- Resuming opens the start of the quarter you had reached: the budget last committed, relief
+  still going where you last sent it, and last quarter's reports. Budget changes you had not
+  committed, projects you had planned and a dilemma you had answered were never part of the
+  quarter, so they are not saved.
+- A finished game is saved too, and opens again on its summary.
+- A seed in the address is the seed of the next new game. It does not hide or discard a saved game.
+- A save the game cannot open, such as one written by a newer release, is refused with the
+  reason and left exactly as it is. While it is there nothing is saved, even a new game, until
+  you choose to discard it.
+- If the browser will not store the game (storage full or blocked, or a private window), the
+  game says so and plays on.
+- A country file you are trying out with `?country=` keeps its own save, apart from the game on
+  the built-in country.
+
 What is in the game so far:
 
 - Set the tax rate and the spending for each area in the right column. The panel shows what a
@@ -130,6 +148,9 @@ To try a country of your own, put the file in `public/countries/` and name it in
 `?country=/countries/mine.json`. The game checks the file as it loads and lists everything that
 is wrong with it.
 
+A saved game carries the country file it was started on, so it goes on being played on that
+country even after you edit the file. Start a new game to play your changes.
+
 ## Check it
 
 ```powershell
@@ -169,6 +190,15 @@ Gates that do not apply:
 - `tests/sim/` tests the game rules through the simulation's public interface.
 - `tests/e2e/` drives the real app in a browser at 2560 x 1440.
 - `tests/countries/` holds a crude second country, used to prove that nothing is tied to the first.
+- `tests/saves/` holds a saved game from each save format, kept so that every later release can
+  prove it still opens them. They are never regenerated; see its README.
+- `docs/adr/` records decisions that are hard to reverse.
+
+The save format and the country file format are compatibility contracts: a later release must
+still read what this one writes. The save format, and how to change it, are in
+[docs/adr/0001-save-format.md](docs/adr/0001-save-format.md). `npm run save:fixture` writes the
+kept save for a new format.
 
 Both test suites run in parallel. They stop at the first failure in continuous integration and
 report every failure locally. Set `E2E_PORT` to run the browser tests from two checkouts at once.
+Each browser test has storage of its own, so one test's saved game never reaches another.

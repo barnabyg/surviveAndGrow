@@ -3,6 +3,8 @@
  * three operations: create a game from a country and a seed, advance one quarter given the
  * player's decisions, and preview a set of decisions without changing the game. Looking
  * further ahead for danger (`risksAhead`) is a preview too: it changes and draws nothing.
+ * `saveGame` and `loadSave` turn a game into plain data and back. They store nothing: where
+ * a save is kept is the business of whoever calls them.
  */
 export {
   COUNTRY_FORMAT_VERSION,
@@ -49,6 +51,15 @@ export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
+export {
+  loadSave,
+  SAVE_FORMAT_VERSION,
+  SaveError,
+  saveGame,
+  type RestoredGame,
+  type SavedGame,
+  type SaveMigration,
+} from './save';
 export { siteTerms, type SiteTerms } from './sites';
 export {
   siteSchedule,

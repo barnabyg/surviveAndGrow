@@ -32,20 +32,28 @@ import { TopBar } from './TopBar';
 
 interface GameScreenProps {
   readonly initialGame: GameState;
+  /** The report on the quarter before, when the game is resumed from a save; otherwise null. */
+  readonly initialReport: TurnReport | null;
+  /** Why the game is not being saved, in words for the player, or null when it is. */
+  readonly saveNotice: string | null;
+  /** Called with the game and its report as each quarter ends, which is when it is saved. */
+  readonly onQuarterEnded: (game: GameState, report: TurnReport) => void;
   /** Starts the same game again from its first quarter. */
   readonly onReplay: () => void;
   /** Leaves this game for the start screen, where a new one begins. */
   readonly onNewGame: () => void;
 }
 
-export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps) {
+export function GameScreen(props: GameScreenProps) {
+  const { initialGame, initialReport, saveNotice, onQuarterEnded, onReplay, onNewGame } = props;
   const [game, setGame] = useState(initialGame);
-  const [report, setReport] = useState<TurnReport | null>(null);
+  const [report, setReport] = useState<TurnReport | null>(initialReport);
   // The committed budget is what the quarter will be resolved with. The pending budget is
   // what the sliders show, and it counts for nothing until the player commits it.
   const [committed, setCommitted] = useState(initialGame.budget);
   const [pending, setPending] = useState(initialGame.budget);
-  const [reliefRegionId, setReliefRegionId] = useState<string | null>(null);
+  // Relief goes on being sent where it was last sent, as the budget in force goes on.
+  const [reliefRegionId, setReliefRegionId] = useState<string | null>(initialGame.reliefRegionId);
   // One thing is picked out on the map at a time: a region or a site. Its card is the one shown.
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
@@ -152,6 +160,7 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
     setConfirmingEnd(false);
     setDilemmaChoice(null);
     setDilemmaShown(result.state.dilemma === null ? 'no' : 'yes');
+    onQuarterEnded(result.state, result.report);
   };
 
   const endQuarter = () => {
@@ -169,6 +178,11 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
       <TopBar game={game} report={report} onEndQuarter={endQuarter} />
       <div className="columns">
         <aside className="column column--situation" aria-label="Situation">
+          {saveNotice !== null && (
+            <p className="warning-note" role="status">
+              ▲ {saveNotice}
+            </p>
+          )}
           <ReportList report={report} selectedEntry={selectedEntry} onSelectEntry={selectEntry} />
           {playing && (
             <RisksPanel risks={risks} selectedRisk={selectedRisk} onSelectRisk={selectRisk} />

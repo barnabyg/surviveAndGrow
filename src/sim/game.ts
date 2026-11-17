@@ -77,6 +77,7 @@ export function createGame(country: Country, seed: number): GameState {
     rng: seedGenerator(seed),
     ...opening,
     budget: country.start.budget,
+    reliefRegionId: null,
     agricultureSpentThisYear: 0,
     events: [],
     projects: [],
@@ -229,6 +230,7 @@ export function resolveQuarter(
       date,
       treasury: finances.treasury,
       budget: decisions.budget,
+      reliefRegionId: decisions.reliefRegionId ?? null,
       foodReserve: food.foodReserve,
       // The growing year ends with the harvest.
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,

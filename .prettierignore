@@ -5,3 +5,5 @@ playwright-report
 test-results
 # Prose is written and wrapped by hand.
 *.md
+# Kept saves are records of what a release wrote. They are never rewritten, by hand or by a tool.
+tests/saves/*.json
