@@ -1,7 +1,8 @@
 import { apportion, clamp, sum } from './arithmetic';
 import { balance } from './balance';
-import { chainOutputs } from './chains';
+import { chainEarnings } from './chains';
 import type { Country } from './country';
+import { poweredOutput, regionPower, unpowered, type RegionPower } from './power';
 import { infrastructureFrom, sitesInUse, type Project } from './projects';
 import type { RegionState } from './state';
 import { MONEY_PER_MILLION, type Contribution, type Figure, type Money } from './types';
@@ -25,6 +26,18 @@ export interface LivingStandard {
   readonly regionId: string;
   readonly value: number;
   readonly scores: ProsperityScores;
+  /**
+   * What the region produces this quarter, part by part, in Money: its own output, what each
+   * chain earns there, and what power adds. Its income per head is judged from their sum.
+   */
+  readonly output: readonly Contribution[];
+  /**
+   * What gives the region its infrastructure access, in thousandths: each site in use there
+   * that adds to it, and power. The score is their sum, up to the whole.
+   */
+  readonly infrastructure: readonly Contribution[];
+  /** How power reaches the region. */
+  readonly power: RegionPower;
 }
 
 /** How national prosperity stands, and what it is made of. All figures are in thousandths. */
@@ -48,14 +61,39 @@ export interface ProsperitySituation {
 
 /** Each region's living standard. */
 export function livingStandards(situation: ProsperitySituation): LivingStandard[] {
-  const access = infrastructureAccess(situation);
-  const fromChains = chainOutputs(situation);
-  return situation.regions.map((region, index) => {
+  const earnings = chainEarnings(situation);
+  const inUse = sitesInUse(situation);
+  const powers = regionPower(situation);
+  const nameOf = (siteId: string | null) =>
+    situation.country.sites.find((site) => site.id === siteId)?.name ?? '';
+  return situation.regions.map((region) => {
+    const regionId = region.id;
+    const power = powers.find((entry) => entry.regionId === regionId) ?? unpowered(regionId);
+    const fromPower = `Power from ${nameOf(power.stationId)}`;
     // What a chain earns is part of its region's output, and so of its people's income.
-    const regionIndex = situation.country.regions.findIndex((other) => other.id === region.id);
-    const output = region.output + (fromChains[regionIndex] ?? 0);
-    const scores = scoresOf({ ...region, output }, access[index] ?? 0);
-    return { regionId: region.id, value: weigh(scores), scores };
+    const output: Contribution[] = [
+      { label: 'Own output', amount: region.output, regionId },
+      ...earnings
+        .filter(({ site }) => site.regionId === regionId)
+        .map(({ site, output: amount }) => ({ label: site.name, amount, regionId })),
+      ...(power.outputPermille > 0
+        ? [{ label: fromPower, amount: poweredOutput(region.output, power), regionId }]
+        : []),
+    ];
+    const infrastructure: Contribution[] = [
+      ...inUse
+        .filter(({ site }) => site.regionId === regionId)
+        .map((entry) => ({ label: entry.site.name, amount: infrastructureFrom(entry), regionId }))
+        .filter((part) => part.amount > 0),
+      ...(power.infrastructurePermille > 0
+        ? [{ label: fromPower, amount: power.infrastructurePermille, regionId }]
+        : []),
+    ];
+    const scores = scoresOf(
+      { ...region, output: sum(output.map((part) => part.amount)) },
+      Math.min(1000, sum(infrastructure.map((part) => part.amount))),
+    );
+    return { regionId, value: weigh(scores), scores, output, infrastructure, power };
   });
 }
 
@@ -149,24 +187,6 @@ export function resolveServices(
       return region[service] + Math.sign(gap) * Math.min(step, Math.abs(gap));
     }),
   }));
-}
-
-/**
- * Infrastructure access in each region, in thousandths: what the sites in use there add,
- * each by its type and less while it decays, up to the whole.
- */
-export function infrastructureAccess({
-  country,
-  projects,
-  regions,
-}: ProsperitySituation): number[] {
-  const inUse = sitesInUse({ country, projects });
-  return regions.map((region) =>
-    Math.min(
-      1000,
-      sum(inUse.filter(({ site }) => site.regionId === region.id).map(infrastructureFrom)),
-    ),
-  );
 }
 
 function scoresOf(region: RegionState, infrastructure: number): ProsperityScores {

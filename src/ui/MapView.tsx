@@ -1,6 +1,7 @@
 import { Fragment, useId } from 'react';
 import {
   chainOf,
+  chains,
   chainsThrough,
   describeEvent,
   describeUnrest,
@@ -22,7 +23,7 @@ import {
   type SettlementLook,
   UNREST_KINDS,
 } from '../sim';
-import { lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
+import { infrastructureOf, lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
 import { TIER_PALETTES, type MapPalette } from './mapPalette';
 import { SiteMark } from './SiteMark';
 
@@ -52,7 +53,8 @@ interface Paint {
 /**
  * The country, drawn entirely from its country file and the state of the game. Nothing
  * here knows any one country. A lens recolours the regions and changes the figure each is
- * labelled with; sites, routes, events and tags are drawn the same under every lens.
+ * labelled with; sites, routes, events and tags are drawn the same under every lens, except
+ * that the infrastructure lens marks and rings every missing link in a chain.
  */
 export function MapView(props: MapViewProps) {
   const { game, lens, selectedRegionId, reliefRegionId, onSelectRegion } = props;
@@ -76,11 +78,16 @@ export function MapView(props: MapViewProps) {
   );
   const paint = (regionId: string): Paint =>
     paintOf.get(regionId) ?? { fill: palette.terrain.plains, ink: palette.regionLabel };
-  // The links missing from the chains of the site picked out are drawn as such.
+  // The links missing from the chains of the site picked out are drawn as such. The
+  // infrastructure lens shows what is missing everywhere: every chain's missing links,
+  // each ringed as well.
+  const ringMissing = lens === 'infrastructure';
   const missingLinks = new Set(
-    selectedSiteId === null
-      ? []
-      : chainsThrough(game, selectedSiteId).flatMap((chain) => chain.missing),
+    ringMissing
+      ? chains(game).flatMap((chain) => chain.missing)
+      : selectedSiteId === null
+        ? []
+        : chainsThrough(game, selectedSiteId).flatMap((chain) => chain.missing),
   );
   const isIdle = (siteId: string) => {
     const chain = chainOf(game, siteId);
@@ -310,19 +317,25 @@ export function MapView(props: MapViewProps) {
       {[
         ...country.sites.filter((site) => site.form === 'route'),
         ...country.sites.filter((site) => site.form === 'place'),
-      ].map((site) => (
-        <SiteMark
-          key={site.id}
-          site={site}
-          status={siteStatus(game, site.id)}
-          planned={plannedSiteIds.includes(site.id)}
-          palette={palette}
-          selected={site.id === selectedSiteId}
-          missingLink={missingLinks.has(site.id)}
-          idle={isIdle(site.id)}
-          onSelect={onSelectSite}
-        />
-      ))}
+      ].map((site) => {
+        const status = siteStatus(game, site.id);
+        const closedBy = country.sites.find((other) => other.id === status.closedBy);
+        return (
+          <SiteMark
+            key={site.id}
+            site={site}
+            status={status}
+            planned={plannedSiteIds.includes(site.id)}
+            palette={palette}
+            selected={site.id === selectedSiteId}
+            missingLink={missingLinks.has(site.id)}
+            ringed={ringMissing && missingLinks.has(site.id)}
+            idle={isIdle(site.id)}
+            closedBy={closedBy?.name ?? null}
+            onSelect={onSelectSite}
+          />
+        );
+      })}
     </svg>
   );
 }
@@ -353,7 +366,9 @@ function RegionShape(props: RegionShapeProps) {
       ? `approval ${formatPercent(state?.approval ?? 0)}`
       : lens === 'living'
         ? `living standard ${formatIndex(livingStandardOf(game, region.id))}`
-        : `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
+        : lens === 'infrastructure'
+          ? `infrastructure access ${formatIndex(infrastructureOf(game, region.id))}`
+          : `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
     ...events.map((event) => describeEvent(game, event)),
     ...(unrest === null ? [] : [unrest]),
     ...(relieved ? ['food relief being sent'] : []),
@@ -391,8 +406,9 @@ interface RegionLabelProps {
 
 /**
  * A region's name, with the figure the lens shows beneath: its approval under the approval
- * lens, its living standard under the living-standards lens, and its food stage otherwise. Then a tag for hunger, for each event, for unrest and
- * for relief. A region in trouble gets a dark tag with a warning mark, so its state never
+ * lens, its living standard under the living-standards lens, its infrastructure access under
+ * the infrastructure lens, and its food stage otherwise. Then a tag for hunger, for each
+ * event, for unrest and for relief. A region in trouble gets a dark tag with a warning mark, so its state never
  * rests on colour alone.
  */
 function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLabelProps) {
@@ -417,9 +433,11 @@ function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLab
       ? `Approval: ${formatPercent(state?.approval ?? 0)}`
       : lens === 'living'
         ? `Living standard: ${formatIndex(livingStandardOf(game, region.id))}`
-        : stage === 'adequate'
-          ? `Food: ${FOOD_STAGE_NAMES[stage]}`
-          : null;
+        : lens === 'infrastructure'
+          ? `Infrastructure: ${formatIndex(infrastructureOf(game, region.id))}`
+          : stage === 'adequate'
+            ? `Food: ${FOOD_STAGE_NAMES[stage]}`
+            : null;
   return (
     <g>
       <text

@@ -50,8 +50,9 @@ export { dateOfQuarter, seasonOf } from './calendar';
 export { drawAt } from './rng';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
-export { chainOf, chainsThrough, type Chain, type ChainLink } from './chains';
+export { chainOf, chains, chainsThrough, type Chain, type ChainLink } from './chains';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
+export { regionPower, type RegionPower } from './power';
 export {
   livingStandards,
   prosperityStatus,
@@ -132,6 +133,7 @@ export {
   SERIOUSNESS_LEVELS,
   SERIOUSNESS_NAMES,
   SITE_CHAIN_ROLES,
+  SITE_POWER_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
@@ -148,6 +150,7 @@ export {
   type FoodStage,
   type LabelSide,
   type Likelihood,
+  type PowerRole,
   type ProjectStatus,
   type ProsperityPart,
   type ReportKind,

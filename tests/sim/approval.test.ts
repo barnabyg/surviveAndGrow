@@ -79,10 +79,10 @@ describe('approval when a game starts in Tavara', () => {
   it('stands where the starting budget puts it, the same in every region', () => {
     const game = createGame(tavara(), 1);
 
-    // Baseline 45.5%; tax at the neutral 18%; health a little over what people expect
+    // Baseline 51.5%; tax at the neutral 18%; health a little over what people expect
     // (+0.7), education and security a little under (−0.2 each).
-    expect(national(game)).toBe(458);
-    expect(game.regions.map((region) => region.approval)).toEqual([458, 458, 458, 458, 458, 458]);
+    expect(national(game)).toBe(518);
+    expect(game.regions.map((region) => region.approval)).toEqual([518, 518, 518, 518, 518, 518]);
     expect(game.regions.map((region) => region.unrest)).toEqual([
       'calm',
       'calm',
@@ -105,7 +105,7 @@ describe('approval when a game starts in Tavara', () => {
     const status = approvalStatus(createGame(tavara(), 1));
 
     expect(status.causes).toEqual([
-      { label: 'Baseline', amount: 455 },
+      { label: 'Baseline', amount: 515 },
       { label: 'Food', amount: 0 },
       { label: 'Tax rate', amount: 0 },
       { label: 'Health spending', amount: 7 },
@@ -120,14 +120,14 @@ describe('approval when a game starts in Tavara', () => {
  * harvest is in after four quarters, the region is tight in the fifth and in shortage in the
  * sixth, and every other region stays where it started. The figures are worked by hand:
  *
- * - Tavara: 4,600,000 people at 45.8% and the Dry East's 600,000 at 41.7% average 45.3%
- *   (2,357,000,000 / 5,200,000 = 453.27). The plain mean of the six regions would be 45.1%.
- * - Testland: 300,000 at 57.1% and Sandreach's 100,000 at 53.0% average 56.0%
- *   (224,300,000 / 400,000 = 560.75). The plain mean of the two would be 55.0%.
+ * - Tavara: 4,600,000 people at 51.8% and the Dry East's 600,000 at 47.7% average 51.3%
+ *   (2,669,000,000 / 5,200,000 = 513.27). The plain mean of the six regions would be 51.1%.
+ * - Testland: 300,000 at 63.1% and Sandreach's 100,000 at 59.0% average 62.0%
+ *   (248,300,000 / 400,000 = 620.75). The plain mean of the two would be 61.0%.
  */
 describe.each([
-  { ...withDrought[0], people: 600_000, ofPeople: 5_200_000, hungry: 417, fed: 458, all: 453 },
-  { ...withDrought[1], people: 100_000, ofPeople: 400_000, hungry: 530, fed: 571, all: 560 },
+  { ...withDrought[0], people: 600_000, ofPeople: 5_200_000, hungry: 477, fed: 518, all: 513 },
+  { ...withDrought[1], people: 100_000, ofPeople: 400_000, hungry: 590, fed: 631, all: 620 },
 ])('national approval in $name when one region goes hungry', (land) => {
   it('weighs each region by its people, not region by region', () => {
     const start = createGame(withDroughtChance(land.file, { [land.regionId]: 1 }), 3);
@@ -269,7 +269,7 @@ describe('the tax rate in Tavara', () => {
 
     // Ten points of tax are worth 12.0 points of approval. A tenth of that lands in the first
     // quarter (−1.2) and a tenth of what is left in the second (−1.1, rounded up from 1.08).
-    expect(states.map(national)).toEqual([446, 435]);
+    expect(states.map(national)).toEqual([506, 495]);
     expect(reports[0]?.approval.contributions).toEqual([
       { label: 'Food', amount: 0 },
       { label: 'Tax rate', amount: -12 },
@@ -330,9 +330,9 @@ describe.each(withoutDrought)('unrest in %s', (_name, country) => {
 
   it('ends when approval recovers, protests first and then strikes', () => {
     const start = createGame(country(), 5);
-    // Two years of the harsh budget, then three of the lowest tax: the term has room for both.
-    const fallen = play(start, 8, harsh(start));
-    const { states } = play(fallen.state, 12, budgetWith(start, { taxRatePercent: 5 }));
+    // Eleven quarters of the harsh budget, then nine of the lowest tax: the term has room for both.
+    const fallen = play(start, 11, harsh(start));
+    const { states } = play(fallen.state, 9, budgetWith(start, { taxRatePercent: 5 }));
 
     const seen = states.map((state) => state.regions[0]?.unrest);
     expect(seen).toContain('strikes');
@@ -343,8 +343,8 @@ describe.each(withoutDrought)('unrest in %s', (_name, country) => {
 
   it('reports each start and each end once, in the region it happened in', () => {
     const start = createGame(country(), 5);
-    const fallen = play(start, 8, harsh(start));
-    const recovered = play(fallen.state, 12, budgetWith(start, { taxRatePercent: 5 }));
+    const fallen = play(start, 11, harsh(start));
+    const recovered = play(fallen.state, 9, budgetWith(start, { taxRatePercent: 5 }));
     const entries = [...fallen.reports, ...recovered.reports].flatMap((report) => report.entries);
     const regionId = start.regions[0]?.id;
     const here = entries.filter(
@@ -362,61 +362,63 @@ describe.each(withoutDrought)('unrest in %s', (_name, country) => {
 });
 
 describe('strikes in Tavara', () => {
-  /** Tavara with every region on strike, reached by two quarters of the harsh budget. */
+  /** Tavara with every region on strike, reached by four quarters of the harsh budget. */
   function struck(): GameState {
     const start = createGame(withDroughtChance(tavaraFile, {}), 1);
-    return play(start, 2, harsh(start)).state;
+    return play(start, 4, harsh(start)).state;
   }
 
-  it('begin two quarters after tax goes to 40% and public spending to nothing, and protests three later', () => {
+  it('begin four quarters after tax goes to 40% and public spending to nothing, and protests three later', () => {
     const start = createGame(withDroughtChance(tavaraFile, {}), 1);
-    const { states, reports } = play(start, 5, harsh(start));
+    const { states, reports } = play(start, 7, harsh(start));
 
     // The harsh budget is worth −40.4 points in the end, and a tenth of what is left of
-    // each part of that lands each quarter, rounded up. Approval goes 45.8% → 41.6% →
-    // 37.8% → 34.4% → 31.3% → 28.4%: calm after the first quarter, strikes after the
-    // second and protests after the fifth.
-    expect(states.map(national)).toEqual([416, 378, 344, 313, 284]);
+    // each part of that lands each quarter, rounded up. Approval goes 51.8% → 47.6% →
+    // 43.8% → 40.4% → 37.3% → 34.4% → 31.8% → 29.6%: calm for three quarters, strikes
+    // after the fourth and protests after the seventh.
+    expect(states.map(national)).toEqual([476, 438, 404, 373, 344, 318, 296]);
     expect(states.map((state) => regionOf(state, 'arden-vale').unrest)).toEqual([
+      'calm',
+      'calm',
       'calm',
       'strikes',
       'strikes',
       'strikes',
       'protests',
     ]);
-    expect(reports[1]?.entries).toContainEqual({
+    expect(reports[3]?.entries).toContainEqual({
       kind: 'strike',
       seriousness: 'warning',
       headline: 'Strikes in Arden Vale',
       cause:
-        'Approval there has fallen to 37.8%, below the 40% at which strikes begin. While they last the region produces 30% less.',
+        'Approval there has fallen to 37.3%, below the 40% at which strikes begin. While they last the region produces 30% less.',
       regionId: 'arden-vale',
     });
-    expect(reports[4]?.entries).toContainEqual({
+    expect(reports[6]?.entries).toContainEqual({
       kind: 'protest',
       seriousness: 'serious',
       headline: 'Protests in Arden Vale',
       cause:
-        'Approval there has fallen to 28.4%, below the 30% at which protests begin. While they last the region produces 60% less.',
+        'Approval there has fallen to 29.6%, below the 30% at which protests begin. While they last the region produces 60% less.',
       regionId: 'arden-vale',
     });
   });
 
   it('cut the region’s output, and so the tax it pays, in the quarters that follow', () => {
     const start = createGame(withDroughtChance(tavaraFile, {}), 1);
-    const { reports } = play(start, 6, harsh(start));
+    const { reports } = play(start, 8, harsh(start));
     const treasuryLine = (report: TurnReport | undefined, label: string) =>
       report?.treasury.contributions.find((entry) => entry.label === label)?.amount;
 
     // Arden Vale produces $52.0m a quarter: $20.8m of tax at 40%.
-    expect(treasuryLine(reports[1], 'Tax from Arden Vale')).toBe(208);
-    expect(treasuryLine(reports[1], 'Lost to strikes in Arden Vale')).toBeUndefined();
+    expect(treasuryLine(reports[3], 'Tax from Arden Vale')).toBe(208);
+    expect(treasuryLine(reports[3], 'Lost to strikes in Arden Vale')).toBeUndefined();
     // On strike it produces 30% less, $36.4m, which pays $14.6m: $6.2m is lost.
-    expect(treasuryLine(reports[2], 'Tax from Arden Vale')).toBe(208);
-    expect(treasuryLine(reports[2], 'Lost to strikes in Arden Vale')).toBe(-62);
+    expect(treasuryLine(reports[4], 'Tax from Arden Vale')).toBe(208);
+    expect(treasuryLine(reports[4], 'Lost to strikes in Arden Vale')).toBe(-62);
     // In protest it produces 60% less, $20.8m, which pays $8.3m: $12.5m is lost.
-    expect(treasuryLine(reports[5], 'Tax from Arden Vale')).toBe(208);
-    expect(treasuryLine(reports[5], 'Lost to protests in Arden Vale')).toBe(-125);
+    expect(treasuryLine(reports[7], 'Tax from Arden Vale')).toBe(208);
+    expect(treasuryLine(reports[7], 'Lost to protests in Arden Vale')).toBe(-125);
   });
 
   it('leave the treasury breakdown adding up to the change', () => {

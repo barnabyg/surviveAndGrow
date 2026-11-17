@@ -15,12 +15,14 @@ const electionPanel = (page: Page) => decisions(page).getByRole('region', { name
 const gameFigures = (page: Page) => page.getByRole('table', { name: 'The game in figures' });
 
 /**
- * Tavara without drought, with $500.0m in the treasury. Approval starts, and with an
- * unchanged budget stays, at 45.8%: short of the 50% needed whatever the campaign does.
+ * Tavara without drought, with $500.0m in the treasury and tax at 24%. Approval starts, and
+ * with an unchanged budget stays, at 44.6%: short of the 50% needed whatever the campaign does.
  */
 function tavaraThatDisapproves(): unknown {
   const country = tavaraWithDroughtIn([]);
-  (country.start as { treasury: number }).treasury = 500;
+  const start = country.start as { treasury: number; budget: { taxRate: number } };
+  start.treasury = 500;
+  start.budget.taxRate = 24;
   return country;
 }
 
@@ -53,24 +55,24 @@ test('the vote share forecast is a range against the 50% needed, and answers to 
 }) => {
   await startGame(page, { countryFile: tavaraWithDroughtIn([]) });
 
-  // Approval stands at 45.8%, and the campaign can move the vote 3 points either way.
+  // Approval stands at 51.8%, and the campaign can move the vote 3 points either way.
   const forecast = electionPanel(page).getByRole('group', { name: 'Vote share forecast' });
-  await expect(forecast).toContainText('42.8% to 48.8%');
+  await expect(forecast).toContainText('48.8% to 54.8%');
   await expect(forecast).toContainText('50% needed');
-  await expect(electionPanel(page)).toContainText('▲ On course to lose');
+  await expect(electionPanel(page)).toContainText('▲ Too close to call');
 
   // Tax at its lowest is worth 15.6 points of approval in the end, and 1.6 of them in its
   // first quarter: the outlook shows what that would do to the vote before it is committed.
   await decisions(page).getByRole('slider', { name: 'Tax rate' }).fill('5');
   await expect(outlook(page).getByRole('group', { name: 'Vote share forecast' })).toHaveText(
-    'Vote share forecast42.8% to 48.8% → 44.4% to 50.4%',
+    'Vote share forecast48.8% to 54.8% → 50.4% to 56.4%',
   );
-  await expect(forecast).toContainText('42.8% to 48.8%');
+  await expect(forecast).toContainText('48.8% to 54.8%');
 
-  // Committed, the range straddles the line.
+  // Committed, the whole range is above the line.
   await decisions(page).getByRole('button', { name: 'Commit budget' }).click();
-  await expect(forecast).toContainText('44.4% to 50.4%');
-  await expect(electionPanel(page)).toContainText('▲ Too close to call');
+  await expect(forecast).toContainText('50.4% to 56.4%');
+  await expect(electionPanel(page)).toContainText('On course to win');
 });
 
 test('a term of 20 quarters ends in an election, and the same seed can be replayed', async ({
@@ -80,13 +82,13 @@ test('a term of 20 quarters ends in an election, and the same seed can be replay
   await stopFoodRelief(page);
   await expect(
     electionPanel(page).getByRole('group', { name: 'Vote share forecast' }),
-  ).toContainText('42.8% to 48.8%');
+  ).toContainText('41.6% to 47.6%');
 
   await endQuarters(page, 19);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await endQuarters(page, 1);
 
-  // Approval never left 45.8%, so the vote is lost whatever the campaign did.
+  // Approval never left 44.6%, so the vote is lost whatever the campaign did.
   const summary = page.getByRole('dialog', { name: 'You lost the election' });
   await expect(summary).toBeVisible();
   await expect(summary).toContainText('You have lost');
@@ -104,7 +106,7 @@ test('a term of 20 quarters ends in an election, and the same seed can be replay
 
   const row = (name: string) => gameFigures(page).getByRole('row', { name });
   await expect(row('Treasury')).toContainText('$500.0m');
-  await expect(row('Approval').getByRole('cell', { name: '45.8%', exact: true })).toHaveCount(4);
+  await expect(row('Approval').getByRole('cell', { name: '44.6%', exact: true })).toHaveCount(4);
   await expect(row('Prosperity')).toBeVisible();
   await expect(summary).toContainText('Seed 3');
   await expect(
@@ -153,6 +155,6 @@ test('a government the country has turned against loses the election', async ({ 
   await expect(summary).toContainText('You have lost');
   await expect(summary.getByText(/^You took \d\d\.\d% of the vote and needed 50%\./)).toBeVisible();
   // Approval fell from where it started.
-  await expect(gameFigures(page).getByRole('row', { name: 'Approval' })).toContainText('45.8%');
+  await expect(gameFigures(page).getByRole('row', { name: 'Approval' })).toContainText('51.8%');
   await expect(summary.getByRole('button', { name: 'Replay this game' })).toBeVisible();
 });

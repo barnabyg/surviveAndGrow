@@ -23,7 +23,7 @@ test('a famine risk is listed during a drought, and relief sent to the region li
   const famine = risks(page).getByRole('button', { name: /Famine in The Dry East/ });
   await expect(risks(page).getByRole('listitem')).toHaveCount(1);
   await expect(famine).toContainText(
-    'The drought has cut its harvest. It runs short of food in 3 quarters, and left alone that is famine 2 quarters later.',
+    'Poor weather before the harvest would leave it short of food in 3 quarters.',
   );
   // The likelihood is a meter and a word, so it does not rest on colour.
   await expect(famine).toContainText('Almost certain');
@@ -51,10 +51,12 @@ test('the risks answer to the budget once it is committed', async ({ page }) => 
   await expect(risks(page)).toContainText('No danger is in sight.');
 
   await budget.getByRole('button', { name: 'Commit budget' }).click();
+  // Approval falls a tenth of the way each quarter; after two, strikes are in sight.
+  await endQuarters(page, 2);
 
   const strikes = risks(page).getByRole('listitem').filter({ hasText: 'Strikes' });
   await expect(strikes).toContainText(
-    'Approval in every region is on course to fall below 40% in 2 quarters.',
+    'Approval in every region is on course to fall below 40% in 3 quarters.',
   );
   await expect(strikes).toContainText('Almost certain');
   // A danger to the whole country has no one place to show.

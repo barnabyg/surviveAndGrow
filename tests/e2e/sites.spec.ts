@@ -86,8 +86,10 @@ test('a legend explains the marks for sites and routes', async ({ page }) => {
     'Under construction',
     'Operating',
     'Decaying',
+    'Closed by an alternative',
     'Possible route',
     'Road',
+    'Power line',
     '✕ Missing link in a chain',
   ]);
 });

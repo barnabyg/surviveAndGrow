@@ -159,6 +159,7 @@ describe('starting a project in Tavara', () => {
     expect(siteStatus(state, 'lowmere-irrigation')).toEqual({
       siteId: 'lowmere-irrigation',
       state: 'building',
+      closedBy: null,
       quartersPaid: 1,
       buildQuarters: 3,
       cost: 120,

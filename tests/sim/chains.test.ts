@@ -14,7 +14,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { withDroughtChance } from './countries';
+import { withDroughtChance, withoutPoweredMines } from './countries';
 import { steward } from './players';
 
 interface Played {
@@ -40,9 +40,12 @@ function quarters(count: number, decisions: Partial<Decisions>): Partial<Decisio
   return Array.from({ length: count }, () => decisions);
 }
 
-/** A country with a treasury that can pay for a whole chain, and no drought or dilemma. */
+/**
+ * A country with a treasury that can pay for a whole chain, and no drought or dilemma. Its
+ * mines need no power, which `power.test.ts` covers.
+ */
 function rich(file: unknown): Country {
-  const copy = structuredClone(file) as { start: { treasury: number } };
+  const copy = withoutPoweredMines(file) as { start: { treasury: number } };
   copy.start.treasury = 2000;
   return withDroughtChance(copy, {});
 }
@@ -125,12 +128,12 @@ describe.each(countries)('a mine in %s', (_name, country) => {
     expect(chainOf(whole.state, mine.id)).toMatchObject({
       complete: true,
       missing: [],
-      output: 200,
+      output: 600,
       bottleneck: mine.id,
     });
     const earning = play(whole.state, [{ budget }]);
-    // A quarter's tax at 25% on the $20.0m the mine adds to its region's output.
-    expect(taxFrom(earning.reports[0], mine)).toBe(50);
+    // A quarter's tax at 25% on the $60.0m the mine adds to its region's output.
+    expect(taxFrom(earning.reports[0], mine)).toBe(150);
     const after = livingStandards(earning.state).find(
       (standard) => standard.regionId === mine.regionId,
     );
@@ -143,24 +146,24 @@ describe.each(countries)('a mine in %s', (_name, country) => {
       { budget: solvent(country(), 40), startProjects: [mine.id, road.id, port.id] },
       ...quarters(8, { budget: solvent(country(), 40) }),
     ]);
-    expect(chainOf(built.state, mine.id)).toMatchObject({ output: 200, bottleneck: mine.id });
+    expect(chainOf(built.state, mine.id)).toMatchObject({ output: 600, bottleneck: mine.id });
 
     // $1.0m of upkeep keeps the mine, started first, but not the road or the port after it.
     const starved = play(built.state, [{ budget: solvent(country(), 10) }]);
     expect(siteStatus(starved.state, mine.id).state).toBe('operating');
     expect(siteStatus(starved.state, road.id).state).toBe('decaying');
     expect(siteStatus(starved.state, port.id).state).toBe('decaying');
-    // A decaying road carries $12.0m of its $24.0m, less than the decaying port's $15.0m.
+    // A decaying road carries $36.0m of its $72.0m, less than the decaying port's $45.0m.
     const chain = chainOf(starved.state, mine.id);
-    expect(chain).toMatchObject({ complete: true, output: 120, bottleneck: road.id });
+    expect(chain).toMatchObject({ complete: true, output: 360, bottleneck: road.id });
     expect(chain?.links).toEqual([
-      { siteId: mine.id, state: 'operating', carries: 200 },
-      { siteId: road.id, state: 'decaying', carries: 120 },
-      { siteId: port.id, state: 'decaying', carries: 150 },
+      { siteId: mine.id, state: 'operating', carries: 600 },
+      { siteId: road.id, state: 'decaying', carries: 360 },
+      { siteId: port.id, state: 'decaying', carries: 450 },
     ]);
 
     const next = play(starved.state, [{ budget: solvent(country(), 10) }]);
-    expect(taxFrom(next.reports[0], mine)).toBe(30);
+    expect(taxFrom(next.reports[0], mine)).toBe(90);
   });
 
   it('has no chain of its own when the site is not a mine', () => {

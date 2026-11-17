@@ -42,6 +42,40 @@ export function testlandFormat1File(): unknown {
   return file;
 }
 
+/**
+ * Testland's file as format 2 could write it: its quay is not an alternative to its port,
+ * since naming alternatives needs format 3.
+ */
+export function testlandFormat2File(): unknown {
+  const file = structuredClone(testlandFile) as {
+    formatVersion: number;
+    sites: { alternatives?: unknown }[];
+  };
+  file.formatVersion = 2;
+  for (const site of file.sites) delete site.alternatives;
+  return file;
+}
+
+/**
+ * A copy of a country file whose mines need no power: each depends only on what carries its
+ * output to a port. A test of a chain's road and port uses it, so that power is met only by
+ * the tests about it.
+ */
+export function withoutPoweredMines(file: unknown): unknown {
+  const copy = structuredClone(file) as {
+    sites: { id: string; type: string; dependsOn?: string[] }[];
+  };
+  const lines = new Set(
+    copy.sites.filter((site) => site.type === 'powerLine').map((site) => site.id),
+  );
+  for (const site of copy.sites) {
+    if (site.type === 'mine' && site.dependsOn !== undefined) {
+      site.dependsOn = site.dependsOn.filter((id) => !lines.has(id));
+    }
+  }
+  return copy;
+}
+
 interface Chances {
   formatVersion: number;
   regions: { id: string; eventLikelihood?: Record<string, number>; populationGrowth?: number }[];

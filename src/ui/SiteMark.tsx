@@ -2,6 +2,7 @@ import {
   formatMoney,
   isInUseState,
   siteTerms,
+  SITE_POWER_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   type Point,
@@ -25,6 +26,12 @@ const SYMBOLS: Readonly<Record<SiteType, string>> = {
   trunkRoad: 'M-7,7 L-3,-7 M7,7 L3,-7 M0,7 V4 M0,1 V-2 M0,-5 V-7',
   // An anchor.
   port: 'M0,-7 V7 M-2,-5 H2 M-6,1 C-6,5 -3,7 0,7 C3,7 6,5 6,1',
+  // A small anchor above the waterline.
+  shallowPort: 'M0,-7 V3 M-2,-5 H2 M-4,0 C-4,3 -2,4 0,4 C2,4 4,3 4,0 M-7,7 H7',
+  // A bolt of lightning.
+  powerStation: 'M2,-7 L-4,1 H0 L-2,7 L4,-1 H0 Z',
+  // A pylon with its two cross-arms.
+  powerLine: 'M0,-7 L-5,7 M0,-7 L5,7 M-6,-3 H6 M-3,2 H3',
 };
 
 /**
@@ -59,8 +66,15 @@ interface SiteMarkProps {
    * needs and that is not yet in use.
    */
   readonly missingLink: boolean;
+  /**
+   * Whether a missing link is ringed as well, as the infrastructure lens draws every one, and
+   * its route dotted more boldly.
+   */
+  readonly ringed: boolean;
   /** Whether the site is the source of a chain, in use, that earns nothing for want of links. */
   readonly idle: boolean;
+  /** The name of the alternative whose building closed the site, or null while it is open. */
+  readonly closedBy: string | null;
   readonly onSelect: (siteId: string) => void;
 }
 
@@ -69,14 +83,18 @@ interface SiteMarkProps {
  * its own shape as well as its own colour: an empty site is a dashed marker, one being
  * built wears a ring and says how far it has got, and one in use is solid. One in use that
  * is decaying for want of upkeep also wears the warning triangle and a tag that says so.
- * A missing link in the chain picked out wears a cross and a tag, and its route is dotted.
+ * A missing link in the chain picked out wears a cross and a tag, and its route is dotted;
+ * ringed, it also wears a broken ring, and its route's dots are larger.
+ * A site closed by building on one of its alternatives is faded and struck through.
  */
 export function SiteMark(props: SiteMarkProps) {
-  const { site, status, planned, palette, selected, missingLink, idle, onSelect } = props;
+  const { site, status, planned, palette, selected, missingLink, ringed, idle, closedBy } = props;
+  const { onSelect } = props;
   const [x, y] = markerPlace(site);
   const underWay = status.state === 'building' || status.state === 'paused';
   const decaying = status.state === 'decaying';
   const inUse = isInUseState(status.state);
+  const closed = status.state === 'closed';
   // A site not yet begun still has its whole cost to pay, so it says what that is.
   const cost = status.state === 'empty' ? formatMoney(siteTerms(site.type).cost) : null;
   const description = [
@@ -85,6 +103,7 @@ export function SiteMark(props: SiteMarkProps) {
     siteStateName(site, status, planned).toLowerCase(),
     ...(underWay ? [`${progressOf(status)} quarters built`] : []),
     ...(cost === null ? [] : [cost]),
+    ...(closed && closedBy !== null ? [`ruled out by ${closedBy}`] : []),
     ...(missingLink ? ['missing link'] : []),
     ...(idle ? ['earning nothing: its chain is not complete'] : []),
   ].join(', ');
@@ -123,12 +142,16 @@ export function SiteMark(props: SiteMarkProps) {
           built={inUse ? 1 : status.quartersPaid / Math.max(1, status.buildQuarters)}
           started={planned || underWay}
           missing={missingLink}
+          bold={ringed}
+          closed={closed}
+          power={SITE_POWER_ROLES[site.type] === 'line'}
           palette={palette}
           selected={selected}
         />
       )}
       <g transform={`translate(${x},${y})`}>
         <circle className="map__site-focus" r="21" fill="none" strokeWidth="2.5" />
+        {ringed && <MissingRing palette={palette} />}
         {selected && <circle r="21" fill="none" stroke={palette.selection} strokeWidth="2" />}
         {(planned || underWay) && (
           <circle
@@ -142,19 +165,21 @@ export function SiteMark(props: SiteMarkProps) {
         <circle
           r="13"
           fill={inUse ? palette.siteLine : palette.site}
-          fillOpacity={inUse || selected ? 0.95 : 0.75}
+          fillOpacity={inUse || selected ? 0.95 : closed ? 0.35 : 0.75}
           stroke={inUse ? palette.site : palette.siteLine}
           strokeWidth="1.5"
-          {...(status.state === 'empty' ? { strokeDasharray: '3 3' } : {})}
+          {...(status.state === 'empty' || closed ? { strokeDasharray: '3 3' } : {})}
         />
         <path
           d={SYMBOLS[site.type]}
           fill="none"
           stroke={inUse ? palette.site : palette.siteLine}
+          strokeOpacity={closed ? 0.45 : 1}
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        {closed && <ClosedStrike palette={palette} />}
         {decaying && <WarningTriangle palette={palette} />}
         {missingLink && <MissingCross palette={palette} />}
       </g>
@@ -202,6 +227,26 @@ function WarningTriangle({ palette }: { readonly palette: MapPalette }) {
   );
 }
 
+/** The stroke struck through a site's marker once one of its alternatives has closed it. */
+function ClosedStrike({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <g className="map__site-closed" strokeLinecap="round">
+      <path d="M-10,10 L10,-10" stroke={palette.tagBackground} strokeWidth="5" />
+      <path d="M-10,10 L10,-10" stroke={palette.tagText} strokeWidth="2.5" />
+    </g>
+  );
+}
+
+/** The broken ring round a missing link, over a dark one so that it shows on any ground. */
+function MissingRing({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <g className="map__missing-ring" fill="none">
+      <circle r="19" stroke={palette.tagBackground} strokeWidth="5" />
+      <circle r="19" stroke={palette.tagText} strokeWidth="2.5" strokeDasharray="6 4" />
+    </g>
+  );
+}
+
 /** The cross worn at the bottom right of a site's marker while it is a missing link. */
 function MissingCross({ palette }: { readonly palette: MapPalette }) {
   return (
@@ -217,6 +262,18 @@ function MissingCross({ palette }: { readonly palette: MapPalette }) {
   );
 }
 
+/** How the part of a route still to build is drawn: a power line finer than a road. */
+const UNBUILT = {
+  road: {
+    width: { started: 3, other: 2 },
+    dashes: { started: '5 4', closed: '2 5', possible: '7 6' },
+  },
+  power: {
+    width: { started: 2, other: 1.5 },
+    dashes: { started: '3 3', closed: '1.5 5', possible: '3 4' },
+  },
+} as const;
+
 interface RouteLineProps {
   readonly route: readonly Point[];
   /** The share of the route that is built, from none (0) to all of it (1). */
@@ -225,6 +282,12 @@ interface RouteLineProps {
   readonly started: boolean;
   /** Whether the route is a missing link in the chain picked out, which dots its unbuilt part. */
   readonly missing: boolean;
+  /** Whether a missing route is drawn as the infrastructure lens rings it: in larger dots. */
+  readonly bold: boolean;
+  /** Whether one of its alternatives has closed the route, which leaves it faint and finely dashed. */
+  readonly closed: boolean;
+  /** Whether the route is a power line, which is finely dashed in every state. */
+  readonly power: boolean;
   readonly palette: MapPalette;
   readonly selected: boolean;
 }
@@ -233,16 +296,26 @@ interface RouteLineProps {
  * A route. The built part is drawn as a road: a pale line in a dark casing. The part
  * still to build is dashed, in amber once work is planned or under way. A route that is a
  * missing link in the chain picked out is dotted instead, in round dots over a dark line,
- * which no dash of a possible or started route resembles.
+ * which no dash of a possible or started route resembles. A closed route is faint and
+ * finely dashed. A power line is drawn finer: short dashes while it is still to build, and
+ * once built, pale dashes along a thin dark line, which no road resembles.
  */
-function RouteLine({ route, built, started, missing, palette, selected }: RouteLineProps) {
+function RouteLine(props: RouteLineProps) {
+  const { route, built, started, missing, bold, closed, power, palette, selected } = props;
   const [road, rest] = splitAt(route, built);
+  const unbuilt = UNBUILT[power ? 'power' : 'road'];
   return (
-    <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+    <g
+      className={power ? 'map__power-line' : undefined}
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       {/* A wide unseen line, so the route is easy to hit. */}
       <polyline points={line(route)} stroke="transparent" strokeWidth="16" />
       {selected && (
         <polyline
+          className="map__route-halo"
           points={line(route)}
           stroke={palette.selection}
           strokeOpacity="0.55"
@@ -254,15 +327,15 @@ function RouteLine({ route, built, started, missing, palette, selected }: RouteL
           <polyline
             points={line(rest)}
             stroke={palette.tagBackground}
-            strokeWidth="6"
+            strokeWidth={bold ? 9 : 6}
             strokeOpacity="0.85"
           />
           <polyline
             className="map__missing-link"
             points={line(rest)}
             stroke={palette.tagText}
-            strokeWidth="4"
-            strokeDasharray="0.1 9"
+            strokeWidth={bold ? 6 : 4}
+            strokeDasharray={bold ? '0.1 11' : '0.1 9'}
             strokeLinecap="round"
           />
         </>
@@ -271,13 +344,30 @@ function RouteLine({ route, built, started, missing, palette, selected }: RouteL
         <polyline
           points={line(rest)}
           stroke={started ? palette.construction : palette.siteLine}
-          strokeOpacity={started || selected ? 1 : 0.55}
-          strokeWidth={started ? 3 : 2}
-          strokeDasharray={started ? '5 4' : '7 6'}
+          strokeOpacity={started || selected ? 1 : closed ? 0.3 : 0.55}
+          strokeWidth={unbuilt.width[started ? 'started' : 'other']}
+          strokeDasharray={unbuilt.dashes[started ? 'started' : closed ? 'closed' : 'possible']}
           strokeLinecap="butt"
         />
       )}
-      {built > 0 && (
+      {built > 0 && power && (
+        <>
+          <polyline
+            className="map__power-casing"
+            points={line(road)}
+            stroke={palette.roadCasing}
+            strokeWidth="3"
+          />
+          <polyline
+            points={line(road)}
+            stroke={palette.road}
+            strokeWidth="1.5"
+            strokeDasharray="3 2"
+            strokeLinecap="butt"
+          />
+        </>
+      )}
+      {built > 0 && !power && (
         <>
           <polyline points={line(road)} stroke={palette.roadCasing} strokeWidth="5" />
           <polyline points={line(road)} stroke={palette.road} strokeWidth="2.6" />

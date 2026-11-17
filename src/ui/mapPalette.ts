@@ -37,6 +37,12 @@ export interface MapPalette {
    * darker, so that the steps can be told apart by lightness and not by hue alone.
    */
   readonly livingLens: readonly string[];
+  /**
+   * The infrastructure lens, from no access to the most: pale paper, then lilac deepening to
+   * indigo, each step darker, so that the steps can be told apart by lightness and not by
+   * hue alone.
+   */
+  readonly infrastructureLens: readonly string[];
   /** The hatching laid over a region with strikes or protests on the approval lens. */
   readonly unrestMark: string;
   /**
@@ -97,6 +103,7 @@ export const tierOnePalette: MapPalette = {
   foodLens: { adequate: '#ece3c8', tight: '#e2b565', shortage: '#c96f35', famine: '#74291c' },
   approvalLens: ['#f4f0e7', '#bcd0db', '#8fb3c8', '#5b8fad', '#28536f'],
   livingLens: ['#f2ecdc', '#dfdcae', '#b8cc8a', '#7aa86e', '#3a7350', '#1b4a39'],
+  infrastructureLens: ['#f1ede4', '#e6d6e8', '#cdb0d9', '#a585c4', '#6f53a3', '#3c2c70'],
   unrestMark: '#7a2716',
   lensLabelDark: '#14181d',
   lensLabelLight: '#fff6e6',

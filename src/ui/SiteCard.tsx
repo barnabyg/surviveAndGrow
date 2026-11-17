@@ -3,6 +3,8 @@ import {
   DECAYING_SHARE,
   formatMoney,
   regionName,
+  regionPower,
+  SITE_POWER_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   siteStatus,
@@ -56,6 +58,9 @@ export function SiteCard(props: SiteCardProps) {
   const instalment = formatMoney(status.instalment);
   const upkeep = formatMoney(terms.upkeep);
   const goesWithout = upkeepShort.includes(site.id);
+  const nameOf = (id: string) =>
+    game.country.sites.find((candidate) => candidate.id === id)?.name ?? id;
+  const rivals = listed(site.alternatives.map(nameOf));
   // An empty site can be started unless the treasury cannot cover it with what is planned.
   const fault =
     status.state === 'empty' && !planned ? startFault(game, [...plannedSiteIds, site.id]) : null;
@@ -103,8 +108,23 @@ export function SiteCard(props: SiteCardProps) {
             : `It carries on this quarter, and the site opens ${opens} if each instalment is paid.`}
         </p>
       )}
+      {status.state === 'empty' && rivals !== '' && (
+        <p className="warning-note">
+          ▲ Starting it closes {rivals} for good: they are alternatives, and only one of them can be
+          built.
+        </p>
+      )}
+      {status.closedBy !== null && (
+        <p className="warning-note" role="status">
+          ✕ Closed: building began on {nameOf(status.closedBy)}, its alternative, so {site.name} can
+          no longer be built.
+        </p>
+      )}
       {status.opened !== null && (
         <p className="map-card__note">In use since {formatDate(status.opened)}.</p>
+      )}
+      {SITE_POWER_ROLES[site.type] !== null && status.opened !== null && (
+        <PowerReach game={game} siteId={site.id} />
       )}
       {status.state === 'decaying' && (
         <p className="warning-note" role="status">
@@ -218,6 +238,30 @@ function ChainList({ game, chain, siteId }: ChainListProps) {
       )}
     </section>
   );
+}
+
+/** The regions a power station or line in use brings power to, or why it brings none. */
+function PowerReach({ game, siteId }: { readonly game: GameState; readonly siteId: string }) {
+  const reached = regionPower(game)
+    .filter((power) => power.stationId === siteId || power.lineId === siteId)
+    .map((power) => regionName(game.country, power.regionId));
+  return reached.length > 0 ? (
+    <p className="map-card__note" role="status">
+      Powering {listed(reached)}.
+    </p>
+  ) : (
+    <p className="warning-note" role="status">
+      ▲ Powering no region: power reaches a region only along a power line in use that links it to a
+      power station in use.
+    </p>
+  );
+}
+
+/** Names in a sentence: "A", "A and B", "A, B and C". */
+function listed(names: readonly string[]): string {
+  return names.length < 2
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`;
 }
 
 function Fact({ label, value }: { readonly label: string; readonly value: string }) {

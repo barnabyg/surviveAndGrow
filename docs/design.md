@@ -151,12 +151,33 @@ stylised vector art.
   timeline says when.
 - **More sites than money.** Some sites are alternatives, such as a cheap
   shallow port against a costly deep-water one. One game cannot build
-  everything.
-- **Site states are visible:** empty, under construction, operating, decaying.
+  everything. A country file marks the alternatives. Starting a project on one
+  closes the others for good, and the site card says so before the player
+  commits. A closed site is drawn as unavailable and its card says which choice
+  closed it. Alternatives play the same part in a chain, so a site that depends
+  on one is served by whichever is chosen.
+- **Power reaches the country along lines.** A power station powers the
+  regions its power lines reach: a region is powered while a power line of
+  its own in use links it, directly or through other lines, to a station in
+  use. Whether a region is powered is worked out each quarter, never saved.
+  A powered region produces more and its infrastructure access rises, which
+  its card breaks down; while the station or a line on the way decays, it has
+  half of each. A site can depend on a power line or station like any other
+  link of its chain, so that it needs power to produce. Power lines are drawn
+  as fine dashed lines in every state.
+- **Site states are visible:** empty, closed, under construction, operating,
+  decaying.
 - **Sites are revealed over time.** Surveys uncover deposits, and research
   unlocks new site types.
 - **Lenses:** the map switches between country, food, approval, living
   standards and infrastructure views.
+- **The infrastructure lens shows what is built and what is missing.** Each
+  region is coloured by its infrastructure access, in steps that differ in
+  lightness as well as hue, and labelled with it. Every region starts with
+  none, and one ordinary site in use moves its region up a step. Every link
+  missing from a chain is marked and ringed under this lens, with no site
+  picked out, and its route dotted more boldly; the lens's scale explains the
+  ring.
 
 ### Showing living standards
 

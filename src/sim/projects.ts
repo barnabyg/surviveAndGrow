@@ -29,10 +29,15 @@ export interface Project {
   readonly opened: GameDate | null;
 }
 
-/** How one site stands: empty, being built, or in use in good repair or decaying. */
+/**
+ * How one site stands: empty, closed by building on one of its alternatives, being built, or
+ * in use in good repair or decaying.
+ */
 export interface SiteStatus {
   readonly siteId: string;
   readonly state: SiteState;
+  /** The alternative whose project closed the site, or null while it is not closed. */
+  readonly closedBy: string | null;
   readonly quartersPaid: number;
   readonly buildQuarters: number;
   readonly cost: Money;
@@ -57,9 +62,14 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
   const project = projects.find((candidate) => candidate.siteId === siteId);
   const terms = site === undefined ? null : siteTerms(site.type);
   const quartersPaid = project?.quartersPaid ?? 0;
+  const closedBy =
+    project === undefined
+      ? (site?.alternatives.find((id) => projects.some((other) => other.siteId === id)) ?? null)
+      : null;
   return {
     siteId,
-    state: project?.status ?? 'empty',
+    state: project?.status ?? (closedBy === null ? 'empty' : 'closed'),
+    closedBy,
     quartersPaid,
     buildQuarters: terms?.buildQuarters ?? 0,
     cost: terms?.cost ?? 0,
@@ -72,13 +82,15 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
 
 /**
  * What is wrong with starting projects on these sites this quarter, or null when the game
- * allows it. A project is started on an empty site, and only when the treasury holds the
- * whole cost of everything started together, though it is then paid for as it is built.
+ * allows it. A project is started on an empty site, not on one closed by building on one of
+ * its alternatives nor together with one, and only when the treasury holds the whole cost of
+ * everything started together, though it is then paid for as it is built.
  */
 export function startFault(
   { country, projects, treasury }: Building & { readonly treasury: Money },
   siteIds: readonly string[],
 ): string | null {
+  const nameOf = (id: string) => country.sites.find((candidate) => candidate.id === id)?.name ?? id;
   const sites: Site[] = [];
   for (const siteId of siteIds) {
     const site = country.sites.find((candidate) => candidate.id === siteId);
@@ -87,6 +99,14 @@ export function startFault(
     const project = projects.find((candidate) => candidate.siteId === siteId);
     if (project !== undefined) {
       return `${site.name} is already ${inUse(project) ? 'built' : 'being built'}.`;
+    }
+    const { closedBy } = siteStatus({ country, projects }, siteId);
+    if (closedBy !== null) {
+      return `${site.name} is ruled out: building began on ${nameOf(closedBy)}, its alternative.`;
+    }
+    const rival = sites.find((other) => site.alternatives.includes(other.id));
+    if (rival !== undefined) {
+      return `${rival.name} and ${site.name} are alternatives: only one of them can be built.`;
     }
     sites.push(site);
   }

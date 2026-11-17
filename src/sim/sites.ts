@@ -1,12 +1,14 @@
 import { percentOff } from './arithmetic';
 import { balance, type SiteBalance } from './balance';
-import { formatMoney } from './text';
+import { formatMoney, formatPercent, formatPoints } from './text';
 import type { Money } from './types';
 import {
   CHAIN_ROLE_SENTENCES,
+  POWER_ROLE_SENTENCES,
   SITE_CHAIN_ROLES,
   SITE_EFFECT_DEFINITIONS,
   SITE_EFFECTS,
+  SITE_POWER_ROLES,
   type SiteEffect,
   type SiteType,
 } from './vocabulary';
@@ -71,6 +73,26 @@ export function capacityOf(type: SiteType, decaying = false): Money | null {
   return decaying ? weakened(capacity) : capacity;
 }
 
+/** What power gives a region, in thousandths: of its output, and of infrastructure access. */
+export interface PowerGain {
+  readonly outputPermille: number;
+  readonly infrastructurePermille: number;
+}
+
+/**
+ * What power gives a region a power line links to a station. While the station or a line
+ * of the link decays, it gives only part of it.
+ */
+export function powerGain(decaying = false): PowerGain {
+  const { outputPermille, infrastructurePermille } = balance.power;
+  return decaying
+    ? {
+        outputPermille: weakened(outputPermille),
+        infrastructurePermille: weakened(infrastructurePermille),
+      }
+    : { outputPermille, infrastructurePermille };
+}
+
 /** What is left of something a site does while it decays. */
 function weakened(permille: number): number {
   return Math.floor((permille * balance.upkeep.decayingEffectPermille) / 1000);
@@ -80,6 +102,8 @@ function weakened(permille: number): number {
 function effectOf(type: SiteType, decaying: boolean): string {
   const role = SITE_CHAIN_ROLES[type];
   const capacity = capacityOf(type, decaying);
+  const powerRole = SITE_POWER_ROLES[type];
+  const gain = powerGain(decaying);
   return [
     ...siteEffectsOf(type, decaying).map(([effect, permille]) =>
       SITE_EFFECT_DEFINITIONS[effect].sentence.replace('{percent}', String(percentOff(permille))),
@@ -87,5 +111,12 @@ function effectOf(type: SiteType, decaying: boolean): string {
     ...(role === null || capacity === null
       ? []
       : [CHAIN_ROLE_SENTENCES[role].replace('{money}', formatMoney(capacity))]),
+    ...(powerRole === null
+      ? []
+      : [
+          POWER_ROLE_SENTENCES[powerRole]
+            .replace('{percent}', formatPercent(gain.outputPermille, 0))
+            .replace('{points}', formatPoints(gain.infrastructurePermille)),
+        ]),
   ].join(' ');
 }

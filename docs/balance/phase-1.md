@@ -132,6 +132,62 @@ changes, within the noise of 1,200 games:
 | Tavara | Sensible | 1.1% | 1.3% | 20.8% / 42.2% / 51.5% | 21.5% / 42.4% / 51.8% |
 | Testland | Sensible | 99.5% | 99.2% | 49.1% / 56.8% / 65.1% | 47.5% / 56.8% / 65.1% |
 
+## After alternatives (issue #36)
+
+From issue #36 Tavara and Testland each have a shallow port, a quay, as the alternative to their
+port. Starting one closes the other, and either completes the mine's chain:
+
+| Site | Cost | Build time | Upkeep | Ships a quarter |
+| --- | ---: | ---: | ---: | ---: |
+| Port | $50.0m | 8 quarters | $0.8m | $30.0m |
+| Shallow port | $25.0m | 5 quarters | $0.4m | $12.0m |
+
+Through the quay the chain costs $95.0m instead of $120.0m and is complete two quarters sooner,
+with the mine, but the quay is its bottleneck: the mine earns $12.0m a quarter instead of $20.0m,
+and choosing the quay gives up the larger trade for good. The values are first guesses, to be
+tuned when Phase 2 is balanced.
+
+The starting upkeep counts only the costlier of two alternatives, so it stays at $4.0m in Tavara
+and $3.0m in Testland. The scripted players build only irrigation, grain stores and farm roads,
+so their games are unchanged and the confirmation run was not repeated.
+
+## After power (issue #37)
+
+From issue #37 Tavara and Testland each have a power station and power lines from it. A region is
+powered while a line of its own in use links it to a station in use:
+
+| Site | Cost | Build time | Upkeep | Infrastructure access |
+| --- | ---: | ---: | ---: | ---: |
+| Power station | $30.0m | 5 quarters | $0.5m | +5 points, its own region |
+| Power line | $6.0m | 2 quarters | $0.1m | none of its own |
+
+A powered region produces 20% more of its own output and gains 15 points of infrastructure
+access; while the station or a line on the way decays, it has half of each. In Tavara the station
+and its three lines cost $48.0m and add $21.2m a quarter of output (Arden Vale $10.4m, Lowmere
+Plains $7.6m, Korr Highlands $3.2m), about $3.8m a quarter in tax at 18% against $0.8m of upkeep,
+and lift each powered region's living standard by about 4 points. That makes power the strongest
+building for prosperity so far. Testland's mine now also needs its power line and station, so
+its chain costs $36.0m more; Tavara's mine does not need power. The values are first guesses, to
+be tuned when Phase 2 is balanced.
+
+The starting upkeep rises from $4.0m to $5.0m in Tavara and from $3.0m to $4.0m in Testland.
+The scripted players never build power, but the larger upkeep setting widens the cushion they
+keep before building, so they build a little later. A confirmation run (`BALANCE_PLAYERS=all`,
+seeds 1001-2200, both countries) was made. On Tavara it found the sensible player re-elected in
+1.3% of games and hover-then-spend in 15.1%, far below the run recorded below; the same run on
+seeds 1001-1100 at the commit before power (82deff1) also re-elects the sensible player in no
+game, so that fall predates power and needs #39's attention. Against that baseline, power moves
+the sensible player's middle vote share from 43.3% to 41.9% on those 100 seeds; the other two
+players are unchanged. Testland's sensible player is still re-elected in 98.6% of games.
+
+## Phase 2 (issue #39)
+
+Phase 2 retuned the game for several terms and the win on prosperity, and changed the scripted
+players and the balance tool; the targets above no longer apply. The balance run now plays up to
+four terms by default (`BALANCE_TERMS=1` gives a single term, as here), and its table's
+**Re-elected** column is now **Still in office**. The values changed, the new targets and the
+runs are recorded in [phase-2.md](phase-2.md).
+
 ## How the runs were made
 
 ```powershell

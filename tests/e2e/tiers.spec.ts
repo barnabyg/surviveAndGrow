@@ -16,7 +16,7 @@ test('the prosperity figure shows the tier in force and how far it is to the nex
 }) => {
   await startGame(page, { countryFile: tavaraPoisedBelowDeveloping() });
 
-  await expect(prosperity(page)).toContainText('Subsistence · 0.3 to Developing');
+  await expect(prosperity(page)).toContainText('Subsistence · 0.1 to Developing');
 });
 
 test('passing a tier is reported, raises expectations and changes the map’s palette', async ({

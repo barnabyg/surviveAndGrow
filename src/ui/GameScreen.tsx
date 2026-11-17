@@ -6,6 +6,7 @@ import {
   regionName,
   risksAhead,
   siteSchedule,
+  siteStatus,
   type GameState,
   type TurnReport,
 } from '../sim';
@@ -111,11 +112,14 @@ export function GameScreen(props: GameScreenProps) {
   );
   const selectedRisk = pickedRisk === -1 ? null : pickedRisk;
   // The timeline shows every project, and the site picked out on the map if it is still
-  // empty and unplanned, as if building there began now.
+  // empty and unplanned, as if building there began now. A closed site can never begin.
   const schedule =
     preview?.schedule ?? game.projects.map((project) => siteSchedule(game, project.siteId));
   const considered =
-    playing && selectedSiteId !== null && !schedule.some((entry) => entry.siteId === selectedSiteId)
+    playing &&
+    selectedSiteId !== null &&
+    !schedule.some((entry) => entry.siteId === selectedSiteId) &&
+    siteStatus(game, selectedSiteId).state !== 'closed'
       ? siteSchedule(game, selectedSiteId)
       : null;
   const selectedEntry =

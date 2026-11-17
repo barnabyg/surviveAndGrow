@@ -62,21 +62,21 @@ test('a mine shows its missing links, and once its road and port are built it ea
 
   await endQuarters(page, 2);
   await expect(chain).toContainText(
-    'Earning: Korrgate mine adds $20.0m a quarter to its region’s output.',
+    'Earning: Korrgate mine adds $60.0m a quarter to its region’s output.',
   );
-  await expect(links.nth(0)).toContainText('Operating · carries $20.0m · source · ◆ Bottleneck');
-  await expect(links.nth(2)).toContainText('Operating · carries $30.0m');
+  await expect(links.nth(0)).toContainText('Operating · carries $60.0m · source · ◆ Bottleneck');
+  await expect(links.nth(2)).toContainText('Operating · carries $90.0m');
   await expect(map(page).getByText('✕ Missing link')).toHaveCount(0);
   await expect(map(page).getByText('▲ Earning nothing')).toHaveCount(0);
   await expect(site(page, 'Korrgate mine')).toHaveAccessibleName('Korrgate mine, mine, operating');
 
-  // Its output is taxed: 18% of the $20.0m it adds.
+  // Its output is taxed: 18% of the $60.0m it adds.
   await endQuarters(page, 1);
   await treasury(page)
     .getByRole('button', { name: /Treasury/ })
     .click();
   const breakdown = page.getByRole('region', { name: 'What moved the treasury' });
   await expect(breakdown.getByRole('row', { name: 'Tax from Korrgate mine' })).toContainText(
-    '+$3.6m',
+    '+$10.8m',
   );
 });

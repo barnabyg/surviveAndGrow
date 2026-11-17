@@ -141,7 +141,7 @@ test('holding Prosperous for four quarters wins the game, and the summary tells 
   await expect(summary).toBeVisible();
   await expect(summary).toContainText('★ You have won');
   await expect(summary).toContainText(
-    'National prosperity has stood in Prosperous, from 70 up, for 4 quarters running. You have won.',
+    'National prosperity has stood in Prosperous, from 42 up, for 4 quarters running. You have won.',
   );
   await expect(summary).toContainText(
     'Your government was in office for 29 quarters, over 2 terms.',

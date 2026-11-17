@@ -307,8 +307,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when the country it carries will not load', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 3))).toBe(
-      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 3, but this game reads versions 1 to 2.',
+    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 4))).toBe(
+      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 4, but this game reads versions 1 to 3.',
     );
     expect(refusal(without(save, ['country', 'file']))).toMatch(/country cannot be loaded/);
     expect(refusal(without(save, ['country']))).toBe(
@@ -726,10 +726,10 @@ describe('the save kept from save format 1', () => {
     expect(game.regions.map((region) => [region.health, region.education])).toEqual(
       game.regions.map(() => [148, 126]),
     );
-    // The grain store and farm road in use in Lowmere carry it just into Developing. It is put
-    // in the tier it reaches and counts as having begun there, so nobody expects more of it.
-    expect(game.tier).toBe('developing');
-    expect(game.startingTier).toBe('developing');
+    // It is put in the tier its prosperity reaches, with the grain store and farm road in use
+    // in Lowmere, and counts as having begun there, so nobody expects more of it.
+    expect(game.tier).toBe('subsistence');
+    expect(game.startingTier).toBe('subsistence');
     expect(approvalStatus(game).causes.map((cause) => cause.label)).not.toContain('Expectations');
     // Nothing recorded before format 2 measured prosperity.
     expect(game.history.map((signs) => signs.prosperity)).toEqual([null, null, null, null]);

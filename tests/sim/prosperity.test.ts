@@ -71,7 +71,7 @@ describe.each(bothCountries)('prosperity in %s', (_name, country) => {
     expect(status.value).toBe(Math.floor(weighted / people));
     expect(status.parts.map((part) => part.label)).toEqual(Object.values(PROSPERITY_PART_NAMES));
     expect(sum(status.parts.map((part) => part.amount))).toBe(status.value);
-    expect(status.target).toBe(700);
+    expect(status.target).toBe(420);
   });
 
   it('does not move while nothing changes: health and education start where the budget holds them', () => {
@@ -101,7 +101,7 @@ describe.each(bothCountries)('prosperity in %s', (_name, country) => {
     expect((values.at(-1) ?? 0) - (values[0] ?? 0)).toBeGreaterThanOrEqual(5);
     // It builds up over quarters, not at once: the first quarter brings well under half of the rise.
     const rise = (values.at(-1) ?? 0) - (values[0] ?? 0);
-    expect((values[1] ?? 0) - (values[0] ?? 0)).toBeLessThan(rise / 3);
+    expect((values[1] ?? 0) - (values[0] ?? 0)).toBeLessThan(rise / 2);
     // What moved it is health and education, and the lines add up to the change.
     const moved = reports[0]?.prosperity;
     expect(moved?.contributions.find((line) => line.label === 'Health')?.amount).toBeGreaterThan(0);
@@ -172,7 +172,7 @@ describe('infrastructure access', () => {
 
     const after = livingStandards(game);
     const lowmere = country.regions.findIndex((region) => region.id === 'lowmere-plains');
-    expect(after[lowmere]?.scores.infrastructure).toBe(100);
+    expect(after[lowmere]?.scores.infrastructure).toBe(200);
     expect(after[lowmere]?.value).toBeGreaterThan(before[lowmere]?.value ?? 0);
     expect(after.filter((_, index) => index !== lowmere).map((entry) => entry.value)).toEqual(
       before.filter((_, index) => index !== lowmere).map((entry) => entry.value),

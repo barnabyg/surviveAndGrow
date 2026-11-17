@@ -75,7 +75,7 @@ export const balance = {
       /** The share of the full yield, in thousandths, grown with no agriculture spending. */
       basePermille: 850,
       /** Thousandths of yield added for each 1,000 Money units spent over the growing year. */
-      bonusPermillePerThousandMoney: 375,
+      bonusPermillePerThousandMoney: 600,
     },
     /** How many quarters of its own needs a region keeps back from its harvest. */
     regionKeepQuarters: 4,
@@ -93,9 +93,9 @@ export const balance = {
   population: {
     /**
      * How fast each region's people grow in number, in ten-thousandths a quarter, unless its
-     * country file sets its own rate. 60 is about 2.4% a year. A region in famine does not grow.
+     * country file sets its own rate. 30 is about 1.2% a year. A region in famine does not grow.
      */
-    growthPerTenThousandPerQuarter: 60,
+    growthPerTenThousandPerQuarter: 30,
     /** The fastest yearly growth, in percent, that a country file may give a region. */
     maxGrowthPercentPerYear: 10,
   },
@@ -111,7 +111,7 @@ export const balance = {
   },
   approval: {
     /** Where a region's approval stands when nothing pushes it either way, in thousandths. */
-    baselinePermille: 455,
+    baselinePermille: 515,
     /**
      * Approval does not jump. Each quarter, the effect of each thing that moves it closes
      * this share, in thousandths, of the gap to where that thing would settle it.
@@ -213,21 +213,21 @@ export const balance = {
       buildQuarters: 3,
       upkeep: 4,
       effects: { harvestWeather: 500 },
-      infrastructurePermille: 100,
+      infrastructurePermille: 200,
     },
     farmRoad: {
       cost: 100,
       buildQuarters: 3,
       upkeep: 3,
       effects: { transportLoss: 500 },
-      infrastructurePermille: 150,
+      infrastructurePermille: 300,
     },
     grainStore: {
       cost: 60,
       buildQuarters: 2,
       upkeep: 2,
       effects: { reserveSpoilage: 750 },
-      infrastructurePermille: 100,
+      infrastructurePermille: 200,
     },
     // The large sites of a chain. Each is slow to build and costs several quarters' tax, so
     // one started late in a term opens after the election.
@@ -236,26 +236,64 @@ export const balance = {
       buildQuarters: 6,
       upkeep: 6,
       effects: {},
-      infrastructurePermille: 50,
-      capacity: 200,
+      infrastructurePermille: 100,
+      capacity: 600,
     },
     trunkRoad: {
       cost: 300,
       buildQuarters: 5,
       upkeep: 5,
       effects: {},
-      infrastructurePermille: 200,
-      capacity: 240,
+      infrastructurePermille: 400,
+      capacity: 720,
     },
     port: {
       cost: 500,
       buildQuarters: 8,
       upkeep: 8,
       effects: {},
-      infrastructurePermille: 150,
-      capacity: 300,
+      infrastructurePermille: 300,
+      capacity: 900,
+    },
+    // A port for shallow-draught ships: about half the cost of a deep-water port and quicker
+    // to build, but it ships less than a mine produces. A country offers it as an
+    // alternative to a deep-water port, so choosing it gives up the larger trade for good.
+    shallowPort: {
+      cost: 250,
+      buildQuarters: 5,
+      upkeep: 4,
+      effects: {},
+      infrastructurePermille: 200,
+      capacity: 360,
+    },
+    // A power station does nothing alone: what power gives a region is `power`, below, and
+    // it reaches a region only along a power line. So a line adds nothing of its own to
+    // infrastructure access: the power it brings does.
+    powerStation: {
+      cost: 300,
+      buildQuarters: 5,
+      upkeep: 5,
+      effects: {},
+      infrastructurePermille: 100,
+    },
+    powerLine: {
+      cost: 60,
+      buildQuarters: 2,
+      upkeep: 1,
+      effects: {},
+      infrastructurePermille: 0,
     },
   } satisfies Record<SiteType, SiteBalance>,
+  /**
+   * What power gives a region while a power line in use links it to a power station in use:
+   * `outputPermille` thousandths more output, before anything a chain adds, and
+   * `infrastructurePermille` thousandths of infrastructure access. While the station or a
+   * line of the link decays, the region has only `upkeep.decayingEffectPermille` of each.
+   */
+  power: {
+    outputPermille: 200,
+    infrastructurePermille: 150,
+  },
   /**
    * Upkeep. Each quarter the upkeep spending keeps the sites in use in good repair one by
    * one, in the order building began on them, until what is left will not cover the next:
@@ -275,10 +313,10 @@ export const balance = {
   prosperity: {
     weightsPermille: {
       food: 150,
-      income: 250,
-      health: 200,
-      education: 200,
-      infrastructure: 200,
+      income: 150,
+      health: 150,
+      education: 150,
+      infrastructure: 400,
     } satisfies Record<ProsperityPart, number>,
     /** Food security by the region's food situation. */
     food: { adequate: 1000, tight: 600, shortage: 250, famine: 0 } satisfies Record<
@@ -319,10 +357,10 @@ export const balance = {
      */
     tiers: {
       subsistence: { fromPermille: 0, expectationsPermille: 0 },
-      developing: { fromPermille: 250, expectationsPermille: 30 },
-      industrialising: { fromPermille: 450, expectationsPermille: 60 },
+      developing: { fromPermille: 300, expectationsPermille: 30 },
+      industrialising: { fromPermille: 380, expectationsPermille: 60 },
       // The last tier is the target the country is aiming for.
-      prosperous: { fromPermille: 700, expectationsPermille: 90 },
+      prosperous: { fromPermille: 420, expectationsPermille: 90 },
     } satisfies Record<Tier, { fromPermille: number; expectationsPermille: number }>,
     /**
      * A tier once reached is lost only when prosperity falls this many thousandths below

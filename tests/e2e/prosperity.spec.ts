@@ -12,9 +12,9 @@ import {
 test('prosperity is a vital sign, shown against its target', async ({ page }) => {
   await startGame(page, { countryFile: tavaraWith({ drought: [] }) });
 
-  await expect(prosperity(page).getByRole('button')).toContainText('23.7');
-  await expect(prosperity(page).getByRole('button')).toContainText('of 70');
-  await expect(prosperity(page)).toContainText('Subsistence · 1.3 to Developing');
+  await expect(prosperity(page).getByRole('button')).toContainText('21.0');
+  await expect(prosperity(page).getByRole('button')).toContainText('of 42');
+  await expect(prosperity(page)).toContainText('Subsistence · 9.0 to Developing');
   await expect(prosperity(page)).toContainText('Opening position');
 });
 
@@ -32,7 +32,7 @@ test('the prosperity breakdown lists its five parts, adding up to the figure', a
     'Infrastructure access',
     'Prosperity now',
   ]);
-  await expect(parts.getByRole('row', { name: /Prosperity now/ })).toContainText('23.7');
+  await expect(parts.getByRole('row', { name: /Prosperity now/ })).toContainText('21.0');
 });
 
 test('spending on health and education raises prosperity, and the figure says what moved it', async ({
@@ -42,7 +42,7 @@ test('spending on health and education raises prosperity, and the figure says wh
   await decisions(page).getByRole('slider', { name: 'Health' }).fill('12');
   await decisions(page).getByRole('slider', { name: 'Education' }).fill('12');
   await expect(outlook(page).getByRole('group', { name: 'Prosperity next quarter' })).toHaveText(
-    /23\.7 → 2\d\.\d/,
+    /21\.0 → 2\d\.\d/,
   );
   await decisions(page).getByRole('button', { name: 'Commit budget' }).click();
 
@@ -59,6 +59,6 @@ test('the region list shows each region’s living standard in figures', async (
   await startGame(page, { countryFile: tavaraWith({ drought: [] }) });
 
   const regions = situation(page).getByRole('region', { name: 'Regions' });
-  await expect(regions.getByRole('button', { name: /Arden Vale/ })).toContainText('26.2');
-  await expect(regions.getByRole('button', { name: /Dry East/ })).toContainText('22.4');
+  await expect(regions.getByRole('button', { name: /Arden Vale/ })).toContainText('22.5');
+  await expect(regions.getByRole('button', { name: /Dry East/ })).toContainText('20.3');
 });

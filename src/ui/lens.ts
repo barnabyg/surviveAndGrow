@@ -15,7 +15,7 @@ import {
 import type { MapPalette } from './mapPalette';
 
 /** What the map can be made to show. The country view is the map as it looks. */
-export const LENSES = ['country', 'food', 'approval', 'living'] as const;
+export const LENSES = ['country', 'food', 'approval', 'living', 'infrastructure'] as const;
 export type Lens = (typeof LENSES)[number];
 
 export const LENS_NAMES: Readonly<Record<Lens, string>> = {
@@ -23,6 +23,7 @@ export const LENS_NAMES: Readonly<Record<Lens, string>> = {
   food: 'Food',
   approval: 'Approval',
   living: 'Living standards',
+  infrastructure: 'Infrastructure',
 };
 
 /** One step of a lens's scale: a colour and what it stands for. */
@@ -39,7 +40,8 @@ export function terrainName(terrain: Terrain): string {
 /**
  * The scale of a lens, in the order it is read. The country view's colours are the kinds
  * of land the country has; the food lens has a step for each stage; the approval lens is
- * cut at the levels that matter to the player; the living-standards lens at fixed marks.
+ * cut at the levels that matter to the player; the living-standards and infrastructure
+ * lenses at fixed marks.
  */
 export function lensScale(lens: Lens, game: GameState, palette: MapPalette): LensStep[] {
   switch (lens) {
@@ -80,7 +82,37 @@ export function lensScale(lens: Lens, game: GameState, palette: MapPalette): Len
               : `${formatIndex(from, 0)} to ${formatIndex(to, 0)}`;
         return { label, fill };
       });
+    case 'infrastructure':
+      return palette.infrastructureLens.map((fill, index) => {
+        const from = INFRASTRUCTURE_CUTS[index - 1];
+        const to = INFRASTRUCTURE_CUTS[index];
+        const label =
+          from === undefined
+            ? 'None'
+            : index === 1
+              ? `Under ${formatIndex(to ?? 0, 0)}`
+              : to === undefined
+                ? `${formatIndex(from, 0)} and over`
+                : `${formatIndex(from, 0)} to ${formatIndex(to, 0)}`;
+        return { label, fill };
+      });
   }
+}
+
+/**
+ * Where the infrastructure lens changes colour, in thousandths of access, lowest first.
+ * Every region starts with none, which is a step of its own. One ordinary site in use adds
+ * 20 to 30 and power 15, so building one moves a region up a step; the top step is reached
+ * only by a region with most of what it can build in use.
+ */
+const INFRASTRUCTURE_CUTS: readonly number[] = [1, 200, 400, 600, 800];
+
+/** A region's infrastructure access, in thousandths. */
+export function infrastructureOf(game: GameState, regionId: string): number {
+  return (
+    livingStandards(game).find((standard) => standard.regionId === regionId)?.scores
+      .infrastructure ?? 0
+  );
 }
 
 /**
@@ -93,8 +125,9 @@ const LIVING_STANDARD_CUTS: readonly number[] = (() => {
   const developing = tierFrom('developing');
   const industrialising = tierFrom('industrialising');
   return [
-    // Four fifths of the way to Developing, so that the poorest regions stand apart.
-    Math.round((developing * 4) / 5),
+    // Seven tenths of the way to Developing, so that the poorest regions stand apart on the
+    // opening map.
+    Math.round((developing * 7) / 10),
     developing,
     // Halfway from Developing to Industrialising.
     Math.round((developing + industrialising) / 2),
@@ -136,6 +169,11 @@ export function lensFill(
         palette.livingLens[livingStep(livingStandardOf(game, region.id))] ??
         palette.terrain[region.terrain]
       );
+    case 'infrastructure': {
+      const access = infrastructureOf(game, region.id);
+      const step = INFRASTRUCTURE_CUTS.filter((cut) => access >= cut).length;
+      return palette.infrastructureLens[step] ?? palette.terrain[region.terrain];
+    }
   }
 }
 

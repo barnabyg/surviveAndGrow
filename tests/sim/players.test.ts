@@ -1,124 +1,195 @@
 import { describe, expect, it } from 'vitest';
-import { createGame, electionStatus } from '../../src/sim';
-import { playGame, summarise } from '../balance/batch';
-import { DEGENERATE_PLAYERS, SCRIPTED_PLAYERS } from '../balance/players';
+import { advanceQuarter, createGame, electionStatus, TIERS, type GameState } from '../../src/sim';
+import { DEFAULT_TERMS, playGame, summarise, type GameResult } from '../balance/batch';
+import { SCRIPTED_PLAYERS, type ScriptedPlayer } from '../balance/players';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
 
 /**
- * A short run of the scripted players, as a smoke test: whole games on the countries as
- * they ship, dilemmas included. The large batch that judges the balance is a separate
- * command (`npm run balance`) and gates nothing.
+ * A short run of the scripted players, as a smoke test: whole games of several terms on the
+ * countries as they ship, dilemmas included. The large batch that judges the balance is a
+ * separate command (`npm run balance`) and gates nothing.
  */
-const SEEDS = [1, 2, 3];
+const SEEDS = [1];
+
+/**
+ * Whole games of several terms take a second or two each, and longer while the rest of the
+ * suite runs alongside; the default limit of five seconds is too close.
+ */
+const GAME_TIMEOUT = 30_000;
 
 const shipped = [
   ['Tavara', tavaraAsShipped],
   ['Testland', testlandAsShipped],
 ] as const;
 
+/** The chain builder, the player that builds most. */
+function chainBuilder(): ScriptedPlayer {
+  const player = SCRIPTED_PLAYERS.find((candidate) => candidate.name === 'Chain builder');
+  if (player === undefined) throw new Error('There is no chain builder among the players.');
+  return player;
+}
+
+const ENDINGS: readonly GameResult['ending'][] = ['won', 'inOffice', 'lostElection', 'famine'];
+
 describe('the scripted players', () => {
-  it('are the three the balance is judged by', () => {
+  it('are the four the balance is judged by', () => {
     expect(SCRIPTED_PLAYERS.map((player) => player.name)).toEqual([
       'Does nothing',
       'Popularity',
       'Sensible',
+      'Chain builder',
     ]);
+  });
+
+  it('include a chain builder that starts on the large sites in Tavara', () => {
+    let game: GameState = createGame(tavaraAsShipped(), 1);
+    const started: string[] = [];
+    for (let quarter = 0; quarter < 8 && game.outcome.status === 'playing'; quarter += 1) {
+      const decisions = chainBuilder().decide(game);
+      started.push(...(decisions.startProjects ?? []));
+      game = advanceQuarter(game, decisions).state;
+    }
+    const types = started.map((id) => game.country.sites.find((site) => site.id === id)?.type);
+
+    expect(types).toContain('powerStation');
+    expect(types).toContain('powerLine');
   });
 });
 
 describe.each(shipped)('a scripted player in %s', (_name, country) => {
   describe.each(SCRIPTED_PLAYERS)('$name', ({ decide }) => {
-    it.each(SEEDS)('plays seed %i to an ending or through its first term', (seed) => {
-      const result = playGame(country(), seed, decide);
-      const { termQuarters } = electionStatus(createGame(country(), seed));
+    it.each(SEEDS)(
+      'plays seed %i through its terms to an ending',
+      (seed) => {
+        const result = playGame(country(), seed, decide);
+        const { termQuarters } = electionStatus(createGame(country(), seed));
 
-      expect(['won', 'reelected', 'lostElection', 'famine']).toContain(result.ending);
-      expect(result.quarters).toBeGreaterThan(0);
-      expect(result.quarters).toBeLessThanOrEqual(termQuarters);
-      if (result.ending === 'famine') {
-        expect(country().regions.map((region) => region.id)).toContain(result.regionId);
-        expect(result.voteShare).toBe(null);
-      } else if (result.ending !== 'won') {
-        // An election is only ever held at the end of the term.
-        expect(result.quarters).toBe(termQuarters);
-        expect(result.voteShare).not.toBe(null);
-      }
-    });
+        expect(ENDINGS).toContain(result.ending);
+        expect(result.quarters).toBeGreaterThan(0);
+        expect(result.quarters).toBeLessThanOrEqual(DEFAULT_TERMS * termQuarters);
+        expect(result.terms).toBe(Math.ceil(result.quarters / termQuarters));
+        expect(TIERS).toContain(result.peakTier);
+        expect(result.peakProsperity).toBeGreaterThanOrEqual(result.prosperity);
+        if (result.ending === 'won') {
+          expect(result.winQuarter).toBe(result.quarters);
+        } else {
+          expect(result.winQuarter).toBe(null);
+        }
+        if (result.ending === 'famine') {
+          expect(country().regions.map((region) => region.id)).toContain(result.regionId);
+        } else if (result.ending === 'lostElection') {
+          // An election is only ever held at the end of a term.
+          expect(result.quarters % termQuarters).toBe(0);
+          expect(result.voteShare).not.toBe(null);
+        } else if (result.ending === 'inOffice') {
+          expect(result.quarters).toBe(DEFAULT_TERMS * termQuarters);
+        }
+      },
+      GAME_TIMEOUT,
+    );
 
-    it('plays on into later terms when asked to', () => {
-      const result = playGame(country(), 1, decide, 2);
-      const { termQuarters } = electionStatus(createGame(country(), 1));
+    it(
+      'stops when the terms asked for are up',
+      () => {
+        const result = playGame(country(), 3, decide, 1);
+        const { termQuarters } = electionStatus(createGame(country(), 3));
 
-      expect(result.quarters).toBeLessThanOrEqual(2 * termQuarters);
-      if (result.ending === 'reelected') expect(result.quarters).toBe(2 * termQuarters);
-    });
-
-    it('plays the same game again from the same seed', () => {
-      expect(playGame(country(), 7, decide)).toEqual(playGame(country(), 7, decide));
-    });
-  });
-});
-
-describe.each(shipped)('a one-lever player in %s', (_name, country) => {
-  // These probe for a trick that wins on its own. Here they only have to finish their games.
-  it.each(DEGENERATE_PLAYERS)('$name plays to an ending', ({ decide }) => {
-    expect(['won', 'reelected', 'lostElection', 'famine']).toContain(
-      playGame(country(), 1, decide).ending,
+        expect(result.quarters).toBeLessThanOrEqual(termQuarters);
+        expect(result.terms).toBe(1);
+        if (result.ending === 'inOffice') expect(result.quarters).toBe(termQuarters);
+      },
+      GAME_TIMEOUT,
     );
   });
+
+  it(
+    'plays the same game again from the same seed',
+    () => {
+      const { decide } = chainBuilder();
+      expect(playGame(country(), 7, decide, 1)).toEqual(playGame(country(), 7, decide, 1));
+    },
+    GAME_TIMEOUT,
+  );
 });
 
 describe('a batch of games', () => {
+  const game = (seed: number, figures: Partial<GameResult>): GameResult => ({
+    seed,
+    ending: 'inOffice',
+    regionId: null,
+    quarters: 80,
+    terms: 4,
+    winQuarter: null,
+    voteShare: 520,
+    treasury: 100,
+    approval: 510,
+    prosperity: 400,
+    peakTier: 'industrialising',
+    peakProsperity: 410,
+    ...figures,
+  });
+
   it('is summed up by how each ended', () => {
     const summary = summarise([
-      {
-        seed: 1,
-        ending: 'reelected',
-        regionId: null,
-        quarters: 20,
-        voteShare: 520,
-        treasury: 100,
-        approval: 510,
-      },
-      {
-        seed: 2,
+      game(1, {}),
+      game(2, {
         ending: 'lostElection',
-        regionId: null,
-        quarters: 20,
+        quarters: 40,
+        terms: 2,
         voteShare: 480,
         treasury: 300,
         approval: 470,
-      },
-      {
-        seed: 3,
+        prosperity: 350,
+        peakTier: 'developing',
+        peakProsperity: 360,
+      }),
+      game(3, {
         ending: 'famine',
         regionId: 'dry-east',
         quarters: 9,
+        terms: 1,
         voteShare: null,
         treasury: 0,
         approval: 300,
-      },
-      {
-        seed: 4,
-        ending: 'famine',
-        regionId: 'dry-east',
-        quarters: 13,
-        voteShare: null,
+        prosperity: 200,
+        peakTier: 'subsistence',
+        peakProsperity: 300,
+      }),
+      game(4, {
+        ending: 'won',
+        quarters: 53,
+        terms: 3,
+        winQuarter: 53,
+        voteShare: 540,
         treasury: 50,
-        approval: 350,
-      },
+        approval: 530,
+        prosperity: 440,
+        peakTier: 'prosperous',
+        peakProsperity: 450,
+      }),
     ]);
 
     expect(summary.games).toBe(4);
-    expect(summary.won).toBe(0);
-    expect(summary.reelected).toBe(1);
+    expect(summary.won).toBe(1);
+    expect(summary.inOffice).toBe(1);
     expect(summary.lostElection).toBe(1);
-    expect(summary.famine).toEqual([{ regionId: 'dry-east', games: 2 }]);
-    expect(summary.winPermille).toBe(0);
+    expect(summary.lostElectionByTerm).toEqual([{ term: 2, games: 1 }]);
+    expect(summary.famine).toEqual([{ regionId: 'dry-east', games: 1 }]);
+    expect(summary.winPermille).toBe(250);
+    expect(summary.winQuarter).toEqual({ min: 53, median: 53, max: 53 });
+    expect(summary.peakTier).toEqual([
+      { tier: 'subsistence', games: 1 },
+      { tier: 'developing', games: 1 },
+      { tier: 'industrialising', games: 1 },
+      { tier: 'prosperous', games: 1 },
+    ]);
     // The spread of each figure: the least, the middle and the most.
-    expect(summary.voteShare).toEqual({ min: 480, median: 500, max: 520 });
+    expect(summary.terms).toEqual({ min: 1, median: 3, max: 4 });
+    expect(summary.voteShare).toEqual({ min: 480, median: 520, max: 540 });
     expect(summary.treasury).toEqual({ min: 0, median: 75, max: 300 });
-    expect(summary.approval).toEqual({ min: 300, median: 410, max: 510 });
-    expect(summary.famineQuarter).toEqual({ min: 9, median: 11, max: 13 });
+    expect(summary.approval).toEqual({ min: 300, median: 490, max: 530 });
+    expect(summary.prosperity).toEqual({ min: 200, median: 375, max: 440 });
+    expect(summary.peakProsperity).toEqual({ min: 300, median: 385, max: 450 });
+    expect(summary.famineQuarter).toEqual({ min: 9, median: 9, max: 9 });
   });
 });

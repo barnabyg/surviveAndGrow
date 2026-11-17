@@ -83,6 +83,9 @@ export const SITE_TYPES = [
   'mine',
   'trunkRoad',
   'port',
+  'shallowPort',
+  'powerStation',
+  'powerLine',
 ] as const;
 export type SiteType = (typeof SITE_TYPES)[number];
 
@@ -99,22 +102,38 @@ export const CHAIN_ROLES = ['source', 'link', 'outlet'] as const;
 export type ChainRole = (typeof CHAIN_ROLES)[number];
 
 /**
- * What the engine knows of each type of site: its name, how it is laid out and the part it
- * plays in a chain, if any. What it costs and what it does are balance values
- * (`balance.sites`), so a type is added here and there and in no rule.
+ * The part a site plays in bringing power to the regions. A station makes it; a line carries
+ * it to the region the line belongs to, from a station or from another line that leads to
+ * one. A region is powered while a line in use links it to a station in use.
+ */
+export const POWER_ROLES = ['station', 'line'] as const;
+export type PowerRole = (typeof POWER_ROLES)[number];
+
+/**
+ * What the engine knows of each type of site: its name, how it is laid out, the part it
+ * plays in a chain, if any, and in bringing power, if any. What it costs and what it does
+ * are balance values (`balance.sites`), so a type is added here and there and in no rule.
  */
 export const SITE_TYPE_DEFINITIONS: Readonly<
   Record<
     SiteType,
-    { readonly name: string; readonly form: SiteForm; readonly chainRole: ChainRole | null }
+    {
+      readonly name: string;
+      readonly form: SiteForm;
+      readonly chainRole: ChainRole | null;
+      readonly powerRole: PowerRole | null;
+    }
   >
 > = {
-  irrigation: { name: 'Irrigation scheme', form: 'place', chainRole: null },
-  farmRoad: { name: 'Farm road', form: 'route', chainRole: null },
-  grainStore: { name: 'Grain store', form: 'place', chainRole: null },
-  mine: { name: 'Mine', form: 'place', chainRole: 'source' },
-  trunkRoad: { name: 'Trunk road', form: 'route', chainRole: 'link' },
-  port: { name: 'Port', form: 'place', chainRole: 'outlet' },
+  irrigation: { name: 'Irrigation scheme', form: 'place', chainRole: null, powerRole: null },
+  farmRoad: { name: 'Farm road', form: 'route', chainRole: null, powerRole: null },
+  grainStore: { name: 'Grain store', form: 'place', chainRole: null, powerRole: null },
+  mine: { name: 'Mine', form: 'place', chainRole: 'source', powerRole: null },
+  trunkRoad: { name: 'Trunk road', form: 'route', chainRole: 'link', powerRole: null },
+  port: { name: 'Port', form: 'place', chainRole: 'outlet', powerRole: null },
+  shallowPort: { name: 'Shallow port', form: 'place', chainRole: 'outlet', powerRole: null },
+  powerStation: { name: 'Power station', form: 'place', chainRole: null, powerRole: 'station' },
+  powerLine: { name: 'Power line', form: 'route', chainRole: null, powerRole: 'line' },
 };
 
 /**
@@ -128,6 +147,17 @@ export const CHAIN_ROLE_SENTENCES: Readonly<Record<ChainRole, string>> = {
   outlet: 'Ships up to {money} a quarter of a mine’s output.',
 };
 
+/**
+ * What a site in each part of bringing power does, in a sentence the player can be shown.
+ * `{percent}` is what a powered region's output rises by and `{points}` what its
+ * infrastructure access gains.
+ */
+export const POWER_ROLE_SENTENCES: Readonly<Record<PowerRole, string>> = {
+  station:
+    'Powers each region a power line links to it: the region produces {percent} more and gains {points} of infrastructure access.',
+  line: 'Brings power from a power station to its region: the region produces {percent} more and gains {points} of infrastructure access.',
+};
+
 export const SITE_TYPE_NAMES: Readonly<Record<SiteType, string>> = Object.fromEntries(
   SITE_TYPES.map((type) => [type, SITE_TYPE_DEFINITIONS[type].name]),
 ) as Record<SiteType, string>;
@@ -139,6 +169,10 @@ export const SITE_FORMS: Readonly<Record<SiteType, SiteForm>> = Object.fromEntri
 export const SITE_CHAIN_ROLES: Readonly<Record<SiteType, ChainRole | null>> = Object.fromEntries(
   SITE_TYPES.map((type) => [type, SITE_TYPE_DEFINITIONS[type].chainRole]),
 ) as Record<SiteType, ChainRole | null>;
+
+export const SITE_POWER_ROLES: Readonly<Record<SiteType, PowerRole | null>> = Object.fromEntries(
+  SITE_TYPES.map((type) => [type, SITE_TYPE_DEFINITIONS[type].powerRole]),
+) as Record<SiteType, PowerRole | null>;
 
 /**
  * The things a site in use can lessen. A site's effect leaves a share, in thousandths, of
@@ -175,12 +209,17 @@ export const SITE_EFFECT_DEFINITIONS: Readonly<
 export const PROJECT_STATUSES = ['building', 'paused', 'operating', 'decaying'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
-/** How a site stands: empty until a project is started on it, and then as the project stands. */
-export const SITE_STATES = ['empty', ...PROJECT_STATUSES] as const;
+/**
+ * How a site stands: empty until a project is started on it, and then as the project stands.
+ * A site no project has been started on is closed once one has been started on one of its
+ * alternatives, and can then never be built.
+ */
+export const SITE_STATES = ['empty', 'closed', ...PROJECT_STATUSES] as const;
 export type SiteState = (typeof SITE_STATES)[number];
 
 export const SITE_STATE_NAMES: Readonly<Record<SiteState, string>> = {
   empty: 'Empty',
+  closed: 'Closed',
   building: 'Under construction',
   paused: 'Paused',
   operating: 'Operating',
