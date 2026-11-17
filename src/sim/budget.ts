@@ -1,11 +1,14 @@
 import { outputPermille } from './approval';
 import { balance } from './balance';
 import { clamp, sum } from './arithmetic';
+import { chainEarnings } from './chains';
 import { regionName, type Country } from './country';
+import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RegionState } from './state';
 import { formatMoney, formatQuarters } from './text';
 import type { Contribution, Money } from './types';
+import { payUpkeep, upkeepNeeded, type UpkeepOutcome } from './upkeep';
 import { SPENDING_AREA_NAMES, SPENDING_AREAS, UNREST_NAMES, type SpendingArea } from './vocabulary';
 
 /** The player's budget: a tax rate and an amount for each spending area, per quarter. */
@@ -34,6 +37,8 @@ export interface BudgetOutcome {
   readonly treasury: Money;
   /** True when the treasury could not cover the budget and every area was cut. */
   readonly cut: boolean;
+  /** What upkeep the sites in use needed, what was spent on it, and which sites went without. */
+  readonly upkeep: UpkeepOutcome;
   /** Everything that moved the treasury, by revenue source and spending area. */
   readonly contributions: readonly Contribution[];
 }
@@ -86,24 +91,43 @@ interface Finances {
   readonly country: Country;
   readonly treasury: Money;
   readonly regions: readonly RegionState[];
+  readonly projects: readonly Project[];
 }
 
 /**
  * Works out one quarter of revenue and spending. The same sums serve the turn and the
  * preview. A region that is striking or protesting as the quarter begins produces less,
- * and the tax that costs is shown as a loss beside what it would have paid.
+ * and the tax that costs is shown as a loss beside what it would have paid. Upkeep asks for
+ * no more than the sites in use need, and is spent only on the sites it keeps up.
  */
 export function resolveBudget(
-  { country, treasury, regions }: Finances,
+  { country, treasury, regions, projects }: Finances,
   budget: Budget,
 ): BudgetOutcome {
+  const earnings = chainEarnings({ country, projects });
   const taxes = regions.flatMap((region): Contribution[] => {
     const name = regionName(country, region.id);
-    const inFull = percentOf(region.output, budget.taxRatePercent);
-    const produced = Math.floor((region.output * outputPermille(region.unrest)) / 1000);
-    const lost = inFull - percentOf(produced, budget.taxRatePercent);
+    // What a chain adds to the region's output is taxed as a line of its own, under its source.
+    const sources = [
+      { label: `Tax from ${name}`, output: region.output },
+      ...earnings
+        .filter(({ site }) => site.regionId === region.id)
+        .map(({ site, output }) => ({ label: `Tax from ${site.name}`, output })),
+    ];
+    const kept = outputPermille(region.unrest);
+    const lost = sum(
+      sources.map(
+        ({ output }) =>
+          percentOf(output, budget.taxRatePercent) -
+          percentOf(Math.floor((output * kept) / 1000), budget.taxRatePercent),
+      ),
+    );
     return [
-      { label: `Tax from ${name}`, amount: inFull, regionId: region.id },
+      ...sources.map(({ label, output }) => ({
+        label,
+        amount: percentOf(output, budget.taxRatePercent),
+        regionId: region.id,
+      })),
       ...(lost > 0
         ? [
             {
@@ -116,16 +140,19 @@ export function resolveBudget(
     ];
   });
   const revenue = sum(taxes.map((tax) => tax.amount));
-  const budgeted = sum(SPENDING_AREAS.map((area) => budget.spending[area]));
+  const needed = upkeepNeeded({ country, projects });
+  const wanted = (area: SpendingArea) =>
+    area === 'upkeep' ? Math.min(budget.spending.upkeep, needed) : budget.spending[area];
+  const budgeted = sum(SPENDING_AREAS.map(wanted));
 
   // Spending the treasury cannot cover is cut across every area in the same proportion.
   const affordable = treasury + revenue;
   const cut = budgeted > affordable;
+  const allowed = (area: SpendingArea) =>
+    cut ? Math.floor((wanted(area) * affordable) / budgeted) : wanted(area);
+  const upkeep = payUpkeep({ country, projects }, allowed('upkeep'));
   const spent = Object.fromEntries(
-    SPENDING_AREAS.map((area) => {
-      const wanted = budget.spending[area];
-      return [area, cut ? Math.floor((wanted * affordable) / budgeted) : wanted];
-    }),
+    SPENDING_AREAS.map((area) => [area, area === 'upkeep' ? upkeep.spent : allowed(area)]),
   ) as Record<SpendingArea, Money>;
   const spending = sum(SPENDING_AREAS.map((area) => spent[area]));
 
@@ -138,6 +165,7 @@ export function resolveBudget(
     balance: revenue - spending,
     treasury: treasury + revenue - spending,
     cut,
+    upkeep,
     contributions: [
       ...taxes,
       ...SPENDING_AREAS.map((area): Contribution => ({

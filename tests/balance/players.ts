@@ -102,7 +102,7 @@ const popularity: Decide = (game) => {
   const { taxRatePercent, spending } = budgetLimits;
   const lowTax: Budget = {
     taxRatePercent: taxRatePercent.min,
-    spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0 },
+    spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
   };
   // Everything in the treasury once this quarter's tax is in, shared between the three.
   const available = previewQuarter(game, { budget: lowTax }).treasury.min;

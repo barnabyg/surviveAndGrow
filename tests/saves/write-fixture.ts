@@ -22,40 +22,41 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   const file = path.join(import.meta.dirname, `format-${SAVE_FORMAT_VERSION}.json`);
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
-  // Tavara as it ships, with chance pinned so that the game meets a drought and dilemmas.
-  // Format 2 added prosperity, its tiers and a growing population: the game below grows,
-  // builds up health and education, and passes into Developing as its sites come into use.
+  // Tavara as it ships, with chance pinned: no drought, and the teachers asking for a rise
+  // now and then. Format 4 added upkeep and sites that decay without it. The game is taxed
+  // at 25% and starts three projects at once: two irrigation schemes and then a farm road,
+  // which are in use from Year 1 · Quarter 4. That quarter upkeep is cut to $1.0m, which keeps
+  // up the two schemes, started first, but not the road, which decays. The game is saved as
+  // Year 2 begins, with the road decaying and the decay in the report.
   const country = loadCountry({
     ...tavaraFile,
-    regions: tavaraFile.regions.map((region) => ({
-      ...region,
-      eventLikelihood: { drought: region.id === 'dry-east' ? 1 : 0 },
-    })),
-    dilemmaLikelihood: { grainOffer: 1, teachersPay: 1, emergencyWorks: 1 },
+    regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
+    dilemmaLikelihood: { teachersPay: 0.3 },
   });
-  const plans: readonly (readonly string[])[] = [
-    ['lowmere-store', 'lowmere-road'],
-    ['lowmere-irrigation'],
-    [],
-  ];
+  const starts = ['lowmere-irrigation', 'dustwell-irrigation', 'lowmere-road'];
   let game = createGame(country, 2026);
   let report: TurnReport | null = null;
-  for (const startProjects of plans) {
+  for (let quarter = 0; quarter < 4; quarter += 1) {
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
     const result = advanceQuarter(game, {
-      // More on health and education than the country starts with, which builds them up.
       budget: {
-        ...game.budget,
-        spending: { ...game.budget.spending, health: 80, education: 70 },
+        taxRatePercent: 25,
+        spending: { ...game.budget.spending, upkeep: quarter === 3 ? 10 : 30 },
       },
-      reliefRegionId: 'dry-east',
-      startProjects,
+      startProjects: quarter === 0 ? starts : [],
       dilemmaChoice,
     });
     game = result.state;
     report = result.report;
+    if (game.outcome.status !== 'playing')
+      throw new Error(`The game ended: ${game.outcome.headline}`);
   }
+  expect(game.projects.map((project) => project.status)).toEqual([
+    'operating',
+    'operating',
+    'decaying',
+  ]);
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

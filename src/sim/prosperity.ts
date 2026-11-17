@@ -1,7 +1,8 @@
 import { apportion, clamp, sum } from './arithmetic';
 import { balance } from './balance';
+import { chainOutputs } from './chains';
 import type { Country } from './country';
-import { sitesInUse, type Project } from './projects';
+import { infrastructureFrom, sitesInUse, type Project } from './projects';
 import type { RegionState } from './state';
 import { MONEY_PER_MILLION, type Contribution, type Figure, type Money } from './types';
 
@@ -48,8 +49,12 @@ export interface ProsperitySituation {
 /** Each region's living standard. */
 export function livingStandards(situation: ProsperitySituation): LivingStandard[] {
   const access = infrastructureAccess(situation);
+  const fromChains = chainOutputs(situation);
   return situation.regions.map((region, index) => {
-    const scores = scoresOf(region, access[index] ?? 0);
+    // What a chain earns is part of its region's output, and so of its people's income.
+    const regionIndex = situation.country.regions.findIndex((other) => other.id === region.id);
+    const output = region.output + (fromChains[regionIndex] ?? 0);
+    const scores = scoresOf({ ...region, output }, access[index] ?? 0);
     return { regionId: region.id, value: weigh(scores), scores };
   });
 }
@@ -148,7 +153,7 @@ export function resolveServices(
 
 /**
  * Infrastructure access in each region, in thousandths: what the sites in use there add,
- * each by its type, up to the whole.
+ * each by its type and less while it decays, up to the whole.
  */
 export function infrastructureAccess({
   country,
@@ -159,11 +164,7 @@ export function infrastructureAccess({
   return regions.map((region) =>
     Math.min(
       1000,
-      sum(
-        inUse
-          .filter((site) => site.regionId === region.id)
-          .map((site) => balance.sites[site.type].infrastructurePermille),
-      ),
+      sum(inUse.filter(({ site }) => site.regionId === region.id).map(infrastructureFrom)),
     ),
   );
 }

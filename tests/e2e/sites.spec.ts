@@ -20,6 +20,7 @@ test('selecting an empty site opens a card with its cost, build time and effect'
   await expect(card).toContainText('Grain store · empty site');
   await expect(card.getByRole('group', { name: 'Cost' })).toContainText('$6.0m');
   await expect(card.getByRole('group', { name: 'Build time' })).toContainText('2 quarters');
+  await expect(card.getByRole('group', { name: 'Upkeep' })).toContainText('$0.2m a quarter');
   await expect(card.getByRole('group', { name: 'Region' })).toContainText('Lowmere Plains');
   await expect(card).toContainText('25% less of the national reserve spoils each quarter.');
 
@@ -84,8 +85,10 @@ test('a legend explains the marks for sites and routes', async ({ page }) => {
     'Empty site',
     'Under construction',
     'Operating',
+    'Decaying',
     'Possible route',
     'Road',
+    '✕ Missing link in a chain',
   ]);
 });
 

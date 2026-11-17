@@ -22,7 +22,14 @@ function amountOf(result: TurnResult, label: string): number | undefined {
 
 const everythingAtMost: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 describe('revenue', () => {
@@ -200,7 +207,7 @@ describe('the starting figures in a country file', () => {
     const faults = faultsOf(withValue(tavaraFile, ['start', 'budget', 'spending', 'palaces'], 3));
 
     expect(faults).toEqual([
-      'start.budget.spending.palaces is not a spending area this game has (agriculture, foodRelief, health, education, security).',
+      'start.budget.spending.palaces is not a spending area this game has (agriculture, foodRelief, health, education, security, upkeep).',
     ]);
   });
 

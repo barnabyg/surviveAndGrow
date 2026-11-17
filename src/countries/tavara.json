@@ -1,5 +1,5 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -456,6 +456,35 @@
         [480, 334],
         [486, 386]
       ]
+    },
+    {
+      "id": "korr-mine",
+      "type": "mine",
+      "name": "Korrgate mine",
+      "region": "korr-highlands",
+      "at": [365, 118],
+      "dependsOn": ["korr-trunk-road"]
+    },
+    {
+      "id": "korr-trunk-road",
+      "type": "trunkRoad",
+      "name": "Trunk road, Korrgate mine to Saltmouth",
+      "region": "salt-coast",
+      "route": [
+        [358, 135],
+        [330, 180],
+        [290, 205],
+        [220, 222],
+        [155, 222]
+      ],
+      "dependsOn": ["saltmouth-port"]
+    },
+    {
+      "id": "saltmouth-port",
+      "type": "port",
+      "name": "Saltmouth port",
+      "region": "salt-coast",
+      "at": [140, 222]
     }
   ],
   "dilemmaLikelihood": {

@@ -12,7 +12,14 @@ import { steward } from './players';
 
 const generous: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 /** A different budget each quarter, so the previews are tested across a range of settings. */

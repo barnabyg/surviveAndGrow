@@ -50,7 +50,11 @@ Every system must feed this tension. A feature that does not is cut.
 
 - **Win:** hold the prosperity target for four consecutive quarters with debt
   at a sustainable level. The debt condition blocks a win bought with a
-  one-off borrowing binge.
+  one-off borrowing binge. The debt test has its place in the rules
+  (`debtSustainable` in `src/sim/victory.ts`); until Phase 3 brings borrowing
+  there is no debt, so it always passes, and Phase 3 enforces it.
+- **Terms:** an election every 20 quarters. Winning it begins a new term, with
+  no limit on how many; it does not by itself win the game.
 - **Lose:** election defeat, a coup, or state collapse from famine.
 - **Insolvency is not an instant loss.** It triggers a bailout with forced
   austerity, which then threatens approval.
@@ -80,6 +84,12 @@ are placeholders.
 A tax rate and a small set of spending areas (agriculture, food relief,
 health, education, security, upkeep). Revenue comes from tax on output.
 Underfunded upkeep makes infrastructure decay.
+
+Each site type has an upkeep cost in its balance data, paid every quarter
+the site is in use. Upkeep is spent only as far as the sites in use need it.
+When it falls short, sites are kept up in the order building began on them,
+so the newest decay first. A decaying site gives half its effect until a
+quarter in which its upkeep is paid restores it.
 
 ### Food
 
@@ -132,6 +142,13 @@ stylised vector art.
   routes.
 - **Chains, not a checklist.** A mine earns nothing until a road links it to a
   port. The map shows these dependencies, and the player plans routes.
+  A country file says what each site depends on. A mine adds to its region's
+  output only while every site of its chain is in use, and then no more than
+  the weakest link carries; a decaying link carries half. The engine names that
+  link, the bottleneck, and the site card lists the chain with the missing
+  links marked, which the map also draws. Mines, trunk roads and ports are
+  large projects: one started late in a term opens after the election, and the
+  timeline says when.
 - **More sites than money.** Some sites are alternatives, such as a cheap
   shallow port against a costly deep-water one. One game cannot build
   everything.
@@ -165,7 +182,8 @@ Designed for 2560 x 1440 or larger, in three columns split by purpose.
   likelihoods, living standards by region, and an approval chart.
 - **Centre, the country:** the map with its lens buttons, and a card for the
   selected site.
-- **Under the map, the term timeline:** all 20 quarters to the election, with
+- **Under the map, the term timeline:** all 20 quarters of the current term to
+  its election, with
   harvests marked and each project as a bar. A planned project shows how many
   quarters it would be in use before the vote.
 - **Right, what you do:** budget sliders with a live projection of their

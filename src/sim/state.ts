@@ -59,8 +59,9 @@ interface Ending {
 }
 
 /**
- * Whether the game is still being played, and if not, how it ended. The game is won by
- * winning the election at the end of the term, and lost by losing it or by famine.
+ * Whether the game is still being played, and if not, how it ended. The game runs over as
+ * many terms as the government keeps winning. It is won by holding prosperity in the top
+ * tier for long enough (see `victory.ts`), and lost by losing an election or by famine.
  */
 export type Outcome =
   | { readonly status: 'playing' }
@@ -71,12 +72,16 @@ export type Outcome =
       readonly regionId: string;
     })
   | (Ending & {
-      readonly status: 'won' | 'lost';
+      readonly status: 'lost';
       readonly cause: 'election';
       /** The share of the vote the government took, in thousandths. */
       readonly voteShare: number;
       /** The share it needed to stay in office, in thousandths. */
       readonly needed: number;
+    })
+  | (Ending & {
+      readonly status: 'won';
+      readonly cause: 'prosperity';
     });
 
 /** Everything about a game in progress. It is never changed in place. */
@@ -123,6 +128,12 @@ export interface GameState {
    * baseline, are what tiers passed since then have raised.
    */
   readonly startingTier: Tier;
+  /**
+   * How many quarters running national prosperity has ended in the top tier. It goes back
+   * to nothing in any quarter that ends below it, and the game is won when it reaches
+   * `balance.victory.quartersToHold`.
+   */
+  readonly prosperousQuarters: number;
   readonly outcome: Outcome;
 }
 
@@ -174,10 +185,25 @@ export interface TurnReport {
   /** The harvest, in quarter 4, and null in every other quarter. */
   readonly harvest: Harvest | null;
   /**
+   * The election held as the quarter ended, in the last quarter of a term, and null in every
+   * other quarter. A report carried over from a save written before format 3 has none.
+   */
+  readonly election: ElectionResult | null;
+  /**
    * What the player is told about the quarter, the most serious first. There is always at
    * least the budget outcome, and a quarter in which nothing notable happened says so.
    */
   readonly entries: readonly ReportEntry[];
+}
+
+/** How an election went. */
+export interface ElectionResult {
+  /** The share of the vote the government took, in thousandths. */
+  readonly voteShare: number;
+  /** The share it needed to stay in office, in thousandths. */
+  readonly needed: number;
+  /** Whether it stays in office for another term. */
+  readonly won: boolean;
 }
 
 export interface TurnResult {
@@ -200,6 +226,11 @@ export interface Preview {
   readonly projectSpending: Range;
   /** The sites where building will pause this quarter because the treasury cannot pay. */
   readonly pausedSites: readonly string[];
+  /**
+   * What the sites in use need for their upkeep this quarter, what would be spent on it, and
+   * the sites that would go without and decay from next quarter.
+   */
+  readonly upkeep: UpkeepPreview;
   /**
    * When each project is built and comes into use: those there are and those about to be
    * started, in the order they were started. A site that will pause this quarter opens a
@@ -242,6 +273,14 @@ export interface Preview {
    * approval as this quarter will leave it. The campaign's swing makes it a range.
    */
   readonly voteShare: Range;
+}
+
+/** A quarter's upkeep as the preview sees it. */
+export interface UpkeepPreview {
+  readonly needed: Money;
+  readonly spent: Money;
+  /** The sites in use that would go without, in the order building began on them. */
+  readonly short: readonly string[];
 }
 
 /** What food relief does in a quarter, in tonnes. */

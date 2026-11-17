@@ -31,6 +31,18 @@ export function MapLegend() {
         Operating
       </li>
       <li>
+        <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+          <circle r="5" cx="-1.5" cy="1.5" fill="currentColor" />
+          <path
+            d="M3,-7.5 L7.5,0.5 H-1.5 Z"
+            fill="var(--amber)"
+            stroke="currentColor"
+            strokeWidth="1"
+          />
+        </svg>
+        Decaying
+      </li>
+      <li>
         <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
           <path d="M1,8 H25" stroke="currentColor" strokeWidth="2" strokeDasharray="7 5" />
         </svg>
@@ -41,6 +53,18 @@ export function MapLegend() {
           <path d="M2,8 H24" stroke="#f1e6c6" strokeWidth="3.5" strokeLinecap="round" />
         </svg>
         Road
+      </li>
+      <li>
+        <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
+          <path
+            d="M3,8 H23"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            strokeDasharray="0.1 6"
+            strokeLinecap="round"
+          />
+        </svg>
+        ✕ Missing link in a chain
       </li>
     </ul>
   );

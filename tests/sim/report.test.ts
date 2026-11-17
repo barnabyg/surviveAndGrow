@@ -42,13 +42,20 @@ const headlines = (report: TurnReport | undefined) =>
 
 const everythingAtMost: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 /** Taxed at the top rate and spending next to nothing, so the treasury grows every quarter. */
 const thrifty: Budget = {
   taxRatePercent: 40,
-  spending: { agriculture: 10, foodRelief: 0, health: 0, education: 0, security: 0 },
+  spending: { agriculture: 10, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
 };
 
 /** Each country as it ships, but with no chance of drought anywhere. */
@@ -79,7 +86,14 @@ describe('the budget outcome in the turn report', () => {
 
   it('counts a single quarter left in the singular', () => {
     const game = createGame(tavara(), 1);
-    const spending = { agriculture: 200, foodRelief: 70, health: 70, education: 100, security: 50 };
+    const spending = {
+      agriculture: 200,
+      foodRelief: 70,
+      health: 70,
+      education: 100,
+      security: 50,
+      upkeep: 0,
+    };
 
     const report = reportOn(game, { ...game.budget, spending });
 
@@ -120,7 +134,14 @@ describe('the budget outcome in the turn report', () => {
 
   it('is routine when revenue and spending were the same', () => {
     const game = createGame(testland(), 1);
-    const spending = { agriculture: 20, foodRelief: 0, health: 10, education: 10, security: 10 };
+    const spending = {
+      agriculture: 20,
+      foodRelief: 0,
+      health: 10,
+      education: 10,
+      security: 10,
+      upkeep: 0,
+    };
 
     const report = reportOn(game, { ...game.budget, spending });
 

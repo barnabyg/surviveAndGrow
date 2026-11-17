@@ -74,6 +74,64 @@ growth and tiers together is Phase 2 work.
 | Sensible | 0.9% | 99.0% | 0.1% | 28.8% / 42.7% / 52.1% |
 | Hover then spend | 15.1% | 84.9% | 0.0% | 35.0% / 46.9% / 53.9% |
 
+## After multiple terms (issue #33)
+
+From issue #33 a won election no longer wins the game: a new term begins, and the game is won
+by holding Prosperous for four quarters running. The balance run therefore plays each game for
+at most one term by default (`BALANCE_TERMS` sets more), so the Phase 1 figures above keep their
+meaning. Its table gains a column: **Re-elected** is what **Won** counted before, a game still in
+office when its terms are up, and **Won** now counts only the win on prosperity. Nothing in the
+rules of a single term changed, so the figures above stand; no new run was recorded.
+
+## After upkeep (issue #34)
+
+From issue #34 every site in use needs upkeep each quarter ($0.4m for irrigation, $0.3m for a
+farm road, $0.2m for a grain store), and a site whose upkeep goes unpaid decays to half its
+effect. Upkeep is spent only as far as the sites in use need it, and a game starts with enough
+for every site the country has ($3.0m in Tavara, $1.0m in Testland), so a player who never
+touches the slider keeps every site in good repair. The confirmation run (seeds 1001-2200, one
+term) was made before and after. Only the sensible player builds, so only it changes:
+
+| Country | Player | Re-elected before | Re-elected after | Vote share before | Vote share after |
+| --- | --- | ---: | ---: | --- | --- |
+| Tavara | Sensible | 0.9% | 1.1% | 28.8% / 42.7% / 52.1% | 20.8% / 42.2% / 51.5% |
+| Testland | Sensible | 99.8% | 99.5% | 49.0% / 58.5% / 65.8% | 49.1% / 56.8% / 65.1% |
+
+Upkeep costs the sensible player about half a point of vote share in the middle of the spread.
+Its worst Tavara game falls further (20.8% from 28.8%), where a treasury already cutting every
+area also cuts upkeep and its sites decay. Every other player's results are unchanged, and no
+upkeep value was tuned.
+
+## After chains (issue #35)
+
+From issue #35 Tavara and Testland each have a mine, a trunk road and a port. A mine adds its
+output to its region only while its trunk road and port are in use, and no more than the
+weakest link carries, a decaying link carrying half:
+
+| Site | Cost | Build time | Upkeep | Produces or carries a quarter |
+| --- | ---: | ---: | ---: | ---: |
+| Mine | $40.0m | 6 quarters | $0.6m | $20.0m |
+| Trunk road | $30.0m | 5 quarters | $0.5m | $24.0m |
+| Port | $50.0m | 8 quarters | $0.8m | $30.0m |
+
+The whole chain costs $120.0m, about four quarters of Tavara's tax, and $1.9m a quarter in
+upkeep. At the 18% starting tax its $20.0m of output pays $3.6m a quarter, so in money alone it
+barely pays its upkeep; what it buys is income per head in its region and more for a higher
+tax rate to take. The values are first guesses, to be tuned when Phase 2 is balanced.
+
+The scripted players do not build chain sites, so their games are unchanged except through the
+starting upkeep, which a country file that leaves it out sets for all its sites: it rises from
+$3.0m to $4.0m in Tavara and from $1.0m to $3.0m in Testland. Upkeep is spent only as far as the
+sites in use need it, so this costs nothing, but the sensible player keeps a cushion of a few
+quarters of everything the sliders set, upkeep included, so it builds a little later. The
+confirmation run (seeds 1001-2200, one term) was made before and after. Only the sensible player
+changes, within the noise of 1,200 games:
+
+| Country | Player | Re-elected before | Re-elected after | Vote share before | Vote share after |
+| --- | --- | ---: | ---: | --- | --- |
+| Tavara | Sensible | 1.1% | 1.3% | 20.8% / 42.2% / 51.5% | 21.5% / 42.4% / 51.8% |
+| Testland | Sensible | 99.5% | 99.2% | 49.1% / 56.8% / 65.1% | 47.5% / 56.8% / 65.1% |
+
 ## How the runs were made
 
 ```powershell

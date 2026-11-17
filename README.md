@@ -45,7 +45,8 @@ the saved game or to start a new one:
 
 ### Your first term
 
-The game is the first phase of the design, "Survive a term": 20 quarters, ending in an election.
+The first term is 20 quarters, ending in an election. Win it and you govern on into another term;
+the game itself is won on prosperity, held in the top tier.
 It is meant to be hard. You take office with approval near 46%, a budget that loses $5.0m a
 quarter, and a food reserve below its safe level. Left alone, the country votes you out, if a
 drought does not starve a region first.
@@ -57,7 +58,7 @@ drought does not starve a region first.
   spending would settle it, and the election forecast in the right column says where you stand.
   Below 40% a region strikes, which costs far more revenue than the tax that provoked it.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
-  use before the vote.
+  use before the vote. What you build has to be kept up, so leave room for upkeep.
 
 What is in the game:
 
@@ -69,12 +70,18 @@ What is in the game:
   goes from adequate to tight, to shortage, to famine. Pick the region on the map, or in the food
   relief panel, to send it relief from the national reserve.
 - A famine that lasts two quarters running collapses the state and ends the game.
-- The term is 20 quarters, and the election is held when the last of them ends. The vote share is
+- A term is 20 quarters, and an election is held when the last of them ends. The vote share is
   national approval on polling day, moved up to 3 points either way by the campaign. With 50% or
-  more you win the game; with less you lose it. The top bar counts down to the election, and the
-  right column forecasts the vote as a range against the 50% needed.
-- However the game ends, a summary gives the outcome, its cause and the treasury, food reserve
-  and approval over the term. From it you can replay the same game or start a new one.
+  more you are re-elected and a new term begins, with no limit on how many; with less you lose
+  the game. The top bar counts down to the election that closes the current term, and the right
+  column forecasts the vote as a range against the 50% needed.
+- You win the game by holding national prosperity in the top tier, Prosperous, for four quarters
+  running. Once there, the prosperity figure in the top bar shows how many of the four you have
+  held. (The design also asks for debt at a sustainable level; borrowing arrives in Phase 3.)
+- However the game ends, a summary gives the outcome and its cause, how long you were in office
+  over how many terms, the treasury, food reserve, approval and prosperity over the whole game,
+  and each term in turn with prosperity at its start and end. From it you can replay the same
+  game or start a new one.
 - Approval is the third vital sign. Each region has its own, and the national figure is their
   average by population. It answers to the region's food situation, the tax rate, and health,
   education and security spending per head, and it moves a tenth of the way each quarter towards
@@ -127,12 +134,35 @@ What is in the game:
   drought move its region's harvest; a farm road halves the share of its region's surplus lost on
   the way to the reserve; a grain store cuts what spoils in the national reserve by a quarter.
   Several of one type multiply together.
-- Under the map a timeline shows the whole term: every quarter to the election, with the past
+- Every site in use needs upkeep each quarter: $0.4m for an irrigation scheme, $0.3m for a farm
+  road and $0.2m for a grain store. Upkeep is a spending area with its own slider, and it is spent
+  only as far as the sites in use need it, so setting more than they need costs nothing. The
+  budget panel shows what they need against what is spent, and a game starts with enough upkeep
+  for every site the country has.
+- When upkeep falls short, by a cut to the slider or because the treasury cuts every area, sites
+  decay. Upkeep keeps sites in good repair in the order building began on them, so the newest
+  decay first. A decaying site does half of what it does in good repair, and adds half as much to
+  its region's infrastructure access, from the quarter after its upkeep went unpaid. It wears the
+  warning triangle on the map, and its card says why and what restores it. A quarter in which its
+  upkeep is paid restores it from the next. Decay and recovery are reported, and the risks ahead
+  warn when upkeep will fall short.
+- Some sites form a chain. A mine adds $20.0m a quarter to its region's output, which is taxed and
+  raises its people's income, but only while a trunk road links it to a port and both are in
+  use. Each link carries only so much: a trunk road $24.0m a quarter and a port $30.0m, and a
+  decaying link half as much, so the chain yields no more than its weakest link. These are large
+  projects ($40.0m, $30.0m and $50.0m; 6, 5 and 8 quarters to build; $0.6m, $0.5m and $0.8m
+  upkeep), and one started late in a term opens after the vote. A mine's card lists every site
+  of its chain with how it stands, marks the missing links and the bottleneck, and says what the
+  mine earns. Picking out a mine, or any site of its chain, draws the missing links on the map:
+  a dotted route or a crossed marker, each tagged "✕ Missing link". A mine in use that earns
+  nothing is tagged "▲ Earning nothing", and what a mine earns is taxed as a line of its own.
+- Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the
   vote. Pick out an empty site on the map and the timeline shows, dashed, what building there
   would mean if it began now, or says that it would not be finished before the vote. A project
-  the treasury cannot pay for opens a quarter later for each quarter it waits.
+  that will be finished only after the vote says when it opens, in a column beyond the vote. A
+  project the treasury cannot pay for opens a quarter later for each quarter it waits.
 - Buttons above the map choose what it shows. The country view is the land as it looks. The food
   lens colours each region by its food situation, and the approval lens by its approval, with
   hatching over a region on strike and cross-hatching over one in protest. Each lens has a scale
@@ -167,17 +197,24 @@ is [src/countries/tavara.json](src/countries/tavara.json), and it is the best gu
 All positions are coordinates in a fixed map frame 1080 wide and 720 high.
 
 `sites` lists where things can be built. Each site has an `id`, a `name`, the `region` it belongs
-to and a `type` from the game's own list: `irrigation`, `farmRoad` or `grainStore`. What a type
-costs, how long it takes and what it does are the game's, not the country's.
+to and a `type` from the game's own list: `irrigation`, `farmRoad`, `grainStore`, `mine`,
+`trunkRoad` or `port`. What a type costs, how long it takes and what it does are the game's, not
+the country's.
 
-- An irrigation scheme and a grain store stand in one place, given by `at`, which must lie inside
-  the site's region.
-- A farm road runs along a line, given by `route` as two or more positions. Every position must
+- An irrigation scheme, a grain store, a mine and a port stand in one place, given by `at`, which
+  must lie inside the site's region.
+- A farm road and a trunk road run along a line, given by `route` as two or more positions. Every position must
   lie inside the country, and the route must start or end in the site's region, which is the
   region the road serves.
 - In a file of `"formatVersion": 2`, a site may list the `id`s of the sites it depends on in
   `dependsOn`. Each must be another site in the file, and the dependencies must not go round in a
   circle. A file of format 1 cannot say this, and still loads as it is.
+- A mine earns only through its chain, so it must depend, directly or through other sites, on a
+  port: in Tavara the mine depends on a trunk road and the trunk road on a port. A mine therefore
+  needs format 2.
+
+The starting budget in `start.budget` may leave out `upkeep`: the game then starts with enough
+upkeep to keep every one of the file's sites in good repair, rounded up to the next $1.0m.
 
 In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
 year, from 0 to 10. A region that leaves it out grows at the game's own rate.

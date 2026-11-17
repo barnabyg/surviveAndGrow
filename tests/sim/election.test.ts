@@ -97,13 +97,14 @@ function term(country: Country, seed: number, change: (budget: Budget) => Budget
   return play(game, change(game.budget));
 }
 
-/** The election a game ended in. */
-function electionOf(state: GameState) {
-  const { outcome } = state;
-  if (outcome.status === 'playing' || outcome.cause !== 'election') {
-    throw new Error(`The game did not end in an election: ${JSON.stringify(outcome)}`);
+/** The election held as the last quarter played ended, with what the report said of it. */
+function electionOf(played: Pick<Played, 'reports'>) {
+  const report = played.reports.at(-1);
+  const entry = report?.entries.find((each) => each.kind === 'election');
+  if (report?.election == null || entry === undefined) {
+    throw new Error(`No election was held as the last quarter ended: ${JSON.stringify(report)}`);
   }
-  return outcome;
+  return { ...report.election, entry };
 }
 
 describe.each(lands)('the election in $name', (land) => {
@@ -112,6 +113,7 @@ describe.each(lands)('the election in $name', (land) => {
     const budget = land.steady(game.budget);
 
     expect(electionStatus(game)).toEqual({
+      term: 1,
       termQuarters: 20,
       date: { year: 5, quarter: 4 },
       quartersAway: 19,
@@ -127,76 +129,80 @@ describe.each(lands)('the election in $name', (land) => {
     expect(game.outcome).toEqual({ status: 'playing' });
   });
 
-  it('is held when quarter 20 is resolved, and ends the game', () => {
-    const { state, reports } = term(land.country(), 3, land.steady);
+  it('is held when quarter 20 is resolved', () => {
+    const played = term(land.country(), 3, land.steady);
+    const { reports } = played;
 
     expect(reports).toHaveLength(20);
     expect(reports.at(-1)?.date).toEqual({ year: 5, quarter: 4 });
-    expect(state.outcome.status).not.toBe('playing');
-    expect(electionOf(state).cause).toBe('election');
-    expect(() => advanceQuarter(state, { budget: state.budget })).toThrow('The game is over.');
+    expect(electionOf(played).needed).toBe(500);
+    expect(reports.slice(0, -1).every((report) => report.election === null)).toBe(true);
   });
 
   it.each([1, 2, 3, 4])('is won when the country approves (seed %i)', (seed) => {
-    const { state } = term(land.approving(), seed, unchanged);
-    const election = electionOf(state);
+    const played = term(land.approving(), seed, unchanged);
+    const election = electionOf(played);
 
     // Approval never moved, and the campaign can swing the vote by 3 points at most.
-    expect(approvalStatus(state).approval).toBe(land.approvingApproval);
+    expect(approvalStatus(played.state).approval).toBe(land.approvingApproval);
     expect(election.voteShare).toBeGreaterThanOrEqual(land.approvingApproval - 30);
     expect(election.voteShare).toBeLessThanOrEqual(land.approvingApproval + 30);
-    expect(election).toMatchObject({
-      status: 'won',
-      cause: 'election',
-      needed: 500,
-      headline: 'You won the election',
-    });
+    expect(election).toMatchObject({ won: true, needed: 500 });
+    expect(election.entry.headline).toBe('You won the election');
+    // Winning does not end the game: the government governs on into a second term.
+    expect(played.state.outcome).toEqual({ status: 'playing' });
   });
 
   it.each([1, 2, 3, 4])('is lost when the country does not (seed %i)', (seed) => {
-    const { state } = term(land.disapproving(), seed, unchanged);
-    const election = electionOf(state);
+    const played = term(land.disapproving(), seed, unchanged);
+    const { state } = played;
+    const election = electionOf(played);
 
     expect(approvalStatus(state).approval).toBe(land.disapprovingApproval);
     expect(election.voteShare).toBeGreaterThanOrEqual(land.disapprovingApproval - 30);
     expect(election.voteShare).toBeLessThanOrEqual(land.disapprovingApproval + 30);
-    expect(election).toMatchObject({
+    expect(election).toMatchObject({ won: false, needed: 500 });
+    // Losing ends the game.
+    expect(state.outcome).toEqual({
       status: 'lost',
       cause: 'election',
+      voteShare: election.voteShare,
       needed: 500,
       headline: 'You lost the election',
+      summary: election.entry.cause,
     });
+    expect(() => advanceQuarter(state, { budget: state.budget })).toThrow('The game is over.');
   });
 
   // Six hundred close-run terms, one for each seed, played once for the tests that follow.
-  let played: readonly GameState[] | undefined;
+  let played: readonly Played[] | undefined;
   const closeRunTerms = () =>
-    (played ??= Array.from(
-      { length: 600 },
-      (_, index) => term(land.close(), index + 1, unchanged).state,
+    (played ??= Array.from({ length: 600 }, (_, index) =>
+      term(land.close(), index + 1, unchanged),
     ));
 
   it('turns on exactly half the vote: 50.0% wins and 49.9% loses', () => {
-    const shares = new Map<number, string>();
-    for (const state of closeRunTerms()) {
-      const election = electionOf(state);
+    const shares = new Map<number, boolean>();
+    for (const run of closeRunTerms()) {
+      const election = electionOf(run);
 
-      expect(election.status).toBe(election.voteShare >= 500 ? 'won' : 'lost');
-      shares.set(election.voteShare, election.status);
+      expect(election.won).toBe(election.voteShare >= 500);
+      expect(run.state.outcome.status).toBe(election.won ? 'playing' : 'lost');
+      shares.set(election.voteShare, election.won);
     }
 
-    expect(shares.get(500)).toBe('won');
-    expect(shares.get(499)).toBe('lost');
+    expect(shares.get(500)).toBe(true);
+    expect(shares.get(499)).toBe(false);
   });
 
   it('swings the vote a little either way of approval, by the seed', () => {
     const swings = new Set<number>();
-    for (const state of closeRunTerms()) {
-      swings.add(electionOf(state).voteShare - approvalStatus(state).approval);
+    for (const run of closeRunTerms()) {
+      swings.add(electionOf(run).voteShare - approvalStatus(run.state).approval);
     }
     // In a term with no hunger and no change of budget, approval stays where it started.
     const [first] = closeRunTerms();
-    expect(first && approvalStatus(first).approval).toBe(land.closeApproval);
+    expect(first && approvalStatus(first.state).approval).toBe(land.closeApproval);
 
     // Every swing from 3 points against to 3 points for turns up, and nothing beyond.
     expect([...swings].sort((a, b) => a - b)).toEqual(
@@ -213,29 +219,27 @@ describe.each(lands)('the election in $name', (land) => {
   });
 
   it('says in words what happened, and reports it', () => {
-    const { state, reports } = term(land.approving(), 3, unchanged);
-    const election = electionOf(state);
+    const { entry } = electionOf(term(land.approving(), 3, unchanged));
 
-    expect(election.summary).toMatch(
-      /^You took \d\d\.\d% of the vote and needed 50%\. Approval stood at \d\d\.\d% on polling day, and the campaign moved the vote by (\+|−)?\d\.\d points?\.$/,
+    expect(entry.kind).toBe('election');
+    expect(entry.seriousness).toBe('notable');
+    expect(entry.headline).toBe('You won the election');
+    expect(entry.cause).toMatch(
+      /^You took \d\d\.\d% of the vote and needed 50%\. Approval stood at \d\d\.\d% on polling day, and the campaign moved the vote by (\+|−)?\d\.\d points?\. Your second term begins, and the next election is held at the end of Year 10, Quarter 4\.$/,
     );
-    expect(reports.at(-1)?.entries).toContainEqual({
-      kind: 'election',
-      seriousness: 'notable',
-      headline: 'You won the election',
-      cause: election.summary,
-    });
   });
 
   it('leads the last report with a lost election', () => {
-    const { state, reports } = term(land.country(), 3, harsh);
+    const played = term(land.country(), 3, harsh);
+    const { entry } = electionOf(played);
 
-    expect(reports.at(-1)?.entries[0]).toEqual({
+    expect(played.reports.at(-1)?.entries[0]).toBe(entry);
+    expect(entry).toMatchObject({
       kind: 'election',
       seriousness: 'critical',
       headline: 'You lost the election',
-      cause: electionOf(state).summary,
     });
+    expect(entry.cause).toMatch(/^You took \d+\.\d% of the vote .* points?\.$/);
   });
 });
 
@@ -261,13 +265,14 @@ describe.each(lands)('the vote share forecast in $name', (land) => {
   });
 
   it.each([1, 2, 3, 4, 5, 6])('contains the result on the eve of the vote (seed %i)', (seed) => {
-    const { state, before } = term(land.close(), seed, unchanged);
+    const played = term(land.close(), seed, unchanged);
+    const { before } = played;
 
     const forecast = previewQuarter(before, { budget: before.budget }).voteShare;
 
     expect(before.date).toEqual({ year: 5, quarter: 4 });
-    expect(electionOf(state).voteShare).toBeGreaterThanOrEqual(forecast.min);
-    expect(electionOf(state).voteShare).toBeLessThanOrEqual(forecast.max);
+    expect(electionOf(played).voteShare).toBeGreaterThanOrEqual(forecast.min);
+    expect(electionOf(played).voteShare).toBeLessThanOrEqual(forecast.max);
   });
 
   it('does not move the generator', () => {
@@ -326,15 +331,21 @@ describe.each([
       spending: { ...game.budget.spending, foodRelief: land.relief },
     };
 
+    const reports: TurnReport[] = [];
     for (let quarter = 1; quarter <= 20; quarter += 1) {
       const reliefRegionId = quarter <= 18 ? land.regionId : null;
-      game = advanceQuarter(game, { budget, reliefRegionId }).state;
+      const result = advanceQuarter(game, { budget, reliefRegionId });
+      game = result.state;
+      reports.push(result.report);
     }
 
     for (const region of game.regions) {
       expect(region.approval).toBe(region.id === land.regionId ? land.hungry : land.fed);
     }
-    expect(electionOf(game)).toMatchObject({ voteShare: land.voteShare, summary: land.summary });
+    const election = electionOf({ reports });
+    expect(election.voteShare).toBe(land.voteShare);
+    // A won election goes on to say that a new term begins.
+    expect(election.entry.cause.startsWith(land.summary)).toBe(true);
   });
 });
 

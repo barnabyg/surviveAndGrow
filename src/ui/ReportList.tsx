@@ -154,6 +154,16 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Finished building report',
     path: 'M3,17 H17 M5,17 V9 L10,4 L15,9 V17 M7.5,12.5 L9.5,14.5 L13,10.5',
   },
+  // A finished building with a crack running down it.
+  siteDecaying: {
+    label: 'Decaying site report',
+    path: 'M3,17 H17 M5,17 V9 L10,4 L15,9 V17 M10,6.5 L8.5,10 L11,12 L9.5,17',
+  },
+  // A finished building with a spanner beside it.
+  siteRestored: {
+    label: 'Restored site report',
+    path: 'M2,17 H12 M3.5,17 V10 L7,6.5 L10.5,10 V17 M14,17 V9 M12,5 A2.5,2.5 0 1 0 16,5 M14,7.5 V9',
+  },
   // A road that forks.
   dilemma: {
     label: 'Decision report',
@@ -173,6 +183,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
   collapse: {
     label: 'Collapse report',
     path: 'M3,17 H17 M6,17 V11 L8,9 L6,7 V4 M14,17 V12 L12,10 L14,8 V4 M4,4 H9 M11,4 H16',
+  },
+  // A star.
+  victory: {
+    label: 'Victory report',
+    path: 'M10,2 L12.4,7.4 L18,8 L13.8,11.8 L15,17.5 L10,14.6 L5,17.5 L6.2,11.8 L2,8 L7.6,7.4 Z',
   },
   // A tick.
   quiet: {

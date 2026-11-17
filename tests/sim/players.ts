@@ -26,6 +26,15 @@ export function steward(game: GameState, budget: Budget = game.budget): Decision
 }
 
 /**
+ * Whether a game is still being played and its first election has not yet been held. A
+ * government that wins it governs on into another term, so a test that plays a game "to the
+ * end" plays it this far.
+ */
+export function inFirstTerm(game: GameState): boolean {
+  return game.outcome.status === 'playing' && game.history.length <= 20;
+}
+
+/**
  * The same decisions with any pending dilemma answered. It takes the last option that can
  * be chosen, which in every dilemma costs neither money nor food.
  */

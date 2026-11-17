@@ -4,12 +4,15 @@ import {
   advanceQuarter,
   approvalStatus,
   createGame,
+  electionStatus,
   loadSave,
   pendingDilemma,
   SAVE_FORMAT_VERSION,
   SaveError,
   saveGame,
   siteStatus,
+  termRecords,
+  victoryStatus,
   type Budget,
   type Country,
   type Decisions,
@@ -20,6 +23,8 @@ import {
 import testlandFile from '../countries/testland.json';
 import format1Save from '../saves/format-1.json';
 import format2Save from '../saves/format-2.json';
+import format3Save from '../saves/format-3.json';
+import format4Save from '../saves/format-4.json';
 import {
   bothCountries,
   tavara,
@@ -28,7 +33,7 @@ import {
   withChances,
 } from './countries';
 import { valueAt, withValue, without, type Path } from './files';
-import { answering, steward } from './players';
+import { answering, inFirstTerm, steward } from './players';
 
 /** A save as it comes back out of storage: text, read again. */
 function stored(save: unknown): unknown {
@@ -44,13 +49,20 @@ const countries = [
 /** Every tax the country can bear and nothing spent, so the treasury only grows. */
 const austere: Budget = {
   taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0 },
+  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
 };
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left over. */
 const ruinous: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 /**
@@ -95,7 +107,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(2);
+    expect(save.formatVersion).toBe(4);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -133,30 +145,39 @@ describe.each(countries)(
   'a game in $name that is saved, restored and continued',
   ({ file, shipped, dry }) => {
     it.each([1, 2, 3])(
-      'is the same game as one never saved, through a whole term as shipped (seed %i)',
+      'is the same game as one never saved, through the first election as shipped (seed %i)',
       (seed) => {
-        const passed = playThroughSaves(createGame(shipped(), seed), 20, (game) =>
+        const passed = playThroughSaves(createGame(shipped(), seed), 22, (game) =>
           answering(game, steward(game)),
         );
 
-        expect(passed.at(-1)?.outcome.status).not.toBe('playing');
+        // It ends, or it is re-elected and plays on into its second term.
+        const last = passed.at(-1);
+        expect(last?.outcome.status !== 'playing' || last.history.length === 23).toBe(true);
       },
     );
 
-    it('is the same with a project being built, paused for want of money, and finished', () => {
+    it('is the same with a project being built, paused for want of money, finished, decaying and restored', () => {
       const country = withChances(file, {});
       const store = country.sites.find((site) => site.type === 'grainStore');
       if (!store) throw new Error('The country has no grain store site');
 
-      const passed = playThroughSaves(createGame(country, 4), 6, (_game, quarter) => ({
+      const passed = playThroughSaves(createGame(country, 4), 7, (_game, quarter) => ({
         // Building is begun in a quarter that empties the treasury, which then fills again.
-        budget: quarter === 0 ? ruinous : austere,
+        // Austere pays no upkeep, so the store decays once in use, until upkeep is paid.
+        budget:
+          quarter === 0
+            ? ruinous
+            : quarter === 6
+              ? { ...austere, spending: { ...austere.spending, upkeep: 10 } }
+              : austere,
         ...(quarter === 0 ? { startProjects: [store.id] } : {}),
       }));
 
       const statuses = passed.map((game) => game.projects[0]?.status);
       expect(statuses).toContain('paused');
       expect(statuses).toContain('building');
+      expect(statuses).toContain('decaying');
       expect(statuses.at(-1)).toBe('operating');
     });
 
@@ -270,8 +291,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 3))).toBe(
-      'The saved game was written by a newer release of the game (save format 3; this release reads format 2). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 5))).toBe(
+      'The saved game was written by a newer release of the game (save format 5; this release reads format 4). Open it with that release.',
     );
   });
 
@@ -316,12 +337,30 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
     'history',
     'dilemma',
     'dilemmasAnswered',
+    'prosperousQuarters',
     'outcome',
   ])('when its state has no %s', (part) => {
     const { save } = midGameSave(country);
 
     expect(refusal(without(save, ['state', part]))).toContain(
       `The saved game is damaged and cannot be opened: state.${part} is missing`,
+    );
+  });
+
+  it('when its outcome is a win at an election, or a loss on prosperity', () => {
+    const { save } = midGameSave(country);
+    const ending = { headline: 'It is over', summary: 'It is over.' };
+    const elected = { ...ending, status: 'won', cause: 'election', voteShare: 510, needed: 500 };
+
+    expect(refusal(withValue(save, ['state', 'outcome'], elected))).toBe(
+      'The saved game is damaged and cannot be opened: state.outcome.status cannot be a win when the cause is election.',
+    );
+    expect(
+      refusal(
+        withValue(save, ['state', 'outcome'], { ...ending, status: 'lost', cause: 'prosperity' }),
+      ),
+    ).toBe(
+      'The saved game is damaged and cannot be opened: state.outcome.status must be a win when the cause is prosperity.',
     );
   });
 
@@ -388,6 +427,18 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
       ['state', 'outcome', 'status'],
       'drawn',
       'state.outcome.status is "drawn", which is not an outcome this game has',
+    ],
+    [
+      'quarters held in the top tier that are fewer than none',
+      ['state', 'prosperousQuarters'],
+      -1,
+      'state.prosperousQuarters is -1, which is out of range',
+    ],
+    [
+      'an election result that is neither won nor lost',
+      ['report', 'election'],
+      { voteShare: 510, needed: 500, won: 'yes' },
+      'report.election.won is missing or is not true or false',
     ],
     [
       'no history at all',
@@ -576,14 +627,28 @@ describe('a save written under other budget limits', () => {
     const { save } = midGameSave(tavara);
     const outside = {
       taxRatePercent: 90,
-      spending: { agriculture: 205, foodRelief: 1000, health: 0, education: 70, security: 13 },
+      spending: {
+        agriculture: 205,
+        foodRelief: 1000,
+        health: 0,
+        education: 70,
+        security: 13,
+        upkeep: 0,
+      },
     };
 
     const restored = loadSave(withValue(save, ['state', 'budget'], outside));
 
     expect(restored.game.budget).toEqual({
       taxRatePercent: 40,
-      spending: { agriculture: 200, foodRelief: 200, health: 0, education: 70, security: 10 },
+      spending: {
+        agriculture: 200,
+        foodRelief: 200,
+        health: 0,
+        education: 70,
+        security: 10,
+        upkeep: 0,
+      },
     });
   });
 });
@@ -636,15 +701,22 @@ describe('the save kept from save format 1', () => {
     expect(report?.entries.map((entry) => entry.headline)).toContain('The treasury is shrinking');
   });
 
-  it('can be played on from there to the end of the game', () => {
+  it('can be played on from there through the first election', () => {
     let { game } = loadSave(format1Save);
 
-    for (let quarter = 0; quarter < 20 && game.outcome.status === 'playing'; quarter += 1) {
-      game = advanceQuarter(game, answering(game, steward(game))).state;
-    }
+    while (inFirstTerm(game)) game = advanceQuarter(game, answering(game, steward(game))).state;
 
-    expect(game.outcome.status).not.toBe('playing');
+    // It ended, or the government was re-elected and governs on into its second term.
+    expect(game.outcome.status !== 'playing' || electionStatus(game).term === 2).toBe(true);
     expect(game.history.length).toBeGreaterThan(4);
+  });
+
+  it('is lifted to format 3 still being played, with no quarters yet held in the top tier', () => {
+    const { game, report } = loadSave(format1Save);
+
+    expect(game.prosperousQuarters).toBe(0);
+    expect(game.outcome).toEqual({ status: 'playing' });
+    expect(report?.election).toBeNull();
   });
 
   it('is lifted to format 2 with health and education where its budget held them', () => {
@@ -702,23 +774,158 @@ describe('the save kept from save format 2', () => {
     );
   });
 
-  it('can be played on from there to the end of the game', () => {
+  it('can be played on from there through the first election', () => {
     let { game } = loadSave(format2Save);
 
-    for (let quarter = 0; quarter < 20 && game.outcome.status === 'playing'; quarter += 1) {
-      game = advanceQuarter(game, answering(game, steward(game))).state;
-    }
+    while (inFirstTerm(game)) game = advanceQuarter(game, answering(game, steward(game))).state;
 
-    expect(game.outcome.status).not.toBe('playing');
+    expect(game.outcome.status !== 'playing' || electionStatus(game).term === 2).toBe(true);
   });
 
-  // This holds for as long as format 2 is the current format: saving must write exactly
+  it('is lifted to format 3 with no quarters yet held in the top tier, and no vote reported', () => {
+    const { game, report } = loadSave(format2Save);
+
+    expect(game.prosperousQuarters).toBe(0);
+    expect(game.outcome).toEqual({ status: 'playing' });
+    expect(report?.election).toBeNull();
+  });
+
+  it('plays on into its second term when format 2 ended it with a won election', () => {
+    // Format 2 ended the game at a won election. Format 3 does not, so the game reopens in
+    // the quarter after the vote, still being played, and its report keeps the result.
+    const won = {
+      status: 'won',
+      cause: 'election',
+      voteShare: 523,
+      needed: 500,
+      headline: 'You won the election',
+      summary: 'You took 52.3% of the vote and needed 50%.',
+    };
+    const ended = withValue(
+      withValue(format2Save, ['state', 'date'], { year: 6, quarter: 1 }),
+      ['state', 'outcome'],
+      won,
+    );
+
+    const { game, report } = loadSave(ended);
+
+    expect(game.outcome).toEqual({ status: 'playing' });
+    expect(electionStatus(game)).toMatchObject({ term: 2, date: { year: 10, quarter: 4 } });
+    expect(report?.election).toEqual({ voteShare: 523, needed: 500, won: true });
+    expect(() => advanceQuarter(game, answering(game, steward(game)))).not.toThrow();
+  });
+
+  it('still ends the game where format 2 ended it with a lost election', () => {
+    const lost = {
+      status: 'lost',
+      cause: 'election',
+      voteShare: 470,
+      needed: 500,
+      headline: 'You lost the election',
+      summary: 'You took 47.0% of the vote and needed 50%.',
+    };
+
+    const { game, report } = loadSave(withValue(format2Save, ['state', 'outcome'], lost));
+
+    expect(game.outcome).toEqual(lost);
+    expect(report?.election).toEqual({ voteShare: 470, needed: 500, won: false });
+  });
+});
+
+describe('the save kept from save format 3', () => {
+  it('still opens on the game it was written from, in its second term and Prosperous', () => {
+    const { game, report } = loadSave(format3Save);
+
+    expect(game.date).toEqual({ year: 7, quarter: 4 });
+    expect(electionStatus(game)).toMatchObject({ term: 2, quartersAway: 12 });
+    expect(game.tier).toBe('prosperous');
+    expect(victoryStatus(game)).toEqual({ tier: 'prosperous', held: 2, needed: 4 });
+    expect(game.outcome).toEqual({ status: 'playing' });
+    expect(game.history.map((signs) => signs.prosperity).slice(-3)).toEqual([696, 701, 704]);
+    expect(
+      termRecords(game).map((record) => [record.term, record.quarters, record.ending]),
+    ).toEqual([
+      [1, 20, 'reelected'],
+      [2, 7, 'inOffice'],
+    ]);
+    expect(report?.date).toEqual({ year: 7, quarter: 3 });
+    expect(report?.election).toBeNull();
+  });
+
+  it('is won on prosperity two quarters on, if the top tier is held', () => {
+    let { game } = loadSave(format3Save);
+    const generous = (state: typeof game) => ({
+      budget: {
+        taxRatePercent: 10,
+        spending: { ...state.budget.spending, health: 200, education: 200 },
+      },
+    });
+
+    game = advanceQuarter(game, answering(game, generous(game))).state;
+    expect(victoryStatus(game).held).toBe(3);
+    expect(game.outcome.status).toBe('playing');
+    game = advanceQuarter(game, answering(game, generous(game))).state;
+
+    expect(game.outcome).toMatchObject({ status: 'won', cause: 'prosperity' });
+  });
+
+  it('is lifted to format 4 with upkeep enough for every site, so nothing decays', () => {
+    let { game } = loadSave(format3Save);
+    const sites = game.country.sites.map((site) => siteStatus(game, site.id));
+    const needed = sites.reduce((total, status) => total + status.upkeep, 0);
+
+    // Every site's upkeep, $2.1m, brought up to the next step of the budget.
+    expect(needed).toBe(21);
+    expect(game.budget.spending.upkeep).toBe(30);
+    expect(game.budget.spending).toMatchObject({ health: 200, education: 200 });
+    for (let quarter = 0; quarter < 2; quarter += 1) {
+      game = advanceQuarter(game, answering(game, { budget: game.budget })).state;
+    }
+    expect(game.projects.map((project) => project.status)).toEqual(['operating', 'operating']);
+  });
+});
+
+describe('the save kept from save format 4', () => {
+  it('still opens on the game it was written from, with the farm road decaying', () => {
+    const { game, report } = loadSave(format4Save);
+
+    expect(game.date).toEqual({ year: 2, quarter: 1 });
+    expect(game.budget.spending.upkeep).toBe(10);
+    expect(
+      ['lowmere-irrigation', 'dustwell-irrigation', 'lowmere-road'].map(
+        (siteId) => siteStatus(game, siteId).state,
+      ),
+    ).toEqual(['operating', 'operating', 'decaying']);
+    expect(report?.entries.filter((entry) => entry.kind === 'siteDecaying')).toEqual([
+      expect.objectContaining({ headline: 'Decaying: Farm road, Arden to Lowmere' }),
+    ]);
+  });
+
+  it('restores the farm road once its upkeep is paid again', () => {
+    let { game } = loadSave(format4Save);
+
+    const result = advanceQuarter(
+      game,
+      answering(game, {
+        ...steward(game),
+        budget: { ...game.budget, spending: { ...game.budget.spending, upkeep: 20 } },
+      }),
+    );
+    game = result.state;
+
+    expect(siteStatus(game, 'lowmere-road').state).toBe('operating');
+    expect(result.report.entries.map((entry) => entry.headline)).toContain(
+      'Restored: Farm road, Arden to Lowmere',
+    );
+  });
+
+  // This holds for as long as format 4 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(2);
-    const { game, report } = loadSave(format2Save);
+    expect(SAVE_FORMAT_VERSION).toBe(4);
+    const { game, report } = loadSave(format4Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format2Save);
+    expect(stored(saveGame(game, report))).toEqual(format4Save);
   });
 });

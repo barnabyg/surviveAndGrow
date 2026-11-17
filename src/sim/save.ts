@@ -15,8 +15,9 @@ import type { RngState } from './rng';
 import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { siteTerms } from './sites';
 import { tierAt } from './tiers';
-import type { GameState, Outcome, RegionState, TurnReport } from './state';
+import type { ElectionResult, GameState, Outcome, RegionState, TurnReport } from './state';
 import { formatQuarters } from './text';
+import { upkeepForEvery } from './upkeep';
 import type { Contribution, Figure, GameDate, Money, Quarter } from './types';
 import {
   APPROVAL_DRIVERS,
@@ -43,7 +44,7 @@ import {
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 2;
+export const SAVE_FORMAT_VERSION = 4;
 
 /** Everything about a game except what a save records beside it. */
 export type SavedState = Omit<GameState, 'country' | 'seed' | 'rng'>;
@@ -100,6 +101,8 @@ export type SaveMigration = (older: Json) => Json;
  */
 const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   1: fromFormat1,
+  2: fromFormat2,
+  3: fromFormat3,
 };
 
 /**
@@ -169,6 +172,66 @@ function tierOfOldSave(older: Json, regions: readonly unknown[], projects: unkno
 }
 
 /**
+ * Format 3 added terms of office and the win on prosperity. A won election no longer ends
+ * the game: a game that format 2 ended that way plays on into its second term. The game also
+ * counts the quarters it has held prosperity in the top tier. Format 2 kept no such count,
+ * so it starts from nothing. The last report gains the election held in its quarter, which
+ * format 2 kept only in a game that the election ended, and which is otherwise none.
+ */
+function fromFormat2(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const { outcome } = state;
+  const voted = isRecord(outcome) && outcome.cause === 'election';
+  const reelected = voted && outcome.status === 'won';
+  const election = voted
+    ? { voteShare: outcome.voteShare, needed: outcome.needed, won: reelected }
+    : null;
+  return {
+    ...older,
+    formatVersion: 3,
+    state: {
+      ...state,
+      prosperousQuarters: 0,
+      outcome: reelected ? { status: 'playing' } : outcome,
+    },
+    report: isRecord(older.report) ? { ...older.report, election } : older.report,
+  };
+}
+
+/**
+ * Format 4 added upkeep: a spending area of its own, and sites that decay when it falls
+ * short. A game written before it gains upkeep enough to keep every one of its country's
+ * sites in good repair, the same as a new game on that country starts with, so that nothing
+ * in it decays unless the player cuts it. Its sites are all in good repair.
+ */
+function fromFormat3(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const budget = isRecord(state.budget) ? state.budget : {};
+  const spending = isRecord(budget.spending) ? budget.spending : {};
+  return {
+    ...older,
+    formatVersion: 4,
+    state: {
+      ...state,
+      budget: { ...budget, spending: { ...spending, upkeep: upkeepForOldSave(older) } },
+    },
+  };
+}
+
+/**
+ * Upkeep for every site of the country an old save carries. A save whose country will not
+ * load is given none, and checking the rest of it will refuse it.
+ */
+function upkeepForOldSave(older: Json): Money {
+  try {
+    const carried = isRecord(older.country) ? older.country.file : undefined;
+    return upkeepForEvery(loadCountry(carried).sites.map((site) => site.type));
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Puts a game into the form it is stored in, with the report on the quarter just ended, or
  * null when the game has only begun.
  */
@@ -197,6 +260,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       dilemmasAnswered: game.dilemmasAnswered,
       tier: game.tier,
       startingTier: game.startingTier,
+      prosperousQuarters: game.prosperousQuarters,
       outcome: game.outcome,
     },
     report,
@@ -265,6 +329,7 @@ export function loadSave(
     ),
     tier: oneOf(state.tier, 'state.tier', TIERS, 'a tier of prosperity'),
     startingTier: oneOf(state.startingTier, 'state.startingTier', TIERS, 'a tier of prosperity'),
+    prosperousQuarters: whole(state.prosperousQuarters, 'state.prosperousQuarters', 0),
     outcome: readOutcome(record(state.outcome, 'state.outcome'), 'state.outcome', region),
   };
   const report =
@@ -482,6 +547,11 @@ function readOutcome(
     summary: text(saved.summary, `${path}.summary`),
   };
   const cause = oneOf(saved.cause, `${path}.cause`, ENDING_CAUSES, 'a way to end');
+  if (cause === 'prosperity') {
+    if (status !== 'won') fail(`${path}.status`, 'must be a win when the cause is prosperity');
+    return { ...ending, status, cause };
+  }
+  if (status !== 'lost') fail(`${path}.status`, `cannot be a win when the cause is ${cause}`);
   if (cause === 'election') {
     return {
       ...ending,
@@ -491,7 +561,6 @@ function readOutcome(
       needed: whole(saved.needed, `${path}.needed`, 0, 1000),
     };
   }
-  if (status !== 'lost') fail(`${path}.status`, 'cannot be a win when the cause is famine');
   return { ...ending, status, cause, regionId: region(saved.regionId, `${path}.regionId`) };
 }
 
@@ -527,6 +596,15 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
       })),
     };
   };
+  const election = (value: unknown, path: string): ElectionResult => {
+    const written = record(value, path);
+    if (typeof written.won !== 'boolean') fail(`${path}.won`, 'is missing or is not true or false');
+    return {
+      voteShare: whole(written.voteShare, `${path}.voteShare`, 0, 1000),
+      needed: whole(written.needed, `${path}.needed`, 0, 1000),
+      won: written.won,
+    };
+  };
   return {
     date: date(saved.date, 'report.date'),
     treasury: figure(saved.treasury, 'report.treasury'),
@@ -535,6 +613,7 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
     prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),
     population: saved.population === null ? null : figure(saved.population, 'report.population'),
     harvest: saved.harvest === null ? null : harvest(saved.harvest, 'report.harvest'),
+    election: saved.election === null ? null : election(saved.election, 'report.election'),
     entries: list(saved.entries, 'report.entries', (entry, path): ReportEntry => ({
       kind: oneOf(entry.kind, `${path}.kind`, REPORT_KINDS, 'a kind of report'),
       seriousness: oneOf(

@@ -10,6 +10,7 @@ import type { Decisions, GameState, RegionState } from './state';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
+import { UPKEEP_ORDER_RULE } from './upkeep';
 import {
   FOOD_STAGES,
   LIKELIHOODS,
@@ -51,10 +52,9 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 export function risksAhead(state: GameState, decisions: Decisions): readonly Risk[] {
   checkDecisions(state, decisions, false);
   const { horizonQuarters, hungerShowsQuartersLater, weatherOutlooks } = balance.risks;
-  // Nothing is looked for beyond the election, which ends the game.
-  const quartersLeft = electionStatus(state).quartersAway + 1;
-  const watched = Math.min(horizonQuarters, quartersLeft);
-  const played = Math.min(horizonQuarters + hungerShowsQuartersLater, quartersLeft);
+  // A government that wins the election governs on, so the dangers beyond it count too.
+  const watched = horizonQuarters;
+  const played = horizonQuarters + hungerShowsQuartersLater;
 
   const possible = eventsAhead(state, played);
   // What is supposed of events: none begin, each begins alone, and all begin together.
@@ -74,6 +74,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
     ...treasuryRisk(whole),
+    ...upkeepRisk(whole),
     ...strikeRisk(whole),
     ...tierRisk(whole),
     ...electionRisk(whole),
@@ -320,6 +321,38 @@ function treasuryRisk(scope: Scope): Risk[] {
 }
 
 /**
+ * Sites decay when upkeep falls short of what the sites in use need, whether because it is
+ * set too low, because a site coming into use needs more, or because the treasury cuts it.
+ */
+function upkeepRisk(scope: Scope): Risk[] {
+  const { state, watched } = scope;
+  const falls = (path: Path) => {
+    const quarter = path.slice(0, watched).findIndex((resolved) => resolved.upkeepShort.length > 0);
+    return quarter === -1 ? null : quarter;
+  };
+  const finding = weigh(scope, falls);
+  const likelihood = finding === null ? null : likelihoodOf(finding.chance);
+  if (finding === null || likelihood === null) return [];
+
+  // Which sites go without is read off the course with ordinary weather and no new event.
+  const typical = scope.courses[Math.floor(scope.courses.length / 2)]?.paths[0] ?? [];
+  const first = typical[falls(typical) ?? finding.soonest];
+  const names = (first?.upkeepShort ?? []).map(
+    (siteId) => state.country.sites.find((site) => site.id === siteId)?.name ?? siteId,
+  );
+  const which = names.length === 0 ? 'sites in use' : listedSites(names);
+  return [
+    {
+      kind: 'upkeep',
+      likelihood,
+      headline: 'Upkeep falls short',
+      reason: `As things stand upkeep falls short ${when(finding.soonest)}, and ${which} will decay. ${UPKEEP_ORDER_RULE}`,
+      withinQuarters: finding.soonest + 1,
+    },
+  ];
+}
+
+/**
  * Strikes threaten wherever a region's unrest would be worse than it is now: strikes where
  * it is calm, protests where it is already striking. The regions are listed together.
  */
@@ -412,10 +445,8 @@ function electionRisk(scope: Scope): Risk[] {
 
   // Approval on polling day down each path that reaches it. One that famine ends never votes.
   const pollingDay = (path: Path) => {
-    const last = path.at(-1)?.state;
-    return last?.outcome.status !== 'playing' && last?.outcome.cause === 'election'
-      ? nationalApproval(last.regions)
-      : null;
+    const vote = path.find((resolved) => resolved.electionHeld)?.state;
+    return vote === undefined ? null : nationalApproval(vote.regions);
   };
   const defeat = (path: Path) => {
     const approval = pollingDay(path);
@@ -457,6 +488,14 @@ function electionRisk(scope: Scope): Risk[] {
 function when(quartersAway: number): string {
   if (quartersAway === 0) return 'this quarter';
   return quartersAway === 1 ? 'next quarter' : `in ${quartersAway} quarters`;
+}
+
+/** Site names in a line: "A", "A and B", "A, B and 2 other sites". */
+function listedSites(names: readonly string[]): string {
+  const [first = '', second = '', ...rest] = names;
+  if (names.length === 1) return first;
+  if (names.length === 2) return `${first} and ${second}`;
+  return `${first}, ${second} and ${rest.length} other ${rest.length === 1 ? 'site' : 'sites'}`;
 }
 
 /** Names in a line: "A", "A and B", "A, B and 2 other regions". */

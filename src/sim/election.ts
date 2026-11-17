@@ -4,12 +4,17 @@ import { balance } from './balance';
 import { dateOfQuarter, quarterNumber } from './calendar';
 import type { ReportEntry } from './report';
 import { nextRandom, type RngState } from './rng';
-import type { Outcome, RegionState } from './state';
-import { formatPercent, formatSignedPoints } from './text';
+import type { ElectionResult, Outcome, RegionState } from './state';
+import { termBounds, termOf } from './terms';
+import { formatOrdinal, formatPercent, formatSignedPoints } from './text';
 import type { GameDate, Range } from './types';
+
+export { isElectionQuarter } from './terms';
 
 /** When the election falls and what it takes to win it. */
 export interface ElectionStatus {
+  /** The term of office the game is in, counted from 1. The election closes it. */
+  readonly term: number;
   /** How many quarters a term of office lasts. */
   readonly termQuarters: number;
   /** The quarter at the end of which the vote is held. */
@@ -20,19 +25,24 @@ export interface ElectionStatus {
   readonly needed: number;
 }
 
-export function electionStatus(game: { readonly date: GameDate }): ElectionStatus {
+/**
+ * The election that closes the term the game is in. Once the game is over it is the one
+ * that closed, or would have closed, the term the game ended in.
+ */
+export function electionStatus(game: {
+  readonly date: GameDate;
+  readonly outcome?: Outcome;
+}): ElectionStatus {
   const { termQuarters, winSharePermille } = balance.election;
+  const term = termOf(game);
+  const { last } = termBounds(term);
   return {
+    term,
     termQuarters,
-    date: dateOfQuarter(termQuarters),
-    quartersAway: Math.max(0, termQuarters - quarterNumber(game.date)),
+    date: dateOfQuarter(last),
+    quartersAway: Math.max(0, last - quarterNumber(game.date)),
     needed: winSharePermille,
   };
-}
-
-/** Whether the vote is held when this quarter is resolved. */
-export function isElectionQuarter(date: GameDate): boolean {
-  return quarterNumber(date) === balance.election.termQuarters;
 }
 
 /**
@@ -59,8 +69,8 @@ export function defeatChancePermille(approval: number): number {
   return Math.round((losing * 1000) / (2 * swingPermille + 1));
 }
 
-/** How a game that reached its election ended. */
-export type ElectionOutcome = Extract<Outcome, { readonly cause: 'election' }>;
+/** How a game lost at an election ended. */
+export type ElectionDefeat = Extract<Outcome, { readonly cause: 'election' }>;
 
 /**
  * Draws how far the campaign moves the vote, in thousandths, from the game's generator: up
@@ -73,35 +83,55 @@ export function rollSwing(rng: RngState): { readonly swing: number; readonly rng
 }
 
 /**
- * Holds the election. The vote share is national approval as the term's last quarter left
- * it, moved by the campaign's swing, which the game draws by the seed, so the same seed and
- * the same decisions always give the same result.
+ * Holds the election that closes a term. The vote share is national approval as the term's
+ * last quarter left it, moved by the campaign's swing, which the game draws by the seed, so
+ * the same seed and the same decisions always give the same result. Losing ends the game;
+ * winning begins the next term, and the report says so.
  */
 export function holdElection(
   regions: readonly RegionState[],
   swing: number,
-): { readonly outcome: ElectionOutcome; readonly entry: ReportEntry } {
+  date: GameDate,
+): {
+  readonly result: ElectionResult;
+  readonly defeat: ElectionDefeat | null;
+  readonly entry: ReportEntry;
+} {
   const { winSharePermille } = balance.election;
   const approval = nationalApproval(regions);
   const voteShare = shareOf(approval + swing);
   const won = voteShare >= winSharePermille;
-  const outcome: ElectionOutcome = {
-    status: won ? 'won' : 'lost',
+  const result: ElectionResult = { voteShare, needed: winSharePermille, won };
+  const headline = won ? 'You won the election' : 'You lost the election';
+  const summary = `You took ${formatPercent(voteShare)} of the vote and needed ${formatPercent(winSharePermille, 0)}. Approval stood at ${formatPercent(approval)} on polling day, and the campaign moved the vote by ${formatSignedPoints(voteShare - approval)}.`;
+  if (won) {
+    const next = termOf({ date: dateOfQuarter(quarterNumber(date) + 1) });
+    const { last } = termBounds(next);
+    const nextVote = dateOfQuarter(last);
+    return {
+      result,
+      defeat: null,
+      entry: {
+        kind: 'election',
+        seriousness: 'notable',
+        headline,
+        cause: `${summary} Your ${formatOrdinal(next)} term begins, and the next election is held at the end of Year ${nextVote.year}, Quarter ${nextVote.quarter}.`,
+      },
+    };
+  }
+  const defeat: ElectionDefeat = {
+    status: 'lost',
     cause: 'election',
     voteShare,
     needed: winSharePermille,
-    headline: won ? 'You won the election' : 'You lost the election',
-    summary: `You took ${formatPercent(voteShare)} of the vote and needed ${formatPercent(winSharePermille, 0)}. Approval stood at ${formatPercent(approval)} on polling day, and the campaign moved the vote by ${formatSignedPoints(voteShare - approval)}.`,
+    headline,
+    summary,
   };
   return {
-    outcome,
-    entry: {
-      kind: 'election',
-      // A lost election ends the government, and nothing in the quarter matters more.
-      seriousness: won ? 'notable' : 'critical',
-      headline: outcome.headline,
-      cause: outcome.summary,
-    },
+    result,
+    defeat,
+    // A lost election ends the government, and nothing in the quarter matters more.
+    entry: { kind: 'election', seriousness: 'critical', headline, cause: summary },
   };
 }
 

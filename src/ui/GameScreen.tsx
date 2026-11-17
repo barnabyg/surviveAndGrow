@@ -242,6 +242,7 @@ export function GameScreen(props: GameScreenProps) {
                   plannedSiteIds={plannedSiteIds}
                   schedule={schedule}
                   pausedSites={preview?.pausedSites ?? []}
+                  upkeepShort={preview?.upkeep.short ?? []}
                   onPlan={planSite}
                   onClose={() => {
                     selectSite(null);

@@ -20,7 +20,7 @@ import {
   testlandAsShipped,
   withDroughtChance,
 } from './countries';
-import { answering } from './players';
+import { answering, inFirstTerm } from './players';
 
 /** Each country with the one region that drought is made to strike in these tests. */
 const scenarios = [
@@ -55,7 +55,14 @@ function harsh(game: GameState): Budget {
 /** The lowest tax and the most the game allows on every area: more than any treasury covers. */
 const ruinous: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 describe.each(scenarios)('the risks ahead in $name', ({ file, regionId, regionName }) => {
@@ -204,7 +211,7 @@ describe.each(bothCountries)('looking ahead for risks in %s', (_name, country) =
     const rank = (risk: Risk) => LIKELIHOODS.indexOf(risk.likelihood);
     for (const seed of [1, 2, 3, 4, 5]) {
       let game = createGame(country(), seed);
-      while (game.outcome.status === 'playing') {
+      while (inFirstTerm(game)) {
         const ranks = risksAhead(game, idle(game)).map(rank);
         expect(ranks).toEqual([...ranks].sort((a, b) => b - a));
         game = advanceQuarter(game, idle(game)).state;
@@ -316,7 +323,14 @@ describe('the risks ahead in Tavara', () => {
     // Revenue is $31.0m. Spending $69.0m leaves $4.0m, which the first instalment takes.
     const spree: Budget = {
       taxRatePercent: 18,
-      spending: { agriculture: 200, foodRelief: 200, health: 200, education: 60, security: 30 },
+      spending: {
+        agriculture: 200,
+        foodRelief: 200,
+        health: 200,
+        education: 60,
+        security: 30,
+        upkeep: 0,
+      },
     };
     const game = advanceQuarter(start, {
       budget: spree,
@@ -326,7 +340,14 @@ describe('the risks ahead in Tavara', () => {
     // A budget that spends exactly what comes in leaves nothing for the next instalment.
     const balanced: Budget = {
       taxRatePercent: 18,
-      spending: { agriculture: 110, foodRelief: 70, health: 70, education: 60, security: 0 },
+      spending: {
+        agriculture: 110,
+        foodRelief: 70,
+        health: 70,
+        education: 60,
+        security: 0,
+        upkeep: 0,
+      },
     };
 
     expect(ofKind(risksAhead(game, { budget: balanced }), 'treasury')).toEqual({
@@ -344,7 +365,14 @@ describe('the risks ahead in Tavara', () => {
     // what relief does not need, so every region grows enough and nobody strikes.
     const balanced: Budget = {
       taxRatePercent: 18,
-      spending: { agriculture: 130, foodRelief: 0, health: 70, education: 60, security: 50 },
+      spending: {
+        agriculture: 130,
+        foodRelief: 0,
+        health: 70,
+        education: 60,
+        security: 50,
+        upkeep: 0,
+      },
     };
     // Losing $13.0m a quarter, $42.0m covers three quarters and not a fourth.
     const deficit: Budget = {
@@ -437,10 +465,12 @@ describe.each(polls)('the risk of losing the vote in $name', (poll) => {
   it('is not listed when no swing could lose the vote', () => {
     let game = play(createGame(startingAt(poll.file, poll.safeTax), 3), 16);
 
-    for (; game.outcome.status === 'playing'; game = play(game, 1)) {
+    for (; inFirstTerm(game); game = play(game, 1)) {
       expect(ofKind(risksAhead(game, idle(game)), 'election')).toBe(undefined);
     }
-    expect(game.outcome).toMatchObject({ status: 'won', cause: 'election' });
+    // Re-elected, the government governs on into its second term.
+    expect(game.outcome).toEqual({ status: 'playing' });
+    expect(game.date).toEqual({ year: 6, quarter: 1 });
   });
 });
 
@@ -490,7 +520,7 @@ describe.each([
     let famines = 0;
     for (let seed = 1; seed <= seeds; seed += 1) {
       const states = [createGame(country(), seed)];
-      for (let game = states[0]; game?.outcome.status === 'playing'; game = states.at(-1)) {
+      for (let game = states[0]; game !== undefined && inFirstTerm(game); game = states.at(-1)) {
         states.push(advanceQuarter(game, doNothing(game)).state);
       }
       const { outcome } = states.at(-1) ?? {};
@@ -535,13 +565,15 @@ describe.each(polls)('a government on a knife edge in $name', (poll) => {
     let wins = 0;
     for (let seed = 1; seed <= seeds; seed += 1) {
       const states = [createGame(startingAt(poll.file, poll.closeTax), seed)];
-      for (let game = states[0]; game?.outcome.status === 'playing'; game = states.at(-1)) {
+      for (let game = states[0]; game !== undefined && inFirstTerm(game); game = states.at(-1)) {
         states.push(advanceQuarter(game, idle(game)).state);
       }
+      // Every game reaches the vote: one that wins it plays on into a second term.
       const { outcome } = states.at(-1) ?? {};
-      expect(outcome).toMatchObject({ cause: 'election' });
-      if (outcome?.status === 'won') wins += 1;
+      expect(states).toHaveLength(21);
+      if (outcome?.status === 'playing') wins += 1;
       if (outcome?.status !== 'lost') continue;
+      expect(outcome.cause).toBe('election');
       defeats += 1;
 
       for (const game of states.slice(-3, -1)) {

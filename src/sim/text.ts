@@ -23,6 +23,30 @@ export function quartersWord(count: number): string {
   return count === 1 ? 'quarter' : 'quarters';
 }
 
+const ORDINALS = [
+  'first',
+  'second',
+  'third',
+  'fourth',
+  'fifth',
+  'sixth',
+  'seventh',
+  'eighth',
+  'ninth',
+  'tenth',
+] as const;
+
+const ORDINAL_SUFFIXES: Readonly<Record<number, string>> = { 1: 'st', 2: 'nd', 3: 'rd' };
+
+/** A place in order, in words up to the tenth and in figures beyond: `second`, `11th`, `22nd`. */
+export function formatOrdinal(place: number): string {
+  const word = ORDINALS[place - 1];
+  if (word !== undefined) return word;
+  const teens = place % 100 >= 11 && place % 100 <= 13;
+  const suffix = teens ? 'th' : (ORDINAL_SUFFIXES[place % 10] ?? 'th');
+  return `${place}${suffix}`;
+}
+
 /**
  * A count of quarters: `1 quarter`, `19 quarters`. A word given to qualify it goes between
  * the two: `3 more quarters`.

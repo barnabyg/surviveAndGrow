@@ -3,22 +3,26 @@ import {
   electionStatus,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
+  formatIndex,
   formatPercent,
+  livingStandards,
   type GameState,
   type Region,
   type RegionState,
   type Terrain,
+  tierFrom,
 } from '../sim';
 import type { MapPalette } from './mapPalette';
 
 /** What the map can be made to show. The country view is the map as it looks. */
-export const LENSES = ['country', 'food', 'approval'] as const;
+export const LENSES = ['country', 'food', 'approval', 'living'] as const;
 export type Lens = (typeof LENSES)[number];
 
 export const LENS_NAMES: Readonly<Record<Lens, string>> = {
   country: 'Country',
   food: 'Food',
   approval: 'Approval',
+  living: 'Living standards',
 };
 
 /** One step of a lens's scale: a colour and what it stands for. */
@@ -35,7 +39,7 @@ export function terrainName(terrain: Terrain): string {
 /**
  * The scale of a lens, in the order it is read. The country view's colours are the kinds
  * of land the country has; the food lens has a step for each stage; the approval lens is
- * cut at the levels that matter to the player.
+ * cut at the levels that matter to the player; the living-standards lens at fixed marks.
  */
 export function lensScale(lens: Lens, game: GameState, palette: MapPalette): LensStep[] {
   switch (lens) {
@@ -64,7 +68,49 @@ export function lensScale(lens: Lens, game: GameState, palette: MapPalette): Len
         return { label, fill };
       });
     }
+    case 'living':
+      return palette.livingLens.map((fill, index) => {
+        const from = LIVING_STANDARD_CUTS[index - 1];
+        const to = LIVING_STANDARD_CUTS[index];
+        const label =
+          from === undefined
+            ? `Under ${formatIndex(to ?? 0, 0)}`
+            : to === undefined
+              ? `${formatIndex(from, 0)} and over`
+              : `${formatIndex(from, 0)} to ${formatIndex(to, 0)}`;
+        return { label, fill };
+      });
   }
+}
+
+/**
+ * Where the living-standards lens changes colour, in thousandths, lowest first. The steps
+ * are finer low down, where every country starts and where one region falling behind
+ * another should show, and take in the lines of the prosperity tiers further up, read from
+ * the balance data so that retuning the tiers moves the lens with them.
+ */
+const LIVING_STANDARD_CUTS: readonly number[] = (() => {
+  const developing = tierFrom('developing');
+  const industrialising = tierFrom('industrialising');
+  return [
+    // Four fifths of the way to Developing, so that the poorest regions stand apart.
+    Math.round((developing * 4) / 5),
+    developing,
+    // Halfway from Developing to Industrialising.
+    Math.round((developing + industrialising) / 2),
+    industrialising,
+    tierFrom('prosperous'),
+  ];
+})();
+
+/** The step of the living-standards lens a living standard falls in: 0 for the lowest. */
+function livingStep(standard: number): number {
+  return LIVING_STANDARD_CUTS.filter((cut) => standard >= cut).length;
+}
+
+/** A region's living standard, in thousandths. */
+export function livingStandardOf(game: GameState, regionId: string): number {
+  return livingStandards(game).find((standard) => standard.regionId === regionId)?.value ?? 0;
 }
 
 /** The colour a lens gives one region. */
@@ -85,6 +131,11 @@ export function lensFill(
       const step = cuts.filter((cut) => (state?.approval ?? 0) >= cut).length;
       return approvalFills(cuts.length + 1, palette)[step] ?? palette.terrain[region.terrain];
     }
+    case 'living':
+      return (
+        palette.livingLens[livingStep(livingStandardOf(game, region.id))] ??
+        palette.terrain[region.terrain]
+      );
   }
 }
 

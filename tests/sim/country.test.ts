@@ -8,14 +8,14 @@ import {
   type GameState,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { tavara, tavaraAsShipped, testland } from './countries';
+import { tavara, tavaraAsShipped, testland, testlandFormat1File } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
 
 describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
     const country = tavara();
 
-    expect(tavaraAsShipped().formatVersion).toBe(1);
+    expect(tavaraAsShipped().formatVersion).toBe(2);
     expect(country.regions.map((region) => [region.name, region.terrain])).toEqual([
       ['Korr Highlands', 'highlands'],
       ['Salt Coast', 'coast'],
@@ -51,6 +51,9 @@ describe('a valid country file', () => {
       ['Southbank grain store', 'grainStore', 'south-delta', 'place'],
       ['Farm road, Westhaven to Arden', 'farmRoad', 'salt-coast', 'route'],
       ['Farm road, Korrgate to Arden', 'farmRoad', 'korr-highlands', 'route'],
+      ['Korrgate mine', 'mine', 'korr-highlands', 'place'],
+      ['Trunk road, Korrgate mine to Saltmouth', 'trunkRoad', 'salt-coast', 'route'],
+      ['Saltmouth port', 'port', 'salt-coast', 'place'],
     ]);
   });
 
@@ -89,34 +92,102 @@ describe('a valid country file', () => {
           [695, 418],
         ],
       },
+      {
+        id: 'sand-mine',
+        type: 'mine',
+        name: 'Sandreach mine',
+        regionId: 'sandreach',
+        dependsOn: ['sand-trunk-road'],
+        form: 'place',
+        at: [800, 300],
+      },
+      {
+        id: 'sand-trunk-road',
+        type: 'trunkRoad',
+        name: 'Trunk road, Sandreach mine to Alpha port',
+        regionId: 'sandreach',
+        dependsOn: ['alpha-port'],
+        form: 'route',
+        route: [
+          [800, 312],
+          [770, 500],
+          [540, 525],
+          [265, 505],
+        ],
+      },
+      {
+        id: 'alpha-port',
+        type: 'port',
+        name: 'Alpha port',
+        regionId: 'northfield',
+        dependsOn: [],
+        form: 'place',
+        at: [250, 500],
+      },
     ]);
   });
 });
 
 describe('the types of site', () => {
-  it('each have a cost, a build time and an effect', () => {
+  it('each have a cost, a build time, an upkeep and an effect, which decay halves', () => {
     expect(siteTerms('irrigation')).toEqual({
       cost: 120,
       buildQuarters: 3,
+      upkeep: 4,
       effect: 'Weather and drought move its region’s harvest 50% less.',
+      decayingEffect: 'Weather and drought move its region’s harvest 25% less.',
     });
     expect(siteTerms('farmRoad')).toEqual({
       cost: 100,
       buildQuarters: 3,
+      upkeep: 3,
       effect: '50% less of its region’s surplus is lost on the way to the national reserve.',
+      decayingEffect:
+        '25% less of its region’s surplus is lost on the way to the national reserve.',
     });
     expect(siteTerms('grainStore')).toEqual({
       cost: 60,
       buildQuarters: 2,
+      upkeep: 2,
       effect: '25% less of the national reserve spoils each quarter.',
+      decayingEffect: '13% less of the national reserve spoils each quarter.',
+    });
+  });
+
+  it('include the large sites of a chain, which cost more and take longer to build', () => {
+    expect(siteTerms('mine')).toEqual({
+      cost: 400,
+      buildQuarters: 6,
+      upkeep: 6,
+      effect:
+        'Adds $20.0m a quarter to its region’s output, but only while its chain to a port is complete.',
+      decayingEffect:
+        'Adds $10.0m a quarter to its region’s output, but only while its chain to a port is complete.',
+    });
+    expect(siteTerms('trunkRoad')).toEqual({
+      cost: 300,
+      buildQuarters: 5,
+      upkeep: 5,
+      effect: 'Carries up to $24.0m a quarter of a mine’s output along its chain.',
+      decayingEffect: 'Carries up to $12.0m a quarter of a mine’s output along its chain.',
+    });
+    expect(siteTerms('port')).toEqual({
+      cost: 500,
+      buildQuarters: 8,
+      upkeep: 8,
+      effect: 'Ships up to $30.0m a quarter of a mine’s output.',
+      decayingEffect: 'Ships up to $15.0m a quarter of a mine’s output.',
     });
   });
 });
 
+/** Testland as format 1 could write it, without dilemmas. */
+const testlandFormat1 = withValue(testlandFormat1File(), ['dilemmaLikelihood'], {});
+
 describe('a country file in format 2', () => {
   const format2 = (dependsOn: Record<number, unknown>) => {
     // No dilemma arises, so a game in it can be played on without answering one.
-    let file = withValue(withValue(testlandFile, ['formatVersion'], 2), ['dilemmaLikelihood'], {});
+    let file = withValue(testlandFormat1, ['formatVersion'], 2);
     for (const [index, value] of Object.entries(dependsOn)) {
       file = withValue(file, ['sites', Number(index), 'dependsOn'], value);
     }
@@ -136,7 +207,7 @@ describe('a country file in format 2', () => {
 
   it('plays the same game as the same country in format 1', () => {
     const decisions = (game: GameState) => ({ budget: game.budget });
-    let one = createGame(loadCountry(withValue(testlandFile, ['dilemmaLikelihood'], {})), 7);
+    let one = createGame(loadCountry(testlandFormat1), 7);
     let two = createGame(loadCountry(format2({ 0: ['alpha-store'] })), 7);
     for (let quarter = 0; quarter < 8; quarter += 1) {
       one = advanceQuarter(one, decisions(one)).state;
@@ -177,9 +248,31 @@ describe('a country file in format 2', () => {
   });
 
   it('cannot be given dependencies in a format 1 file', () => {
-    const file = withValue(testlandFile, ['sites', 0, 'dependsOn'], ['alpha-store']);
+    const file = withValue(testlandFormat1, ['sites', 0, 'dependsOn'], ['alpha-store']);
 
     expect(faultsOf(file)).toEqual(['sites[0].dependsOn needs country file format 2 or later.']);
+  });
+
+  it('has a mine that leads, through a trunk road, to a port', () => {
+    const country = testland();
+    const mine = country.sites.find((site) => site.type === 'mine');
+
+    expect(mine?.dependsOn).toEqual(['sand-trunk-road']);
+    expect(country.sites.find((site) => site.id === 'sand-trunk-road')?.dependsOn).toEqual([
+      'alpha-port',
+    ]);
+  });
+
+  it('is rejected when a mine does not lead to a port', () => {
+    // The mine depends on its road, but the road no longer leads to the port.
+    const file = withValue(testlandFile, ['sites', 4, 'dependsOn'], []);
+
+    expect(faultsOf(file)).toEqual([
+      'sites[3].dependsOn must lead, directly or through other sites, to a port: a mine earns only through a chain that reaches one.',
+    ]);
+    expect(faultsOf(without(testlandFile, ['sites', 3, 'dependsOn']))).toEqual([
+      'sites[3].dependsOn must lead, directly or through other sites, to a port: a mine earns only through a chain that reaches one.',
+    ]);
   });
 });
 
@@ -309,7 +402,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
     const file = withValue(testlandFile, ['sites', 0, 'type'], 'airport');
 
     expect(faultsOf(file)).toEqual([
-      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore.',
+      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port.',
     ]);
   });
 

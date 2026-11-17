@@ -31,6 +31,17 @@ export const bothCountries: [name: string, country: () => Country][] = [
   ['Testland', testland],
 ];
 
+/**
+ * Testland's file as format 1 could write it: without its chain of mine, trunk road and
+ * port, since a mine must say what it depends on and that needs format 2.
+ */
+export function testlandFormat1File(): unknown {
+  const file = structuredClone(testlandFile) as { formatVersion: number; sites: unknown[] };
+  file.formatVersion = 1;
+  file.sites = file.sites.slice(0, 3);
+  return file;
+}
+
 interface Chances {
   formatVersion: number;
   regions: { id: string; eventLikelihood?: Record<string, number>; populationGrowth?: number }[];

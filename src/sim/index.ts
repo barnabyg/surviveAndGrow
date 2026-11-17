@@ -46,9 +46,11 @@ export {
   type Harvest,
   type RegionHarvest,
 } from './food';
-export { seasonOf } from './calendar';
+export { dateOfQuarter, seasonOf } from './calendar';
+export { drawAt } from './rng';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
+export { chainOf, chainsThrough, type Chain, type ChainLink } from './chains';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
 export {
   livingStandards,
@@ -57,7 +59,10 @@ export {
   type ProsperityScores,
   type ProsperityStatus,
 } from './prosperity';
+export { settlementLook, settlementLooks, type SettlementLook } from './settlements';
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
+export { termRecords, type TermRecord } from './terms';
+export { victoryStatus, type VictoryStatus } from './victory';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export {
   loadSave,
@@ -69,6 +74,7 @@ export {
   type SaveMigration,
 } from './save';
 export { siteTerms, type SiteTerms } from './sites';
+export { DECAYING_SHARE, isInUseState, UPKEEP_ORDER_RULE } from './upkeep';
 export {
   siteSchedule,
   termCalendar,
@@ -79,6 +85,7 @@ export {
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,
+  type ElectionResult,
   type GameState,
   type Outcome,
   type Preview,
@@ -87,6 +94,7 @@ export {
   type ReliefDelivery,
   type TurnReport,
   type TurnResult,
+  type UpkeepPreview,
 } from './state';
 export {
   formatCount,
@@ -111,6 +119,7 @@ export {
   type Range,
 } from './types';
 export {
+  CHAIN_ROLES,
   DILEMMA_TYPES,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
@@ -122,6 +131,7 @@ export {
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SERIOUSNESS_NAMES,
+  SITE_CHAIN_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
@@ -131,6 +141,7 @@ export {
   UNREST_KINDS,
   UNREST_NAMES,
   type ApprovalDriver,
+  type ChainRole,
   type DecorationKind,
   type DilemmaType,
   type EventType,

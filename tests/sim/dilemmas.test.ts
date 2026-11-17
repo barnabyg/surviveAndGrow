@@ -19,7 +19,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { tavaraAsShipped, testlandAsShipped, withChances } from './countries';
 import { faultsOf, withValue, without } from './files';
-import { answering } from './players';
+import { answering, inFirstTerm } from './players';
 
 type Chances = Parameters<typeof withChances>[1];
 
@@ -57,13 +57,20 @@ const harsh = (game: GameState): Budget => ({
 /** The lowest tax and the most the game allows on every area, which empties any treasury. */
 const ruinous = (): Budget => ({
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 });
 
 /** The tax as it stands and nothing spent, so that no answer can force a spending cut. */
 const austere = (game: GameState): Budget => ({
   taxRatePercent: game.budget.taxRatePercent,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0 },
+  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
 });
 
 /**
@@ -445,7 +452,7 @@ function arisals(
 ): { quarter: number; type: DilemmaType }[] {
   const met: { quarter: number; type: DilemmaType }[] = [];
   let game = createGame(country, seed);
-  while (game.outcome.status === 'playing') {
+  while (inFirstTerm(game)) {
     if (game.dilemma !== null) met.push({ quarter: game.history.length, type: game.dilemma.type });
     game = advanceQuarter(game, answering(game, { budget: budget(game) })).state;
   }
@@ -512,7 +519,7 @@ describe.each(countries)('when dilemmas arise in $name', ({ file, dry }) => {
     const harvests = (country: Country) => {
       const grown: number[] = [];
       let game = createGame(country, 9);
-      while (game.outcome.status === 'playing') {
+      while (inFirstTerm(game)) {
         const { state, report } = advanceQuarter(game, answering(game, { budget: game.budget }));
         if (report.harvest !== null) grown.push(report.harvest.total);
         game = state;
@@ -535,11 +542,12 @@ describe.each([
     let met = 0;
     for (let seed = 1; seed <= 30; seed += 1) {
       let game = createGame(country(), seed);
-      while (game.outcome.status === 'playing') {
+      while (inFirstTerm(game)) {
         if (game.dilemma !== null) met += 1;
         game = advanceQuarter(game, answering(game, { budget: game.budget })).state;
       }
-      expect(game.dilemma).toBe(null);
+      // A game that is over waits on no answer.
+      if (game.outcome.status !== 'playing') expect(game.dilemma).toBe(null);
     }
     expect(met).toBeGreaterThan(0);
   });

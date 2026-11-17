@@ -12,18 +12,15 @@ import {
 const nextElection = (page: Page) =>
   page.getByRole('banner').getByRole('group', { name: 'Next election' });
 const electionPanel = (page: Page) => decisions(page).getByRole('region', { name: 'Election' });
-const termFigures = (page: Page) => page.getByRole('table', { name: 'The term in figures' });
+const gameFigures = (page: Page) => page.getByRole('table', { name: 'The game in figures' });
 
 /**
- * Tavara without drought, starting at 11% tax with $500.0m in the treasury. Seven points of
- * tax under the 18% people accept are worth 8.4 points of approval, so it starts, and with
- * an unchanged budget stays, at 54.2%: enough to win whatever the campaign does.
+ * Tavara without drought, with $500.0m in the treasury. Approval starts, and with an
+ * unchanged budget stays, at 45.8%: short of the 50% needed whatever the campaign does.
  */
-function tavaraThatApproves(): unknown {
+function tavaraThatDisapproves(): unknown {
   const country = tavaraWithDroughtIn([]);
-  const start = country.start as { treasury: number; budget: { taxRate: number } };
-  start.budget.taxRate = 11;
-  start.treasury = 500;
+  (country.start as { treasury: number }).treasury = 500;
   return country;
 }
 
@@ -79,32 +76,36 @@ test('the vote share forecast is a range against the 50% needed, and answers to 
 test('a term of 20 quarters ends in an election, and the same seed can be replayed', async ({
   page,
 }) => {
-  await startGame(page, { seed: 3, countryFile: tavaraThatApproves() });
+  await startGame(page, { seed: 3, countryFile: tavaraThatDisapproves() });
   await stopFoodRelief(page);
   await expect(
     electionPanel(page).getByRole('group', { name: 'Vote share forecast' }),
-  ).toContainText('51.2% to 57.2%');
-  await expect(electionPanel(page)).toContainText('On course to win');
+  ).toContainText('42.8% to 48.8%');
 
   await endQuarters(page, 19);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await endQuarters(page, 1);
 
-  // Approval never left 54.2%, so the vote is won whatever the campaign did.
-  const summary = page.getByRole('dialog', { name: 'You won the election' });
+  // Approval never left 45.8%, so the vote is lost whatever the campaign did.
+  const summary = page.getByRole('dialog', { name: 'You lost the election' });
   await expect(summary).toBeVisible();
-  await expect(summary).toContainText('You have won');
-  const result = summary.getByText(/^You took 5\d\.\d% of the vote and needed 50%\./);
+  await expect(summary).toContainText('You have lost');
+  const result = summary.getByText(/^You took 4\d\.\d% of the vote and needed 50%\./);
   await expect(result).toBeVisible();
   const firstResult = await result.textContent();
-  await expect(summary).toContainText('The term ran its full 20 quarters.');
+  await expect(summary).toContainText(
+    'Your government was in office for 20 quarters, over one term.',
+  );
+  const term = summary
+    .getByRole('table', { name: 'Term by term' })
+    .getByRole('row', { name: /^Term 1/ });
+  await expect(term).toContainText('Year 1, Quarter 1Year 5, Quarter 4');
+  await expect(term).toContainText('▲ Lost the election');
 
-  // Tax at 11% brings in $19.0m and the budget spends $29.0m: $10.0m short for 20 quarters.
-  const row = (name: string) => termFigures(page).getByRole('row', { name });
+  const row = (name: string) => gameFigures(page).getByRole('row', { name });
   await expect(row('Treasury')).toContainText('$500.0m');
-  await expect(row('Treasury')).toContainText('$300.0m');
-  await expect(row('Approval').getByRole('cell', { name: '54.2%', exact: true })).toHaveCount(4);
-  await expect(row('Food reserve')).toContainText('2.1 months');
+  await expect(row('Approval').getByRole('cell', { name: '45.8%', exact: true })).toHaveCount(4);
+  await expect(row('Prosperity')).toBeVisible();
   await expect(summary).toContainText('Seed 3');
   await expect(
     page.getByRole('banner').getByRole('button', { name: 'End quarter' }),
@@ -121,7 +122,7 @@ test('a term of 20 quarters ends in an election, and the same seed can be replay
   // The same decisions then lead to the same vote, to the decimal.
   await stopFoodRelief(page);
   await endQuarters(page, 20);
-  await expect(summary.getByText(/^You took 5\d\.\d% of the vote/)).toHaveText(firstResult ?? '');
+  await expect(summary.getByText(/^You took 4\d\.\d% of the vote/)).toHaveText(firstResult ?? '');
 
   // A new game is a different one: the address no longer names the seed.
   await summary.getByRole('button', { name: 'Start a new game' }).click();
@@ -152,6 +153,6 @@ test('a government the country has turned against loses the election', async ({ 
   await expect(summary).toContainText('You have lost');
   await expect(summary.getByText(/^You took \d\d\.\d% of the vote and needed 50%\./)).toBeVisible();
   // Approval fell from where it started.
-  await expect(termFigures(page).getByRole('row', { name: 'Approval' })).toContainText('45.8%');
+  await expect(gameFigures(page).getByRole('row', { name: 'Approval' })).toContainText('45.8%');
   await expect(summary.getByRole('button', { name: 'Replay this game' })).toBeVisible();
 });

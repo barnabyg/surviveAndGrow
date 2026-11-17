@@ -1,5 +1,5 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -105,6 +105,34 @@
         [540, 400],
         [695, 418]
       ]
+    },
+    {
+      "id": "sand-mine",
+      "type": "mine",
+      "name": "Sandreach mine",
+      "region": "sandreach",
+      "at": [800, 300],
+      "dependsOn": ["sand-trunk-road"]
+    },
+    {
+      "id": "sand-trunk-road",
+      "type": "trunkRoad",
+      "name": "Trunk road, Sandreach mine to Alpha port",
+      "region": "sandreach",
+      "route": [
+        [800, 312],
+        [770, 500],
+        [540, 525],
+        [265, 505]
+      ],
+      "dependsOn": ["alpha-port"]
+    },
+    {
+      "id": "alpha-port",
+      "type": "port",
+      "name": "Alpha port",
+      "region": "northfield",
+      "at": [250, 500]
     }
   ],
   "dilemmaLikelihood": {

@@ -18,6 +18,7 @@ import {
   type Range,
   type RegionUnrest,
   UNREST_KINDS,
+  UPKEEP_ORDER_RULE,
 } from '../sim';
 import { formatRange, formatSigned } from './format';
 import { DecisionPanel } from './DecisionPanel';
@@ -119,6 +120,34 @@ export function BudgetPanel(props: BudgetPanelProps) {
             }}
           />
         ))}
+      </div>
+
+      <div className="fixed-costs" role="group" aria-label="Upkeep needed">
+        <div className="fixed-costs__row" role="group" aria-label="Sites in use need">
+          <span>Sites in use need</span>
+          <span className="fixed-costs__note">
+            {after.upkeep.needed === 0
+              ? 'No site is in use yet, so upkeep costs nothing'
+              : 'Upkeep is spent only as far as it is needed'}
+          </span>
+          <span className="slider__value">{formatMoney(after.upkeep.needed)}</span>
+        </div>
+        <div className="fixed-costs__row" role="group" aria-label="Upkeep spent">
+          <span>Upkeep spent</span>
+          <span className="fixed-costs__note" />
+          <span className="slider__value">{formatMoney(after.upkeep.spent)}</span>
+        </div>
+        {after.upkeep.short.length > 0 && (
+          <p className="warning-note">
+            ▲ Upkeep falls short, and{' '}
+            {after.upkeep.short
+              .map(
+                (siteId) => game.country.sites.find((site) => site.id === siteId)?.name ?? siteId,
+              )
+              .join(', ')}{' '}
+            will decay from next quarter. {UPKEEP_ORDER_RULE}
+          </p>
+        )}
       </div>
 
       {building && (

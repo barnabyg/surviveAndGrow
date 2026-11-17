@@ -17,6 +17,7 @@ import { writeUp, type Row } from './report';
  *   BALANCE_COUNTRY  `tavara`, `testland` or `both` (default `both`)
  *   BALANCE_OUT      where the results are written (default `balance-results.md`)
  *   BALANCE_PLAYERS  `all` adds the one-lever players that probe for a winning trick
+ *   BALANCE_TERMS    the most terms each game is played for (default 1: Phase 1's single term)
  */
 const countries: Readonly<Record<string, () => Country>> = {
   tavara: () => loadCountry(tavaraFile),
@@ -35,6 +36,12 @@ function seedsFrom(range: string): number[] {
 
 it('plays the scripted players and reports the balance', () => {
   const range = process.env.BALANCE_SEEDS ?? '1-300';
+  const terms = Number(process.env.BALANCE_TERMS ?? '1');
+  if (!Number.isInteger(terms) || terms < 1) {
+    throw new Error(
+      `BALANCE_TERMS must be a whole number from 1, but is "${process.env.BALANCE_TERMS}".`,
+    );
+  }
   const wanted = process.env.BALANCE_COUNTRY ?? 'both';
   const out = path.resolve(process.env.BALANCE_OUT ?? 'balance-results.md');
   const seeds = seedsFrom(range);
@@ -52,7 +59,7 @@ it('plays the scripted players and reports the balance', () => {
     const country = load();
     const rows = players.map((player): Row => ({
       player: player.name,
-      summary: summarise(seeds.map((seed) => playGame(country, seed, player.decide))),
+      summary: summarise(seeds.map((seed) => playGame(country, seed, player.decide, terms))),
     }));
     // Every game must reach an ending: a game that throws fails the run here.
     for (const row of rows) expect(row.summary.games).toBe(seeds.length);

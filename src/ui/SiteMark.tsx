@@ -1,5 +1,6 @@
 import {
   formatMoney,
+  isInUseState,
   siteTerms,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
@@ -18,6 +19,12 @@ const SYMBOLS: Readonly<Record<SiteType, string>> = {
   farmRoad: 'M-5,7 L-2,-7 M5,7 L2,-7 M0,6 V3 M0,0 V-3',
   // A store house with its door.
   grainStore: 'M-5,6 V-2 L0,-7 L5,-2 V6Z M-2,6 V2 H2 V6',
+  // Crossed pick and hammer.
+  mine: 'M-6,6 L5,-5 M2,-7 C5,-7 7,-5 7,-2 M6,6 L-4,-4 M-7,-3 L-3,-7',
+  // A wide road with two lanes and their dividing line.
+  trunkRoad: 'M-7,7 L-3,-7 M7,7 L3,-7 M0,7 V4 M0,1 V-2 M0,-5 V-7',
+  // An anchor.
+  port: 'M0,-7 V7 M-2,-5 H2 M-6,1 C-6,5 -3,7 0,7 C3,7 6,5 6,1',
 };
 
 /**
@@ -47,18 +54,29 @@ interface SiteMarkProps {
   readonly planned: boolean;
   readonly palette: MapPalette;
   readonly selected: boolean;
+  /**
+   * Whether the site is a missing link in the chain of the site picked out: one that chain
+   * needs and that is not yet in use.
+   */
+  readonly missingLink: boolean;
+  /** Whether the site is the source of a chain, in use, that earns nothing for want of links. */
+  readonly idle: boolean;
   readonly onSelect: (siteId: string) => void;
 }
 
 /**
  * One site on the map. It is a button: picking it opens the site's card. Each state has
  * its own shape as well as its own colour: an empty site is a dashed marker, one being
- * built wears a ring and says how far it has got, and one in use is solid.
+ * built wears a ring and says how far it has got, and one in use is solid. One in use that
+ * is decaying for want of upkeep also wears the warning triangle and a tag that says so.
+ * A missing link in the chain picked out wears a cross and a tag, and its route is dotted.
  */
-export function SiteMark({ site, status, planned, palette, selected, onSelect }: SiteMarkProps) {
+export function SiteMark(props: SiteMarkProps) {
+  const { site, status, planned, palette, selected, missingLink, idle, onSelect } = props;
   const [x, y] = markerPlace(site);
   const underWay = status.state === 'building' || status.state === 'paused';
-  const inUse = status.state === 'operating';
+  const decaying = status.state === 'decaying';
+  const inUse = isInUseState(status.state);
   // A site not yet begun still has its whole cost to pay, so it says what that is.
   const cost = status.state === 'empty' ? formatMoney(siteTerms(site.type).cost) : null;
   const description = [
@@ -67,6 +85,8 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
     siteStateName(site, status, planned).toLowerCase(),
     ...(underWay ? [`${progressOf(status)} quarters built`] : []),
     ...(cost === null ? [] : [cost]),
+    ...(missingLink ? ['missing link'] : []),
+    ...(idle ? ['earning nothing: its chain is not complete'] : []),
   ].join(', ');
   const tags = [
     ...(planned ? [{ text: 'Planned', fill: palette.selection }] : []),
@@ -74,6 +94,9 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
     ...(status.state === 'paused'
       ? [{ text: `▲ Paused · ${progressOf(status)}`, fill: palette.tagText }]
       : []),
+    ...(decaying ? [{ text: '▲ Decaying', fill: palette.tagText }] : []),
+    ...(missingLink ? [{ text: '✕ Missing link', fill: palette.tagText }] : []),
+    ...(idle ? [{ text: '▲ Earning nothing', fill: palette.tagText }] : []),
     ...(selected ? [{ text: site.name, fill: palette.selection }] : []),
   ];
   return (
@@ -99,6 +122,7 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
           route={site.route}
           built={inUse ? 1 : status.quartersPaid / Math.max(1, status.buildQuarters)}
           started={planned || underWay}
+          missing={missingLink}
           palette={palette}
           selected={selected}
         />
@@ -131,6 +155,8 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        {decaying && <WarningTriangle palette={palette} />}
+        {missingLink && <MissingCross palette={palette} />}
       </g>
       {tags.map((tag, index) => {
         const width = tag.text.length * 6.7 + 22;
@@ -155,21 +181,61 @@ export function SiteMark({ site, status, planned, palette, selected, onSelect }:
   );
 }
 
+/** The warning triangle, worn at the top right of a site's marker while it decays. */
+function WarningTriangle({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <g className="map__site-warning" transform="translate(12,-12)">
+      <path
+        d="M0,-9 L9,7 H-9 Z"
+        fill={palette.tagBackground}
+        stroke={palette.tagText}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M0,-3 V2 M0,4.5 V4.6"
+        stroke={palette.tagText}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </g>
+  );
+}
+
+/** The cross worn at the bottom right of a site's marker while it is a missing link. */
+function MissingCross({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <g className="map__site-missing" transform="translate(12,12)">
+      <circle r="8" fill={palette.tagBackground} stroke={palette.tagText} strokeWidth="1.5" />
+      <path
+        d="M-3.5,-3.5 L3.5,3.5 M3.5,-3.5 L-3.5,3.5"
+        stroke={palette.tagText}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </g>
+  );
+}
+
 interface RouteLineProps {
   readonly route: readonly Point[];
   /** The share of the route that is built, from none (0) to all of it (1). */
   readonly built: number;
   /** Whether building has been planned or begun, which turns the unbuilt part amber. */
   readonly started: boolean;
+  /** Whether the route is a missing link in the chain picked out, which dots its unbuilt part. */
+  readonly missing: boolean;
   readonly palette: MapPalette;
   readonly selected: boolean;
 }
 
 /**
  * A route. The built part is drawn as a road: a pale line in a dark casing. The part
- * still to build is dashed, in amber once work is planned or under way.
+ * still to build is dashed, in amber once work is planned or under way. A route that is a
+ * missing link in the chain picked out is dotted instead, in round dots over a dark line,
+ * which no dash of a possible or started route resembles.
  */
-function RouteLine({ route, built, started, palette, selected }: RouteLineProps) {
+function RouteLine({ route, built, started, missing, palette, selected }: RouteLineProps) {
   const [road, rest] = splitAt(route, built);
   return (
     <g fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -183,7 +249,25 @@ function RouteLine({ route, built, started, palette, selected }: RouteLineProps)
           strokeWidth="9"
         />
       )}
-      {built < 1 && (
+      {built < 1 && missing && (
+        <>
+          <polyline
+            points={line(rest)}
+            stroke={palette.tagBackground}
+            strokeWidth="6"
+            strokeOpacity="0.85"
+          />
+          <polyline
+            className="map__missing-link"
+            points={line(rest)}
+            stroke={palette.tagText}
+            strokeWidth="4"
+            strokeDasharray="0.1 9"
+            strokeLinecap="round"
+          />
+        </>
+      )}
+      {built < 1 && !missing && (
         <polyline
           points={line(rest)}
           stroke={started ? palette.construction : palette.siteLine}

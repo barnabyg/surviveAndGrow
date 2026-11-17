@@ -17,6 +17,11 @@ import type {
 export interface SiteBalance {
   readonly cost: number;
   readonly buildQuarters: number;
+  /**
+   * What keeping the site in good repair costs, in Money units ($100,000) a quarter, from
+   * its first quarter in use. Left unpaid, the site decays (see `balance.upkeep`).
+   */
+  readonly upkeep: number;
   /** What the site in use leaves of each thing it bears on, in thousandths. */
   readonly effects: Readonly<Partial<Record<SiteEffect, number>>>;
   /**
@@ -24,6 +29,12 @@ export interface SiteBalance {
    * whole. A route counts for the region it belongs to.
    */
   readonly infrastructurePermille: number;
+  /**
+   * For a site that plays a part in a chain (`SITE_TYPE_DEFINITIONS`), what it produces or
+   * carries in a quarter, in Money units, while in good repair. A chain yields the least of
+   * its sites' capacities, and a decaying site has only part of its capacity.
+   */
+  readonly capacity?: number;
 }
 
 /**
@@ -141,7 +152,11 @@ export const balance = {
     protests: { belowPermille: 300, outputPermille: 400 },
   },
   election: {
-    /** The government's term, in quarters. The vote is held when the last of them ends. */
+    /**
+     * A term of office, in quarters. The vote is held when the last of them ends, and a
+     * government that wins it begins another term of the same length. There is no limit
+     * on the number of terms.
+     */
     termQuarters: 20,
     /** The share of the vote the government needs to stay in office, in thousandths. */
     winSharePermille: 500,
@@ -196,22 +211,62 @@ export const balance = {
     irrigation: {
       cost: 120,
       buildQuarters: 3,
+      upkeep: 4,
       effects: { harvestWeather: 500 },
       infrastructurePermille: 100,
     },
     farmRoad: {
       cost: 100,
       buildQuarters: 3,
+      upkeep: 3,
       effects: { transportLoss: 500 },
       infrastructurePermille: 150,
     },
     grainStore: {
       cost: 60,
       buildQuarters: 2,
+      upkeep: 2,
       effects: { reserveSpoilage: 750 },
       infrastructurePermille: 100,
     },
+    // The large sites of a chain. Each is slow to build and costs several quarters' tax, so
+    // one started late in a term opens after the election.
+    mine: {
+      cost: 400,
+      buildQuarters: 6,
+      upkeep: 6,
+      effects: {},
+      infrastructurePermille: 50,
+      capacity: 200,
+    },
+    trunkRoad: {
+      cost: 300,
+      buildQuarters: 5,
+      upkeep: 5,
+      effects: {},
+      infrastructurePermille: 200,
+      capacity: 240,
+    },
+    port: {
+      cost: 500,
+      buildQuarters: 8,
+      upkeep: 8,
+      effects: {},
+      infrastructurePermille: 150,
+      capacity: 300,
+    },
   } satisfies Record<SiteType, SiteBalance>,
+  /**
+   * Upkeep. Each quarter the upkeep spending keeps the sites in use in good repair one by
+   * one, in the order building began on them, until what is left will not cover the next:
+   * that site and every one started after it go without, so the newest decay first. A site
+   * that goes without is decaying from the next quarter, and does only
+   * `decayingEffectPermille` thousandths of what it does in good repair, until a quarter in
+   * which its upkeep is paid restores it.
+   */
+  upkeep: {
+    decayingEffectPermille: 500,
+  },
   /**
    * Living standards and prosperity. Every score is in thousandths: a region's living
    * standard is its five parts' scores weighted by `weightsPermille`, which add up to 1000.
@@ -274,6 +329,14 @@ export const balance = {
      * where it begins, so that a figure hovering at the line does not pass it every quarter.
      */
     fallBackMarginPermille: 20,
+  },
+  /** How the game is won. */
+  victory: {
+    /**
+     * The game is won once national prosperity has ended this many quarters running in the
+     * top tier, with debt at a sustainable level (see `victory.ts`).
+     */
+    quartersToHold: 4,
   },
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */

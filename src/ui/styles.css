@@ -596,6 +596,34 @@ p {
   color: var(--muted);
 }
 
+.map-card__chain {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.map-card__links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-card__links li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+
+.map-card__link-state {
+  color: var(--label);
+  font-family: var(--font-figures);
+}
+
 /* The map */
 
 .map {
@@ -738,6 +766,10 @@ p {
   width: 290px;
 }
 
+.timeline__after {
+  width: 190px;
+}
+
 .timeline__table th,
 .timeline__table td {
   padding: 0;
@@ -782,6 +814,17 @@ p {
   background: var(--text);
   color: var(--ink);
   font-weight: 600;
+}
+
+.timeline__quarter--after span {
+  background: none;
+  border: 1px dashed var(--line-strong);
+}
+
+.timeline__bar--after {
+  border: 1.5px dashed var(--line-strong);
+  line-height: 23px;
+  color: var(--text);
 }
 
 .timeline__quarter--harvest span {
@@ -1698,6 +1741,11 @@ p {
 
 .term-figures tbody tr {
   border-top: 1px solid var(--line);
+}
+
+.term-figures td.term-figures__ending {
+  font-family: inherit;
+  font-weight: 400;
 }
 
 .term-figures__trend .trend {

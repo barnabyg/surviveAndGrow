@@ -30,7 +30,7 @@ function reliefBudget(game: GameState, foodRelief = 70): Budget {
   const { agriculture } = game.country.start.budget.spending;
   return {
     taxRatePercent: 40,
-    spending: { agriculture, foodRelief, health: 0, education: 0, security: 0 },
+    spending: { agriculture, foodRelief, health: 0, education: 0, security: 0, upkeep: 0 },
   };
 }
 
