@@ -174,6 +174,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Collapse report',
     path: 'M3,17 H17 M6,17 V11 L8,9 L6,7 V4 M14,17 V12 L12,10 L14,8 V4 M4,4 H9 M11,4 H16',
   },
+  // A star.
+  victory: {
+    label: 'Victory report',
+    path: 'M10,2 L12.4,7.4 L18,8 L13.8,11.8 L15,17.5 L10,14.6 L5,17.5 L6.2,11.8 L2,8 L7.6,7.4 Z',
+  },
   // A tick.
   quiet: {
     label: 'Quiet quarter report',

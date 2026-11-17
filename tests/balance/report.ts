@@ -21,14 +21,15 @@ export function writeUp(country: Country, seeds: string, rows: readonly Row[]): 
   const lines = [
     `### ${country.name}, seeds ${seeds}`,
     '',
-    '| Player | Games | Won | Lost the vote | Lost to famine | Vote share | Treasury at the end | Approval at the end |',
-    '| --- | ---: | ---: | ---: | ---: | --- | --- | --- |',
+    '| Player | Games | Won | Re-elected | Lost the vote | Lost to famine | Vote share | Treasury at the end | Approval at the end |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
     ...rows.map(({ player, summary }) => {
       const famines = summary.famine.reduce((total, region) => total + region.games, 0);
       return `| ${[
         player,
         summary.games,
         share(summary.won, summary.games),
+        share(summary.reelected, summary.games),
         share(summary.lostElection, summary.games),
         share(famines, summary.games),
         spread(summary.voteShare, (permille) => formatPercent(permille, 1)),
@@ -37,7 +38,7 @@ export function writeUp(country: Country, seeds: string, rows: readonly Row[]): 
       ].join(' | ')} |`;
     }),
     '',
-    'Spreads are least / middle / most. Vote share counts only the games that reached the vote.',
+    'Spreads are least / middle / most. Vote share counts only the games that reached the vote. Won is the win on prosperity; re-elected games were still in office when their terms were up.',
     '',
     ...rows.map(({ player, summary }) => {
       const where = summary.famine

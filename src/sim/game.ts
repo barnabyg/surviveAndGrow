@@ -56,6 +56,7 @@ import {
 } from './prosperity';
 import { compileReport, type ReportEntry } from './report';
 import { expectationsIn, nextTier, tierAt, tierEntry } from './tiers';
+import { heldAfter, victoryOf } from './victory';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { scheduleAhead } from './timeline';
@@ -99,6 +100,7 @@ export function createGame(country: Country, seed: number): GameState {
     dilemmasAnswered: [],
     tier,
     startingTier: tier,
+    prosperousQuarters: 0,
     outcome: { status: 'playing' },
   };
 }
@@ -178,12 +180,19 @@ export function resolveQuarter(
       : endEventsAfterHarvest(state.events);
   const begun = beginStruck(remaining, chance.struck, date);
   const collapse = collapseOf(state.country, approval.regions);
-  // The vote is held as the term's last quarter ends, unless the state has already fallen.
+  // The vote is held as each term's last quarter ends, unless the state has already fallen.
   const election =
     collapse === null && isElectionQuarter(state.date)
-      ? holdElection(approval.regions, chance.swing)
+      ? holdElection(approval.regions, chance.swing, state.date)
       : null;
-  const outcome: Outcome = collapse ?? election?.outcome ?? { status: 'playing' };
+  // The game is won on prosperity held long enough, by a government still in office.
+  const defeat = election?.defeat ?? null;
+  const prosperousQuarters = heldAfter(state.prosperousQuarters, tier);
+  const victory =
+    collapse === null && defeat === null
+      ? victoryOf(prosperousQuarters, { treasury: finances.treasury })
+      : null;
+  const outcome: Outcome = collapse ?? defeat ?? victory?.outcome ?? { status: 'playing' };
 
   const events = [...remaining, ...begun];
   const dilemmasAnswered = [...state.dilemmasAnswered, ...answer.answered];
@@ -207,6 +216,7 @@ export function resolveQuarter(
   // Within one seriousness the report keeps this order, so what ends the game leads it.
   const entries: ReportEntry[] = [
     ...(collapse === null ? [] : [collapseEntry(collapse)]),
+    ...(victory === null ? [] : [victory.entry]),
     ...(election === null ? [] : [election.entry]),
     ...answer.entries,
     ...(budget.cut ? [cutEntry(budget)] : []),
@@ -249,6 +259,7 @@ export function resolveQuarter(
       dilemma,
       dilemmasAnswered,
       tier,
+      prosperousQuarters,
       outcome,
     },
     report: {
@@ -271,6 +282,7 @@ export function resolveQuarter(
         contributions: food.population,
       },
       harvest: food.harvest,
+      election: election?.result ?? null,
       entries: compileReport(entries),
     },
     spendingCut: budget.cut,

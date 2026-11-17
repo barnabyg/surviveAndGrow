@@ -67,7 +67,7 @@ export const DILEMMA_EFFECT_KINDS = ['treasury', 'reserve', 'regionGrain', 'appr
 export const OUTCOME_STATUSES = ['playing', 'won', 'lost'] as const;
 
 /** The ways a game can end. */
-export const ENDING_CAUSES = ['famine', 'election'] as const;
+export const ENDING_CAUSES = ['famine', 'election', 'prosperity'] as const;
 
 /** The kinds of thing that can be built. A country file says where each could stand. */
 export const SITE_TYPES = ['irrigation', 'farmRoad', 'grainStore'] as const;
@@ -258,6 +258,7 @@ export const REPORT_KINDS = [
   'tier',
   'election',
   'collapse',
+  'victory',
   'quiet',
 ] as const;
 export type ReportKind = (typeof REPORT_KINDS)[number];

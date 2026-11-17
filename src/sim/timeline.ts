@@ -3,6 +3,8 @@ import { dateOfQuarter, isHarvestQuarter, quarterNumber } from './calendar';
 import type { Country } from './country';
 import type { Project } from './projects';
 import { siteTerms } from './sites';
+import type { Outcome } from './state';
+import { termBounds, termOf } from './terms';
 import type { GameDate } from './types';
 import type { ProjectStatus } from './vocabulary';
 
@@ -21,26 +23,43 @@ export interface TermQuarter {
 
 /** The whole term, quarter by quarter, up to and including the election quarter. */
 export interface TermCalendar {
+  /** Which term it is, counted from 1. */
+  readonly term: number;
   readonly termQuarters: number;
+  /** The term's first quarter and its last, the election quarter, counted like a quarter's number. */
+  readonly first: number;
+  readonly last: number;
   /** The quarter being decided, counted like a quarter's number. */
   readonly now: number;
   readonly quarters: readonly TermQuarter[];
 }
 
-export function termCalendar(game: { readonly date: GameDate }): TermCalendar {
+/**
+ * The term the game is in, or, once it is over, the term it ended in. A government that wins
+ * the election moves on to the next term's calendar.
+ */
+export function termCalendar(game: {
+  readonly date: GameDate;
+  readonly outcome?: Outcome;
+}): TermCalendar {
   const { termQuarters } = balance.election;
+  const term = termOf(game);
+  const { first, last } = termBounds(term);
   const now = quarterNumber(game.date);
   return {
+    term,
     termQuarters,
+    first,
+    last,
     now,
     quarters: Array.from({ length: termQuarters }, (_, index): TermQuarter => {
-      const number = index + 1;
+      const number = first + index;
       const date = dateOfQuarter(number);
       return {
         number,
         date,
         harvest: isHarvestQuarter(date.quarter),
-        election: number === termQuarters,
+        election: number === last,
         when: number < now ? 'past' : number === now ? 'now' : 'ahead',
       };
     }),
@@ -66,8 +85,8 @@ export interface SiteSchedule {
    */
   readonly opens: number;
   /**
-   * How many quarters of the term the site is in use for, the election quarter included.
-   * It is 0 when the site would open only after the vote.
+   * How many quarters of the current term the site is in use for, the election quarter
+   * included. It is 0 when the site would open only after the vote.
    */
   readonly inUseBeforeVote: number;
 }
@@ -110,11 +129,12 @@ function scheduleOf(game: Building, siteId: string, delay: number): SiteSchedule
   const quartersLeft = siteTerms(site.type).buildQuarters - (project?.quartersPaid ?? 0);
   const opens =
     project?.opened == null ? now + quartersLeft + delay : quarterNumber(project.opened);
+  const { first, last } = termBounds(termOf(game));
   return {
     siteId,
     state: project?.status ?? 'planned',
     begins: project === undefined ? now : quarterNumber(project.began),
     opens,
-    inUseBeforeVote: Math.max(0, balance.election.termQuarters - opens + 1),
+    inUseBeforeVote: Math.max(0, last - Math.max(opens, first) + 1),
   };
 }

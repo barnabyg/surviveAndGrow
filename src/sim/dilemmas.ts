@@ -7,6 +7,7 @@ import { foodStatus, quarterlyNeed } from './food';
 import type { ReportEntry } from './report';
 import { drawAt } from './rng';
 import type { GameState, RegionState } from './state';
+import { termBounds, termOfQuarter } from './terms';
 import { formatMoney, formatPoints, formatTonnes } from './text';
 import type { Contribution, GameDate, Money, Quarter } from './types';
 import { DILEMMA_TYPES, UNREST_LEVELS, type DilemmaPlace, type DilemmaType } from './vocabulary';
@@ -278,8 +279,9 @@ type Position = Pick<
 export function ariseDilemma(position: Position, rolls: readonly number[]): PendingDilemma | null {
   const { earliestQuarter, quartersClearBeforeElection } = balance.dilemmaRules;
   const quarter = quarterNumber(position.date);
-  const last = balance.election.termQuarters - quartersClearBeforeElection;
-  if (quarter < earliestQuarter || quarter > last) return null;
+  // Every term ends clear of them, so none waits on a government that may not survive the vote.
+  const { last } = termBounds(termOfQuarter(quarter));
+  if (quarter < earliestQuarter || quarter > last - quartersClearBeforeElection) return null;
 
   const arising = DILEMMA_TYPES.flatMap((type, index) => {
     const roll = rolls[index] ?? 1;

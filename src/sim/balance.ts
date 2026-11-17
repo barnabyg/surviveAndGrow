@@ -141,7 +141,11 @@ export const balance = {
     protests: { belowPermille: 300, outputPermille: 400 },
   },
   election: {
-    /** The government's term, in quarters. The vote is held when the last of them ends. */
+    /**
+     * A term of office, in quarters. The vote is held when the last of them ends, and a
+     * government that wins it begins another term of the same length. There is no limit
+     * on the number of terms.
+     */
     termQuarters: 20,
     /** The share of the vote the government needs to stay in office, in thousandths. */
     winSharePermille: 500,
@@ -274,6 +278,14 @@ export const balance = {
      * where it begins, so that a figure hovering at the line does not pass it every quarter.
      */
     fallBackMarginPermille: 20,
+  },
+  /** How the game is won. */
+  victory: {
+    /**
+     * The game is won once national prosperity has ended this many quarters running in the
+     * top tier, with debt at a sustainable level (see `victory.ts`).
+     */
+    quartersToHold: 4,
   },
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */

@@ -2,6 +2,7 @@ import {
   advanceQuarter,
   approvalStatus,
   createGame,
+  electionStatus,
   type Country,
   type Decisions,
   type GameState,
@@ -10,15 +11,19 @@ import {
 /** A scripted player: what it decides for the quarter, given the game as it stands. */
 export type Decide = (game: GameState) => Decisions;
 
-/** How one whole game ended, and the figures it ended on. */
+/**
+ * How one game ended, and the figures it ended on. A government that keeps winning governs
+ * on without limit, so a game is played for a number of terms at most: one, unless asked for
+ * more. One still in office when they are up ends `reelected`; `won` is the win on prosperity.
+ */
 export interface GameResult {
   readonly seed: number;
-  readonly ending: 'won' | 'lostElection' | 'famine';
-  /** The region whose famine brought the state down, or null when the game ran to the vote. */
+  readonly ending: 'won' | 'reelected' | 'lostElection' | 'famine';
+  /** The region whose famine brought the state down, or null when it did not. */
   readonly regionId: string | null;
   /** How many quarters were played. */
   readonly quarters: number;
-  /** The share of the vote, in thousandths, or null when no election was held. */
+  /** The share of the vote at the last election held, in thousandths, or null when none was. */
   readonly voteShare: number | null;
   /** The treasury as the game ended, in Money units. */
   readonly treasury: number;
@@ -26,29 +31,38 @@ export interface GameResult {
   readonly approval: number;
 }
 
-/** Plays one whole game through the simulation's public interface, with no screen. */
-export function playGame(country: Country, seed: number, decide: Decide): GameResult {
+/**
+ * Plays one game through the simulation's public interface, with no screen, until it ends or
+ * the number of terms given is up.
+ */
+export function playGame(country: Country, seed: number, decide: Decide, terms = 1): GameResult {
   let game = createGame(country, seed);
+  const limit = terms * electionStatus(game).termQuarters;
   let quarters = 0;
-  while (game.outcome.status === 'playing') {
-    game = advanceQuarter(game, decide(game)).state;
+  let voteShare: number | null = null;
+  while (game.outcome.status === 'playing' && quarters < limit) {
+    const result = advanceQuarter(game, decide(game));
+    voteShare = result.report.election?.voteShare ?? voteShare;
+    game = result.state;
     quarters += 1;
   }
   const { outcome } = game;
   const figures = {
     seed,
     quarters,
+    voteShare,
     treasury: game.treasury,
     approval: approvalStatus(game).approval,
   };
-  return outcome.cause === 'famine'
-    ? { ...figures, ending: 'famine', regionId: outcome.regionId, voteShare: null }
-    : {
-        ...figures,
-        ending: outcome.status === 'won' ? 'won' : 'lostElection',
-        regionId: null,
-        voteShare: outcome.voteShare,
-      };
+  if (outcome.status === 'playing') return { ...figures, ending: 'reelected', regionId: null };
+  switch (outcome.cause) {
+    case 'famine':
+      return { ...figures, ending: 'famine', regionId: outcome.regionId };
+    case 'election':
+      return { ...figures, ending: 'lostElection', regionId: null };
+    case 'prosperity':
+      return { ...figures, ending: 'won', regionId: null };
+  }
 }
 
 /** The least, the middle and the most of a set of figures. */
@@ -62,10 +76,11 @@ export interface Spread {
 export interface Summary {
   readonly games: number;
   readonly won: number;
+  readonly reelected: number;
   readonly lostElection: number;
   /** The games lost to famine, by the region that collapsed, the most frequent first. */
   readonly famine: readonly { readonly regionId: string; readonly games: number }[];
-  /** The share of games won, in thousandths. */
+  /** The share of games won on prosperity, in thousandths. */
   readonly winPermille: number;
   /** The share of the vote in the games that reached an election, or null when none did. */
   readonly voteShare: Spread | null;
@@ -86,6 +101,7 @@ export function summarise(results: readonly GameResult[]): Summary {
   return {
     games: results.length,
     won: count('won'),
+    reelected: count('reelected'),
     lostElection: count('lostElection'),
     famine: [...byRegion]
       .map(([regionId, games]) => ({ regionId, games }))

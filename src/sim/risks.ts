@@ -51,10 +51,9 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 export function risksAhead(state: GameState, decisions: Decisions): readonly Risk[] {
   checkDecisions(state, decisions, false);
   const { horizonQuarters, hungerShowsQuartersLater, weatherOutlooks } = balance.risks;
-  // Nothing is looked for beyond the election, which ends the game.
-  const quartersLeft = electionStatus(state).quartersAway + 1;
-  const watched = Math.min(horizonQuarters, quartersLeft);
-  const played = Math.min(horizonQuarters + hungerShowsQuartersLater, quartersLeft);
+  // A government that wins the election governs on, so the dangers beyond it count too.
+  const watched = horizonQuarters;
+  const played = horizonQuarters + hungerShowsQuartersLater;
 
   const possible = eventsAhead(state, played);
   // What is supposed of events: none begin, each begins alone, and all begin together.
@@ -412,10 +411,8 @@ function electionRisk(scope: Scope): Risk[] {
 
   // Approval on polling day down each path that reaches it. One that famine ends never votes.
   const pollingDay = (path: Path) => {
-    const last = path.at(-1)?.state;
-    return last?.outcome.status !== 'playing' && last?.outcome.cause === 'election'
-      ? nationalApproval(last.regions)
-      : null;
+    const vote = path.find((resolved) => resolved.electionHeld)?.state;
+    return vote === undefined ? null : nationalApproval(vote.regions);
   };
   const defeat = (path: Path) => {
     const approval = pollingDay(path);

@@ -46,7 +46,7 @@ export {
   type Harvest,
   type RegionHarvest,
 } from './food';
-export { seasonOf } from './calendar';
+export { dateOfQuarter, seasonOf } from './calendar';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
@@ -58,6 +58,8 @@ export {
   type ProsperityStatus,
 } from './prosperity';
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
+export { termRecords, type TermRecord } from './terms';
+export { victoryStatus, type VictoryStatus } from './victory';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export {
   loadSave,
@@ -79,6 +81,7 @@ export {
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,
+  type ElectionResult,
   type GameState,
   type Outcome,
   type Preview,
