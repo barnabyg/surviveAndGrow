@@ -14,6 +14,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import {
   bothCountries,
+  startingAt,
   tavara,
   tavaraAsShipped,
   testlandAsShipped,
@@ -338,10 +339,106 @@ describe('the risks ahead in Tavara', () => {
 });
 
 /**
+ * Each country started at a tax rate that holds approval where it can be worked out by hand,
+ * as the election tests do: the baseline is 45.5%, each point of tax above 18% costs 1.2
+ * points, and the starting spending on health, education and security is worth +0.3 in
+ * Tavara and +14.0 in Testland. The campaign moves the vote by a whole number of tenths of a
+ * point from 3.0 down to 3.0 up, 61 swings in all, and 50.0% wins.
+ */
+const polls = [
+  {
+    name: 'Tavara',
+    file: tavaraFile,
+    // Tax at 12% holds approval at 53.0%: the worst swing still leaves 50.0%.
+    safeTax: 12,
+    // Tax at 15% holds it at 49.4%: the 36 swings of +0.5 or less lose, 590 in a thousand.
+    closeTax: 15,
+    closeApproval: '49.4%',
+    // Tax at 21% holds it at 42.2%: no swing wins.
+    lostTax: 21,
+    lostApproval: '42.2%',
+  },
+  {
+    name: 'Testland',
+    file: testlandFile,
+    // Tax at 20% holds approval at 57.1%.
+    safeTax: 20,
+    // Tax at 26% holds it at 49.9%: the 31 swings of 0.0 or less lose, 508 in a thousand.
+    closeTax: 26,
+    closeApproval: '49.9%',
+    // Tax at 30% holds it at 45.1%.
+    lostTax: 30,
+    lostApproval: '45.1%',
+  },
+] as const;
+
+describe.each(polls)('the risk of losing the vote in $name', (poll) => {
+  it('is not listed while the vote lies beyond the four quarters looked at', () => {
+    const game = play(createGame(startingAt(poll.file, poll.lostTax), 3), 15);
+    expect(game.date).toEqual({ year: 4, quarter: 4 });
+
+    expect(ofKind(risksAhead(game, idle(game)), 'election')).toBe(undefined);
+  });
+
+  it('is all but certain once the vote is in sight and no swing could win it', () => {
+    const game = play(createGame(startingAt(poll.file, poll.lostTax), 3), 16);
+    expect(game.date).toEqual({ year: 5, quarter: 1 });
+
+    expect(risksAhead(game, idle(game))).toEqual([
+      {
+        kind: 'election',
+        likelihood: 'almostCertain',
+        headline: 'Election defeat',
+        reason: `The vote is held in 3 quarters. Approval is on course for ${poll.lostApproval} by then, the campaign can move the vote by 3.0 points either way, and 50% is needed to win.`,
+        withinQuarters: 4,
+      },
+    ]);
+  });
+
+  it('is graded by the share of the campaign’s swings that would lose a close vote', () => {
+    const game = play(createGame(startingAt(poll.file, poll.closeTax), 3), 19);
+    expect(game.date).toEqual({ year: 5, quarter: 4 });
+
+    expect(ofKind(risksAhead(game, idle(game)), 'election')).toEqual({
+      kind: 'election',
+      likelihood: 'possible',
+      headline: 'Election defeat',
+      reason: `The vote is held this quarter. Approval is on course for ${poll.closeApproval} by then, the campaign can move the vote by 3.0 points either way, and 50% is needed to win.`,
+      withinQuarters: 1,
+    });
+  });
+
+  it('is not listed when no swing could lose the vote', () => {
+    let game = play(createGame(startingAt(poll.file, poll.safeTax), 3), 16);
+
+    for (; game.outcome.status === 'playing'; game = play(game, 1)) {
+      expect(ofKind(risksAhead(game, idle(game)), 'election')).toBe(undefined);
+    }
+    expect(game.outcome).toMatchObject({ status: 'won', cause: 'election' });
+  });
+});
+
+describe('the risk of losing the vote in Tavara', () => {
+  it('is listed as remote when only the worst swing would lose, however small that chance', () => {
+    const game = play(createGame(startingAt(tavaraFile, 12), 3), 19);
+    // Health cut from $7.0m to $6.0m in the last quarter takes approval from 53.0% to 52.9%.
+    // Only the swing of 3.0 points down then loses: one in 61, under the 2% that would
+    // otherwise be too little to list. An outcome that ends the game is never left out.
+    const budget: Budget = { ...game.budget, spending: { ...game.budget.spending, health: 60 } };
+
+    expect(ofKind(risksAhead(game, { budget }), 'election')).toMatchObject({
+      likelihood: 'remote',
+      reason: expect.stringContaining('on course for 52.9%') as string,
+    });
+  });
+});
+
+/**
  * The fairness rule: nothing that ends the game may come unannounced. A player who does
- * nothing is played over many seeds, and every game that famine ended must have listed
- * famine in that region while the player could still act: in the quarter before the last
- * one at the latest, and in the quarters leading up to it.
+ * nothing is played over many seeds. Every game that famine ended must have listed famine in
+ * that region while the player could still act: in the quarter before the last one at the
+ * latest, and in the quarters leading up to it. Every game lost at the vote must have listed
+ * defeat in the election quarter and in the quarter before it.
  */
 describe.each([
   ['Tavara as it ships', tavaraAsShipped],
@@ -362,7 +459,7 @@ describe.each([
   // A dilemma must be answered, so this player takes the option that costs nothing.
   const doNothing = (game: GameState) => answering(game, idle(game));
 
-  it('is warned of famine in the region before it can end the game', () => {
+  it('is warned of famine in the region, or of defeat, before either can end the game', () => {
     const seeds = 300;
     let famines = 0;
     for (let seed = 1; seed <= seeds; seed += 1) {
@@ -371,7 +468,17 @@ describe.each([
         states.push(advanceQuarter(game, doNothing(game)).state);
       }
       const { outcome } = states.at(-1) ?? {};
-      if (outcome?.status !== 'lost' || outcome.cause !== 'famine') continue;
+      if (outcome?.status !== 'lost') continue;
+
+      if (outcome.cause === 'election') {
+        // The last state is the result. The two before it are the election quarter and the
+        // quarter before, in both of which the player could still have acted.
+        for (const game of states.slice(-3, -1)) {
+          const warned = ofKind(risksAhead(game, doNothing(game)), 'election');
+          expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
+        }
+        continue;
+      }
       famines += 1;
 
       // The last state is the collapse and the one before it the fatal quarter. The three
@@ -385,5 +492,37 @@ describe.each([
     }
     // The check means nothing unless famine really does end a good share of these games.
     expect(famines).toBeGreaterThan(seeds / 5);
+  });
+});
+
+/**
+ * The same rule for the vote, where it is close enough for the campaign to decide it. Few
+ * of the games above reach polling day, so these countries are started where approval holds
+ * within a point of the 50% needed, and the seed's swing settles each game.
+ */
+describe.each(polls)('a government on a knife edge in $name', (poll) => {
+  it('is warned of defeat in the election quarter and the one before', () => {
+    const seeds = 200;
+    let defeats = 0;
+    let wins = 0;
+    for (let seed = 1; seed <= seeds; seed += 1) {
+      const states = [createGame(startingAt(poll.file, poll.closeTax), seed)];
+      for (let game = states[0]; game?.outcome.status === 'playing'; game = states.at(-1)) {
+        states.push(advanceQuarter(game, idle(game)).state);
+      }
+      const { outcome } = states.at(-1) ?? {};
+      expect(outcome).toMatchObject({ cause: 'election' });
+      if (outcome?.status === 'won') wins += 1;
+      if (outcome?.status !== 'lost') continue;
+      defeats += 1;
+
+      for (const game of states.slice(-3, -1)) {
+        const warned = ofKind(risksAhead(game, idle(game)), 'election');
+        expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
+      }
+    }
+    // The check means nothing unless the vote really does go both ways.
+    expect(defeats).toBeGreaterThan(seeds / 5);
+    expect(wins).toBeGreaterThan(seeds / 5);
   });
 });

@@ -139,7 +139,7 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 };
 
 /** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
-export const RISK_KINDS = ['famine', 'treasury', 'strikes'] as const;
+export const RISK_KINDS = ['famine', 'treasury', 'strikes', 'election'] as const;
 export type RiskKind = (typeof RISK_KINDS)[number];
 
 /** How likely a risk is, from the least to the most. A risk less likely than remote is not listed. */

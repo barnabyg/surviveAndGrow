@@ -1,11 +1,13 @@
+import { nationalApproval } from './approval';
+import { sum } from './arithmetic';
 import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName } from './country';
-import { electionStatus } from './election';
+import { defeatChancePermille, electionStatus } from './election';
 import { eventName, eventsThatMayBegin, type PossibleEvent } from './events';
 import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
 import type { Decisions, GameState, RegionState } from './state';
-import { formatPercent } from './text';
+import { formatPercent, formatPoints } from './text';
 import {
   FOOD_STAGES,
   LIKELIHOODS,
@@ -34,11 +36,11 @@ export interface Risk {
 export const riskHorizonQuarters = balance.risks.horizonQuarters;
 
 /**
- * The dangers of the coming quarters: famine in a region, strikes, and a treasury that runs
- * out. It plays the quarters ahead with the real rules, holding the decisions as they are,
+ * The dangers of the coming quarters: famine in a region, strikes, a treasury that runs
+ * out, and a lost election. It plays the quarters ahead with the real rules, holding the decisions as they are,
  * once for each course the weather could take and each event that could still begin, and
  * weighs how many of those lead to each danger. The most likely comes first, and a danger
- * too unlikely to matter is left out. It changes nothing and draws nothing from the random
+ * too unlikely to matter is left out, unless it would end the game. It changes nothing and draws nothing from the random
  * generator.
  * @throws RangeError when a decision is outside what the game allows.
  * @throws Error when the game is already over.
@@ -70,6 +72,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
     ...treasuryRisk(whole),
     ...strikeRisk(whole),
+    ...electionRisk(whole),
   ];
   const rank = (risk: Risk) => LIKELIHOODS.indexOf(risk.likelihood);
   const order = (risk: Risk) => RISK_KINDS.indexOf(risk.kind);
@@ -360,6 +363,59 @@ function strikeRisk(scope: Scope): Risk[] {
       reason: `Approval in ${where} is on course to fall below ${formatPercent(mark.belowPermille, 0)} ${when(soonest)}. ${what} cut what a region produces.`,
       ...(threatened.length === 1 ? { regionId: first.region.id } : {}),
       withinQuarters: soonest + 1,
+    },
+  ];
+}
+
+/**
+ * The election is lost when approval on polling day, moved by the campaign's swing, falls
+ * short of the share needed. It is looked for once the vote is inside the horizon. Losing
+ * ends the game, so it is listed whenever any swing could lose, however small the chance.
+ */
+function electionRisk(scope: Scope): Risk[] {
+  const { state, possible, courses } = scope;
+  const { quartersAway, needed } = electionStatus(state);
+  if (quartersAway + 1 > balance.risks.horizonQuarters) return [];
+
+  // Approval on polling day down each path that reaches it. One that famine ends never votes.
+  const pollingDay = (path: Path) => {
+    const last = path.at(-1)?.state;
+    return last?.outcome.status !== 'playing' && last?.outcome.cause === 'election'
+      ? nationalApproval(last.regions)
+      : null;
+  };
+  const defeat = (path: Path) => {
+    const approval = pollingDay(path);
+    return approval === null ? 0 : defeatChancePermille(approval);
+  };
+  if (!courses.some((course) => course.paths.some((path) => defeat(path) > 0))) return [];
+
+  // Each course of weather counts for its chance of defeat with no new event, and for the
+  // worst that events could make of it by the chance that any of them begins.
+  const anyEvent = 1 - possible.reduce((none, event) => none * (1 - event.chance), 1);
+  const chance = Math.round(
+    sum(
+      courses.map((course) => {
+        const unprompted = defeat(course.paths[0] ?? []);
+        const worst = Math.max(...course.paths.map(defeat));
+        return (course.weight * (unprompted + (worst - unprompted) * anyEvent)) / 1000;
+      }),
+    ),
+  );
+  // The figure given is the one ordinary weather and no new event lead to, where that
+  // course reaches the vote.
+  const typical = courses[Math.floor(courses.length / 2)]?.paths[0] ?? [];
+  const approval =
+    pollingDay(typical) ??
+    courses.flatMap((course) => course.paths.flatMap((path) => pollingDay(path) ?? [])).at(0);
+  if (approval === undefined) return [];
+  return [
+    {
+      kind: 'election',
+      likelihood: likelihoodOf(chance) ?? 'remote',
+      headline: 'Election defeat',
+      reason: `The vote is held ${when(quartersAway)}. Approval is on course for ${formatPercent(approval)} by then, the campaign can move the vote by ${formatPoints(balance.election.swingPermille)} either way, and ${formatPercent(needed, 0)} is needed to win.`,
+      withinQuarters: quartersAway + 1,
     },
   ];
 }

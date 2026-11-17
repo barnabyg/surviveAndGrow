@@ -116,13 +116,14 @@ What is in the game:
   beside the buttons, its steps differ in lightness, and every region also carries its value as
   text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
   relief are drawn the same under all of them.
-- The left column lists the risks ahead: famine in a region, strikes, and a treasury that runs
-  out. The game plays the next four quarters with your committed decisions held as they are, once
+- The left column lists the risks ahead: famine in a region, strikes, a treasury that runs out,
+  and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
   for each course the weather could take and each drought that could still begin, and lists each
   danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
-  further. A danger too unlikely to matter is left out, and a risk to one region picks that
-  region out on the map. Famine cannot end the game without having been listed first.
+  further. A danger too unlikely to matter is left out, unless it would end the game, and a risk
+  to one region picks that region out on the map. Neither famine nor a lost election can end the
+  game without having been listed first.
 - Some quarters open with a dilemma: a neighbour offering grain, merchants wanting to buy from
   the reserve, a region in drought asking for emergency works, strikers asking for talks,
   teachers demanding a pay rise, a donor offering a grant with conditions. Each has two or three

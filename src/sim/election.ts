@@ -45,6 +45,20 @@ export function forecastVoteShare(approval: number): Range {
   return { min: shareOf(approval - swingPermille), max: shareOf(approval + swingPermille) };
 }
 
+/**
+ * The chance, in thousandths, that an election held at a level of national approval is
+ * lost: the share of the campaign's swings, each as likely as the next, that would leave
+ * the vote short of what is needed. It draws nothing from the random generator.
+ */
+export function defeatChancePermille(approval: number): number {
+  const { swingPermille, winSharePermille } = balance.election;
+  let losing = 0;
+  for (let swing = -swingPermille; swing <= swingPermille; swing += 1) {
+    if (shareOf(approval + swing) < winSharePermille) losing += 1;
+  }
+  return Math.round((losing * 1000) / (2 * swingPermille + 1));
+}
+
 /** How a game that reached its election ended. */
 export type ElectionOutcome = Extract<Outcome, { readonly cause: 'election' }>;
 

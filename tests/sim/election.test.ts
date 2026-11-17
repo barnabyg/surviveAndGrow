@@ -12,21 +12,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { withDroughtChance } from './countries';
-
-/**
- * A country with no drought that starts at a chosen tax rate, with a treasury that lasts
- * the term. Approval starts where the starting budget settles it, so a game played with
- * that budget keeps the same approval to polling day, and it can be worked out by hand.
- */
-function startingAt(file: unknown, taxRate: number): Country {
-  const copy = structuredClone(file) as {
-    start: { treasury: number; budget: { taxRate: number } };
-  };
-  copy.start.budget.taxRate = taxRate;
-  copy.start.treasury = 500;
-  return withDroughtChance(copy, {});
-}
+import { startingAt, withDroughtChance } from './countries';
 
 /**
  * Each country with no drought, and approval worked out by hand from the approval rules.

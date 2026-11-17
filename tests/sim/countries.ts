@@ -70,3 +70,18 @@ export function withChances(
   if (chances.reserve !== undefined) copy.start.foodReserve = chances.reserve;
   return loadCountry(copy);
 }
+
+/**
+ * A country with no drought and no dilemmas that starts at a chosen tax rate, with a
+ * treasury that lasts the term. Approval starts where the starting budget settles it, so a
+ * game played with that budget keeps the same approval to polling day, and it can be worked
+ * out by hand.
+ */
+export function startingAt(file: unknown, taxRate: number): Country {
+  const copy = structuredClone(file) as {
+    start: { treasury: number; budget: { taxRate: number } };
+  };
+  copy.start.budget.taxRate = taxRate;
+  copy.start.treasury = 500;
+  return withDroughtChance(copy, {});
+}

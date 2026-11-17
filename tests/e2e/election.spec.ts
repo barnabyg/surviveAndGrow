@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, outlook, startGame, tavaraWithDroughtIn, treasury } from './app';
+import {
+  decisions,
+  endQuarters,
+  outlook,
+  risks,
+  startGame,
+  tavaraWithDroughtIn,
+  treasury,
+} from './app';
 
 const nextElection = (page: Page) =>
   page.getByRole('banner').getByRole('group', { name: 'Next election' });
@@ -126,7 +134,18 @@ test('a government the country has turned against loses the election', async ({ 
   await decisions(page).getByRole('slider', { name: 'Tax rate' }).fill('40');
   await decisions(page).getByRole('button', { name: 'Commit budget' }).click();
 
-  await endQuarters(page, 20);
+  // Defeat joins the risks once the vote is inside the four quarters they look at.
+  await endQuarters(page, 15);
+  await expect(page.getByRole('banner').getByText('Year 4 · Quarter 4')).toBeVisible();
+  await expect(risks(page).getByText('Election defeat')).toHaveCount(0);
+  await endQuarters(page, 1);
+  const defeat = risks(page).getByRole('listitem').filter({ hasText: 'Election defeat' });
+  await expect(defeat).toContainText('The vote is held in 3 quarters.');
+  await expect(defeat).toContainText('50% is needed to win.');
+  await expect(defeat.getByRole('img', { name: 'Likelihood 5 of 5' })).toBeVisible();
+  await expect(defeat).toContainText('Almost certain');
+
+  await endQuarters(page, 4);
 
   const summary = page.getByRole('dialog', { name: 'You lost the election' });
   await expect(summary).toBeVisible();
