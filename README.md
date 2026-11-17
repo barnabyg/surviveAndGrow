@@ -183,10 +183,14 @@ What is in the game:
   project the treasury cannot pay for opens a quarter later for each quarter it waits.
 - Buttons above the map choose what it shows. The country view is the land as it looks. The food
   lens colours each region by its food situation, and the approval lens by its approval, with
-  hatching over a region on strike and cross-hatching over one in protest. Each lens has a scale
+  hatching over a region on strike and cross-hatching over one in protest. The living-standards
+  lens colours each region by its living standard, and the infrastructure lens by its
+  infrastructure access, from none upwards; one site in use moves a region up a step. The
+  infrastructure lens also marks every link missing from a chain, ringed, with no site picked
+  out, so you can see what each region has built and what it still lacks. Each lens has a scale
   beside the buttons, its steps differ in lightness, and every region also carries its value as
   text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
-  relief are drawn the same under all of them.
+  relief are drawn under all of them.
 - The left column lists the risks ahead: famine in a region, strikes, a treasury that runs out,
   and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
   for each course the weather could take and each drought that could still begin, and lists each

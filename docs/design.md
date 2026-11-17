@@ -171,6 +171,13 @@ stylised vector art.
   unlocks new site types.
 - **Lenses:** the map switches between country, food, approval, living
   standards and infrastructure views.
+- **The infrastructure lens shows what is built and what is missing.** Each
+  region is coloured by its infrastructure access, in steps that differ in
+  lightness as well as hue, and labelled with it. Every region starts with
+  none, and one ordinary site in use moves its region up a step. Every link
+  missing from a chain is marked and ringed under this lens, with no site
+  picked out, and its route dotted more boldly; the lens's scale explains the
+  ring.
 
 ### Showing living standards
 
