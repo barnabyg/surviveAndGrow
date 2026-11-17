@@ -1,17 +1,24 @@
 import { spendingFault, taxRateFault, type Budget } from './budget';
+import { contains } from './geometry';
 import { MONEY_PER_MILLION, type Money } from './types';
 import {
   DECORATION_KINDS,
+  DILEMMA_TYPES,
   EVENT_TYPES,
   LABEL_SIDES,
   MAP_FRAME,
   SETTLEMENT_SIZES,
+  SITE_FORMS,
+  SITE_TYPE_NAMES,
+  SITE_TYPES,
   SPENDING_AREAS,
   TERRAINS,
   type DecorationKind,
+  type DilemmaType,
   type EventType,
   type LabelSide,
   type SettlementSize,
+  type SiteType,
   type SpendingArea,
   type Terrain,
 } from './vocabulary';
@@ -49,6 +56,25 @@ export interface Settlement {
   /** Which side of the settlement its name is written on. */
   readonly labelSide: LabelSide;
 }
+
+interface SiteDetails {
+  readonly id: string;
+  readonly type: SiteType;
+  readonly name: string;
+  /** The region the site belongs to, which is the region its effect falls on. */
+  readonly regionId: string;
+}
+
+/**
+ * Somewhere the country file allows something to be built. A site of one type stands in
+ * one place; a site of another runs along a route, which may cross into other regions.
+ */
+export type Site = SiteDetails &
+  (
+    | { readonly form: 'place'; readonly at: Point }
+    /** The line the route follows from one end to the other. */
+    | { readonly form: 'route'; readonly route: readonly Point[] }
+  );
 
 export interface Neighbour {
   readonly id: string;
@@ -88,6 +114,13 @@ export interface Country {
   };
   readonly regions: readonly Region[];
   readonly settlements: readonly Settlement[];
+  /** Where things can be built, in the country file's order. */
+  readonly sites: readonly Site[];
+  /**
+   * The chance, from 0 to 1, that each dilemma arises as a quarter begins, when the
+   * conditions it needs hold. One the file does not mention never arises.
+   */
+  readonly dilemmaLikelihood: Readonly<Record<DilemmaType, number>>;
   readonly start: {
     readonly treasury: Money;
     /** The budget in force when the game starts. */
@@ -95,6 +128,11 @@ export interface Country {
     /** The national food reserve when the game starts, in tonnes. */
     readonly foodReserve: number;
   };
+  /**
+   * The country file this country was read from, as its author wrote it. A saved game
+   * carries it, and reading it again gives this same country.
+   */
+  readonly source: unknown;
 }
 
 /** The name of a region, as reports and the interface write it. */
@@ -293,34 +331,109 @@ function describe(value: unknown): string {
   return typeof value === 'object' ? 'an object' : 'missing';
 }
 
-/** How likely each event is in a region. An event the file does not mention never strikes. */
-function readEventLikelihood(
+/**
+ * A chance, from 0 to 1, for each of the engine's words of one kind, such as each event. A
+ * word the file does not mention gets no chance, and a word the engine does not have is a fault.
+ */
+function readChances<Word extends string>(
   reader: Reader,
-  region: Json,
+  parent: Json,
+  key: string,
   path: string,
-): Record<EventType, number> {
-  const likelihoodPath = join(path, 'eventLikelihood');
-  const written =
-    region.eventLikelihood === undefined ? {} : reader.object(region, 'eventLikelihood', path);
-  for (const key of Object.keys(written)) {
-    if (!EVENT_TYPES.some((type) => type === key)) {
-      reader.fault(
-        join(likelihoodPath, key),
-        `is not an event this game has (${EVENT_TYPES.join(', ')})`,
-      );
+  words: readonly Word[],
+  kind: string,
+): Record<Word, number> {
+  const chancesPath = join(path, key);
+  const written = parent[key] === undefined ? {} : reader.object(parent, key, path);
+  for (const name of Object.keys(written)) {
+    if (!words.some((word) => word === name)) {
+      reader.fault(join(chancesPath, name), `is not ${kind} this game has (${words.join(', ')})`);
     }
   }
   return Object.fromEntries(
-    EVENT_TYPES.map((type) => {
-      if (written[type] === undefined) return [type, 0];
-      const chance = reader.number(written, type, likelihoodPath);
+    words.map((word) => {
+      if (written[word] === undefined) return [word, 0];
+      const chance = reader.number(written, word, chancesPath);
       if (chance < 0 || chance > 1) {
-        reader.fault(join(likelihoodPath, type), `is ${chance}, but must be a chance from 0 to 1`);
-        return [type, 0];
+        reader.fault(join(chancesPath, word), `is ${chance}, but must be a chance from 0 to 1`);
+        return [word, 0];
       }
-      return [type, chance];
+      return [word, chance];
     }),
-  ) as Record<EventType, number>;
+  ) as Record<Word, number>;
+}
+
+/**
+ * A site, which must be given the way its type is built: a position for one that stands in
+ * one place, a route for one that runs along a line. A position must lie in the site's own
+ * region. A route must stay inside the country and start or end in its region.
+ */
+function readSite(
+  reader: Reader,
+  site: Json,
+  path: string,
+  regions: readonly Region[],
+  ids: Map<string, string>,
+  names: Map<string, string>,
+): Site {
+  const regionId = reader.text(site, 'region', path);
+  const named = regions.find((candidate) => candidate.id === regionId);
+  if (regionId !== '' && named === undefined) {
+    reader.fault(join(path, 'region'), `is "${regionId}", which is not the id of a region`);
+  }
+  // A shape already reported as too small to enclose anything cannot place a site.
+  const encloses = (candidate: Region) => candidate.shape.length >= 3;
+  const region = named !== undefined && encloses(named) ? named : undefined;
+  const country = regions.every(encloses) ? regions : [];
+  const details: SiteDetails = {
+    id: reader.unique(site, 'id', path, ids),
+    type: reader.oneOf(site, 'type', path, SITE_TYPES),
+    name: reader.unique(site, 'name', path, names),
+    regionId,
+  };
+  // A type the game does not know says nothing about how the site should be given.
+  if (!SITE_TYPES.some((type) => type === site.type))
+    return { ...details, form: 'place', at: [0, 0] };
+  const typeName = SITE_TYPE_NAMES[details.type].toLowerCase();
+
+  if (SITE_FORMS[details.type] === 'route') {
+    if (site.at !== undefined) {
+      reader.fault(
+        join(path, 'at'),
+        `must be left out: a ${typeName} runs along a line, given by "route"`,
+      );
+    }
+    const before = reader.faults.length;
+    const route = reader.points(site, 'route', path, 2);
+    if (reader.faults.length === before) {
+      route.forEach((point, index) => {
+        if (country.length > 0 && !country.some((candidate) => contains(candidate.shape, point))) {
+          reader.fault(
+            `${join(path, 'route')}[${index}]`,
+            `is (${point[0]}, ${point[1]}), outside the country`,
+          );
+        }
+      });
+      const ends = [route[0], route.at(-1)];
+      if (region && !ends.some((end) => end !== undefined && contains(region.shape, end))) {
+        reader.fault(join(path, 'route'), `must start or end in its region "${regionId}"`);
+      }
+    }
+    return { ...details, form: 'route', route };
+  }
+
+  if (site.route !== undefined) {
+    reader.fault(
+      join(path, 'route'),
+      `must be left out: a ${typeName} stands in one place, given by "at"`,
+    );
+  }
+  const before = reader.faults.length;
+  const at = reader.point(site, 'at', path);
+  if (reader.faults.length === before && region && !contains(region.shape, at)) {
+    reader.fault(join(path, 'at'), `is (${at[0]}, ${at[1]}), outside its region "${regionId}"`);
+  }
+  return { ...details, form: 'place', at };
 }
 
 /**
@@ -389,7 +502,7 @@ export function loadCountry(file: unknown): Country {
     population: reader.wholeNumber(item, 'population', path, 1),
     output: reader.money(item, 'output', path),
     farmland: reader.wholeNumber(item, 'farmland', path, 0),
-    eventLikelihood: readEventLikelihood(reader, item, path),
+    eventLikelihood: readChances(reader, item, 'eventLikelihood', path, EVENT_TYPES, 'an event'),
   }));
   if (Array.isArray(file.regions) && regions.length === 0) {
     reader.fault('regions', 'must list at least one region');
@@ -411,6 +524,13 @@ export function loadCountry(file: unknown): Country {
         item.labelSide === undefined ? 'right' : reader.oneOf(item, 'labelSide', path, LABEL_SIDES),
     };
   });
+
+  // Reports and the treasury's breakdown name sites, so two sites may not share a name.
+  const siteIds = new Map<string, string>();
+  const siteNames = new Map<string, string>();
+  const sites = reader.list(file, 'sites', '', (item, path) =>
+    readSite(reader, item, path, regions, siteIds, siteNames),
+  );
 
   const map = reader.object(file, 'map', '');
   const neighbourIds = new Map<string, string>();
@@ -444,11 +564,22 @@ export function loadCountry(file: unknown): Country {
     },
     regions,
     settlements,
+    sites,
+    dilemmaLikelihood: readChances(
+      reader,
+      file,
+      'dilemmaLikelihood',
+      '',
+      DILEMMA_TYPES,
+      'a dilemma',
+    ),
     start: {
       treasury: reader.money(start, 'treasury', 'start'),
       budget: readBudget(reader, reader.object(start, 'budget', 'start'), 'start.budget'),
       foodReserve: reader.wholeNumber(start, 'foodReserve', 'start', 0),
     },
+    // A copy, so that nothing done to the file afterwards reaches the country.
+    source: JSON.parse(JSON.stringify(file)) as unknown,
   };
 
   if (reader.faults.length > 0) throw new CountryFileError(reader.faults);

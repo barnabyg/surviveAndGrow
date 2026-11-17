@@ -4,15 +4,19 @@ import {
   exactly,
   foodStatus,
   formatMoney,
+  formatPercent,
   formatTonnes,
   MONEY_PER_MILLION,
   monthsOfFood,
   previewQuarter,
+  regionName,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
   type Budget,
   type GameState,
   type Range,
+  type RegionUnrest,
+  UNREST_KINDS,
 } from '../sim';
 import { formatRange, formatSigned } from './format';
 
@@ -24,6 +28,10 @@ interface BudgetPanelProps {
   readonly pending: Budget;
   /** Where food relief is being sent, which bears on the food projections. */
   readonly reliefRegionId: string | null;
+  /** The sites building is to start on this quarter, whose instalments are a fixed cost. */
+  readonly startProjects: readonly string[];
+  /** The answer given to the quarter's dilemma, if there is one, which bears on them too. */
+  readonly dilemmaChoice: string | null;
   readonly onChange: (pending: Budget) => void;
   readonly onCommit: () => void;
   readonly onReset: () => void;
@@ -38,11 +46,14 @@ export function countChanges(pending: Budget, committed: Budget): number {
 }
 
 export function BudgetPanel(props: BudgetPanelProps) {
-  const { game, committed, pending, reliefRegionId, onChange, onCommit, onReset } = props;
+  const { game, committed, pending, reliefRegionId, startProjects, dilemmaChoice } = props;
+  const held = { reliefRegionId, startProjects, dilemmaChoice };
+  const { onChange, onCommit, onReset } = props;
   const changes = countChanges(pending, committed);
   // The same projection twice: where the committed budget leads, and where the sliders would.
-  const before = previewQuarter(game, { budget: committed, reliefRegionId });
-  const after = previewQuarter(game, { budget: pending, reliefRegionId });
+  const before = previewQuarter(game, { ...held, budget: committed });
+  const after = previewQuarter(game, { ...held, budget: pending });
+  const building = after.projectSpending.max > 0 || after.pausedSites.length > 0;
   const { taxRatePercent, spending } = budgetLimits;
   const food = foodStatus(game);
 
@@ -109,6 +120,23 @@ export function BudgetPanel(props: BudgetPanelProps) {
         ))}
       </div>
 
+      {building && (
+        <div className="fixed-costs" role="group" aria-label="Fixed costs">
+          <div className="fixed-costs__row">
+            <span>Projects</span>
+            <span className="fixed-costs__note">Fixed: instalments on what is being built</span>
+            <span className="slider__value">{formatRange(after.projectSpending, formatMoney)}</span>
+          </div>
+          {after.pausedSites.map((siteId) => (
+            <p key={siteId} className="warning-note">
+              ▲ Building will pause at{' '}
+              {game.country.sites.find((site) => site.id === siteId)?.name ?? siteId}: the treasury
+              cannot cover its instalment.
+            </p>
+          ))}
+        </div>
+      )}
+
       <section className="outlook" aria-labelledby="outlook-title">
         <h3 className={changes > 0 ? 'label label--pending' : 'label'} id="outlook-title">
           {changes > 0 ? 'If you commit this change' : 'Outlook at the current settings'}
@@ -117,6 +145,36 @@ export function BudgetPanel(props: BudgetPanelProps) {
         <Projection label="Spending" before={before.spending} after={after.spending} onlyIfMoved />
         <Projection label="Balance" before={before.balance} after={after.balance} onlyIfMoved />
         <Projection label="Treasury next quarter" before={before.treasury} after={after.treasury} />
+        <Projection
+          label="Approval next quarter"
+          before={before.approval}
+          after={after.approval}
+          format={formatPercent}
+        />
+        <Projection
+          label="Approval is heading for"
+          before={before.approvalHeading}
+          after={after.approvalHeading}
+          format={formatPercent}
+        />
+        <Projection
+          label="Vote share forecast"
+          before={before.voteShare}
+          after={after.voteShare}
+          format={formatPercent}
+          onlyIfMoved
+        />
+        {UNREST_KINDS.map((unrest) => {
+          const regions = regionsIn(after.unrest, unrest);
+          return (
+            regions.length > 0 && (
+              <p key={unrest} className="warning-note">
+                ▲ When the quarter ends, {unrest} in{' '}
+                {regions.map((regionId) => regionName(game.country, regionId)).join(', ')}.
+              </p>
+            )
+          );
+        })}
         <Projection
           label="Harvest forecast"
           before={before.harvest}
@@ -161,6 +219,11 @@ export function BudgetPanel(props: BudgetPanelProps) {
       </div>
     </section>
   );
+}
+
+/** The regions that will be in one kind of unrest. */
+function regionsIn(unrest: readonly RegionUnrest[], kind: RegionUnrest['unrest']): string[] {
+  return unrest.filter((entry) => entry.unrest === kind).map((entry) => entry.regionId);
 }
 
 interface TotalProps {

@@ -1,8 +1,9 @@
+import { percentOff } from './arithmetic';
 import { balance } from './balance';
 import { entersBeforeHarvest } from './calendar';
 import { regionName, type Country } from './country';
 import { nextRandom, type RngState } from './rng';
-import type { Notice } from './state';
+import type { ReportEntry } from './report';
 import type { GameDate, Quarter } from './types';
 import { EVENT_TYPES, type EventType } from './vocabulary';
 
@@ -36,31 +37,68 @@ export interface ActiveEvent {
 
 const definitions: Readonly<Record<EventType, EventDefinition>> = balance.events;
 
+/** An event striking a region: it begins there unless one of its type is already under way. */
+export interface EventStrike {
+  readonly type: EventType;
+  readonly regionId: string;
+}
+
+/** An event that could begin in a region, and the chance the country file gives it. */
+export interface PossibleEvent extends EventStrike {
+  /** The chance, from 0 to 1, that it strikes. */
+  readonly chance: number;
+}
+
+/** Every event that could begin as the calendar moves into `date`, where the chance is not nil. */
+export function eventsThatMayBegin(country: Country, date: GameDate): PossibleEvent[] {
+  return EVENT_TYPES.filter((type) =>
+    definitions[type].conditions.beginsInQuarters.includes(date.quarter),
+  ).flatMap((type) =>
+    country.regions
+      .filter((region) => region.eventLikelihood[type] > 0)
+      .map((region) => ({ type, regionId: region.id, chance: region.eventLikelihood[type] })),
+  );
+}
+
 /**
  * Rolls for every event that can begin as the calendar moves into `date`. One number is
  * drawn for every region whatever its likelihood, so the same seed gives the same weather
  * in every country file.
  */
-export function beginEvents(
+export function rollEvents(
   country: Country,
-  active: readonly ActiveEvent[],
   date: GameDate,
   rng: RngState,
-): { readonly begun: readonly ActiveEvent[]; readonly rng: RngState } {
-  const begun: ActiveEvent[] = [];
+): { readonly struck: readonly EventStrike[]; readonly rng: RngState } {
+  const struck: EventStrike[] = [];
   let current = rng;
   for (const type of EVENT_TYPES) {
     if (!definitions[type].conditions.beginsInQuarters.includes(date.quarter)) continue;
     for (const region of country.regions) {
       const roll = nextRandom(current);
       current = roll.state;
-      const strikes = roll.value / 2 ** 32 < region.eventLikelihood[type];
-      if (strikes && !isActive(active, type, region.id)) {
-        begun.push({ type, regionId: region.id, began: date });
+      if (roll.value / 2 ** 32 < region.eventLikelihood[type]) {
+        struck.push({ type, regionId: region.id });
       }
     }
   }
-  return { begun, rng: current };
+  return { struck, rng: current };
+}
+
+/** The events that begin on `date`: each strike, unless one of its type is already under way there. */
+export function beginStruck(
+  active: readonly ActiveEvent[],
+  struck: readonly EventStrike[],
+  date: GameDate,
+): ActiveEvent[] {
+  return struck
+    .filter((strike) => !isActive(active, strike.type, strike.regionId))
+    .map((strike) => ({ type: strike.type, regionId: strike.regionId, began: date }));
+}
+
+/** The name of a kind of event, as the player reads it: "Drought". */
+export function eventName(type: EventType): string {
+  return definitions[type].name;
 }
 
 /** Splits the events into those a harvest brings to an end and those that carry on. */
@@ -74,15 +112,26 @@ export function endEventsAfterHarvest(active: readonly ActiveEvent[]): {
   };
 }
 
-/** What the events now in force leave of a region's harvest, in thousandths. */
-export function harvestPermille(active: readonly ActiveEvent[], regionId: string): number {
+/**
+ * What the events now in force leave of a region's harvest, in thousandths. `hold` is what
+ * irrigation leaves of an event's hold on the region: 1000 where there is none.
+ */
+export function harvestPermille(
+  active: readonly ActiveEvent[],
+  regionId: string,
+  hold: number,
+): number {
   return active
     .filter((event) => event.regionId === regionId)
     .reduce(
-      (permille, event) =>
-        Math.floor((permille * definitions[event.type].effects.harvestPermille) / 1000),
+      (permille, event) => Math.floor((permille * leftBy(definitions[event.type], hold)) / 1000),
       1000,
     );
+}
+
+/** What one event leaves of a harvest, in thousandths, where it has only `hold` of its grip. */
+function leftBy(definition: EventDefinition, hold: number): number {
+  return 1000 - Math.floor(((1000 - definition.effects.harvestPermille) * hold) / 1000);
 }
 
 /**
@@ -95,9 +144,10 @@ export function worstHarvestPermille(
   active: readonly ActiveEvent[],
   regionId: string,
   quarter: Quarter,
+  hold: number,
 ): number {
   const region = country.regions.find((candidate) => candidate.id === regionId);
-  let worst = harvestPermille(active, regionId);
+  let worst = harvestPermille(active, regionId, hold);
   for (const type of EVENT_TYPES) {
     const definition = definitions[type];
     const mayStillBegin =
@@ -107,7 +157,7 @@ export function worstHarvestPermille(
       (region?.eventLikelihood[type] ?? 0) > 0 &&
       !isActive(active, type, regionId);
     if (mayStillBegin) {
-      worst = Math.floor((worst * definition.effects.harvestPermille) / 1000);
+      worst = Math.floor((worst * leftBy(definition, hold)) / 1000);
     }
   }
   return worst;
@@ -123,35 +173,40 @@ function isActive(active: readonly ActiveEvent[], type: EventType, regionId: str
   );
 }
 
-/** The notice the turn report carries when an event begins. */
-export function beginNotice(country: Country, event: ActiveEvent): Notice {
+/** What the turn report says when an event begins, given the hold it has on its region. */
+export function beginEntry(country: Country, event: ActiveEvent, hold: number): ReportEntry {
   const definition = definitions[event.type];
   return {
-    title: `${definition.name} in ${regionName(country, event.regionId)}`,
-    detail: `${definition.announcement.begins} This year’s harvest there will be ${harvestCutPercent(definition)}% smaller than it would have been.`,
-    tone: 'danger',
+    kind: 'event',
+    seriousness: 'serious',
+    headline: `${definition.name} in ${regionName(country, event.regionId)}`,
+    cause: `${definition.announcement.begins} This year’s harvest there will be ${harvestCutPercent(definition, hold)}% smaller than it would have been.`,
     regionId: event.regionId,
   };
 }
 
-/** The notice the turn report carries when an event ends. */
-export function endNotice(country: Country, event: ActiveEvent): Notice {
+/** What the turn report says when an event ends. */
+export function endEntry(country: Country, event: ActiveEvent): ReportEntry {
   const definition = definitions[event.type];
   return {
-    title: `The ${definition.name.toLowerCase()} in ${regionName(country, event.regionId)} has ended`,
-    detail: definition.announcement.ends,
-    tone: 'info',
+    kind: 'event',
+    seriousness: 'notable',
+    headline: `The ${definition.name.toLowerCase()} in ${regionName(country, event.regionId)} has ended`,
+    cause: definition.announcement.ends,
     regionId: event.regionId,
   };
 }
 
-/** An event in force and what it does, in a few words: "Drought · harvest −40%". */
-export function describeEvent(event: ActiveEvent): string {
+/**
+ * An event in force and what it does to its region, in a few words: "Drought · harvest
+ * −40%", or less where irrigation leaves it only `hold` thousandths of its grip.
+ */
+export function describeEventWithHold(event: ActiveEvent, hold: number): string {
   const definition = definitions[event.type];
-  return `${definition.name} · harvest −${harvestCutPercent(definition)}%`;
+  return `${definition.name} · harvest −${harvestCutPercent(definition, hold)}%`;
 }
 
 /** How much of a harvest the event takes, as a whole percentage. */
-function harvestCutPercent(definition: EventDefinition): number {
-  return Math.round((1000 - definition.effects.harvestPermille) / 10);
+function harvestCutPercent(definition: EventDefinition, hold: number): number {
+  return percentOff(leftBy(definition, hold));
 }

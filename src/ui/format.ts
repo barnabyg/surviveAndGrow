@@ -1,4 +1,9 @@
-import { formatMoney, formatTonnes, type Money, type Range } from '../sim';
+import { formatMoney, formatTonnes, type GameDate, type Money, type Range } from '../sim';
+
+/** A date as a sentence writes it: `Year 5, Quarter 4`. */
+export function formatDate(date: GameDate): string {
+  return `Year ${date.year}, Quarter ${date.quarter}`;
+}
 
 /** A movement of money with its sign: `+$9.4m`, `−$11.0m`, or `$0.0m` for none. */
 export function formatSigned(amount: Money): string {

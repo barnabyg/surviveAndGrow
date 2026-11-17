@@ -13,24 +13,8 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
+import { withDroughtChance } from './countries';
 import { faultsOf, withValue } from './files';
-
-/** A country file with the yearly chance of drought set for each region; unnamed regions get none. */
-function withDroughtChance(
-  file: unknown,
-  chance: Record<string, number>,
-  reserve?: number,
-): Country {
-  const copy = structuredClone(file) as {
-    regions: { id: string; eventLikelihood?: Record<string, number> }[];
-    start: { foodReserve: number };
-  };
-  for (const region of copy.regions) {
-    region.eventLikelihood = { drought: chance[region.id] ?? 0 };
-  }
-  if (reserve !== undefined) copy.start.foodReserve = reserve;
-  return loadCountry(copy);
-}
 
 /** Each country with one region that drought strikes every single year. */
 const scenarios = [
@@ -106,11 +90,12 @@ describe.each(scenarios)('a drought in $name', ({ file, regionId, regionName }) 
 
     expect(state.date).toEqual({ year: 1, quarter: 2 });
     expect(state.events).toEqual([{ type: 'drought', regionId, began: { year: 1, quarter: 2 } }]);
-    expect(report.notices).toContainEqual({
-      title: `Drought in ${regionName}`,
-      detail:
+    expect(report.entries).toContainEqual({
+      kind: 'event',
+      seriousness: 'serious',
+      headline: `Drought in ${regionName}`,
+      cause:
         'The rains have failed. This year’s harvest there will be 40% smaller than it would have been.',
-      tone: 'danger',
       regionId,
     });
   });
@@ -134,16 +119,20 @@ describe.each(scenarios)('a drought in $name', ({ file, regionId, regionName }) 
     const { state, reports } = play(createGame(stricken(), 1), 4, neglect);
 
     expect(state.events).toEqual([]);
-    expect(reports[3]?.notices.map((notice) => notice.title)).toContain(
+    expect(reports[3]?.entries.map((entry) => entry.headline)).toContain(
       `The drought in ${regionName} has ended`,
     );
   });
 
   it('never comes where the country file gives it no chance', () => {
-    const { states } = play(createGame(spared(), 1), 40, (game) => ({
-      budget: reliefBudget(game, 0),
-      reliefRegionId: null,
-    }));
+    // Two whole terms, each of which ends with its election after 20 quarters.
+    const states = [1, 2].flatMap(
+      (seed) =>
+        play(createGame(spared(), seed), 20, (game) => ({
+          budget: reliefBudget(game, 0),
+          reliefRegionId: null,
+        })).states,
+    );
 
     expect(states).toHaveLength(40);
     expect(states.every((state) => state.events.length === 0)).toBe(true);
@@ -200,9 +189,10 @@ describe.each(scenarios)('a drought in $name', ({ file, regionId, regionName }) 
         status: 'lost',
         cause: 'famine',
         regionId,
+        headline: 'The state has collapsed',
         summary: `Famine held ${regionName} for 2 quarters running. The state has collapsed.`,
       });
-      expect(played.reports.at(-1)?.notices.map((notice) => notice.title)).toContain(
+      expect(played.reports.at(-1)?.entries.map((entry) => entry.headline)).toContain(
         'The state has collapsed',
       );
     });
@@ -337,7 +327,7 @@ describe('event likelihoods in a country file', () => {
       entry.eventLikelihood.drought,
     ]);
 
-    expect(likelihoods).toContainEqual(['The Dry East', 0.3]);
+    expect(likelihoods).toContainEqual(['The Dry East', 0.35]);
     expect(likelihoods).toContainEqual(['Lowmere Plains', 0]);
   });
 

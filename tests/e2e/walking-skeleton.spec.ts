@@ -2,7 +2,8 @@ import { expect, test } from '@playwright/test';
 import { startGame } from './app';
 
 test('a player starts a game and ends a quarter', async ({ page }) => {
-  await startGame(page);
+  // The country built into the game, exactly as it ships.
+  await startGame(page, { asShipped: true });
 
   const topBar = page.getByRole('banner');
   await expect(topBar.getByRole('heading', { name: 'Republic of Tavara' })).toBeVisible();

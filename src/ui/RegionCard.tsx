@@ -1,7 +1,9 @@
 import {
   describeEvent,
+  describeUnrest,
   FOOD_STAGE_NAMES,
   formatCount,
+  formatPercent,
   formatTonnes,
   type GameState,
   type Preview,
@@ -28,16 +30,17 @@ export function RegionCard(props: RegionCardProps) {
   const events = game.events.filter((event) => event.regionId === regionId);
   const shortfall = preview.shortfalls.find((entry) => entry.regionId === regionId)?.shortfall;
   const relieved = reliefRegionId === regionId;
+  const unrest = describeUnrest(state.unrest);
 
   return (
-    <section className="region-card" aria-labelledby="region-card-title">
+    <section className="map-card" aria-labelledby="region-card-title">
       <div>
         <div className="label label--pending">Region · {region.terrain}</div>
-        <h2 className="region-card__name" id="region-card-title">
+        <h2 className="map-card__name" id="region-card-title">
           {region.name}
         </h2>
       </div>
-      <dl className="region-card__facts">
+      <dl className="map-card__list">
         <div>
           <dt>People</dt>
           <dd>{formatCount(state.population)}</dd>
@@ -50,13 +53,18 @@ export function RegionCard(props: RegionCardProps) {
           <dt>In store</dt>
           <dd>{formatTonnes(state.foodStock)}</dd>
         </div>
+        <div>
+          <dt>Approval</dt>
+          <dd>{formatPercent(state.approval)}</dd>
+        </div>
       </dl>
+      {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
       {events.map((event) => (
         <p key={event.type} className="warning-note">
-          ▲ {describeEvent(event)}
+          ▲ {describeEvent(game, event)}
         </p>
       ))}
-      <p className={shortfall === undefined ? 'region-card__note' : 'warning-note'}>
+      <p className={shortfall === undefined ? 'map-card__note' : 'warning-note'}>
         {shortfall === undefined
           ? 'Its people have enough to eat this quarter.'
           : `▲ Its people will go short of ${formatTonnes(shortfall)} this quarter.`}

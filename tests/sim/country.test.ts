@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadCountry, MAP_FRAME } from '../../src/sim';
+import { loadCountry, MAP_FRAME, siteTerms } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { tavara, testland } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
@@ -31,6 +31,75 @@ describe('a valid country file', () => {
 
   it('uses a map frame with a 3:2 aspect ratio', () => {
     expect(MAP_FRAME.width / MAP_FRAME.height).toBe(3 / 2);
+  });
+
+  it('describes the sites of Tavara where something could be built', () => {
+    const country = tavara();
+
+    expect(country.sites.map((site) => [site.name, site.type, site.regionId, site.form])).toEqual([
+      ['Farm road, Arden to Lowmere', 'farmRoad', 'lowmere-plains', 'route'],
+      ['Lowmere irrigation', 'irrigation', 'lowmere-plains', 'place'],
+      ['Lowmere grain store', 'grainStore', 'lowmere-plains', 'place'],
+      ['Dustwell irrigation', 'irrigation', 'dry-east', 'place'],
+      ['Southbank grain store', 'grainStore', 'south-delta', 'place'],
+      ['Farm road, Westhaven to Arden', 'farmRoad', 'salt-coast', 'route'],
+      ['Farm road, Korrgate to Arden', 'farmRoad', 'korr-highlands', 'route'],
+    ]);
+  });
+
+  it('describes the sites of the second country the same way, one of each type', () => {
+    const country = testland();
+
+    expect(country.sites).toEqual([
+      {
+        id: 'north-irrigation',
+        type: 'irrigation',
+        name: 'North irrigation',
+        regionId: 'northfield',
+        form: 'place',
+        at: [290, 330],
+      },
+      {
+        id: 'alpha-store',
+        type: 'grainStore',
+        name: 'Alpha grain store',
+        regionId: 'northfield',
+        form: 'place',
+        at: [440, 440],
+      },
+      {
+        id: 'sand-road',
+        type: 'farmRoad',
+        name: 'Farm road, Alpha to Beta',
+        regionId: 'sandreach',
+        form: 'route',
+        route: [
+          [385, 385],
+          [540, 400],
+          [695, 418],
+        ],
+      },
+    ]);
+  });
+});
+
+describe('the types of site', () => {
+  it('each have a cost, a build time and an effect', () => {
+    expect(siteTerms('irrigation')).toEqual({
+      cost: 120,
+      buildQuarters: 3,
+      effect: 'Weather and drought move its region’s harvest 50% less.',
+    });
+    expect(siteTerms('farmRoad')).toEqual({
+      cost: 100,
+      buildQuarters: 3,
+      effect: '50% less of its region’s surplus is lost on the way to the national reserve.',
+    });
+    expect(siteTerms('grainStore')).toEqual({
+      cost: 60,
+      buildQuarters: 2,
+      effect: '25% less of the national reserve spoils each quarter.',
+    });
   });
 });
 
@@ -144,9 +213,95 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it has no regions', () => {
-    const file = withValue(withValue(testlandFile, ['regions'], []), ['settlements'], []);
+    const empty = withValue(withValue(testlandFile, ['regions'], []), ['settlements'], []);
+    const file = withValue(empty, ['sites'], []);
 
     expect(faultsOf(file)).toEqual(['regions must list at least one region.']);
+  });
+
+  it('when it lists no sites at all', () => {
+    const file = without(testlandFile, ['sites']);
+
+    expect(faultsOf(file)).toEqual(['sites is missing.']);
+  });
+
+  it('when a site is of a type the game does not know', () => {
+    const file = withValue(testlandFile, ['sites', 0, 'type'], 'airport');
+
+    expect(faultsOf(file)).toEqual([
+      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore.',
+    ]);
+  });
+
+  it('when a site names a region that does not exist', () => {
+    const file = withValue(testlandFile, ['sites', 1, 'region'], 'atlantis');
+
+    expect(faultsOf(file)).toEqual([
+      'sites[1].region is "atlantis", which is not the id of a region.',
+    ]);
+  });
+
+  it('when two sites share an identifier', () => {
+    const file = withValue(testlandFile, ['sites', 1, 'id'], 'north-irrigation');
+
+    expect(faultsOf(file)).toEqual([
+      'sites[1].id repeats "north-irrigation", already used by sites[0].',
+    ]);
+  });
+
+  it('when two sites share a name', () => {
+    const file = withValue(testlandFile, ['sites', 1, 'name'], 'North irrigation');
+
+    expect(faultsOf(file)).toEqual([
+      'sites[1].name repeats "North irrigation", already used by sites[0].',
+    ]);
+  });
+
+  it('when a site that stands in one place is outside its region', () => {
+    const file = withValue(testlandFile, ['sites', 0, 'at'], [700, 300]);
+
+    expect(faultsOf(file)).toEqual(['sites[0].at is (700, 300), outside its region "northfield".']);
+  });
+
+  it('when a site that stands in one place is given a route', () => {
+    const route = valueAt(testlandFile, ['sites', 2, 'route']);
+    const file = withValue(without(testlandFile, ['sites', 1, 'at']), ['sites', 1, 'route'], route);
+
+    expect(faultsOf(file)).toEqual([
+      'sites[1].route must be left out: a grain store stands in one place, given by "at".',
+      'sites[1].at is missing.',
+    ]);
+  });
+
+  it('when a site that runs along a route is given a position', () => {
+    const file = withValue(
+      without(testlandFile, ['sites', 2, 'route']),
+      ['sites', 2, 'at'],
+      [600, 400],
+    );
+
+    expect(faultsOf(file)).toEqual([
+      'sites[2].at must be left out: a farm road runs along a line, given by "route".',
+      'sites[2].route is missing.',
+    ]);
+  });
+
+  it('when a route is too short to lead anywhere', () => {
+    const file = withValue(testlandFile, ['sites', 2, 'route'], [[600, 400]]);
+
+    expect(faultsOf(file)).toEqual(['sites[2].route needs at least 2 points, but has 1.']);
+  });
+
+  it('when a route leaves the country', () => {
+    const file = withValue(testlandFile, ['sites', 2, 'route', 1], [540, 100]);
+
+    expect(faultsOf(file)).toEqual(['sites[2].route[1] is (540, 100), outside the country.']);
+  });
+
+  it('when a route neither starts nor ends in its region', () => {
+    const file = withValue(testlandFile, ['sites', 2, 'route', 2], [500, 418]);
+
+    expect(faultsOf(file)).toEqual(['sites[2].route must start or end in its region "sandreach".']);
   });
 
   it('and every fault is reported at once', () => {

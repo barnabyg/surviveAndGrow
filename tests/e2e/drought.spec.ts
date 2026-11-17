@@ -1,19 +1,16 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, foodReserve, situation, startGame } from './app';
+import {
+  decisions,
+  endQuarters,
+  foodReserve,
+  reports,
+  risks,
+  situation,
+  startGame,
+  tavaraWithDroughtIn,
+} from './app';
 
-/** Tavara as it ships, except that drought strikes the Dry East every year. */
-function tavaraWithDrought(): unknown {
-  const file = path.join(import.meta.dirname, '..', '..', 'src', 'countries', 'tavara.json');
-  const country = JSON.parse(readFileSync(file, 'utf8')) as {
-    regions: { id: string; eventLikelihood: { drought: number } }[];
-  };
-  for (const region of country.regions) {
-    region.eventLikelihood = { drought: region.id === 'dry-east' ? 1 : 0 };
-  }
-  return country;
-}
+const tavaraWithDrought = () => tavaraWithDroughtIn(['dry-east']);
 
 const map = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
 
@@ -80,8 +77,12 @@ test('a drought left alone worsens by stages to famine and ends the game', async
 
   await endQuarters(page, 1);
   await expect(map(page).getByText('▲ Food: Famine')).toBeVisible();
-  await expect(situation(page).getByText('Famine in The Dry East')).toBeVisible();
+  // The report says what happened, and the risks ahead what comes next if nothing is done.
+  await expect(reports(page).getByText('Famine in The Dry East')).toBeVisible();
   await expect(situation(page).getByText(/18,000 people have died/)).toBeVisible();
+  await expect(risks(page).getByRole('button', { name: /Famine in The Dry East/ })).toContainText(
+    'Famine has hold of it. Another quarter of it and the state collapses.',
+  );
 
   await endQuarters(page, 1);
   const gameOver = page.getByRole('dialog', { name: 'The state has collapsed' });
@@ -90,7 +91,17 @@ test('a drought left alone worsens by stages to famine and ends the game', async
     'Famine held The Dry East for 2 quarters running. The state has collapsed.',
   );
 
-  // The only way on is a new game.
+  // It is the same summary an election ends in: the outcome, its cause and the term's figures.
+  await expect(gameOver).toContainText('You have lost');
+  await expect(gameOver).toContainText(
+    'Your government fell after 8 quarters of a 20-quarter term.',
+  );
+  await expect(gameOver).toContainText('food relief sent in time would have held the famine off');
+  const figures = gameOver.getByRole('table', { name: 'The term in figures' });
+  await expect(figures.getByRole('row', { name: 'Treasury' })).toContainText('$42.0m');
+  await expect(gameOver.getByRole('button', { name: 'Replay this game' })).toBeVisible();
+
+  // The way on is the same game again or a new one.
   await gameOver.getByRole('button', { name: 'Start a new game' }).click();
   await expect(page.getByRole('button', { name: 'Start new game' })).toBeVisible();
 });

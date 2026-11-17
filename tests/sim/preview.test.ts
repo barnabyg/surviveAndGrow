@@ -99,7 +99,7 @@ describe.each(bothCountries)('previewing a quarter in %s', (_name, country) => {
         max: report.treasury.change,
       });
       expect(preview.spendingCut).toBe(
-        report.notices.some((notice) => notice.title === 'Spending was cut'),
+        report.entries.some((entry) => entry.headline === 'Spending was cut'),
       );
       game = state;
     }

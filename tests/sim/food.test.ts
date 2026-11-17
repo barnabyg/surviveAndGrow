@@ -53,15 +53,20 @@ function withAgriculture(budget: Budget, agriculture: number): Budget {
   return { ...budget, spending: { ...budget.spending, agriculture } };
 }
 
-/** Testland with the same farmland in both regions and no droughts, so only the terrain differs. */
+/**
+ * Testland with the same farmland in both regions and neither droughts nor dilemmas, so
+ * only the terrain differs.
+ */
 function evenTestland(): Country {
   const file = structuredClone(testlandFile) as {
     regions: { farmland: number; eventLikelihood?: Record<string, number> }[];
+    dilemmaLikelihood?: Record<string, number>;
   };
   for (const region of file.regions) {
     region.farmland = 100;
     region.eventLikelihood = {};
   }
+  file.dilemmaLikelihood = {};
   return loadCountry(file);
 }
 
@@ -258,9 +263,11 @@ describe.each(bothCountries)('food in %s', (_name, country) => {
       const year = playYear(game, budget);
       const { total } = harvestOf(year);
 
-      expect(year.reports.some((report) => report.notices[0]?.title === 'Spending was cut')).toBe(
-        true,
-      );
+      expect(
+        year.reports.some((report) =>
+          report.entries.some((entry) => entry.headline === 'Spending was cut'),
+        ),
+      ).toBe(true);
       for (const preview of year.previews) {
         expect(total).toBeGreaterThanOrEqual(preview.harvest.min);
         expect(total).toBeLessThanOrEqual(preview.harvest.max);

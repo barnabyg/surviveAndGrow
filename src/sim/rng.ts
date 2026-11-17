@@ -16,3 +16,17 @@ export function nextRandom(state: RngState): { value: number; state: RngState } 
   t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
   return { value: (t ^ (t >>> 14)) >>> 0, state: next };
 }
+
+/**
+ * A number from 0 up to but not including 1 that depends only on the seed and on the keys
+ * it is asked for with. It is for chance that must not shift when something else draws
+ * from the game's generator: the same seed and keys always give the same number.
+ */
+export function drawAt(seed: number, ...keys: readonly number[]): number {
+  let state = seedGenerator(seed);
+  for (const key of keys) {
+    // Each key is folded in and the generator stepped, so nearby keys part company.
+    state = nextRandom((state ^ Math.imul(key + 1, 0x9e3779b1)) >>> 0).value;
+  }
+  return nextRandom(state).value / 2 ** 32;
+}
