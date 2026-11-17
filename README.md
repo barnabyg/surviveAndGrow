@@ -58,7 +58,7 @@ drought does not starve a region first.
   spending would settle it, and the election forecast in the right column says where you stand.
   Below 40% a region strikes, which costs far more revenue than the tax that provoked it.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
-  use before the vote.
+  use before the vote. What you build has to be kept up, so leave room for upkeep.
 
 What is in the game:
 
@@ -134,6 +134,18 @@ What is in the game:
   drought move its region's harvest; a farm road halves the share of its region's surplus lost on
   the way to the reserve; a grain store cuts what spoils in the national reserve by a quarter.
   Several of one type multiply together.
+- Every site in use needs upkeep each quarter: $0.4m for an irrigation scheme, $0.3m for a farm
+  road and $0.2m for a grain store. Upkeep is a spending area with its own slider, and it is spent
+  only as far as the sites in use need it, so setting more than they need costs nothing. The
+  budget panel shows what they need against what is spent, and a game starts with enough upkeep
+  for every site the country has.
+- When upkeep falls short, by a cut to the slider or because the treasury cuts every area, sites
+  decay. Upkeep keeps sites in good repair in the order building began on them, so the newest
+  decay first. A decaying site does half of what it does in good repair, and adds half as much to
+  its region's infrastructure access, from the quarter after its upkeep went unpaid. It wears the
+  warning triangle on the map, and its card says why and what restores it. A quarter in which its
+  upkeep is paid restores it from the next. Decay and recovery are reported, and the risks ahead
+  warn when upkeep will fall short.
 - Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the
@@ -185,6 +197,9 @@ costs, how long it takes and what it does are the game's, not the country's.
 - In a file of `"formatVersion": 2`, a site may list the `id`s of the sites it depends on in
   `dependsOn`. Each must be another site in the file, and the dependencies must not go round in a
   circle. A file of format 1 cannot say this, and still loads as it is.
+
+The starting budget in `start.budget` may leave out `upkeep`: the game then starts with enough
+upkeep to keep every one of the file's sites in good repair, rounded up to the next $1.0m.
 
 In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
 year, from 0 to 10. A region that leaves it out grows at the game's own rate.

@@ -85,6 +85,12 @@ A tax rate and a small set of spending areas (agriculture, food relief,
 health, education, security, upkeep). Revenue comes from tax on output.
 Underfunded upkeep makes infrastructure decay.
 
+Each site type has an upkeep cost in its balance data, paid every quarter
+the site is in use. Upkeep is spent only as far as the sites in use need it.
+When it falls short, sites are kept up in the order building began on them,
+so the newest decay first. A decaying site gives half its effect until a
+quarter in which its upkeep is paid restores it.
+
 ### Food
 
 Phase 1 has a single food stock per region, fed by the harvest and affected by

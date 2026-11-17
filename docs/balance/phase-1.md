@@ -83,6 +83,25 @@ meaning. Its table gains a column: **Re-elected** is what **Won** counted before
 office when its terms are up, and **Won** now counts only the win on prosperity. Nothing in the
 rules of a single term changed, so the figures above stand; no new run was recorded.
 
+## After upkeep (issue #34)
+
+From issue #34 every site in use needs upkeep each quarter ($0.4m for irrigation, $0.3m for a
+farm road, $0.2m for a grain store), and a site whose upkeep goes unpaid decays to half its
+effect. Upkeep is spent only as far as the sites in use need it, and a game starts with enough
+for every site the country has ($3.0m in Tavara, $1.0m in Testland), so a player who never
+touches the slider keeps every site in good repair. The confirmation run (seeds 1001-2200, one
+term) was made before and after. Only the sensible player builds, so only it changes:
+
+| Country | Player | Re-elected before | Re-elected after | Vote share before | Vote share after |
+| --- | --- | ---: | ---: | --- | --- |
+| Tavara | Sensible | 0.9% | 1.1% | 28.8% / 42.7% / 52.1% | 20.8% / 42.2% / 51.5% |
+| Testland | Sensible | 99.8% | 99.5% | 49.0% / 58.5% / 65.8% | 49.1% / 56.8% / 65.1% |
+
+Upkeep costs the sensible player about half a point of vote share in the middle of the spread.
+Its worst Tavara game falls further (20.8% from 28.8%), where a treasury already cutting every
+area also cuts upkeep and its sites decay. Every other player's results are unchanged, and no
+upkeep value was tuned.
+
 ## How the runs were made
 
 ```powershell
