@@ -4,10 +4,27 @@ import type {
   DilemmaType,
   EventType,
   FoodStage,
+  LastingService,
   Likelihood,
+  ProsperityPart,
+  SiteEffect,
   SiteType,
   SpendingArea,
+  Tier,
 } from './vocabulary';
+
+/** The balance values of one type of site. */
+export interface SiteBalance {
+  readonly cost: number;
+  readonly buildQuarters: number;
+  /** What the site in use leaves of each thing it bears on, in thousandths. */
+  readonly effects: Readonly<Partial<Record<SiteEffect, number>>>;
+  /**
+   * What the site in use adds to its region's infrastructure access, in thousandths of the
+   * whole. A route counts for the region it belongs to.
+   */
+  readonly infrastructurePermille: number;
+}
 
 /**
  * Every value that tunes the game lives here as data. The rules in the rest of the
@@ -61,6 +78,15 @@ export const balance = {
   relief: {
     /** Tonnes of food that one Money unit ($100,000) of food relief spending can move. */
     tonnesPerMoney: 200,
+  },
+  population: {
+    /**
+     * How fast each region's people grow in number, in ten-thousandths a quarter, unless its
+     * country file sets its own rate. 60 is about 2.4% a year. A region in famine does not grow.
+     */
+    growthPerTenThousandPerQuarter: 60,
+    /** The fastest yearly growth, in percent, that a country file may give a region. */
+    maxGrowthPercentPerYear: 10,
   },
   hunger: {
     /** A region is fed when its people eat at least this share of their needs, in thousandths. */
@@ -163,28 +189,92 @@ export const balance = {
   },
   /**
    * What can be built. Each type costs `cost` in Money units ($100,000), paid over the
-   * `buildQuarters` it takes to build, and then has its effect for good.
+   * `buildQuarters` it takes to build, and then has its effects for good: each leaves that
+   * many thousandths of what it bears on (see `SITE_EFFECT_DEFINITIONS`).
    */
   sites: {
     irrigation: {
       cost: 120,
       buildQuarters: 3,
-      /** What is left of the weather's and of drought's hold on its region's harvest, in thousandths. */
-      weatherPermille: 500,
+      effects: { harvestWeather: 500 },
+      infrastructurePermille: 100,
     },
     farmRoad: {
       cost: 100,
       buildQuarters: 3,
-      /** What is left of the share of its region's surplus lost in transport, in thousandths. */
-      transportLossPermille: 500,
+      effects: { transportLoss: 500 },
+      infrastructurePermille: 150,
     },
     grainStore: {
       cost: 60,
       buildQuarters: 2,
-      /** What is left of the share of the national reserve that spoils, in thousandths. */
-      spoilagePermille: 750,
+      effects: { reserveSpoilage: 750 },
+      infrastructurePermille: 100,
     },
-  } satisfies Record<SiteType, { cost: number; buildQuarters: number } & Record<string, number>>,
+  } satisfies Record<SiteType, SiteBalance>,
+  /**
+   * Living standards and prosperity. Every score is in thousandths: a region's living
+   * standard is its five parts' scores weighted by `weightsPermille`, which add up to 1000.
+   * National prosperity is the regions' living standards averaged by population.
+   */
+  prosperity: {
+    weightsPermille: {
+      food: 150,
+      income: 250,
+      health: 200,
+      education: 200,
+      infrastructure: 200,
+    } satisfies Record<ProsperityPart, number>,
+    /** Food security by the region's food situation. */
+    food: { adequate: 1000, tight: 600, shortage: 250, famine: 0 } satisfies Record<
+      FoodStage,
+      number
+    >,
+    /** Income per head scores in full at this many dollars per person a quarter, and in proportion below. */
+    fullIncomeDollarsPerPersonPerQuarter: 250,
+    /**
+     * Health and education are levels in each region. Spending sets where a level is
+     * heading: this many thousandths for each Money unit ($100,000) spent a quarter on each
+     * million people, up to the whole. Each quarter the level closes a share of the gap, in
+     * thousandths: `buildPermillePerQuarter` while it rises, `wearPermillePerQuarter` while it
+     * falls. A game starts with each level where its starting budget would hold it.
+     */
+    services: {
+      health: {
+        permillePerMoneyPerMillionPeople: 11,
+        buildPermillePerQuarter: 50,
+        wearPermillePerQuarter: 50,
+      },
+      education: {
+        permillePerMoneyPerMillionPeople: 11,
+        buildPermillePerQuarter: 40,
+        wearPermillePerQuarter: 40,
+      },
+    } satisfies Record<
+      LastingService,
+      {
+        permillePerMoneyPerMillionPeople: number;
+        buildPermillePerQuarter: number;
+        wearPermillePerQuarter: number;
+      }
+    >,
+    /**
+     * Where each tier begins, in thousandths of prosperity, and how far the public's
+     * expectations in it lower the approval baseline compared with the lowest tier.
+     */
+    tiers: {
+      subsistence: { fromPermille: 0, expectationsPermille: 0 },
+      developing: { fromPermille: 250, expectationsPermille: 30 },
+      industrialising: { fromPermille: 450, expectationsPermille: 60 },
+      // The last tier is the target the country is aiming for.
+      prosperous: { fromPermille: 700, expectationsPermille: 90 },
+    } satisfies Record<Tier, { fromPermille: number; expectationsPermille: number }>,
+    /**
+     * A tier once reached is lost only when prosperity falls this many thousandths below
+     * where it begins, so that a figure hovering at the line does not pass it every quarter.
+     */
+    fallBackMarginPermille: 20,
+  },
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */
     earliestQuarter: 2,

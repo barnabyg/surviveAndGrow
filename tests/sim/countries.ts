@@ -3,16 +3,23 @@ import { loadCountry, type Country } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 
 /**
- * The real country that ships with the game, with its dilemmas left out. A dilemma stops the
- * game until it is answered, so a test meets one only when it sets one up.
+ * The real country that ships with the game, with its dilemmas left out and its people not
+ * growing in number. A dilemma stops the game until it is answered, so a test meets one only
+ * when it sets one up; and growth moves every figure worked out per head, so a test meets it
+ * only when it is about it.
  */
 export const tavara = (): Country => loadCountry(withoutDilemmas(tavaraFile));
 
 /**
- * The crude second country, with its dilemmas left out. It exists to prove that nothing is
- * tied to the first.
+ * The crude second country, with its dilemmas left out and no growth. It exists to prove that
+ * nothing is tied to the first.
  */
 export const testland = (): Country => loadCountry(withoutDilemmas(testlandFile));
+
+/** The two countries with their dilemmas left out, but growing as they do when shipped. */
+export const tavaraGrowing = (): Country => loadCountry(withGrowth(withoutDilemmas(tavaraFile)));
+export const testlandGrowing = (): Country =>
+  loadCountry(withGrowth(withoutDilemmas(testlandFile)));
 
 /** The two countries exactly as their files are written, dilemmas and all. */
 export const tavaraAsShipped = (): Country => loadCountry(tavaraFile);
@@ -25,15 +32,34 @@ export const bothCountries: [name: string, country: () => Country][] = [
 ];
 
 interface Chances {
-  regions: { id: string; eventLikelihood?: Record<string, number> }[];
+  formatVersion: number;
+  regions: { id: string; eventLikelihood?: Record<string, number>; populationGrowth?: number }[];
   dilemmaLikelihood?: Record<string, number>;
   start: { foodReserve: number };
 }
 
-/** A copy of a country file in which no dilemma ever arises. */
+/**
+ * A copy of a country file in which no dilemma ever arises and no region grows. Saying so
+ * needs format 2 of the country file, which reads a format 1 file's contents unchanged.
+ */
 function withoutDilemmas(file: unknown): unknown {
-  const copy = structuredClone(file) as Chances;
+  const copy = withoutGrowth(file) as Chances;
   delete copy.dilemmaLikelihood;
+  return copy;
+}
+
+/** A copy of a country file in which no region's people grow in number. */
+export function withoutGrowth(file: unknown): unknown {
+  const copy = structuredClone(file) as Chances;
+  copy.formatVersion = Math.max(copy.formatVersion, 2);
+  for (const region of copy.regions) region.populationGrowth = 0;
+  return copy;
+}
+
+/** A copy of a country file whose regions grow at the rate their file or the game sets. */
+function withGrowth(file: unknown): unknown {
+  const copy = structuredClone(file) as Chances;
+  for (const region of copy.regions) delete region.populationGrowth;
   return copy;
 }
 
@@ -60,9 +86,11 @@ export function withChances(
     readonly dilemmas?: Record<string, number>;
     readonly drought?: Record<string, number>;
     readonly reserve?: number;
+    /** Whether the regions' people grow in number, as they do when shipped. */
+    readonly growing?: boolean;
   },
 ): Country {
-  const copy = structuredClone(file) as Chances;
+  const copy = (chances.growing === true ? structuredClone(file) : withoutGrowth(file)) as Chances;
   for (const region of copy.regions) {
     region.eventLikelihood = { drought: chances.drought?.[region.id] ?? 0 };
   }

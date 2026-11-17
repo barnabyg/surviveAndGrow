@@ -18,6 +18,62 @@ confirmed them.** They apply to the real country, Tavara.
 Testland, the crude second country, is not tuned and has no targets. Every one of its games
 ran to an ending without error.
 
+## After population growth (issue #30)
+
+Recorded 2026-11-17. From issue #30 every region's population grows by 0.6% a quarter. Nothing
+else was retuned, so the same confirmation run shows what growth alone does to Phase 1. **The
+targets above no longer hold for Tavara**, and Phase 2 must retune with growth in place.
+
+| Target | Before growth | With growth | Met |
+| --- | --- | --- | --- |
+| The player who does nothing loses at least 90% of games | Loses 100.0% | Loses 100.0% (95.9% to famine, 4.1% at the vote) | Yes |
+| The player who spends everything on popularity loses most games | Loses 100.0% | Loses 100.0% (97.8% to famine, 2.2% at the vote) | Yes |
+| The sensible player wins between 30% and 60% | Wins 48.1% | Wins 8.8% | **No** |
+| No player wins every game | Best wins 71.9% | Best wins 15.1% | Yes |
+
+Growth works against the government in two ways. Public spending is judged per head, so a
+budget held steady buys less approval each quarter as the population grows; and food need
+rises while farmland does not, so the reserve and the regions' own stocks run lower. Vote
+shares at the vote fell by about three to five points for every player. Testland, which is
+not tuned, changed little: its sensible player still wins 99.8%.
+
+#### Republic of Tavara, seeds 1001-2200, with growth
+
+| Player | Games | Won | Lost the vote | Lost to famine | Vote share | Treasury at the end | Approval at the end |
+| --- | ---: | ---: | ---: | ---: | --- | --- | --- |
+| Does nothing | 1200 | 0.0% | 4.1% | 95.9% | 29.3% / 35.9% / 41.2% | $0.0m / $0.2m / $1.3m | 28.8% / 40.2% / 43.5% |
+| Popularity | 1200 | 0.0% | 2.2% | 97.8% | 29.2% / 36.3% / 39.7% | $0.0m / $2.5m / $2.9m | 30.8% / 43.8% / 48.7% |
+| Sensible | 1200 | 8.8% | 91.1% | 0.1% | 31.0% / 46.3% / 52.7% | $0.0m / $0.4m / $0.9m | 28.6% / 46.5% / 50.7% |
+| Relief only | 1200 | 0.0% | 99.9% | 0.1% | 31.0% / 43.6% / 49.5% | $0.0m / $1.2m / $58.0m | 32.7% / 44.0% / 47.1% |
+| Lowest tax | 1200 | 0.0% | 21.9% | 78.1% | 30.9% / 37.1% / 45.5% | $0.1m / $0.2m / $0.4m | 31.2% / 39.9% / 47.4% |
+| Says yes | 1200 | 0.0% | 99.9% | 0.1% | 28.8% / 41.9% / 49.2% | $0.0m / $6.3m / $79.6m | 29.8% / 42.3% / 46.7% |
+| Squeeze then spend | 1200 | 0.3% | 99.6% | 0.1% | 35.6% / 45.0% / 50.7% | $0.0m / $60.2m / $127.7m | 38.3% / 45.0% / 48.8% |
+| Hover then spend | 1200 | 15.1% | 84.9% | 0.0% | 35.0% / 46.9% / 53.9% | $0.0m / $0.4m / $0.9m | 36.2% / 47.1% / 52.6% |
+
+Spreads are least / middle / most. Vote share counts only the games that reached the vote.
+
+- Does nothing: famine brought the state down in The Dry East 602, Korr Highlands 333, Salt Coast 116, Arden Vale 100 (in quarter 8 / 8 / 20).
+- Popularity: famine brought the state down in The Dry East 563, Korr Highlands 266, Arden Vale 246, Salt Coast 99 (in quarter 8 / 8 / 20).
+- Sensible: famine brought the state down in Korr Highlands 1 (in quarter 20 / 20 / 20).
+- Relief only: famine brought the state down in Korr Highlands 1 (in quarter 20 / 20 / 20).
+- Lowest tax: famine brought the state down in The Dry East 463, Arden Vale 225, Korr Highlands 159, Salt Coast 90 (in quarter 8 / 14 / 20).
+- Says yes: famine brought the state down in Arden Vale 1 (in quarter 20 / 20 / 20).
+- Squeeze then spend: famine brought the state down in Korr Highlands 1 (in quarter 20 / 20 / 20).
+- Hover then spend: famine brought the state down in no game.
+
+## After prosperity tiers (issue #31)
+
+The same Tavara run with tiers in place, on top of growth. Only the sensible player changes:
+it builds sites and spends on services, so it passes into Developing, and the 3-point drop in
+the approval baseline that comes with that costs it the vote. **It now wins 0.9% of games**
+(from 8.8% with growth alone). Every other player's results are unchanged. Retuning for
+growth and tiers together is Phase 2 work.
+
+| Player | Won | Lost the vote | Lost to famine | Vote share |
+| --- | ---: | ---: | ---: | --- |
+| Sensible | 0.9% | 99.0% | 0.1% | 28.8% / 42.7% / 52.1% |
+| Hover then spend | 15.1% | 84.9% | 0.0% | 35.0% / 46.9% / 53.9% |
+
 ## How the runs were made
 
 ```powershell

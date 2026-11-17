@@ -23,6 +23,8 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned so that the game meets a drought and dilemmas.
+  // Format 2 added prosperity, its tiers and a growing population: the game below grows,
+  // builds up health and education, and passes into Developing as its sites come into use.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({
@@ -42,7 +44,11 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
     const result = advanceQuarter(game, {
-      budget: game.budget,
+      // More on health and education than the country starts with, which builds them up.
+      budget: {
+        ...game.budget,
+        spending: { ...game.budget.spending, health: 80, education: 70 },
+      },
       reliefRegionId: 'dry-east',
       startProjects,
       dilemmaChoice,

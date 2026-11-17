@@ -12,7 +12,9 @@ import type { VitalSigns } from './history';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
+import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { siteTerms } from './sites';
+import { tierAt } from './tiers';
 import type { GameState, Outcome, RegionState, TurnReport } from './state';
 import { formatQuarters } from './text';
 import type { Contribution, Figure, GameDate, Money, Quarter } from './types';
@@ -28,9 +30,12 @@ import {
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SPENDING_AREAS,
+  TIERS,
   UNREST_LEVELS,
   type ApprovalDriver,
+  type LastingService,
   type SpendingArea,
+  type Tier,
 } from './vocabulary';
 
 /**
@@ -38,7 +43,7 @@ import {
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 1;
+export const SAVE_FORMAT_VERSION = 2;
 
 /** Everything about a game except what a save records beside it. */
 export type SavedState = Omit<GameState, 'country' | 'seed' | 'rng'>;
@@ -91,10 +96,77 @@ export type SaveMigration = (older: Json) => Json;
 
 /**
  * The migrations this release knows, each under the version it lifts a save from. A save
- * older than the current format is passed through them in turn until it is current. There
- * has only ever been one format, so there is nothing here yet.
+ * older than the current format is passed through them in turn until it is current.
  */
-const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {};
+const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
+  1: fromFormat1,
+};
+
+/**
+ * Format 2 added prosperity, its tiers and a growing population. Each region gains levels of
+ * health and education, set where the budget in force would hold them, as a new game's are
+ * set by its starting budget. The game is put in the tier its prosperity then reaches, and
+ * counts as having begun there, so the public expects no more of it than before. The
+ * quarters already recorded, and the last report, measured neither prosperity nor growth,
+ * so they say so.
+ */
+function fromFormat1(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
+  const budget = isRecord(state.budget) ? state.budget : {};
+  const spending = isRecord(budget.spending) ? budget.spending : {};
+  const people = regions.reduce<number>(
+    (total, region) =>
+      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
+    0,
+  );
+  const level = (service: LastingService) => {
+    const spent = spending[service];
+    return typeof spent === 'number' ? settledServiceLevel(service, spent, people) : 0;
+  };
+  const lifted = regions.map((region) =>
+    isRecord(region)
+      ? { ...region, health: level('health'), education: level('education') }
+      : region,
+  );
+  const tier = tierOfOldSave(older, lifted, state.projects);
+  return {
+    ...older,
+    formatVersion: 2,
+    state: {
+      ...state,
+      regions: lifted,
+      tier,
+      startingTier: tier,
+      history: Array.isArray(state.history)
+        ? (state.history as unknown[]).map((record) =>
+            isRecord(record) ? { ...record, prosperity: null } : record,
+          )
+        : state.history,
+    },
+    report: isRecord(older.report)
+      ? { ...older.report, prosperity: null, population: null }
+      : older.report,
+  };
+}
+
+/**
+ * The tier an old save's game has reached, judged by the same rules as a game in play. A save
+ * too damaged to judge is put in the lowest tier, and checking the rest of it will refuse it.
+ */
+function tierOfOldSave(older: Json, regions: readonly unknown[], projects: unknown): Tier {
+  try {
+    const carried = isRecord(older.country) ? older.country.file : undefined;
+    const { value } = prosperityStatus({
+      country: loadCountry(carried),
+      regions: regions as RegionState[],
+      projects: Array.isArray(projects) ? (projects as Project[]) : [],
+    });
+    return Number.isFinite(value) ? tierAt(value) : TIERS[0];
+  } catch {
+    return TIERS[0];
+  }
+}
 
 /**
  * Puts a game into the form it is stored in, with the report on the quarter just ended, or
@@ -123,6 +195,8 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       history: game.history,
       dilemma: game.dilemma,
       dilemmasAnswered: game.dilemmasAnswered,
+      tier: game.tier,
+      startingTier: game.startingTier,
       outcome: game.outcome,
     },
     report,
@@ -189,6 +263,8 @@ export function loadSave(
         };
       },
     ),
+    tier: oneOf(state.tier, 'state.tier', TIERS, 'a tier of prosperity'),
+    startingTier: oneOf(state.startingTier, 'state.startingTier', TIERS, 'a tier of prosperity'),
     outcome: readOutcome(record(state.outcome, 'state.outcome'), 'state.outcome', region),
   };
   const report =
@@ -272,6 +348,8 @@ function readRegions(saved: unknown, path: string, regionIds: readonly string[])
         ]),
       ) as Record<ApprovalDriver, number>,
       unrest: oneOf(item.unrest, `${itemPath}.unrest`, UNREST_LEVELS, 'a state of unrest'),
+      health: whole(item.health, `${itemPath}.health`, 0, 1000),
+      education: whole(item.education, `${itemPath}.education`, 0, 1000),
     };
   });
   const ids = regions.map((region) => region.id);
@@ -319,6 +397,8 @@ function readHistory(saved: unknown, path: string): VitalSigns[] {
     foodReserve: whole(item.foodReserve, `${itemPath}.foodReserve`, 0),
     quarterlyConsumption: whole(item.quarterlyConsumption, `${itemPath}.quarterlyConsumption`, 0),
     approval: whole(item.approval, `${itemPath}.approval`, 0, 1000),
+    prosperity:
+      item.prosperity === null ? null : whole(item.prosperity, `${itemPath}.prosperity`, 0, 1000),
   }));
   if (history.length === 0) fail(path, 'must hold at least the opening position');
   return history;
@@ -452,6 +532,8 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
     treasury: figure(saved.treasury, 'report.treasury'),
     food: figure(saved.food, 'report.food'),
     approval: figure(saved.approval, 'report.approval'),
+    prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),
+    population: saved.population === null ? null : figure(saved.population, 'report.population'),
     harvest: saved.harvest === null ? null : harvest(saved.harvest, 'report.harvest'),
     entries: list(saved.entries, 'report.entries', (entry, path): ReportEntry => ({
       kind: oneOf(entry.kind, `${path}.kind`, REPORT_KINDS, 'a kind of report'),

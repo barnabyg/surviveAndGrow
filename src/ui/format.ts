@@ -1,4 +1,11 @@
-import { formatMoney, formatTonnes, type GameDate, type Money, type Range } from '../sim';
+import {
+  formatCount,
+  formatMoney,
+  formatTonnes,
+  type GameDate,
+  type Money,
+  type Range,
+} from '../sim';
 
 /** A date as a sentence writes it: `Year 5, Quarter 4`. */
 export function formatDate(date: GameDate): string {
@@ -23,4 +30,9 @@ export function formatRange(range: Range, format: (value: number) => string, uni
   const values =
     range.min === range.max ? format(range.min) : `${format(range.min)} to ${format(range.max)}`;
   return unit === '' ? values : `${values} ${unit}`;
+}
+
+/** A movement in a count of people with its sign: `+8,400` or `−18,000`. */
+export function formatSignedCount(count: number): string {
+  return `${count > 0 ? '+' : count < 0 ? '−' : ''}${formatCount(Math.abs(count))}`;
 }

@@ -159,6 +159,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Decision report',
     path: 'M10,18 V11 M10,11 L4,5 M10,11 L16,5 M4,9 V5 H8 M16,9 V5 H12',
   },
+  // Steps climbing, with an arrow above them.
+  tier: {
+    label: 'Prosperity tier report',
+    path: 'M2,18 H7 V14 H11 V10 H15 V6 H18 M11,6 L15,2 M12,2 H15 V5',
+  },
   // A ballot dropping into a box.
   election: {
     label: 'Election report',

@@ -10,7 +10,7 @@ import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import type { SiteSchedule } from './timeline';
 import type { Figure, GameDate, Money, Range } from './types';
-import type { FoodStage, Unrest } from './vocabulary';
+import type { FoodStage, Tier, Unrest } from './vocabulary';
 
 /** What is true of one region at one moment. National figures are derived from the regions. */
 export interface RegionState {
@@ -41,6 +41,13 @@ export interface RegionState {
    * ends and holds through the next, cutting what the region produces.
    */
   readonly unrest: Unrest;
+  /**
+   * The level of health care in the region, in thousandths. Spending builds it up over
+   * quarters and it wears down without it.
+   */
+  readonly health: number;
+  /** The level of education in the region, in thousandths, built and worn like health. */
+  readonly education: number;
 }
 
 /** How a finished game ended, in words the player can be shown whatever the cause. */
@@ -109,6 +116,13 @@ export interface GameState {
   readonly dilemma: PendingDilemma | null;
   /** Every dilemma the player has answered, in order. */
   readonly dilemmasAnswered: readonly AnsweredDilemma[];
+  /** The tier of prosperity in force. */
+  readonly tier: Tier;
+  /**
+   * The tier the game began in. The public's expectations, which lower the approval
+   * baseline, are what tiers passed since then have raised.
+   */
+  readonly startingTier: Tier;
   readonly outcome: Outcome;
 }
 
@@ -146,6 +160,17 @@ export interface TurnReport {
    * National approval after the quarter, in thousandths, with everything that moved it.
    */
   readonly approval: Figure;
+  /**
+   * National prosperity after the quarter, in thousandths, with what each of its parts did
+   * to it. A report carried over from a save written before prosperity existed has none.
+   */
+  readonly prosperity: Figure | null;
+  /**
+   * The country's people after the quarter, with what moved their number in each region:
+   * growth, and deaths in famine. A report carried over from a save written before the
+   * population grew has none.
+   */
+  readonly population: Figure | null;
   /** The harvest, in quarter 4, and null in every other quarter. */
   readonly harvest: Harvest | null;
   /**
@@ -205,6 +230,11 @@ export interface Preview {
    * several quarters, so this is further off than the figure above.
    */
   readonly approvalHeading: Range;
+  /**
+   * National prosperity once the quarter is over, in thousandths. Nothing left to chance
+   * this quarter bears on it, so the two ends are equal.
+   */
+  readonly prosperity: Range;
   /** The regions that will be striking or protesting once the quarter is over. */
   readonly unrest: readonly RegionUnrest[];
   /**

@@ -4,13 +4,19 @@ import {
   FOOD_STAGE_NAMES,
   formatCount,
   formatPercent,
+  formatIndex,
   formatTonnes,
+  livingStandards,
   type GameState,
   type Preview,
+  type TurnReport,
 } from '../sim';
+import { formatSignedCount } from './format';
 
 interface RegionCardProps {
   readonly game: GameState;
+  /** The report on the quarter just ended, which says what moved the region's people. */
+  readonly report: TurnReport | null;
   readonly regionId: string;
   /** What the decisions now in force will do this quarter. */
   readonly preview: Preview;
@@ -22,7 +28,7 @@ interface RegionCardProps {
 
 /** The card for the region picked out on the map: how it stands, and relief at a click. */
 export function RegionCard(props: RegionCardProps) {
-  const { game, regionId, preview, reliefRegionId, onSendRelief, onClose } = props;
+  const { game, report, regionId, preview, reliefRegionId, onSendRelief, onClose } = props;
   const region = game.country.regions.find((candidate) => candidate.id === regionId);
   const state = game.regions.find((candidate) => candidate.id === regionId);
   if (!region || !state) return null;
@@ -31,6 +37,11 @@ export function RegionCard(props: RegionCardProps) {
   const shortfall = preview.shortfalls.find((entry) => entry.regionId === regionId)?.shortfall;
   const relieved = reliefRegionId === regionId;
   const unrest = describeUnrest(state.unrest);
+  const standard = livingStandards(game).find((entry) => entry.regionId === regionId);
+  // What moved the region's people last quarter: its growth, and any deaths in famine.
+  const moved = (report?.population?.contributions ?? []).filter(
+    (line) => line.regionId === regionId,
+  );
 
   return (
     <section className="map-card" aria-labelledby="region-card-title">
@@ -44,6 +55,16 @@ export function RegionCard(props: RegionCardProps) {
         <div>
           <dt>People</dt>
           <dd>{formatCount(state.population)}</dd>
+        </div>
+        {moved.map((line) => (
+          <div key={line.label}>
+            <dt>{line.amount > 0 ? 'Grew last quarter' : 'Died in famine'}</dt>
+            <dd>{formatSignedCount(line.amount)}</dd>
+          </div>
+        ))}
+        <div>
+          <dt>Living standard</dt>
+          <dd>{formatIndex(standard?.value ?? 0)}</dd>
         </div>
         <div>
           <dt>Food</dt>

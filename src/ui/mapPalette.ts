@@ -1,4 +1,4 @@
-import type { FoodStage, Terrain } from '../sim';
+import type { FoodStage, Terrain, Tier } from '../sim';
 
 /**
  * The colours of the map at one prosperity tier. Passing a tier changes the palette, never
@@ -100,4 +100,77 @@ export const tierOnePalette: MapPalette = {
   selection: '#f2b33d',
   tagBackground: '#2a1a12',
   tagText: '#ffb58a',
+};
+
+/**
+ * Tier 2, Developing: the land greener and warmer, the sea a deeper blue, settlements built
+ * up in brick and lit. The lens colours, warnings and selection stay as they are, so what the
+ * player reads off the map means the same at every tier.
+ */
+export const tierTwoPalette: MapPalette = {
+  ...tierOnePalette,
+  sea: '#21495a',
+  seaLabel: '#86b2c0',
+  coastGlow: '#a6d6e0',
+  terrain: {
+    plains: '#b9b479',
+    highlands: '#9c9f82',
+    coast: '#aab186',
+    arid: '#cdb07a',
+    delta: '#9db27e',
+    valley: '#c3c28f',
+  },
+  regionBorder: '#6f6a48',
+  river: '#4a87a0',
+  settlement: '#6b4a33',
+  mountain: '#b4b29d',
+  field: '#8f9454',
+};
+
+/** Tier 3, Industrialising: a richer, darker land under a clear sea, towns in red brick. */
+export const tierThreePalette: MapPalette = {
+  ...tierTwoPalette,
+  sea: '#1b4d66',
+  seaLabel: '#8dbcd0',
+  coastGlow: '#b0e0ea',
+  terrain: {
+    plains: '#a9b06e',
+    highlands: '#98a185',
+    coast: '#9fb087',
+    arid: '#c9b07a',
+    delta: '#8faf78',
+    valley: '#b5c086',
+  },
+  regionBorder: '#5f6440',
+  river: '#438fb0',
+  settlement: '#7d3f2a',
+  field: '#7f8f4a',
+};
+
+/** Tier 4, Prosperous: a lush land and a bright sea, the towns at their best. */
+export const tierFourPalette: MapPalette = {
+  ...tierThreePalette,
+  sea: '#155273',
+  seaLabel: '#95c6dc',
+  coastGlow: '#bce9f2',
+  terrain: {
+    plains: '#9cae68',
+    highlands: '#93a387',
+    coast: '#94b08a',
+    arid: '#c4b17e',
+    delta: '#82ad74',
+    valley: '#a8bd80',
+  },
+  regionBorder: '#55603f',
+  river: '#3d97c0',
+  settlement: '#8a3a26',
+  field: '#73904a',
+};
+
+/** The map's palette at each tier. Passing a tier changes the palette, never the geometry. */
+export const TIER_PALETTES: Readonly<Record<Tier, MapPalette>> = {
+  subsistence: tierOnePalette,
+  developing: tierTwoPalette,
+  industrialising: tierThreePalette,
+  prosperous: tierFourPalette,
 };

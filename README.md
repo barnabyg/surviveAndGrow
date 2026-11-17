@@ -83,10 +83,30 @@ What is in the game:
   quarter and where it is heading.
 - A region whose approval falls below 40% goes on strike and produces 30% less, which costs the
   treasury tax. Below 30% it protests and produces 60% less. Both end when approval recovers.
-- Click the treasury, the food reserve or approval in the top bar to see what moved it. Approval
-  also lists what it is made of.
-- A short trend line beside the treasury, the food reserve and approval shows the last eight
-  quarters, with the food reserve's safe level and the strike threshold drawn as dashed lines. The
+- Prosperity, the game's objective, is the fourth figure in the top bar, on a scale of 0 to 100
+  against the target of 70. Each region has a living standard built from food security, income
+  per head, health, education and infrastructure access (the sites in use there), and prosperity
+  is the regions' living standards averaged by population. The region list in the left column
+  shows each region's living standard as a figure and a bar, so inequality shows at a glance.
+- Prosperity is divided into four tiers: Subsistence, then Developing from 25, Industrialising
+  from 45 and Prosperous from 70, the target. The prosperity figure names the tier in force and
+  how far it is to the next. Passing a tier is reported, gives the whole map a new palette, and
+  raises what people expect, so the approval baseline drops 3 points a tier (shown as
+  Expectations in what approval is made of). A tier is lost only when prosperity falls 2 points
+  below where it begins; falling back is reported too, the map's look follows it down, and
+  expectations ease. The risks ahead warn when the nation is on course to fall back.
+- Each region's people grow in number every quarter, about 2.4% a year, except where famine has
+  taken hold. Standing still loses: food need, the relief a region needs and the months the
+  reserve lasts all follow the larger population, and output per head falls unless the economy
+  keeps up. A region's card shows how many people it gained, or lost to famine, last quarter.
+- Health and education are lasting levels in each region. Spending on them builds the levels up
+  over many quarters, and they wear down without it; a game starts with them where the starting
+  budget holds them. Their spending still moves approval at once, as before.
+- Click the treasury, the food reserve, approval or prosperity in the top bar to see what moved
+  it. Approval and prosperity also list what they are made of.
+- A short trend line beside the treasury, the food reserve, approval and prosperity shows the last
+  eight quarters, with the food reserve's safe level, the strike threshold and the prosperity
+  target drawn as dashed lines. The
   left column has a larger approval chart with the strike threshold and the 50% line marked.
 - After each quarter the left column reports what happened and why, the most serious first: the
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
@@ -155,6 +175,12 @@ costs, how long it takes and what it does are the game's, not the country's.
 - A farm road runs along a line, given by `route` as two or more positions. Every position must
   lie inside the country, and the route must start or end in the site's region, which is the
   region the road serves.
+- In a file of `"formatVersion": 2`, a site may list the `id`s of the sites it depends on in
+  `dependsOn`. Each must be another site in the file, and the dependencies must not go round in a
+  circle. A file of format 1 cannot say this, and still loads as it is.
+
+In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
+year, from 0 to 10. A region that leaves it out grows at the game's own rate.
 
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:

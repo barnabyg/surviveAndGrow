@@ -5,6 +5,7 @@ import {
   createGame,
   foodStatus,
   previewQuarter,
+  prosperityStatus,
   type GameState,
   type TurnReport,
 } from '../../src/sim';
@@ -35,6 +36,7 @@ describe('the history of the vital signs in Tavara', () => {
         foodReserve: 182000,
         quarterlyConsumption: 260000,
         approval: 458,
+        prosperity: 237,
       },
     ]);
   });
@@ -51,6 +53,7 @@ describe('the history of the vital signs in Tavara', () => {
         foodReserve: 182000,
         quarterlyConsumption: 260000,
         approval: 458,
+        prosperity: 237,
       },
       {
         date: { year: 1, quarter: 2 },
@@ -58,6 +61,7 @@ describe('the history of the vital signs in Tavara', () => {
         foodReserve: 167440,
         quarterlyConsumption: 260000,
         approval: 458,
+        prosperity: 237,
       },
       {
         date: { year: 1, quarter: 3 },
@@ -65,6 +69,7 @@ describe('the history of the vital signs in Tavara', () => {
         foodReserve: 154045,
         quarterlyConsumption: 260000,
         approval: 458,
+        prosperity: 237,
       },
       {
         date: { year: 1, quarter: 4 },
@@ -72,6 +77,7 @@ describe('the history of the vital signs in Tavara', () => {
         foodReserve: 141722,
         quarterlyConsumption: 260000,
         approval: 458,
+        prosperity: 237,
       },
     ]);
   });
@@ -103,9 +109,11 @@ describe.each(bothCountries)('the history of the vital signs in %s', (_name, cou
         foodReserve: report.food.value,
         quarterlyConsumption: foodStatus(state).quarterlyConsumption,
         approval: report.approval.value,
+        prosperity: report.prosperity?.value,
       });
       expect(latest?.treasury).toBe(state.treasury);
       expect(latest?.approval).toBe(approvalStatus(state).approval);
+      expect(latest?.prosperity).toBe(prosperityStatus(state).value);
       // Everything before it is what was there already.
       expect(state.history.slice(0, -1)).toEqual(game.history);
       game = state;

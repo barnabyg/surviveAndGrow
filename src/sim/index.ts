@@ -50,6 +50,14 @@ export { seasonOf } from './calendar';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
+export {
+  livingStandards,
+  prosperityStatus,
+  type LivingStandard,
+  type ProsperityScores,
+  type ProsperityStatus,
+} from './prosperity';
+export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export {
   loadSave,
@@ -82,6 +90,8 @@ export {
 } from './state';
 export {
   formatCount,
+  formatIndex,
+  formatSignedIndex,
   formatMoney,
   formatPercent,
   formatPoints,
@@ -107,6 +117,8 @@ export {
   LIKELIHOOD_NAMES,
   LIKELIHOODS,
   MAP_FRAME,
+  PROSPERITY_PART_NAMES,
+  PROSPERITY_PARTS,
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SERIOUSNESS_NAMES,
@@ -114,6 +126,8 @@ export {
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
+  TIER_NAMES,
+  TIERS,
   UNREST_KINDS,
   UNREST_NAMES,
   type ApprovalDriver,
@@ -124,6 +138,7 @@ export {
   type LabelSide,
   type Likelihood,
   type ProjectStatus,
+  type ProsperityPart,
   type ReportKind,
   type RiskKind,
   type Seriousness,
@@ -133,5 +148,6 @@ export {
   type SiteType,
   type SpendingArea,
   type Terrain,
+  type Tier,
   type Unrest,
 } from './vocabulary';
