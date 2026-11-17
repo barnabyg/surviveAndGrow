@@ -142,6 +142,13 @@ stylised vector art.
   routes.
 - **Chains, not a checklist.** A mine earns nothing until a road links it to a
   port. The map shows these dependencies, and the player plans routes.
+  A country file says what each site depends on. A mine adds to its region's
+  output only while every site of its chain is in use, and then no more than
+  the weakest link carries; a decaying link carries half. The engine names that
+  link, the bottleneck, and the site card lists the chain with the missing
+  links marked, which the map also draws. Mines, trunk roads and ports are
+  large projects: one started late in a term opens after the election, and the
+  timeline says when.
 - **More sites than money.** Some sites are alternatives, such as a cheap
   shallow port against a costly deep-water one. One game cannot build
   everything.
