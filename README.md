@@ -178,6 +178,34 @@ Gates that do not apply:
   GitHub's push protection covers the repository.
 - **Packaging** is the Vite build. Nothing is published to a registry.
 
+## Balance it
+
+```powershell
+npm run balance
+```
+
+This plays scripted players through whole games with no screen, on the countries as they ship,
+and reports how often each wins and what the others lose to: famine, by region, or the vote. It
+prints a table and writes it to `balance-results.md`. It is not one of the checks and gates
+nothing; a short run of the same players over a few seeds is part of the simulation tests.
+
+Three players are what the balance is judged by: one that does nothing, one that spends
+everything on popularity, and one that plays sensibly. They are in `tests/balance/players.ts`,
+with a handful of one-lever players that probe for a trick that wins on its own.
+
+Set these before the command to change the run:
+
+| Variable | Meaning | Default |
+| --- | --- | --- |
+| `BALANCE_SEEDS` | The seeds to play, as `from-to` | `1-300` |
+| `BALANCE_COUNTRY` | `tavara`, `testland` or `both` | `both` |
+| `BALANCE_PLAYERS` | `all` adds the one-lever players | the three |
+| `BALANCE_OUT` | Where the table is written | `balance-results.md` |
+
+```powershell
+$env:BALANCE_SEEDS = '1001-2200'; $env:BALANCE_PLAYERS = 'all'; npm run balance
+```
+
 ## How the code is laid out
 
 - `src/sim/` is the simulation. It is a pure function of the game state, the player's decisions
@@ -190,6 +218,7 @@ Gates that do not apply:
 - `tests/sim/` tests the game rules through the simulation's public interface.
 - `tests/e2e/` drives the real app in a browser at 2560 x 1440.
 - `tests/countries/` holds a crude second country, used to prove that nothing is tied to the first.
+- `tests/balance/` holds the scripted players and the balance run.
 - `tests/saves/` holds a saved game from each save format, kept so that every later release can
   prove it still opens them. They are never regenerated; see its README.
 - `docs/adr/` records decisions that are hard to reverse.
