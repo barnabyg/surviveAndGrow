@@ -8,6 +8,7 @@ import {
   type TermQuarter,
 } from '../sim';
 import { formatDate, formatQuarters } from './format';
+import { opening } from './schedule';
 
 interface TimelineProps {
   readonly game: GameState;
@@ -211,23 +212,22 @@ function statusLine(
   unpaid: boolean,
   terms: { readonly cost: number; readonly buildQuarters: number },
 ): string {
-  const { state, opens, inUseBeforeVote } = schedule;
+  const { state, inUseBeforeVote } = schedule;
   if (state === 'operating') {
-    const opened = calendar.quarters[opens - 1]?.date;
+    const opened = calendar.quarters[schedule.opens - 1]?.date;
     return opened === undefined ? 'In use' : `In use since ${formatDate(opened)}`;
   }
   if (inUseBeforeVote === 0) {
     return `▲ ${state === 'planned' ? 'Would' : 'Will'} not be finished before the vote`;
   }
-  const away = opens - calendar.now;
-  const opening = away <= 1 ? 'next quarter' : `in ${formatQuarters(away)}`;
-  if (unpaid) return `▲ Cannot be paid for this quarter · would open ${opening}`;
+  const opens = opening(schedule, calendar);
+  if (unpaid) return `▲ Cannot be paid for this quarter · would open ${opens}`;
   switch (state) {
     case 'planned':
       return `${supposed ? 'If started now' : 'Planned'} · ${formatQuarters(terms.buildQuarters)}, ${formatMoney(terms.cost)}`;
     case 'building':
-      return `Building · opens ${opening}`;
+      return `Building · opens ${opens}`;
     case 'paused':
-      return `▲ Paused · opens ${opening} once it is paid for`;
+      return `▲ Paused · opens ${opens} once it is paid for`;
   }
 }

@@ -225,6 +225,8 @@ export function GameScreen(props: GameScreenProps) {
                   game={game}
                   siteId={selectedSiteId}
                   plannedSiteIds={plannedSiteIds}
+                  schedule={schedule}
+                  pausedSites={preview?.pausedSites ?? []}
                   onPlan={planSite}
                   onClose={() => {
                     selectSite(null);
@@ -271,7 +273,12 @@ export function GameScreen(props: GameScreenProps) {
                   setPending(committed);
                 }}
               />
-              <ProjectsPanel game={game} plannedSiteIds={plannedSiteIds} onPlan={planSite} />
+              <ProjectsPanel
+                game={game}
+                preview={preview}
+                plannedSiteIds={plannedSiteIds}
+                onPlan={planSite}
+              />
               <ReliefPanel
                 game={game}
                 preview={preview}

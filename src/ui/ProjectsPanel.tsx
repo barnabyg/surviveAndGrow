@@ -3,15 +3,20 @@ import {
   siteStatus,
   siteTerms,
   startFault,
+  termCalendar,
   type GameState,
+  type Preview,
   type Site,
   type SiteStatus,
 } from '../sim';
 import { formatQuarters } from './format';
+import { opening } from './schedule';
 import { progressOf } from './SiteMark';
 
 interface ProjectsPanelProps {
   readonly game: GameState;
+  /** What the decisions now in force will do this quarter. */
+  readonly preview: Preview;
   /** The sites the player means to start building on when the quarter ends. */
   readonly plannedSiteIds: readonly string[];
   /** Plans building on a site this quarter, or takes the plan back. */
@@ -23,7 +28,7 @@ interface ProjectsPanelProps {
  * what they will do. Below them is every empty site the treasury can cover now, on top of
  * whatever is already planned for this quarter.
  */
-export function ProjectsPanel({ game, plannedSiteIds, onPlan }: ProjectsPanelProps) {
+export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: ProjectsPanelProps) {
   const sites = game.country.sites.map((site) => ({
     site,
     status: siteStatus(game, site.id),
@@ -39,7 +44,13 @@ export function ProjectsPanel({ game, plannedSiteIds, onPlan }: ProjectsPanelPro
       !planned &&
       startFault(game, [...plannedSiteIds, site.id]) === null,
   );
-  const instalments = underway.reduce((total, { status }) => total + status.instalment, 0);
+
+  // When each opens is the simulation's to say, so the list agrees with the timeline.
+  const calendar = termCalendar(game);
+  const openingOf = (siteId: string) => {
+    const scheduled = preview.schedule.find((entry) => entry.siteId === siteId);
+    return scheduled === undefined ? null : opening(scheduled, calendar);
+  };
 
   return (
     <section className="projects" aria-labelledby="projects-title">
@@ -50,7 +61,7 @@ export function ProjectsPanel({ game, plannedSiteIds, onPlan }: ProjectsPanelPro
         <span className="section-note">
           {underway.length === 0
             ? 'None underway'
-            : `${underway.length} underway · ${formatMoney(instalments)} a quarter`}
+            : `${underway.length} underway · ${formatMoney(preview.projectSpending.min)} this quarter`}
         </span>
       </div>
 
@@ -60,6 +71,8 @@ export function ProjectsPanel({ game, plannedSiteIds, onPlan }: ProjectsPanelPro
           site={site}
           status={status}
           planned={planned}
+          opens={openingOf(site.id)}
+          unpaid={preview.pausedSites.includes(site.id)}
           onCancel={() => {
             onPlan(site.id, false);
           }}
@@ -114,12 +127,15 @@ interface ProjectCardProps {
   readonly site: Site;
   readonly status: SiteStatus;
   readonly planned: boolean;
+  /** When it opens as things stand, such as "next quarter", or null if it has no schedule. */
+  readonly opens: string | null;
+  /** The treasury will not cover this quarter's instalment. */
+  readonly unpaid: boolean;
   readonly onCancel: () => void;
 }
 
 /** One project under way or planned: how far it has got, as a bar and in words. */
-function ProjectCard({ site, status, planned, onCancel }: ProjectCardProps) {
-  const toGo = status.buildQuarters - status.quartersPaid;
+function ProjectCard({ site, status, planned, opens, unpaid, onCancel }: ProjectCardProps) {
   const { effect } = siteTerms(site.type);
   return (
     <div className="project" role="group" aria-label={site.name}>
@@ -158,11 +174,15 @@ function ProjectCard({ site, status, planned, onCancel }: ProjectCardProps) {
       {status.state === 'paused' && (
         <p className="warning-note">
           ▲ Paused: the treasury could not cover its {formatMoney(status.instalment)} instalment.
+          {opens !== null && (unpaid ? ` Would open ${opens}.` : ` Opens ${opens}.`)}
         </p>
       )}
-      {status.state === 'building' && (
+      {status.state === 'building' && unpaid && opens !== null && (
+        <p className="warning-note">▲ Cannot be paid for this quarter. Would open {opens}.</p>
+      )}
+      {status.state === 'building' && !unpaid && opens !== null && (
         <p className="project__note">
-          {toGo === 1 ? 'Opens next quarter.' : `Opens in ${formatQuarters(toGo)}.`} {effect}
+          Opens {opens}. {effect}
         </p>
       )}
     </div>

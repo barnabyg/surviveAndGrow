@@ -38,7 +38,7 @@ test('a project started from a site’s card is paid for, built and then operate
     'Lowmere grain store, grain store, under construction, 1 of 2 quarters built',
   );
   await expect(map(page).getByText('1 of 2', { exact: true })).toBeVisible();
-  await expect(projects(page)).toContainText('1 underway · $3.0m a quarter');
+  await expect(projects(page)).toContainText('1 underway · $3.0m this quarter');
   const underway = projects(page).getByRole('group', { name: 'Lowmere grain store' });
   await expect(underway.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1');
   await expect(underway.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '2');
@@ -167,6 +167,42 @@ test('building pauses when the treasury cannot pay, and the player is warned fir
   await expect(projects(page).getByRole('group', { name: 'Lowmere grain store' })).toContainText(
     '▲ Paused',
   );
+});
+
+test('the card and the projects list agree with the timeline on when a site opens', async ({
+  page,
+}) => {
+  await startGame(page);
+  const budget = decisions(page);
+  await affordable(page).getByRole('button', { name: 'Plan Lowmere grain store' }).click();
+  await endQuarters(page, 1);
+
+  // One of its two quarters is built, and the next instalment can be paid.
+  const card = page.getByRole('region', { name: 'Lowmere grain store' });
+  const underway = projects(page).getByRole('group', { name: 'Lowmere grain store' });
+  const bar = page
+    .getByRole('main', { name: 'Country' })
+    .getByRole('region', { name: 'This term' })
+    .getByRole('row', { name: 'Lowmere grain store' });
+  await expect(card).toContainText('It opens next quarter, if each instalment is paid.');
+  await expect(underway).toContainText('Opens next quarter.');
+  await expect(bar).toContainText('Building · opens next quarter');
+
+  // A budget that takes everything leaves nothing for it, so the opening slips a quarter.
+  await budget.getByRole('slider', { name: 'Tax rate' }).fill('5');
+  for (const name of ['Agriculture', 'Food relief', 'Health', 'Education', 'Security']) {
+    await budget.getByRole('slider', { name }).fill('20');
+  }
+  await budget.getByRole('button', { name: 'Commit budget' }).click();
+
+  await expect(bar).toContainText('▲ Cannot be paid for this quarter · would open in 2 quarters');
+  await expect(card).toContainText(
+    '▲ The treasury cannot cover this quarter’s $3.0m instalment, so building will pause. It would then open in 2 quarters.',
+  );
+  await expect(underway).toContainText(
+    '▲ Cannot be paid for this quarter. Would open in 2 quarters.',
+  );
+  await expect(projects(page)).toContainText('1 underway · $0.0m this quarter');
 });
 
 test('a second country builds its sites through the same code', async ({ page }) => {

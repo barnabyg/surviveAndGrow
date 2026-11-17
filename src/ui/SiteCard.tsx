@@ -5,9 +5,12 @@ import {
   siteStatus,
   siteTerms,
   startFault,
+  termCalendar,
   type GameState,
+  type SiteSchedule,
 } from '../sim';
 import { formatDate, formatQuarters } from './format';
+import { opening } from './schedule';
 import { progressOf, siteStateName } from './SiteMark';
 
 interface SiteCardProps {
@@ -15,6 +18,10 @@ interface SiteCardProps {
   readonly siteId: string;
   /** The sites the player means to start building on when the quarter ends. */
   readonly plannedSiteIds: readonly string[];
+  /** When each project is built and in use, as the decisions in force will leave it. */
+  readonly schedule: readonly SiteSchedule[];
+  /** The sites whose instalment the treasury will not cover this quarter. */
+  readonly pausedSites: readonly string[];
   /** Plans building here this quarter, or takes the plan back. */
   readonly onPlan: (siteId: string, planned: boolean) => void;
   readonly onClose: () => void;
@@ -25,14 +32,19 @@ interface SiteCardProps {
  * how it stands. Building is started here. It begins when the quarter ends, so until then
  * the plan can be taken back.
  */
-export function SiteCard({ game, siteId, plannedSiteIds, onPlan, onClose }: SiteCardProps) {
+export function SiteCard(props: SiteCardProps) {
+  const { game, siteId, plannedSiteIds, schedule, pausedSites, onPlan, onClose } = props;
   const site = game.country.sites.find((candidate) => candidate.id === siteId);
   if (!site) return null;
   const terms = siteTerms(site.type);
   const status = siteStatus(game, site.id);
   const planned = plannedSiteIds.includes(site.id);
   const underWay = status.state === 'building' || status.state === 'paused';
-  const toGo = status.buildQuarters - status.quartersPaid;
+  // When it opens is the simulation's to say, so the card agrees with the timeline.
+  const scheduled = schedule.find((entry) => entry.siteId === site.id);
+  const opens = scheduled === undefined ? null : opening(scheduled, termCalendar(game));
+  const unpaid = pausedSites.includes(site.id);
+  const instalment = formatMoney(status.instalment);
   // An empty site can be started unless the treasury cannot cover it with what is planned.
   const fault =
     status.state === 'empty' && !planned ? startFault(game, [...plannedSiteIds, site.id]) : null;
@@ -57,20 +69,26 @@ export function SiteCard({ game, siteId, plannedSiteIds, onPlan, onClose }: Site
 
       {planned && (
         <p className="map-card__note">
-          Building starts when this quarter ends. The first instalment is{' '}
-          {formatMoney(status.instalment)}.
+          Building starts when this quarter ends. The first instalment is {instalment}.
         </p>
       )}
-      {status.state === 'building' && (
+      {status.state === 'building' && !unpaid && opens !== null && (
         <p className="map-card__note">
-          {toGo === 1 ? 'It opens next quarter' : `It opens in ${formatQuarters(toGo)}`}, if each
-          instalment is paid. The next is {formatMoney(status.instalment)}.
+          It opens {opens}, if each instalment is paid. The next is {instalment}.
         </p>
       )}
-      {status.state === 'paused' && (
+      {status.state === 'building' && unpaid && opens !== null && (
         <p className="warning-note">
-          ▲ Building is paused: the treasury could not cover the {formatMoney(status.instalment)}{' '}
-          instalment. It carries on when the instalment can be paid.
+          ▲ The treasury cannot cover this quarter’s {instalment} instalment, so building will
+          pause. It would then open {opens}.
+        </p>
+      )}
+      {status.state === 'paused' && opens !== null && (
+        <p className="warning-note">
+          ▲ Building is paused: the treasury could not cover the {instalment} instalment.{' '}
+          {unpaid
+            ? `It cannot cover it this quarter either, and the site would then open ${opens}.`
+            : `It carries on this quarter, and the site opens ${opens} if each instalment is paid.`}
         </p>
       )}
       {status.opened !== null && (
