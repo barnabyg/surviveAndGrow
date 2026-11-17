@@ -10,6 +10,7 @@ import {
   type Region,
   type RegionState,
   type Terrain,
+  tierFrom,
 } from '../sim';
 import type { MapPalette } from './mapPalette';
 
@@ -85,9 +86,22 @@ export function lensScale(lens: Lens, game: GameState, palette: MapPalette): Len
 /**
  * Where the living-standards lens changes colour, in thousandths, lowest first. The steps
  * are finer low down, where every country starts and where one region falling behind
- * another should show, and take in the lines of the prosperity tiers further up.
+ * another should show, and take in the lines of the prosperity tiers further up, read from
+ * the balance data so that retuning the tiers moves the lens with them.
  */
-const LIVING_STANDARD_CUTS = [200, 250, 350, 450, 700] as const;
+const LIVING_STANDARD_CUTS: readonly number[] = (() => {
+  const developing = tierFrom('developing');
+  const industrialising = tierFrom('industrialising');
+  return [
+    // Four fifths of the way to Developing, so that the poorest regions stand apart.
+    Math.round((developing * 4) / 5),
+    developing,
+    // Halfway from Developing to Industrialising.
+    Math.round((developing + industrialising) / 2),
+    industrialising,
+    tierFrom('prosperous'),
+  ];
+})();
 
 /** The step of the living-standards lens a living standard falls in: 0 for the lowest. */
 function livingStep(standard: number): number {

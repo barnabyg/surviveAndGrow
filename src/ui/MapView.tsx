@@ -8,6 +8,7 @@ import {
   FOOD_STAGE_NAMES,
   formatIndex,
   formatPercent,
+  isInUseState,
   MAP_FRAME,
   settlementLooks,
   siteStatus,
@@ -84,7 +85,7 @@ export function MapView(props: MapViewProps) {
   const isIdle = (siteId: string) => {
     const chain = chainOf(game, siteId);
     const state = siteStatus(game, siteId).state;
-    return chain !== null && chain.output === 0 && (state === 'operating' || state === 'decaying');
+    return chain !== null && chain.output === 0 && isInUseState(state);
   };
   // Settlements are built up and lit by their region's living standard, under every lens.
   const looks = settlementLooks(game);

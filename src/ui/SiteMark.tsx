@@ -1,5 +1,6 @@
 import {
   formatMoney,
+  isInUseState,
   siteTerms,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
@@ -75,7 +76,7 @@ export function SiteMark(props: SiteMarkProps) {
   const [x, y] = markerPlace(site);
   const underWay = status.state === 'building' || status.state === 'paused';
   const decaying = status.state === 'decaying';
-  const inUse = status.state === 'operating' || decaying;
+  const inUse = isInUseState(status.state);
   // A site not yet begun still has its whole cost to pay, so it says what that is.
   const cost = status.state === 'empty' ? formatMoney(siteTerms(site.type).cost) : null;
   const description = [

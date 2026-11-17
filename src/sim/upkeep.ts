@@ -6,7 +6,7 @@ import type { ReportEntry } from './report';
 import { siteTerms } from './sites';
 import { formatMoney } from './text';
 import type { Money } from './types';
-import type { SiteType } from './vocabulary';
+import type { ProjectStatus, SiteState, SiteType } from './vocabulary';
 
 interface Building {
   readonly country: Country;
@@ -114,7 +114,12 @@ export function resolveUpkeep(
 
 /** Whether a project is built and in use, in good repair or decaying. */
 export function inUse(project: Pick<Project, 'status'>): boolean {
-  return project.status === 'operating' || project.status === 'decaying';
+  return isInUseState(project.status);
+}
+
+/** Whether a site in this state is built and in use, in good repair or decaying. */
+export function isInUseState(state: ProjectStatus | SiteState): boolean {
+  return state === 'operating' || state === 'decaying';
 }
 
 function decayingEntry(site: Site, upkeep: UpkeepOutcome): ReportEntry {
