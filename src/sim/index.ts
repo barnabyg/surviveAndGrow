@@ -47,6 +47,7 @@ export {
   type RegionHarvest,
 } from './food';
 export { dateOfQuarter, seasonOf } from './calendar';
+export { drawAt } from './rng';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
@@ -57,6 +58,7 @@ export {
   type ProsperityScores,
   type ProsperityStatus,
 } from './prosperity';
+export { settlementLook, settlementLooks, type SettlementLook } from './settlements';
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
 export { termRecords, type TermRecord } from './terms';
 export { victoryStatus, type VictoryStatus } from './victory';
