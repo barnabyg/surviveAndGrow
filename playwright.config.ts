@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 // Set E2E_PORT to run from several worktrees at once without the servers colliding.
-const port = Number(process.env.E2E_PORT ?? 4173);
+const port = Number(process.env.E2E_PORT ?? 41731);
 const baseURL = `http://localhost:${port}`;
 
 export default defineConfig({
