@@ -318,7 +318,7 @@ integration runs the same command on every push and pull request.
 | Lint and static bug analysis | ESLint with the strict, type-checked typescript-eslint rules | `npm run lint` |
 | Type check | TypeScript in strict mode | `npm run typecheck` |
 | Simulation tests | Vitest | `npm run test:unit` |
-| Dependency vulnerabilities | `npm audit` | `npm run audit` |
+| Dependency vulnerabilities | `npm audit`, less the dated exceptions in `scripts/audit.ts` | `npm run audit` |
 | Build | Vite | `npm run build` (run by the next gate) |
 | Browser tests | Playwright, against the production build | `npm run test:e2e` |
 
