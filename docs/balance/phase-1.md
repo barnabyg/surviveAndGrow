@@ -61,6 +61,19 @@ Spreads are least / middle / most. Vote share counts only the games that reached
 - Squeeze then spend: famine brought the state down in Korr Highlands 1 (in quarter 20 / 20 / 20).
 - Hover then spend: famine brought the state down in no game.
 
+## After prosperity tiers (issue #31)
+
+The same Tavara run with tiers in place, on top of growth. Only the sensible player changes:
+it builds sites and spends on services, so it passes into Developing, and the 3-point drop in
+the approval baseline that comes with that costs it the vote. **It now wins 0.9% of games**
+(from 8.8% with growth alone). Every other player's results are unchanged. Retuning for
+growth and tiers together is Phase 2 work.
+
+| Player | Won | Lost the vote | Lost to famine | Vote share |
+| --- | ---: | ---: | ---: | --- |
+| Sensible | 0.9% | 99.0% | 0.1% | 28.8% / 42.7% / 52.1% |
+| Hover then spend | 15.1% | 84.9% | 0.0% | 35.0% / 46.9% / 53.9% |
+
 ## How the runs were made
 
 ```powershell
