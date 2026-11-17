@@ -6,7 +6,6 @@ import {
   foodStatus,
   pendingDilemma,
   previewQuarter,
-  siteSchedule,
   siteStatus,
   siteTerms,
   SPENDING_AREAS,
@@ -122,29 +121,66 @@ const habits = {
   campaignQuarters: 6,
   /** It likes the treasury to hold this many quarters of its spending before it builds. */
   cushionQuarters: 1,
-  /** It builds only what will be in use at least this long before the vote. */
-  buildIfInUseQuarters: 6,
-  /** What it builds first. */
-  buildOrder: ['irrigation', 'grainStore', 'farmRoad'] satisfies SiteType[] as readonly SiteType[],
+  /**
+   * Outside the campaign it keeps the tax at this rate at least, and spends what that leaves
+   * over on health and education.
+   */
+  investAtTaxPercent: 20,
+  /** What it puts by each quarter while something is still to be built, in Money units. */
+  savingPerQuarter: 30,
 } as const;
 
+/** The small sites, in the order the sensible players build them: irrigation first. */
+const SMALL_SITES: readonly SiteType[] = ['irrigation', 'grainStore', 'farmRoad'];
+
 /**
- * Plays sensibly, the way a careful person might on a first serious attempt. It keeps the
- * budget in balance and pays for relief only while someone is hungry, sending it to the
- * region worst off. It funds the farms a little more while the reserve is below its safe
- * level. It builds when the treasury can spare the money and the site will be in use well
- * before the vote, irrigation first. As the election nears it spends what it has saved on
- * what the preview says the public will thank it for.
+ * Plays sensibly, the way a careful person might on a first serious attempt, and builds no
+ * large site. It keeps the budget in balance and pays for relief only while someone is
+ * hungry, sending it to the region worst off. It funds the farms more while the reserve is
+ * below its safe level, and less again once it is not. It saves a little each quarter for
+ * the next small site and starts it once the treasury holds its cost, until every one is
+ * built; after that it spends what the budget can spare on health and education. As each
+ * election nears it spends what it has saved on what the preview says the public will
+ * thank it for.
  */
-const sensible: Decide = (game) => {
+const sensible: Decide = builder(SMALL_SITES);
+
+/**
+ * Plays as the sensible player does, but builds the large sites first: power, which lifts
+ * the output of every region a line reaches, and then the mine's chain, outlet first. The
+ * game will not start a site the treasury cannot pay for outright, so it saves for each in
+ * turn. It builds through every term and stops only for the campaign, so what it starts
+ * late pays off after the vote. Then it builds the small sites.
+ */
+const chainBuilder: Decide = builder([
+  'powerStation',
+  'powerLine',
+  'port',
+  'trunkRoad',
+  'mine',
+  ...SMALL_SITES,
+]);
+
+/** A sensible player who builds every site of the types given, in that order. */
+function builder(order: readonly SiteType[]): Decide {
+  return (game) => steward(game, order);
+}
+
+/**
+ * The sensible way of running the country, building the sites of the types given in turn: a
+ * balanced budget that puts a little by while something is left to build, relief for the
+ * hungry, the farms helped while the reserve is low, and the savings spent on approval as
+ * the vote nears. The instalments on what is being built come out of savings.
+ */
+function steward(game: GameState, order: readonly SiteType[]): Decisions {
   const { quartersAway } = electionStatus(game);
   const quartersLeft = quartersAway + 1;
   const campaigning = quartersLeft <= habits.campaignQuarters;
 
   // Relief goes to the hungry region furthest gone, and is paid for only when one is.
   const reliefRegionId = hungriest(game);
-  let budget = withRelief(game, game.budget, reliefRegionId);
-  budget = withFarms(game, budget);
+  let budget = withRelief(game, usualServices(game), reliefRegionId);
+  budget = withGrowingFarms(game, budget);
 
   const dilemmaChoice = answer(game, (option) => judge(game, option, campaigning));
   const choices = { reliefRegionId, dilemmaChoice };
@@ -156,11 +192,27 @@ const sensible: Decide = (game) => {
     return { budget, ...choices };
   }
 
-  budget = balanced(game, budget, choices);
-  const startProjects = worthBuilding(game, budget);
-  if (startProjects.length > 0) budget = balanced(game, budget, { ...choices, startProjects });
+  const next = nextSite(game, order);
+  const saving = next === null ? 0 : habits.savingPerQuarter;
+  const floor = saving - Math.min(instalmentsDue(game), game.treasury);
+  budget = balanced(game, budget, choices, floor);
+  if (next === null) budget = invested(game, budget, choices, floor);
+  // What is already promised to the sites being built is not there to spend.
+  const free = game.treasury - remainingCost(game);
+  const startProjects = next !== null && next.cost <= free ? [next.siteId] : [];
+  if (startProjects.length > 0) {
+    budget = balanced(game, budget, { ...choices, startProjects }, floor);
+  }
   return { budget, ...choices, startProjects };
-};
+}
+
+/** What the sites being built cost this quarter. */
+function instalmentsDue(game: GameState): Money {
+  return game.country.sites.reduce((total, site) => {
+    const status = siteStatus(game, site.id);
+    return ['building', 'paused'].includes(status.state) ? total + status.instalment : total;
+  }, 0);
+}
 
 type Choices = Omit<Decisions, 'budget'>;
 
@@ -198,15 +250,64 @@ function withFarms(game: GameState, budget: Budget): Budget {
   return spend(budget, 'agriculture', amount);
 }
 
-/** The lowest tax rate at which the quarter does not run a deficit. */
-function balanced(game: GameState, budget: Budget, choices: Choices): Budget {
+/**
+ * The budget with health, education and security back where the game began them: what a
+ * campaign added is taken back once the vote is over.
+ */
+function usualServices(game: GameState): Budget {
+  const { spending } = game.country.start.budget;
+  return {
+    ...game.budget,
+    spending: {
+      ...game.budget.spending,
+      health: spending.health,
+      education: spending.education,
+      security: spending.security,
+    },
+  };
+}
+
+/**
+ * The farms funded as the people to be fed grow in number: two steps more each quarter the
+ * reserve is below its safe level, and one step less, down to the usual, each quarter it is not.
+ */
+function withGrowingFarms(game: GameState, budget: Budget): Budget {
+  const usual = game.country.start.budget.spending.agriculture;
+  const { step, max } = budgetLimits.spending;
+  const now = budget.spending.agriculture;
+  const amount = foodStatus(game).belowSafeLevel
+    ? Math.min(max, Math.max(usual, now) + 2 * step)
+    : Math.max(usual, now - step);
+  return spend(budget, 'agriculture', amount);
+}
+
+/** The lowest tax rate at which the quarter leaves at least `floor` over. */
+function balanced(game: GameState, budget: Budget, choices: Choices, floor: Money = 0): Budget {
   const { min, max }: { min: number; max: number } = budgetLimits.taxRatePercent;
   for (let rate = min; rate <= max; rate += 1) {
     const tried = { ...budget, taxRatePercent: rate };
     const preview = previewQuarter(game, { budget: tried, ...choices });
-    if (preview.balance.min >= 0 && !preview.spendingCut) return tried;
+    if (preview.balance.min >= floor && !preview.spendingCut) return tried;
   }
   return { ...budget, taxRatePercent: max };
+}
+
+/**
+ * A balanced budget with what the tax rate it keeps to can spare spent on health and
+ * education, a step at a time to whichever has less. Prosperity is built from both.
+ */
+function invested(game: GameState, budget: Budget, choices: Choices, floor: Money): Budget {
+  if (budget.taxRatePercent > habits.investAtTaxPercent) return budget;
+  const { step, max } = budgetLimits.spending;
+  let best: Budget = { ...budget, taxRatePercent: habits.investAtTaxPercent };
+  for (;;) {
+    const area = best.spending.health <= best.spending.education ? 'health' : 'education';
+    if (best.spending[area] + step > max) return best;
+    const tried = spend(best, area, best.spending[area] + step);
+    const preview = previewQuarter(game, { budget: tried, ...choices });
+    if (preview.balance.min < floor || preview.spendingCut) return best;
+    best = tried;
+  }
 }
 
 /**
@@ -249,32 +350,28 @@ function steps(budget: Budget): Budget[] {
   return tried;
 }
 
-/**
- * The one site worth starting now, if any: the first in the building order that the
- * treasury can pay for outright with its cushion left over, and that will be in use long
- * enough before the vote. One project at a time.
- */
-function worthBuilding(game: GameState, budget: Budget): string[] {
-  const underWay = game.country.sites.some((site) =>
-    ['building', 'paused'].includes(siteStatus(game, site.id).state),
-  );
-  if (underWay) return [];
-  const quarterly = SPENDING_AREAS.reduce((total, area) => total + budget.spending[area], 0);
-  const spare = game.treasury - habits.cushionQuarters * quarterly;
-  for (const type of habits.buildOrder) {
-    for (const site of game.country.sites) {
-      if (site.type !== type || siteStatus(game, site.id).state !== 'empty') continue;
-      if (siteTerms(type).cost > spare) continue;
-      if (siteSchedule(game, site.id).inUseBeforeVote < habits.buildIfInUseQuarters) continue;
-      // Irrigation goes where drought can strike; the rest wherever there is a site.
-      const droughtProne =
-        (game.country.regions.find((region) => region.id === site.regionId)?.eventLikelihood
-          .drought ?? 0) > 0;
-      if (type === 'irrigation' && !droughtProne) continue;
-      return [site.id];
-    }
+/** The next site to build: the first still empty of the types given, in that order. */
+function nextSite(
+  game: GameState,
+  order: readonly SiteType[],
+): { readonly siteId: string; readonly cost: Money } | null {
+  for (const type of order) {
+    const site = game.country.sites.find(
+      (candidate) => candidate.type === type && siteStatus(game, candidate.id).state === 'empty',
+    );
+    if (site !== undefined) return { siteId: site.id, cost: siteTerms(type).cost };
   }
-  return [];
+  return null;
+}
+
+/** What the sites being built have still to be paid. */
+function remainingCost(game: GameState): Money {
+  return game.country.sites.reduce((total, site) => {
+    const status = siteStatus(game, site.id);
+    if (!['building', 'paused'].includes(status.state)) return total;
+    const paid = Math.floor((status.cost * status.quartersPaid) / status.buildQuarters);
+    return total + status.cost - paid;
+  }, 0);
 }
 
 /**
@@ -322,8 +419,14 @@ export const SCRIPTED_PLAYERS: readonly ScriptedPlayer[] = [
   {
     name: 'Sensible',
     manner:
-      'Balances the budget, relieves hunger, builds early, and spends its savings before the vote.',
+      'Balances the budget, relieves hunger, builds small sites early, and spends its savings before the vote. Builds no large sites.',
     decide: sensible,
+  },
+  {
+    name: 'Chain builder',
+    manner:
+      'Plays as the sensible player does, and goes on to build power and the mine with its road and port.',
+    decide: chainBuilder,
   },
 ];
 
@@ -339,8 +442,9 @@ function relieving(
 const firstOption: (option: DilemmaOption) => number = () => 0;
 
 /**
- * Players that each lean on one lever. They are not part of the balance targets: they are
- * here to show whether any single trick wins on its own (`BALANCE_PLAYERS=all`).
+ * Players that each lean on one lever, or build only part of what the chain builder builds.
+ * They are not part of the balance targets: they are here to show whether any single trick
+ * wins on its own, and what each large project is worth (`BALANCE_PLAYERS=all`).
  */
 export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
   {
@@ -385,12 +489,29 @@ export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
     },
   },
   {
+    name: 'Power only',
+    manner: 'Plays as the chain builder does, but builds only the power station and its lines.',
+    decide: builder(['powerStation', 'powerLine', ...SMALL_SITES]),
+  },
+  {
+    name: 'Chain by the quay',
+    manner: 'Plays as the chain builder does, but ships through the shallow port.',
+    decide: builder([
+      'powerStation',
+      'powerLine',
+      'shallowPort',
+      'trunkRoad',
+      'mine',
+      ...SMALL_SITES,
+    ]),
+  },
+  {
     name: 'Hover then spend',
     manner:
       'Tax as high as keeps approval just clear of strikes until the campaign, then everything saved on approval.',
     decide: (game) => {
       const quartersLeft = electionStatus(game).quartersAway + 1;
-      const start = relieving(game, withFarms(game, game.budget));
+      const start = relieving(game, withFarms(game, usualServices(game)));
       const choices = {
         reliefRegionId: start.reliefRegionId,
         dilemmaChoice: answer(game, (option) => approvalOf(option) + moneyOf(option) / 4),
