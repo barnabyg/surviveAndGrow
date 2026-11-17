@@ -4,15 +4,17 @@ import {
   advanceQuarter,
   approvalStatus,
   createGame,
+  expectationsIn,
+  nextTier,
   prosperityStatus,
   risksAhead,
+  tierAt,
   tierStatus,
   type Budget,
   type Country,
   type GameState,
   type TurnReport,
 } from '../../src/sim';
-import { expectationsIn, nextTier, tierAt } from '../../src/sim/tiers';
 import testlandFile from '../countries/testland.json';
 import { withChances } from './countries';
 

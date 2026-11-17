@@ -57,7 +57,7 @@ export {
   type ProsperityScores,
   type ProsperityStatus,
 } from './prosperity';
-export { tierFrom, tierStatus, type TierStatus } from './tiers';
+export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export {
   loadSave,
