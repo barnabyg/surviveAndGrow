@@ -18,9 +18,12 @@ import { formatQuarters } from './text';
 import type { Contribution, Figure, GameDate, Money, Quarter } from './types';
 import {
   APPROVAL_DRIVERS,
+  DILEMMA_EFFECT_KINDS,
   DILEMMA_TYPES,
+  ENDING_CAUSES,
   EVENT_TYPES,
   FOOD_STAGES,
+  OUTCOME_STATUSES,
   PROJECT_STATUSES,
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
@@ -365,7 +368,7 @@ function readEffect(
   const kind = oneOf(
     saved.kind,
     `${path}.kind`,
-    ['treasury', 'reserve', 'regionGrain', 'approval'] satisfies DilemmaEffect['kind'][],
+    DILEMMA_EFFECT_KINDS satisfies readonly DilemmaEffect['kind'][],
     'an effect',
   );
   switch (kind) {
@@ -390,7 +393,7 @@ function readOutcome(
   const status = oneOf(
     saved.status,
     `${path}.status`,
-    ['playing', 'won', 'lost'] satisfies Outcome['status'][],
+    OUTCOME_STATUSES satisfies readonly Outcome['status'][],
     'an outcome',
   );
   if (status === 'playing') return { status };
@@ -398,7 +401,7 @@ function readOutcome(
     headline: text(saved.headline, `${path}.headline`),
     summary: text(saved.summary, `${path}.summary`),
   };
-  const cause = oneOf(saved.cause, `${path}.cause`, ['famine', 'election'], 'a way to end');
+  const cause = oneOf(saved.cause, `${path}.cause`, ENDING_CAUSES, 'a way to end');
   if (cause === 'election') {
     return {
       ...ending,

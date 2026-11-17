@@ -16,6 +16,7 @@ import {
   type GameState,
   type Range,
   type RegionUnrest,
+  UNREST_KINDS,
 } from '../sim';
 import { formatRange, formatSigned } from './format';
 
@@ -163,7 +164,7 @@ export function BudgetPanel(props: BudgetPanelProps) {
           format={formatPercent}
           onlyIfMoved
         />
-        {(['strikes', 'protests'] as const).map((unrest) => {
+        {UNREST_KINDS.map((unrest) => {
           const regions = regionsIn(after.unrest, unrest);
           return (
             regions.length > 0 && (

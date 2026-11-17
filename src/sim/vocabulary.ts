@@ -60,6 +60,15 @@ export type DilemmaType = (typeof DILEMMA_TYPES)[number];
 export const DILEMMA_PLACES = ['struckByEvent', 'inUnrest'] as const;
 export type DilemmaPlace = (typeof DILEMMA_PLACES)[number];
 
+/** The kinds of effect a dilemma's option can have on the country. */
+export const DILEMMA_EFFECT_KINDS = ['treasury', 'reserve', 'regionGrain', 'approval'] as const;
+
+/** How a game stands: still being played, or ended in a win or a loss. */
+export const OUTCOME_STATUSES = ['playing', 'won', 'lost'] as const;
+
+/** The ways a game can end. */
+export const ENDING_CAUSES = ['famine', 'election'] as const;
+
 /** The kinds of thing that can be built. A country file says where each could stand. */
 export const SITE_TYPES = ['irrigation', 'farmRoad', 'grainStore'] as const;
 export type SiteType = (typeof SITE_TYPES)[number];
@@ -128,8 +137,11 @@ export const APPROVAL_DRIVER_NAMES: Readonly<Record<ApprovalDriver, string>> = {
   events: 'Events',
 };
 
+/** The kinds of unrest a region can be in, the milder first. */
+export const UNREST_KINDS = ['strikes', 'protests'] as const;
+
 /** How far a region's discontent has gone, from none to the worst. */
-export const UNREST_LEVELS = ['calm', 'strikes', 'protests'] as const;
+export const UNREST_LEVELS = ['calm', ...UNREST_KINDS] as const;
 export type Unrest = (typeof UNREST_LEVELS)[number];
 
 export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {

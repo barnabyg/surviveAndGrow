@@ -13,6 +13,7 @@ import {
   type Point,
   type Region,
   type Settlement,
+  UNREST_KINDS,
 } from '../sim';
 import { lensFill, needsLightInk, type Lens } from './lens';
 import { tierOnePalette, type MapPalette } from './mapPalette';
@@ -78,7 +79,7 @@ export function MapView(props: MapViewProps) {
     >
       {/* The hatching for strikes, and the cross-hatching for protests. */}
       <defs>
-        {(['strikes', 'protests'] as const).map((unrest) => (
+        {UNREST_KINDS.map((unrest) => (
           <pattern
             key={unrest}
             id={`${hatchId}-${unrest}`}
