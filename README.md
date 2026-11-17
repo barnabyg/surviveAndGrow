@@ -92,7 +92,7 @@ What is in the game:
   treasury tax. Below 30% it protests and produces 60% less. Both end when approval recovers.
 - Prosperity, the game's objective, is the fourth figure in the top bar, on a scale of 0 to 100
   against the target of 70. Each region has a living standard built from food security, income
-  per head, health, education and infrastructure access (the sites in use there), and prosperity
+  per head, health, education and infrastructure access (the sites in use there, and power), and prosperity
   is the regions' living standards averaged by population. The region list in the left column
   shows each region's living standard as a figure and a bar, so inequality shows at a glance.
 - Prosperity is divided into four tiers: Subsistence, then Developing from 25, Industrialising
@@ -119,8 +119,8 @@ What is in the game:
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
   is a button: select it to pick that region out on the map and open its card. A quarter in which
   nothing notable happened says so.
-- The map marks the sites where something could be built: an irrigation scheme, a farm road or a
-  grain store. An empty site is a dashed round marker with the symbol of its type, and a possible
+- The map marks the sites where something could be built, such as an irrigation scheme, a farm
+  road or a grain store. An empty site is a dashed round marker with the symbol of its type, and a possible
   road is a dashed line. Select one to open a card with its cost, build time and effect. The
   legend under the map explains the marks.
 - Start a project from a site's card, or from the list of what the treasury can afford in the
@@ -163,6 +163,17 @@ What is in the game:
   what starting it closes for good, and the two cannot be planned together. Once building begins
   on one, the other is closed: it is faded and struck through on the map, and its card says which
   choice closed it and offers no start.
+- Power reaches a region along a power line. Tavara has one power station, at Korr Falls ($30.0m,
+  5 quarters to build, $0.5m upkeep), and three power lines from it, to Arden, Lowmere and
+  Korrgate ($6.0m, 2 quarters, $0.1m upkeep each). A region is powered while a power line of its
+  own in use links it, directly or through other lines, to a station in use; a station alone
+  powers no region, not even its own. A powered region produces 20% more of its own output, which
+  is taxed as a line of its own, and gains 15 points of infrastructure access. While the station
+  or a line on the way decays, the region has half of each. The region's card says where its
+  power comes from and breaks its output and infrastructure access into their parts, and a power
+  site's card names the regions it powers. Power lines are drawn as fine dashed lines in every
+  state. A site can need power to produce: in the test country, the mine's chain runs through a
+  power line and its station as well as a trunk road and a port.
 - Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the
@@ -205,24 +216,28 @@ All positions are coordinates in a fixed map frame 1080 wide and 720 high.
 
 `sites` lists where things can be built. Each site has an `id`, a `name`, the `region` it belongs
 to and a `type` from the game's own list: `irrigation`, `farmRoad`, `grainStore`, `mine`,
-`trunkRoad`, `port` or `shallowPort`. What a type costs, how long it takes and what it does are
+`trunkRoad`, `port`, `shallowPort`, `powerStation` or `powerLine`. What a type costs, how long it takes and what it does are
 the game's, not the country's.
 
-- An irrigation scheme, a grain store, a mine, a port and a shallow port stand in one place, given
-  by `at`, which must lie inside the site's region.
-- A farm road and a trunk road run along a line, given by `route` as two or more positions. Every position must
+- An irrigation scheme, a grain store, a mine, a port, a shallow port and a power station stand
+  in one place, given by `at`, which must lie inside the site's region.
+- A farm road, a trunk road and a power line run along a line, given by `route` as two or more positions. Every position must
   lie inside the country, and the route must start or end in the site's region, which is the
-  region the road serves.
+  region the road serves or the line powers.
 - In a file of `"formatVersion": 2`, a site may list the `id`s of the sites it depends on in
   `dependsOn`. Each must be another site in the file, and the dependencies must not go round in a
   circle. A file of format 1 cannot say this, and still loads as it is.
 - A mine earns only through its chain, so it must depend, directly or through other sites, on a
   port or shallow port: in Tavara the mine depends on a trunk road and the trunk road on a port. A
   mine therefore needs format 2.
+- A power line carries power only from a station, so it must depend on a power station, directly
+  or through other power lines: in Tavara each line depends on Korr Falls power station. A power
+  line therefore needs format 2. Any site may depend on a power line or station, as a mine may
+  to need power for its chain.
 - In a file of `"formatVersion": 3`, a site may list the `id`s of the sites it is an alternative
   to in `alternatives`. Saying so on one side is enough: building on either closes the other. Each
   must be another site in the file that plays the same part in a chain (a port and a shallow port
-  are both outlets), and a site may not depend on its own alternative. A site that depends on a
+  are both outlets) and in bringing power, and a site may not depend on its own alternative. A site that depends on a
   site with alternatives depends on whichever of them is chosen: in Tavara the trunk road depends
   on Saltmouth port, and Saltmouth quay, its alternative, serves as well. Files of formats 1 and 2
   cannot say this, and still load as they are.
