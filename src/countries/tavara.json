@@ -190,7 +190,7 @@
       "output": 16,
       "farmland": 180,
       "eventLikelihood": {
-        "drought": 0.1
+        "drought": 0.15
       }
     },
     {
@@ -227,7 +227,7 @@
       "output": 28,
       "farmland": 200,
       "eventLikelihood": {
-        "drought": 0
+        "drought": 0.07
       }
     },
     {
@@ -285,7 +285,7 @@
       "output": 12,
       "farmland": 260,
       "eventLikelihood": {
-        "drought": 0.3
+        "drought": 0.35
       }
     },
     {
@@ -342,7 +342,7 @@
       "output": 52,
       "farmland": 130,
       "eventLikelihood": {
-        "drought": 0
+        "drought": 0.1
       }
     }
   ],

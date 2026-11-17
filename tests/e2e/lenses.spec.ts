@@ -104,9 +104,9 @@ test('the approval lens colours each region by approval, labels it with the figu
     'Hatched: strikes',
     'Cross-hatched: protests',
   ]);
-  await expect(map(page).getByText('Approval: 54.3%', { exact: true })).toHaveCount(6);
-  await expect(region(page, 'Arden Vale')).toHaveAccessibleName('Arden Vale, approval 54.3%');
-  expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '50% to 60%'));
+  await expect(map(page).getByText('Approval: 45.8%', { exact: true })).toHaveCount(6);
+  await expect(region(page, 'Arden Vale')).toHaveAccessibleName('Arden Vale, approval 45.8%');
+  expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '40% to 50%'));
   await expect(map(page).getByRole('img', { name: /^Strikes in/ })).toHaveCount(0);
 
   // The top rate of tax drives every region below 40% within three quarters.
@@ -114,19 +114,19 @@ test('the approval lens colours each region by approval, labels it with the figu
   await decisions(page).getByRole('button', { name: 'Commit budget' }).click();
   await endQuarters(page, 3);
 
-  await expect(map(page).getByText('Approval: 36.8%', { exact: true })).toHaveCount(6);
+  await expect(map(page).getByText('Approval: 38.5%', { exact: true })).toHaveCount(6);
   await expect(region(page, 'Arden Vale')).toHaveAccessibleName(
-    'Arden Vale, approval 36.8%, Strikes · output −15%',
+    'Arden Vale, approval 38.5%, Strikes · output −30%',
   );
   expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '30% to 40%'));
   await expect(map(page).getByRole('img', { name: 'Strikes in Arden Vale' })).toBeVisible();
   await expect(map(page).getByRole('img', { name: /^Strikes in/ })).toHaveCount(6);
-  await expect(map(page).getByText('▲ Strikes · output −15%')).toHaveCount(6);
+  await expect(map(page).getByText('▲ Strikes · output −30%')).toHaveCount(6);
 
   // The hatching belongs to the approval lens; the words stay under every lens.
   await lens(page, 'Country').click();
   await expect(map(page).getByRole('img', { name: /^Strikes in/ })).toHaveCount(0);
-  await expect(map(page).getByText('▲ Strikes · output −15%')).toHaveCount(6);
+  await expect(map(page).getByText('▲ Strikes · output −30%')).toHaveCount(6);
 });
 
 test('the chosen lens stays from quarter to quarter, with sites, events and relief still shown', async ({
@@ -138,7 +138,7 @@ test('the chosen lens stays from quarter to quarter, with sites, events and reli
   await endQuarters(page, 2);
 
   await expect(lens(page, 'Approval')).toHaveAttribute('aria-pressed', 'true');
-  await expect(map(page).getByText('Approval: 54.3%', { exact: true })).toHaveCount(6);
+  await expect(map(page).getByText('Approval: 45.8%', { exact: true })).toHaveCount(6);
   await expect(page.getByRole('banner').getByText('Year 1 · Quarter 3')).toBeVisible();
 
   // Relief sent to a region is tagged on the map whichever lens is chosen.
@@ -173,9 +173,9 @@ test('a second country is seen through the same lenses', async ({ page }) => {
   await expect(scale(page, 'Country').getByRole('listitem')).toHaveText(['Plains', 'Arid']);
 
   await lens(page, 'Approval').click();
-  await expect(map(page, 'Testland').getByText('Approval: 65.6%', { exact: true })).toHaveCount(2);
+  await expect(map(page, 'Testland').getByText('Approval: 57.1%', { exact: true })).toHaveCount(2);
   expect(await fillOf(region(page, 'Northfield', 'Testland'))).toBe(
-    await swatchOf(scale(page, 'Approval'), '60% and over'),
+    await swatchOf(scale(page, 'Approval'), '50% to 60%'),
   );
 
   await lens(page, 'Food').click();

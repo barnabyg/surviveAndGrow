@@ -34,7 +34,7 @@ describe('the history of the vital signs in Tavara', () => {
         treasury: 420,
         foodReserve: 182000,
         quarterlyConsumption: 260000,
-        approval: 543,
+        approval: 458,
       },
     ]);
   });
@@ -50,28 +50,28 @@ describe('the history of the vital signs in Tavara', () => {
         treasury: 420,
         foodReserve: 182000,
         quarterlyConsumption: 260000,
-        approval: 543,
+        approval: 458,
       },
       {
         date: { year: 1, quarter: 2 },
         treasury: 370,
         foodReserve: 167440,
         quarterlyConsumption: 260000,
-        approval: 543,
+        approval: 458,
       },
       {
         date: { year: 1, quarter: 3 },
         treasury: 320,
         foodReserve: 154045,
         quarterlyConsumption: 260000,
-        approval: 543,
+        approval: 458,
       },
       {
         date: { year: 1, quarter: 4 },
         treasury: 270,
         foodReserve: 141722,
         quarterlyConsumption: 260000,
-        approval: 543,
+        approval: 458,
       },
     ]);
   });

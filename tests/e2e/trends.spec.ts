@@ -43,7 +43,7 @@ test('trend lines appear beside the vital signs once quarters have been played',
   ).toBeVisible();
   await expect(
     approval(page).getByRole('img', {
-      name: 'Approval over the last 3 quarters: unchanged at 54.3%, and is above the 40% strike threshold.',
+      name: 'Approval over the last 3 quarters: unchanged at 45.8%, and is above the 40% strike threshold.',
     }),
   ).toBeVisible();
   await expect(treasury(page).getByText('No trend yet')).toHaveCount(0);
@@ -60,7 +60,7 @@ test('the approval chart marks the strike threshold and the 50% line', async ({ 
   const chart = approvalChart(page);
   await expect(
     chart.getByRole('img', {
-      name: 'Approval over the last 2 quarters: unchanged at 54.3%, and is above the 40% strike threshold and above the 50% line.',
+      name: 'Approval over the last 2 quarters: unchanged at 45.8%, and is above the 40% strike threshold and below the 50% line.',
     }),
   ).toBeVisible();
   await expect(chart.getByText('Strikes below 40%')).toBeVisible();

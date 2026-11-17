@@ -253,7 +253,7 @@ export function outputPermille(unrest: Unrest): number {
   return unrest === 'calm' ? 1000 : balance.unrest[unrest].outputPermille;
 }
 
-/** Unrest and what it does, in a few words: "Strikes · output −15%". Nothing when calm. */
+/** Unrest and what it does, in a few words: "Strikes · output −30%". Nothing when calm. */
 export function describeUnrest(unrest: Unrest): string | null {
   return unrest === 'calm'
     ? null

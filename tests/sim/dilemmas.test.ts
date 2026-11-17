@@ -31,6 +31,23 @@ const countries = [
 
 const keep = (game: GameState): Budget => game.budget;
 
+/**
+ * Twice the country's usual spending on its farms, paid for by dropping relief and adding
+ * two points of tax: every region grows enough to eat whatever the weather, so nobody goes
+ * hungry and approval stays well clear of strikes.
+ */
+const provident = (game: GameState): Budget => {
+  const usual = game.country.start.budget;
+  return {
+    taxRatePercent: usual.taxRatePercent + 2,
+    spending: {
+      ...usual.spending,
+      agriculture: Math.min(200, usual.spending.agriculture * 2),
+      foodRelief: 0,
+    },
+  };
+};
+
 /** Top tax and nothing for health, education or security: approval settles far below 40%. */
 const harsh = (game: GameState): Budget => ({
   taxRatePercent: 40,
@@ -462,7 +479,7 @@ describe.each(countries)('when dilemmas arise in $name', ({ file, dry }) => {
   });
 
   it('brings strikers to talks only while a region is in unrest', () => {
-    expect(quarters({ dilemmas: { strikeTalks: 1 } })).toEqual([]);
+    expect(quarters({ dilemmas: { strikeTalks: 1 } }, provident)).toEqual([]);
     expect(quarters({ dilemmas: { strikeTalks: 1 } }, harsh).length).toBeGreaterThan(0);
   });
 

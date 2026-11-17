@@ -327,7 +327,7 @@ describe('event likelihoods in a country file', () => {
       entry.eventLikelihood.drought,
     ]);
 
-    expect(likelihoods).toContainEqual(['The Dry East', 0.3]);
+    expect(likelihoods).toContainEqual(['The Dry East', 0.35]);
     expect(likelihoods).toContainEqual(['Lowmere Plains', 0]);
   });
 

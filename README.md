@@ -40,7 +40,23 @@ the saved game or to start a new one:
 - A country file you are trying out with `?country=` keeps its own save, apart from the game on
   the built-in country.
 
-What is in the game so far:
+### Your first term
+
+The game is the first phase of the design, "Survive a term": 20 quarters, ending in an election.
+It is meant to be hard. You take office with approval near 46%, a budget that loses $5.0m a
+quarter, and a food reserve below its safe level. Left alone, the country votes you out, if a
+drought does not starve a region first.
+
+- **Feed people first.** Watch the risks in the left column. When a region runs short, pick it
+  on the map and send it relief, and pay for relief only while someone needs it.
+- **Stay solvent.** The treasury cannot go below nothing: spending is cut, and building pauses.
+- **Earn the vote over the whole term.** Approval moves slowly towards where your tax and
+  spending would settle it, and the election forecast in the right column says where you stand.
+  Below 40% a region strikes, which costs far more revenue than the tax that provoked it.
+- **If you build, build early.** The timeline under the map shows how long a site would be in
+  use before the vote.
+
+What is in the game:
 
 - Set the tax rate and the spending for each area in the right column. The panel shows what a
   change would do before you commit it. End the quarter with the button in the top bar.
@@ -58,11 +74,12 @@ What is in the game so far:
   and approval over the term. From it you can replay the same game or start a new one.
 - Approval is the third vital sign. Each region has its own, and the national figure is their
   average by population. It answers to the region's food situation, the tax rate, and health,
-  education and security spending per head, and it moves a part of the way each quarter towards
-  where those would settle it. The budget panel shows what a change would do to approval next
+  education and security spending per head, and it moves a tenth of the way each quarter towards
+  where those would settle it, so the public remembers: a last-minute giveaway moves the vote
+  little, and a hard year is not forgotten by polling day. The budget panel shows what a change would do to approval next
   quarter and where it is heading.
-- A region whose approval falls below 40% goes on strike and produces 15% less, which costs the
-  treasury tax. Below 30% it protests and produces 30% less. Both end when approval recovers.
+- A region whose approval falls below 40% goes on strike and produces 30% less, which costs the
+  treasury tax. Below 30% it protests and produces 60% less. Both end when approval recovers.
 - Click the treasury, the food reserve or approval in the top bar to see what moved it. Approval
   also lists what it is made of.
 - A short trend line beside the treasury, the food reserve and approval shows the last eight
@@ -192,6 +209,9 @@ nothing; a short run of the same players over a few seeds is part of the simulat
 Three players are what the balance is judged by: one that does nothing, one that spends
 everything on popularity, and one that plays sensibly. They are in `tests/balance/players.ts`,
 with a handful of one-lever players that probe for a trick that wins on its own.
+
+The run the Phase 1 values were tuned to, with its seeds, the values changed and what it showed,
+is recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md).
 
 Set these before the command to change the run:
 

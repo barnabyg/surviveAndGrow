@@ -79,10 +79,10 @@ describe('approval when a game starts in Tavara', () => {
   it('stands where the starting budget puts it, the same in every region', () => {
     const game = createGame(tavara(), 1);
 
-    // Baseline 54.0%; tax at the neutral 18%; health a little over what people expect
+    // Baseline 45.5%; tax at the neutral 18%; health a little over what people expect
     // (+0.7), education and security a little under (−0.2 each).
-    expect(national(game)).toBe(543);
-    expect(game.regions.map((region) => region.approval)).toEqual([543, 543, 543, 543, 543, 543]);
+    expect(national(game)).toBe(458);
+    expect(game.regions.map((region) => region.approval)).toEqual([458, 458, 458, 458, 458, 458]);
     expect(game.regions.map((region) => region.unrest)).toEqual([
       'calm',
       'calm',
@@ -105,7 +105,7 @@ describe('approval when a game starts in Tavara', () => {
     const status = approvalStatus(createGame(tavara(), 1));
 
     expect(status.causes).toEqual([
-      { label: 'Baseline', amount: 540 },
+      { label: 'Baseline', amount: 455 },
       { label: 'Food', amount: 0 },
       { label: 'Tax rate', amount: 0 },
       { label: 'Health spending', amount: 7 },
@@ -162,25 +162,45 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
     for (const other of ['Food', 'Tax rate']) expect(line(reports[0], other)).toBe(0);
   });
 
-  it('keeps moving for several quarters after a change, then settles', () => {
+  it('keeps moving for years after a large change, by a smaller step each quarter', () => {
     const start = createGame(country(), 3);
     const { reports } = play(start, 16, budgetWith(start, { taxRatePercent: 28 }));
     const changes = reports.map((report) => report.approval.change);
 
-    // The first quarters each take a smaller step down; in the end nothing moves.
+    // The first quarters each take a smaller step down, and it is still moving four years on.
     expect(changes[0]).toBeLessThan(0);
     expect(changes[1]).toBeLessThan(0);
     expect(changes[1]).toBeGreaterThan(changes[0] ?? 0);
     expect(changes[2]).toBeGreaterThan(changes[1] ?? 0);
-    expect(changes.at(-1)).toBe(0);
+    for (const change of changes) expect(change).toBeLessThan(0);
+    expect(changes.at(-1)).toBeGreaterThan(changes[2] ?? 0);
+  });
+
+  it('settles after a small change', () => {
+    const start = createGame(country(), 3);
+    // Nothing for relief, which nobody needs here, so the treasury lasts the whole time.
+    const budget = budgetWith(start, {
+      taxRatePercent: start.budget.taxRatePercent + 1,
+      spending: { foodRelief: 0 },
+    });
+    const { reports, state } = play(start, 16, budget);
+
+    // One point of tax is worth 1.2 points of approval: it is all there within three years.
+    expect(reports[0]?.approval.change).toBeLessThan(0);
+    expect(reports.at(-1)?.approval.change).toBe(0);
+    expect(national(state)).toBe(national(start) - 12);
   });
 
   it('recovers when the cause is removed', () => {
     const start = createGame(country(), 3);
-    const squeezed = play(start, 4, budgetWith(start, { taxRatePercent: 30 }));
-    const relaxed = play(squeezed.state, 16, start.budget);
+    // Nothing for relief, which nobody needs here, so the treasury lasts the whole time.
+    const usual = budgetWith(start, { spending: { foodRelief: 0 } });
+    const raised = { ...usual, taxRatePercent: usual.taxRatePercent + 2 };
+    const squeezed = play(start, 4, raised);
+    const relaxed = play(squeezed.state, 16, usual);
 
     expect(national(squeezed.state)).toBeLessThan(national(start));
+    expect(relaxed.reports[0]?.approval.change).toBeGreaterThan(0);
     expect(national(relaxed.state)).toBe(national(start));
   });
 
@@ -208,16 +228,16 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
 });
 
 describe('the tax rate in Tavara', () => {
-  it('costs 1.2 points of approval for each point of tax above 18%, a third of it each quarter', () => {
+  it('costs 1.2 points of approval for each point of tax above 18%, a tenth of it each quarter', () => {
     const start = createGame(withDroughtChance(tavaraFile, {}), 1);
     const { states, reports } = play(start, 2, budgetWith(start, { taxRatePercent: 28 }));
 
-    // Ten points of tax are worth 12.0 points of approval. 30% of that lands in the first
-    // quarter (−3.6) and 30% of what is left in the second (−2.6, rounded up from 2.52).
-    expect(states.map(national)).toEqual([507, 481]);
+    // Ten points of tax are worth 12.0 points of approval. A tenth of that lands in the first
+    // quarter (−1.2) and a tenth of what is left in the second (−1.1, rounded up from 1.08).
+    expect(states.map(national)).toEqual([446, 435]);
     expect(reports[0]?.approval.contributions).toEqual([
       { label: 'Food', amount: 0 },
-      { label: 'Tax rate', amount: -36 },
+      { label: 'Tax rate', amount: -12 },
       { label: 'Health spending', amount: 0 },
       { label: 'Education spending', amount: 0 },
       { label: 'Security spending', amount: 0 },
@@ -275,8 +295,9 @@ describe.each(withoutDrought)('unrest in %s', (_name, country) => {
 
   it('ends when approval recovers, protests first and then strikes', () => {
     const start = createGame(country(), 5);
-    const fallen = play(start, 16, harsh(start));
-    const { states } = play(fallen.state, 16, budgetWith(start, { taxRatePercent: 5 }));
+    // Two years of the harsh budget, then three of the lowest tax: the term has room for both.
+    const fallen = play(start, 8, harsh(start));
+    const { states } = play(fallen.state, 12, budgetWith(start, { taxRatePercent: 5 }));
 
     const seen = states.map((state) => state.regions[0]?.unrest);
     expect(seen).toContain('strikes');
@@ -287,8 +308,8 @@ describe.each(withoutDrought)('unrest in %s', (_name, country) => {
 
   it('reports each start and each end once, in the region it happened in', () => {
     const start = createGame(country(), 5);
-    const fallen = play(start, 16, harsh(start));
-    const recovered = play(fallen.state, 16, budgetWith(start, { taxRatePercent: 5 }));
+    const fallen = play(start, 8, harsh(start));
+    const recovered = play(fallen.state, 12, budgetWith(start, { taxRatePercent: 5 }));
     const entries = [...fallen.reports, ...recovered.reports].flatMap((report) => report.entries);
     const regionId = start.regions[0]?.id;
     const here = entries.filter(
@@ -312,16 +333,19 @@ describe('strikes in Tavara', () => {
     return play(start, 2, harsh(start)).state;
   }
 
-  it('begin two quarters after tax goes to 40% and public spending to nothing', () => {
+  it('begin two quarters after tax goes to 40% and public spending to nothing, and protests three later', () => {
     const start = createGame(withDroughtChance(tavaraFile, {}), 1);
-    const { states, reports } = play(start, 3, harsh(start));
+    const { states, reports } = play(start, 5, harsh(start));
 
-    // The harsh budget is worth −40.4 points in the end, and 30% of what is left of that
-    // lands each quarter. Approval goes 54.3% → 41.8% → 33.2% → 27.1%: calm after the
-    // first quarter, strikes after the second and protests after the third.
-    expect(states.map(national)).toEqual([418, 332, 271]);
+    // The harsh budget is worth −40.4 points in the end, and a tenth of what is left of
+    // each part of that lands each quarter, rounded up. Approval goes 45.8% → 41.6% →
+    // 37.8% → 34.4% → 31.3% → 28.4%: calm after the first quarter, strikes after the
+    // second and protests after the fifth.
+    expect(states.map(national)).toEqual([416, 378, 344, 313, 284]);
     expect(states.map((state) => regionOf(state, 'arden-vale').unrest)).toEqual([
       'calm',
+      'strikes',
+      'strikes',
       'strikes',
       'protests',
     ]);
@@ -330,34 +354,34 @@ describe('strikes in Tavara', () => {
       seriousness: 'warning',
       headline: 'Strikes in Arden Vale',
       cause:
-        'Approval there has fallen to 33.2%, below the 40% at which strikes begin. While they last the region produces 15% less.',
+        'Approval there has fallen to 37.8%, below the 40% at which strikes begin. While they last the region produces 30% less.',
       regionId: 'arden-vale',
     });
-    expect(reports[2]?.entries).toContainEqual({
+    expect(reports[4]?.entries).toContainEqual({
       kind: 'protest',
       seriousness: 'serious',
       headline: 'Protests in Arden Vale',
       cause:
-        'Approval there has fallen to 27.1%, below the 30% at which protests begin. While they last the region produces 30% less.',
+        'Approval there has fallen to 28.4%, below the 30% at which protests begin. While they last the region produces 60% less.',
       regionId: 'arden-vale',
     });
   });
 
   it('cut the region’s output, and so the tax it pays, in the quarters that follow', () => {
     const start = createGame(withDroughtChance(tavaraFile, {}), 1);
-    const { reports } = play(start, 4, harsh(start));
+    const { reports } = play(start, 6, harsh(start));
     const treasuryLine = (report: TurnReport | undefined, label: string) =>
       report?.treasury.contributions.find((entry) => entry.label === label)?.amount;
 
     // Arden Vale produces $52.0m a quarter: $20.8m of tax at 40%.
     expect(treasuryLine(reports[1], 'Tax from Arden Vale')).toBe(208);
     expect(treasuryLine(reports[1], 'Lost to strikes in Arden Vale')).toBeUndefined();
-    // On strike it produces 15% less, $44.2m, which pays $17.7m: $3.1m is lost.
+    // On strike it produces 30% less, $36.4m, which pays $14.6m: $6.2m is lost.
     expect(treasuryLine(reports[2], 'Tax from Arden Vale')).toBe(208);
-    expect(treasuryLine(reports[2], 'Lost to strikes in Arden Vale')).toBe(-31);
-    // In protest it produces 30% less, $36.4m, which pays $14.6m: $6.2m is lost.
-    expect(treasuryLine(reports[3], 'Tax from Arden Vale')).toBe(208);
-    expect(treasuryLine(reports[3], 'Lost to protests in Arden Vale')).toBe(-62);
+    expect(treasuryLine(reports[2], 'Lost to strikes in Arden Vale')).toBe(-62);
+    // In protest it produces 60% less, $20.8m, which pays $8.3m: $12.5m is lost.
+    expect(treasuryLine(reports[5], 'Tax from Arden Vale')).toBe(208);
+    expect(treasuryLine(reports[5], 'Lost to protests in Arden Vale')).toBe(-125);
   });
 
   it('leave the treasury breakdown adding up to the change', () => {
@@ -376,9 +400,9 @@ describe('strikes in Tavara', () => {
     const preview = previewQuarter(game, decisions);
     const { state } = advanceQuarter(game, decisions);
 
-    // Tax at 40% on output of $172.0m would be $68.8m. With every region producing 15%
-    // less it is $58.4m, each region's tax being rounded to the nearest $0.1m.
-    expect(preview.revenue).toEqual({ min: 584, max: 584 });
+    // Tax at 40% on output of $172.0m would be $68.8m. With every region producing 30%
+    // less it is $48.2m, each region's tax being rounded to the nearest $0.1m.
+    expect(preview.revenue).toEqual({ min: 482, max: 482 });
     expect(preview.treasury).toEqual({ min: state.treasury, max: state.treasury });
   });
 });
@@ -409,10 +433,15 @@ describe.each(withoutDrought)('previewing approval in %s', (_name, country) => {
 
   it('says where approval is heading if the decisions are left as they are', () => {
     const start = createGame(country(), 9);
-    const budget = budgetWith(start, { taxRatePercent: 30 });
+    // A small change, so that approval gets there within the term. Nothing for relief,
+    // which nobody needs here, so the treasury lasts.
+    const budget = budgetWith(start, {
+      taxRatePercent: start.budget.taxRatePercent + 2,
+      spending: { foodRelief: 0 },
+    });
 
     const preview = previewQuarter(start, { budget });
-    const { state } = play(start, 24, budget);
+    const { state } = play(start, 19, budget);
 
     expect(preview.approvalHeading.min).toBeLessThan(preview.approval.min);
     expect(preview.approvalHeading).toEqual({ min: national(state), max: national(state) });

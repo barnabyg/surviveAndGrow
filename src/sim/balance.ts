@@ -74,14 +74,14 @@ export const balance = {
   },
   approval: {
     /** Where a region's approval stands when nothing pushes it either way, in thousandths. */
-    baselinePermille: 540,
+    baselinePermille: 455,
     /**
      * Approval does not jump. Each quarter, the effect of each thing that moves it closes
      * this share, in thousandths, of the gap to where that thing would settle it.
      */
-    adjustPermillePerQuarter: 300,
+    adjustPermillePerQuarter: 100,
     /** Where a region's food situation settles its approval, in thousandths. */
-    food: { adequate: 0, tight: -60, shortage: -150, famine: -300 } satisfies Record<
+    food: { adequate: 0, tight: -120, shortage: -300, famine: -600 } satisfies Record<
       FoodStage,
       number
     >,
@@ -111,8 +111,8 @@ export const balance = {
      * is below the lower mark. While either lasts the region produces only `outputPermille`
      * thousandths of its output, which is what it pays tax on.
      */
-    strikes: { belowPermille: 400, outputPermille: 850 },
-    protests: { belowPermille: 300, outputPermille: 700 },
+    strikes: { belowPermille: 400, outputPermille: 700 },
+    protests: { belowPermille: 300, outputPermille: 400 },
   },
   election: {
     /** The government's term, in quarters. The vote is held when the last of them ends. */

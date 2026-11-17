@@ -43,9 +43,9 @@ test('a dilemma is put to the player, who chooses and sees what it did', async (
   await teachers.getByRole('button', { name: /^Refuse it/ }).click();
   await expect(teachers).toBeHidden();
   await expect(decision(page)).toContainText('You chose: Refuse it');
-  // The choice is counted in the outlook at once: three points off 54.3%.
+  // The choice is counted in the outlook at once: three points off 45.8%.
   await expect(outlook(page).getByRole('group', { name: 'Approval next quarter' })).toContainText(
-    '51.3%',
+    '42.8%',
   );
 
   // Until the quarter ends the choice can be changed.
@@ -58,7 +58,7 @@ test('a dilemma is put to the player, who chooses and sees what it did', async (
   await expect(decision(page)).toContainText('You chose: Grant the rise');
   await expect(decision(page)).toContainText('Costs $4.2m.');
   await expect(outlook(page).getByRole('group', { name: 'Approval next quarter' })).toContainText(
-    '56.3%',
+    '47.8%',
   );
 
   await endQuarters(page, 1);

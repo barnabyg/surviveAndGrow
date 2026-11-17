@@ -15,14 +15,30 @@ import testlandFile from '../countries/testland.json';
 import { withDroughtChance } from './countries';
 
 /**
- * Each country with no drought, and three budgets whose effect on approval is worked out
- * by hand from the approval rules:
+ * A country with no drought that starts at a chosen tax rate, with a treasury that lasts
+ * the term. Approval starts where the starting budget settles it, so a game played with
+ * that budget keeps the same approval to polling day, and it can be worked out by hand.
+ */
+function startingAt(file: unknown, taxRate: number): Country {
+  const copy = structuredClone(file) as {
+    start: { treasury: number; budget: { taxRate: number } };
+  };
+  copy.start.budget.taxRate = taxRate;
+  copy.start.treasury = 500;
+  return withDroughtChance(copy, {});
+}
+
+/**
+ * Each country with no drought, and approval worked out by hand from the approval rules.
+ * The baseline is 45.5%, each point of tax above 18% costs 1.2 points, and the starting
+ * spending on health, education and security is worth +0.3 in Tavara and +14.0 in Testland.
  *
- * - `steady` keeps approval where the game starts it (Tavara 54.3%, Testland 65.6%). In
- *   Tavara it drops food relief, which no one needs, so that the treasury lasts the term.
- * - `close` raises tax until approval settles near the 50% the election needs: Tavara's
- *   3 points of tax cost 3.6 points (50.7%), Testland's 13 cost 15.6 (50.0%).
- * - `harsh` taxes at 40% and spends nothing on the public, which settles approval at 13.6%.
+ * - `steady` keeps approval where the country as shipped starts it (Tavara 45.8%, Testland
+ *   57.1%). In Tavara it drops food relief, which no one needs, so the treasury lasts.
+ * - `approving` starts at a tax rate that leaves approval 3 points or more above the 50%
+ *   the election needs, `disapproving` at one that leaves it 3 points or more below, and
+ *   `close` at one that leaves it within a point of 50%.
+ * - `harsh` taxes at 40% and spends nothing on the public, which loses any election.
  */
 const lands = [
   {
@@ -32,19 +48,35 @@ const lands = [
       ...budget,
       spending: { ...budget.spending, foodRelief: 0 },
     }),
-    steadyApproval: 543,
-    close: (budget: Budget): Budget => ({ ...budget, taxRatePercent: 21 }),
-    closeApproval: 507,
+    steadyApproval: 458,
+    // Tax at 12%: six points under 18% are worth +7.2 points.
+    approving: () => startingAt(tavaraFile, 12),
+    approvingApproval: 530,
+    // Tax at 21%: three points over cost 3.6.
+    disapproving: () => startingAt(tavaraFile, 21),
+    disapprovingApproval: 422,
+    // Tax at 15%: three points under are worth +3.6.
+    close: () => startingAt(tavaraFile, 15),
+    closeApproval: 494,
   },
   {
     name: 'Testland',
     country: () => withDroughtChance(testlandFile, {}),
     steady: (budget: Budget): Budget => budget,
-    steadyApproval: 656,
-    close: (budget: Budget): Budget => ({ ...budget, taxRatePercent: 33 }),
-    closeApproval: 500,
+    steadyApproval: 571,
+    // Tax at 20%, as the file has it: two points over 18% cost 2.4.
+    approving: () => startingAt(testlandFile, 20),
+    approvingApproval: 571,
+    // Tax at 30%: twelve points over cost 14.4.
+    disapproving: () => startingAt(testlandFile, 30),
+    disapprovingApproval: 451,
+    // Tax at 26%: eight points over cost 9.6.
+    close: () => startingAt(testlandFile, 26),
+    closeApproval: 499,
   },
 ] as const;
+
+const unchanged = (budget: Budget): Budget => budget;
 
 function harsh(budget: Budget): Budget {
   return {
@@ -120,13 +152,13 @@ describe.each(lands)('the election in $name', (land) => {
   });
 
   it.each([1, 2, 3, 4])('is won when the country approves (seed %i)', (seed) => {
-    const { state } = term(land.country(), seed, land.steady);
+    const { state } = term(land.approving(), seed, unchanged);
     const election = electionOf(state);
 
     // Approval never moved, and the campaign can swing the vote by 3 points at most.
-    expect(approvalStatus(state).approval).toBe(land.steadyApproval);
-    expect(election.voteShare).toBeGreaterThanOrEqual(land.steadyApproval - 30);
-    expect(election.voteShare).toBeLessThanOrEqual(land.steadyApproval + 30);
+    expect(approvalStatus(state).approval).toBe(land.approvingApproval);
+    expect(election.voteShare).toBeGreaterThanOrEqual(land.approvingApproval - 30);
+    expect(election.voteShare).toBeLessThanOrEqual(land.approvingApproval + 30);
     expect(election).toMatchObject({
       status: 'won',
       cause: 'election',
@@ -136,12 +168,12 @@ describe.each(lands)('the election in $name', (land) => {
   });
 
   it.each([1, 2, 3, 4])('is lost when the country does not (seed %i)', (seed) => {
-    const { state } = term(land.country(), seed, harsh);
+    const { state } = term(land.disapproving(), seed, unchanged);
     const election = electionOf(state);
 
-    expect(approvalStatus(state).approval).toBe(136);
-    expect(election.voteShare).toBeGreaterThanOrEqual(106);
-    expect(election.voteShare).toBeLessThanOrEqual(166);
+    expect(approvalStatus(state).approval).toBe(land.disapprovingApproval);
+    expect(election.voteShare).toBeGreaterThanOrEqual(land.disapprovingApproval - 30);
+    expect(election.voteShare).toBeLessThanOrEqual(land.disapprovingApproval + 30);
     expect(election).toMatchObject({
       status: 'lost',
       cause: 'election',
@@ -155,7 +187,7 @@ describe.each(lands)('the election in $name', (land) => {
   const closeRunTerms = () =>
     (played ??= Array.from(
       { length: 600 },
-      (_, index) => term(land.country(), index + 1, land.close).state,
+      (_, index) => term(land.close(), index + 1, unchanged).state,
     ));
 
   it('turns on exactly half the vote: 50.0% wins and 49.9% loses', () => {
@@ -176,7 +208,7 @@ describe.each(lands)('the election in $name', (land) => {
     for (const state of closeRunTerms()) {
       swings.add(electionOf(state).voteShare - approvalStatus(state).approval);
     }
-    // In a term with no hunger, approval is where the tax rise settles it.
+    // In a term with no hunger and no change of budget, approval stays where it started.
     const [first] = closeRunTerms();
     expect(first && approvalStatus(first).approval).toBe(land.closeApproval);
 
@@ -187,15 +219,15 @@ describe.each(lands)('the election in $name', (land) => {
   });
 
   it('gives the same result for the same seed', () => {
-    const first = term(land.country(), 2026, land.close);
-    const second = term(land.country(), 2026, land.close);
+    const first = term(land.close(), 2026, unchanged);
+    const second = term(land.close(), 2026, unchanged);
 
     expect(second.state).toEqual(first.state);
     expect(second.reports).toEqual(first.reports);
   });
 
   it('says in words what happened, and reports it', () => {
-    const { state, reports } = term(land.country(), 3, land.steady);
+    const { state, reports } = term(land.approving(), 3, unchanged);
     const election = electionOf(state);
 
     expect(election.summary).toMatch(
@@ -243,7 +275,7 @@ describe.each(lands)('the vote share forecast in $name', (land) => {
   });
 
   it.each([1, 2, 3, 4, 5, 6])('contains the result on the eve of the vote (seed %i)', (seed) => {
-    const { state, before } = term(land.country(), seed, land.close);
+    const { state, before } = term(land.close(), seed, unchanged);
 
     const forecast = previewQuarter(before, { budget: before.budget }).voteShare;
 
@@ -253,7 +285,7 @@ describe.each(lands)('the vote share forecast in $name', (land) => {
   });
 
   it('does not move the generator', () => {
-    const { before } = term(land.country(), 4, land.close);
+    const { before } = term(land.close(), 4, unchanged);
     const untouched = structuredClone(before);
 
     previewQuarter(before, { budget: before.budget });
