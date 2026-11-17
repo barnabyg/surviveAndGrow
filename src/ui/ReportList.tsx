@@ -5,6 +5,7 @@ import {
   type ReportKind,
   type TurnReport,
 } from '../sim';
+import { PlaceNote } from './PlaceNote';
 
 interface ReportListProps {
   /** The report on the quarter just ended, or null before any quarter has ended. */
@@ -53,9 +54,7 @@ export function ReportList({ report, selectedEntry, onSelectEntry }: ReportListP
                   }}
                 >
                   <ReportBody entry={entry} />
-                  <span className="report__place" aria-hidden="true">
-                    On the map ›
-                  </span>
+                  <PlaceNote className="report__place" pickedOut={index === selectedEntry} />
                 </button>
               )}
             </li>

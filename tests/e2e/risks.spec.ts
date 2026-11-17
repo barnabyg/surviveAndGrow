@@ -30,8 +30,10 @@ test('a famine risk is listed during a drought, and relief sent to the region li
   await expect(famine.getByRole('img', { name: 'Likelihood 5 of 5' })).toBeVisible();
 
   // Selecting the risk picks its region out on the map, where the player can act on it.
+  await expect(famine).toContainText('On the map ›');
   await famine.click();
   await expect(famine).toHaveAttribute('aria-pressed', 'true');
+  await expect(famine).toContainText('◆ Picked out on the map');
   await expect(map(page).getByRole('img', { name: 'The Dry East is picked out' })).toBeVisible();
   await page
     .getByRole('region', { name: 'The Dry East' })

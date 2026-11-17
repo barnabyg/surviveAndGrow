@@ -61,10 +61,13 @@ test('the most serious report comes first, and selecting it picks out its region
   const drought = reports(page).getByRole('button', { name: /Drought in The Dry East/ });
   await expect(region).toHaveAttribute('aria-pressed', 'false');
   await expect(drought).toHaveAttribute('aria-pressed', 'false');
+  await expect(drought).toContainText('On the map ›');
 
   await drought.click();
 
+  // A mark and words say which report is picked out, so it does not rest on colour.
   await expect(drought).toHaveAttribute('aria-pressed', 'true');
+  await expect(drought).toContainText('◆ Picked out on the map');
   await expect(region).toHaveAttribute('aria-pressed', 'true');
   await expect(map(page).getByRole('img', { name: 'The Dry East is picked out' })).toBeVisible();
   // The region's card opens too, so the player can act on what the report says.
@@ -86,5 +89,6 @@ test('the most serious report comes first, and selecting it picks out its region
   await expect(region).toHaveAttribute('aria-pressed', 'true');
   await drought.click();
   await expect(drought).toHaveAttribute('aria-pressed', 'false');
+  await expect(drought).not.toContainText('Picked out');
   await expect(region).toHaveAttribute('aria-pressed', 'false');
 });

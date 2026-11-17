@@ -5,6 +5,7 @@ import {
   type Likelihood,
   type Risk,
 } from '../sim';
+import { PlaceNote } from './PlaceNote';
 
 interface RisksPanelProps {
   /** The dangers ahead under the decisions now in force, the most likely first. */
@@ -49,6 +50,7 @@ export function RisksPanel({ risks, selectedRisk, onSelectRisk }: RisksPanelProp
                   }}
                 >
                   <RiskBody risk={risk} />
+                  <PlaceNote className="risk__place" pickedOut={index === selectedRisk} />
                 </button>
               )}
             </li>
