@@ -104,16 +104,6 @@ export function chainEarnings(building: Building): ChainEarning[] {
   });
 }
 
-/** What the chains add to each region's output this quarter, in the country file's order. */
-export function chainOutputs(building: Building): Money[] {
-  const earnings = chainEarnings(building);
-  return building.country.regions.map((region) =>
-    earnings
-      .filter(({ site }) => site.regionId === region.id)
-      .reduce((total, { output }) => total + output, 0),
-  );
-}
-
 /**
  * A source and every site it depends on, each once, walking each list of dependencies in
  * order. A site depended on that has alternatives stands for whichever of them has been

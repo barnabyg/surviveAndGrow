@@ -27,6 +27,10 @@ const SYMBOLS: Readonly<Record<SiteType, string>> = {
   port: 'M0,-7 V7 M-2,-5 H2 M-6,1 C-6,5 -3,7 0,7 C3,7 6,5 6,1',
   // A small anchor above the waterline.
   shallowPort: 'M0,-7 V3 M-2,-5 H2 M-4,0 C-4,3 -2,4 0,4 C2,4 4,3 4,0 M-7,7 H7',
+  // A bolt of lightning.
+  powerStation: 'M2,-7 L-4,1 H0 L-2,7 L4,-1 H0 Z',
+  // A pylon with its two cross-arms.
+  powerLine: 'M0,-7 L-5,7 M0,-7 L5,7 M-6,-3 H6 M-3,2 H3',
 };
 
 /**

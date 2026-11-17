@@ -112,7 +112,7 @@
       "name": "Sandreach mine",
       "region": "sandreach",
       "at": [800, 300],
-      "dependsOn": ["sand-trunk-road"]
+      "dependsOn": ["sand-trunk-road", "sand-power-line"]
     },
     {
       "id": "sand-trunk-road",
@@ -141,6 +141,37 @@
       "region": "northfield",
       "at": [235, 545],
       "alternatives": ["alpha-port"]
+    },
+    {
+      "id": "north-station",
+      "type": "powerStation",
+      "name": "Northfield power station",
+      "region": "northfield",
+      "at": [420, 230]
+    },
+    {
+      "id": "north-power-line",
+      "type": "powerLine",
+      "name": "Power line to Alpha",
+      "region": "northfield",
+      "route": [
+        [420, 242],
+        [395, 310],
+        [375, 365]
+      ],
+      "dependsOn": ["north-station"]
+    },
+    {
+      "id": "sand-power-line",
+      "type": "powerLine",
+      "name": "Power line to Sandreach mine",
+      "region": "sandreach",
+      "route": [
+        [432, 232],
+        [600, 250],
+        [788, 292]
+      ],
+      "dependsOn": ["north-station"]
     }
   ],
   "dilemmaLikelihood": {

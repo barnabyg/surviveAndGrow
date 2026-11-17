@@ -13,6 +13,7 @@ import {
   SETTLEMENT_SIZES,
   SITE_CHAIN_ROLES,
   SITE_FORMS,
+  SITE_POWER_ROLES,
   SITE_TYPE_NAMES,
   SITE_TYPES,
   SPENDING_AREAS,
@@ -524,7 +525,8 @@ function readSiteIds(
 
 /**
  * Each site a site depends on must be another site the country has, and no chain of
- * dependencies may lead back to where it started.
+ * dependencies may lead back to where it started. A source must lead to an outlet, and a
+ * power line to a power station.
  */
 function checkDependencies(reader: Reader, sites: readonly Site[]): void {
   const byId = new Map(sites.map((site) => [site.id, site]));
@@ -597,11 +599,39 @@ function checkDependencies(reader: Reader, sites: readonly Site[]): void {
       `must lead, directly or through other sites, to a ${outletNames}: a ${SITE_TYPE_NAMES[site.type].toLowerCase()} earns only through a chain that reaches one`,
     );
   });
+
+  // A power line carries power only from a station, so it must lead to one through lines.
+  const stationNames = SITE_TYPES.filter((type) => SITE_POWER_ROLES[type] === 'station')
+    .map((type) => SITE_TYPE_NAMES[type].toLowerCase())
+    .join(' or ');
+  const powers = (site: Site, seen: ReadonlySet<string>): boolean =>
+    site.dependsOn.some((id) => {
+      const nexts = choices(id);
+      return (
+        nexts.length > 0 &&
+        nexts.every(
+          (next) =>
+            SITE_POWER_ROLES[next.type] === 'station' ||
+            (SITE_POWER_ROLES[next.type] === 'line' &&
+              !seen.has(next.id) &&
+              powers(next, new Set([...seen, next.id]))),
+        )
+      );
+    });
+  sites.forEach((site, index) => {
+    if (SITE_POWER_ROLES[site.type] !== 'line' || powers(site, new Set([site.id]))) return;
+    const name = SITE_TYPE_NAMES[site.type].toLowerCase();
+    reader.fault(
+      `sites[${index}].dependsOn`,
+      `must lead, directly or through other ${name}s, to a ${stationNames}: a ${name} carries power only from one`,
+    );
+  });
 }
 
 /**
  * Each alternative a site lists must be another site the country has, playing the same part
- * in a chain, so that whichever is chosen a chain through it still works. Returns the sites
+ * in a chain and in bringing power, so that whichever is chosen a chain or a power line
+ * through it still works. Returns the sites
  * with their alternatives said on both sides: if one rules out another, each rules out the other.
  */
 function checkAlternatives(reader: Reader, sites: readonly Site[]): Site[] {
@@ -614,11 +644,18 @@ function checkAlternatives(reader: Reader, sites: readonly Site[]): Site[] {
         reader.fault(path, `is "${id}": a site cannot be an alternative to itself`);
       } else if (other === undefined) {
         reader.fault(path, `is "${id}", which is not the id of a site`);
-      } else if (SITE_CHAIN_ROLES[other.type] !== SITE_CHAIN_ROLES[site.type]) {
+      } else if (
+        SITE_CHAIN_ROLES[other.type] !== SITE_CHAIN_ROLES[site.type] ||
+        SITE_POWER_ROLES[other.type] !== SITE_POWER_ROLES[site.type]
+      ) {
         const name = (type: SiteType) => SITE_TYPE_NAMES[type].toLowerCase();
+        const part =
+          SITE_CHAIN_ROLES[other.type] === SITE_CHAIN_ROLES[site.type]
+            ? 'in bringing power'
+            : 'in a chain';
         reader.fault(
           path,
-          `is "${id}", a ${name(other.type)}, but a ${name(site.type)} can only be an alternative to a site that plays the same part in a chain`,
+          `is "${id}", a ${name(other.type)}, but a ${name(site.type)} can only be an alternative to a site that plays the same part ${part}`,
         );
       }
     });

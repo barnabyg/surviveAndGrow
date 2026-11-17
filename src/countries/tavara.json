@@ -493,6 +493,49 @@
       "region": "salt-coast",
       "at": [215, 122],
       "alternatives": ["saltmouth-port"]
+    },
+    {
+      "id": "korr-falls-station",
+      "type": "powerStation",
+      "name": "Korr Falls power station",
+      "region": "lowmere-plains",
+      "at": [585, 292]
+    },
+    {
+      "id": "arden-power-line",
+      "type": "powerLine",
+      "name": "Power line, Korr Falls to Arden",
+      "region": "arden-vale",
+      "route": [
+        [575, 302],
+        [535, 352],
+        [497, 392]
+      ],
+      "dependsOn": ["korr-falls-station"]
+    },
+    {
+      "id": "lowmere-power-line",
+      "type": "powerLine",
+      "name": "Power line, Korr Falls to Lowmere",
+      "region": "lowmere-plains",
+      "route": [
+        [597, 302],
+        [622, 352],
+        [636, 392]
+      ],
+      "dependsOn": ["korr-falls-station"]
+    },
+    {
+      "id": "korrgate-power-line",
+      "type": "powerLine",
+      "name": "Power line, Korr Falls to Korrgate",
+      "region": "korr-highlands",
+      "route": [
+        [575, 282],
+        [520, 232],
+        [472, 196]
+      ],
+      "dependsOn": ["korr-falls-station"]
     }
   ],
   "dilemmaLikelihood": {

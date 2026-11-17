@@ -266,7 +266,34 @@ export const balance = {
       infrastructurePermille: 100,
       capacity: 120,
     },
+    // A power station does nothing alone: what power gives a region is `power`, below, and
+    // it reaches a region only along a power line. So a line adds nothing of its own to
+    // infrastructure access: the power it brings does.
+    powerStation: {
+      cost: 300,
+      buildQuarters: 5,
+      upkeep: 5,
+      effects: {},
+      infrastructurePermille: 50,
+    },
+    powerLine: {
+      cost: 60,
+      buildQuarters: 2,
+      upkeep: 1,
+      effects: {},
+      infrastructurePermille: 0,
+    },
   } satisfies Record<SiteType, SiteBalance>,
+  /**
+   * What power gives a region while a power line in use links it to a power station in use:
+   * `outputPermille` thousandths more output, before anything a chain adds, and
+   * `infrastructurePermille` thousandths of infrastructure access. While the station or a
+   * line of the link decays, the region has only `upkeep.decayingEffectPermille` of each.
+   */
+  power: {
+    outputPermille: 200,
+    infrastructurePermille: 150,
+  },
   /**
    * Upkeep. Each quarter the upkeep spending keeps the sites in use in good repair one by
    * one, in the order building began on them, until what is left will not cover the next:

@@ -2,6 +2,7 @@ import { outputPermille } from './approval';
 import { balance } from './balance';
 import { clamp, sum } from './arithmetic';
 import { chainEarnings } from './chains';
+import { poweredOutput, regionPower } from './power';
 import { regionName, type Country } from './country';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
@@ -105,14 +106,18 @@ export function resolveBudget(
   budget: Budget,
 ): BudgetOutcome {
   const earnings = chainEarnings({ country, projects });
+  const powers = regionPower({ country, projects });
   const taxes = regions.flatMap((region): Contribution[] => {
     const name = regionName(country, region.id);
-    // What a chain adds to the region's output is taxed as a line of its own, under its source.
+    const power = powers.find((entry) => entry.regionId === region.id);
+    const fromPower = power === undefined ? 0 : poweredOutput(region.output, power);
+    // What a chain or power adds to the region's output is taxed as a line of its own.
     const sources = [
       { label: `Tax from ${name}`, output: region.output },
       ...earnings
         .filter(({ site }) => site.regionId === region.id)
         .map(({ site, output }) => ({ label: `Tax from ${site.name}`, output })),
+      ...(fromPower > 0 ? [{ label: `Tax from power in ${name}`, output: fromPower }] : []),
     ];
     const kept = outputPermille(region.unrest);
     const lost = sum(

@@ -55,6 +55,10 @@ describe('a valid country file', () => {
       ['Trunk road, Korrgate mine to Saltmouth', 'trunkRoad', 'salt-coast', 'route'],
       ['Saltmouth port', 'port', 'salt-coast', 'place'],
       ['Saltmouth quay', 'shallowPort', 'salt-coast', 'place'],
+      ['Korr Falls power station', 'powerStation', 'lowmere-plains', 'place'],
+      ['Power line, Korr Falls to Arden', 'powerLine', 'arden-vale', 'route'],
+      ['Power line, Korr Falls to Lowmere', 'powerLine', 'lowmere-plains', 'route'],
+      ['Power line, Korr Falls to Korrgate', 'powerLine', 'korr-highlands', 'route'],
     ]);
   });
 
@@ -101,7 +105,7 @@ describe('a valid country file', () => {
         type: 'mine',
         name: 'Sandreach mine',
         regionId: 'sandreach',
-        dependsOn: ['sand-trunk-road'],
+        dependsOn: ['sand-trunk-road', 'sand-power-line'],
         alternatives: [],
         form: 'place',
         at: [800, 300],
@@ -140,6 +144,44 @@ describe('a valid country file', () => {
         alternatives: ['alpha-port'],
         form: 'place',
         at: [235, 545],
+      },
+      {
+        id: 'north-station',
+        type: 'powerStation',
+        name: 'Northfield power station',
+        regionId: 'northfield',
+        dependsOn: [],
+        alternatives: [],
+        form: 'place',
+        at: [420, 230],
+      },
+      {
+        id: 'north-power-line',
+        type: 'powerLine',
+        name: 'Power line to Alpha',
+        regionId: 'northfield',
+        dependsOn: ['north-station'],
+        alternatives: [],
+        form: 'route',
+        route: [
+          [420, 242],
+          [395, 310],
+          [375, 365],
+        ],
+      },
+      {
+        id: 'sand-power-line',
+        type: 'powerLine',
+        name: 'Power line to Sandreach mine',
+        regionId: 'sandreach',
+        dependsOn: ['north-station'],
+        alternatives: [],
+        form: 'route',
+        route: [
+          [432, 232],
+          [600, 250],
+          [788, 292],
+        ],
       },
     ]);
   });
@@ -277,11 +319,11 @@ describe('a country file in format 2', () => {
     expect(faultsOf(file)).toEqual(['sites[0].dependsOn needs country file format 2 or later.']);
   });
 
-  it('has a mine that leads, through a trunk road, to a port', () => {
+  it('has a mine that leads, through a trunk road, to a port, and needs power', () => {
     const country = testland();
     const mine = country.sites.find((site) => site.type === 'mine');
 
-    expect(mine?.dependsOn).toEqual(['sand-trunk-road']);
+    expect(mine?.dependsOn).toEqual(['sand-trunk-road', 'sand-power-line']);
     expect(country.sites.find((site) => site.id === 'sand-trunk-road')?.dependsOn).toEqual([
       'alpha-port',
     ]);
@@ -318,6 +360,9 @@ describe('a country file in format 3', () => {
       ['sand-trunk-road', []],
       ['alpha-port', ['alpha-quay']],
       ['alpha-quay', ['alpha-port']],
+      ['north-station', []],
+      ['north-power-line', []],
+      ['sand-power-line', []],
     ]);
     // Saying so on both sides says nothing more.
     const both = withValue(testlandFile, ['sites', 5, 'alternatives'], ['alpha-quay']);
@@ -330,7 +375,9 @@ describe('a country file in format 3', () => {
     const withoutQuay = withValue(
       withValue(testlandFile, ['formatVersion'], 2),
       ['sites'],
-      (valueAt(testlandFile, ['sites']) as unknown[]).slice(0, 6),
+      (valueAt(testlandFile, ['sites']) as { id: string }[]).filter(
+        (site) => site.id !== 'alpha-quay',
+      ),
     );
 
     expect(testland().start.budget.spending.upkeep).toBe(
@@ -504,7 +551,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
     const file = withValue(testlandFile, ['sites', 0, 'type'], 'airport');
 
     expect(faultsOf(file)).toEqual([
-      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port, shallowPort.',
+      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port, shallowPort, powerStation, powerLine.',
     ]);
   });
 

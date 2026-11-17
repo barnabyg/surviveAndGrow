@@ -13,7 +13,7 @@ import {
   type Site,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { withDroughtChance } from './countries';
+import { withDroughtChance, withoutPoweredMines } from './countries';
 import { steward } from './players';
 
 /** Plays one quarter for each set of decisions given, in order, sending relief where it is needed. */
@@ -26,9 +26,12 @@ function play(start: GameState, quarters: readonly Partial<Decisions>[]): GameSt
   return state;
 }
 
-/** A country with a treasury that can pay for a whole chain, and no drought or dilemma. */
+/**
+ * A country with a treasury that can pay for a whole chain, and no drought or dilemma. Its
+ * mines need no power, which `power.test.ts` covers.
+ */
 function rich(file: unknown): Country {
-  const copy = structuredClone(file) as { start: { treasury: number } };
+  const copy = withoutPoweredMines(file) as { start: { treasury: number } };
   copy.start.treasury = 2000;
   return withDroughtChance(copy, {});
 }
