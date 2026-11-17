@@ -4,6 +4,7 @@ import {
   decisions,
   dilemma,
   endQuarters,
+  foodReserve,
   outlook,
   reports,
   startGame,
@@ -123,4 +124,52 @@ test('an option the treasury cannot pay for is shown but cannot be chosen', asyn
   await expect(grant).toBeDisabled();
   await expect(grant).toContainText('▲ Cannot be chosen. The treasury holds only $0.1m.');
   await expect(teachers.getByRole('button', { name: /^Refuse it/ })).toBeEnabled();
+});
+
+test('in the country as it ships, the seed decides which dilemma arises and when', async ({
+  page,
+}) => {
+  // Seed 1 opens the second quarter with no dilemma.
+  await startGame(page, { seed: 1, asShipped: true });
+  await endQuarters(page, 1);
+  await expect(page.getByRole('banner').getByText('Year 1 · Quarter 2')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(decision(page)).toHaveCount(0);
+
+  // Seed 3 opens it with a neighbour's offer of grain, the reserve being below its safe level.
+  await startGame(page, { seed: 3, asShipped: true });
+  await endQuarters(page, 1);
+  const offer = dilemma(page, 'A neighbour offers grain');
+  await expect(offer).toBeVisible();
+  await expect(offer.getByRole('button', { name: /^Buy the whole shipment/ })).toContainText(
+    'Costs $12.5m.',
+  );
+  const half = offer.getByRole('button', { name: /^Buy half of it/ });
+  await expect(half).toContainText('Costs $6.2m.');
+  await expect(half).toContainText('Adds 26,000 t to the national reserve.');
+
+  await half.click();
+  await expect(decision(page)).toContainText('You chose: Buy half of it');
+  await endQuarters(page, 1);
+
+  // The same seed opens the third quarter with another: the purchase has left the treasury low.
+  const donor = dilemma(page, 'A donor offers a grant with conditions');
+  await expect(donor).toBeVisible();
+  await donor.getByRole('button', { name: 'Decide later' }).click();
+
+  // What the option said is what the quarter then did.
+  const entry = reports(page).getByRole('listitem').filter({ hasText: 'A neighbour offers grain' });
+  await expect(entry).toContainText('You chose “Buy half of it”. Costs $6.2m.');
+  await treasury(page).getByRole('button').click();
+  await expect(
+    page
+      .getByRole('region', { name: 'What moved the treasury' })
+      .getByRole('row', { name: 'Grain from a neighbour' }),
+  ).toContainText('−$6.2m');
+  await foodReserve(page).getByRole('button').click();
+  await expect(
+    page
+      .getByRole('region', { name: 'What moved the food reserve' })
+      .getByRole('row', { name: 'Grain from a neighbour' }),
+  ).toContainText('+26,000 t');
 });
