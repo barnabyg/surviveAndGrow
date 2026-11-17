@@ -132,6 +132,25 @@ changes, within the noise of 1,200 games:
 | Tavara | Sensible | 1.1% | 1.3% | 20.8% / 42.2% / 51.5% | 21.5% / 42.4% / 51.8% |
 | Testland | Sensible | 99.5% | 99.2% | 49.1% / 56.8% / 65.1% | 47.5% / 56.8% / 65.1% |
 
+## After alternatives (issue #36)
+
+From issue #36 Tavara and Testland each have a shallow port, a quay, as the alternative to their
+port. Starting one closes the other, and either completes the mine's chain:
+
+| Site | Cost | Build time | Upkeep | Ships a quarter |
+| --- | ---: | ---: | ---: | ---: |
+| Port | $50.0m | 8 quarters | $0.8m | $30.0m |
+| Shallow port | $25.0m | 5 quarters | $0.4m | $12.0m |
+
+Through the quay the chain costs $95.0m instead of $120.0m and is complete two quarters sooner,
+with the mine, but the quay is its bottleneck: the mine earns $12.0m a quarter instead of $20.0m,
+and choosing the quay gives up the larger trade for good. The values are first guesses, to be
+tuned when Phase 2 is balanced.
+
+The starting upkeep counts only the costlier of two alternatives, so it stays at $4.0m in Tavara
+and $3.0m in Testland. The scripted players build only irrigation, grain stores and farm roads,
+so their games are unchanged and the confirmation run was not repeated.
+
 ## How the runs were made
 
 ```powershell

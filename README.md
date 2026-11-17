@@ -138,7 +138,7 @@ What is in the game:
   road and $0.2m for a grain store. Upkeep is a spending area with its own slider, and it is spent
   only as far as the sites in use need it, so setting more than they need costs nothing. The
   budget panel shows what they need against what is spent, and a game starts with enough upkeep
-  for every site the country has.
+  for every site the country has, counting only the costlier of two alternatives.
 - When upkeep falls short, by a cut to the slider or because the treasury cuts every area, sites
   decay. Upkeep keeps sites in good repair in the order building began on them, so the newest
   decay first. A decaying site does half of what it does in good repair, and adds half as much to
@@ -156,6 +156,13 @@ What is in the game:
   mine earns. Picking out a mine, or any site of its chain, draws the missing links on the map:
   a dotted route or a crossed marker, each tagged "✕ Missing link". A mine in use that earns
   nothing is tagged "▲ Earning nothing", and what a mine earns is taxed as a line of its own.
+- Some sites are alternatives: one game cannot build everything. Next to Saltmouth port, Tavara's
+  deep-water port, is Saltmouth quay, a shallow port at half the cost ($25.0m, 5 quarters to
+  build, $0.4m upkeep) that ships only $12.0m a quarter, less than the mine produces. Either
+  completes the mine's chain. The card of a site with alternatives, and the affordable list, say
+  what starting it closes for good, and the two cannot be planned together. Once building begins
+  on one, the other is closed: it is faded and struck through on the map, and its card says which
+  choice closed it and offers no start.
 - Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the
@@ -198,11 +205,11 @@ All positions are coordinates in a fixed map frame 1080 wide and 720 high.
 
 `sites` lists where things can be built. Each site has an `id`, a `name`, the `region` it belongs
 to and a `type` from the game's own list: `irrigation`, `farmRoad`, `grainStore`, `mine`,
-`trunkRoad` or `port`. What a type costs, how long it takes and what it does are the game's, not
-the country's.
+`trunkRoad`, `port` or `shallowPort`. What a type costs, how long it takes and what it does are
+the game's, not the country's.
 
-- An irrigation scheme, a grain store, a mine and a port stand in one place, given by `at`, which
-  must lie inside the site's region.
+- An irrigation scheme, a grain store, a mine, a port and a shallow port stand in one place, given
+  by `at`, which must lie inside the site's region.
 - A farm road and a trunk road run along a line, given by `route` as two or more positions. Every position must
   lie inside the country, and the route must start or end in the site's region, which is the
   region the road serves.
@@ -210,11 +217,19 @@ the country's.
   `dependsOn`. Each must be another site in the file, and the dependencies must not go round in a
   circle. A file of format 1 cannot say this, and still loads as it is.
 - A mine earns only through its chain, so it must depend, directly or through other sites, on a
-  port: in Tavara the mine depends on a trunk road and the trunk road on a port. A mine therefore
-  needs format 2.
+  port or shallow port: in Tavara the mine depends on a trunk road and the trunk road on a port. A
+  mine therefore needs format 2.
+- In a file of `"formatVersion": 3`, a site may list the `id`s of the sites it is an alternative
+  to in `alternatives`. Saying so on one side is enough: building on either closes the other. Each
+  must be another site in the file that plays the same part in a chain (a port and a shallow port
+  are both outlets), and a site may not depend on its own alternative. A site that depends on a
+  site with alternatives depends on whichever of them is chosen: in Tavara the trunk road depends
+  on Saltmouth port, and Saltmouth quay, its alternative, serves as well. Files of formats 1 and 2
+  cannot say this, and still load as they are.
 
 The starting budget in `start.budget` may leave out `upkeep`: the game then starts with enough
-upkeep to keep every one of the file's sites in good repair, rounded up to the next $1.0m.
+upkeep to keep in good repair every one of the file's sites that can stand together, choosing the
+costlier of alternatives, rounded up to the next $1.0m.
 
 In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
 year, from 0 to 10. A region that leaves it out grows at the game's own rate.

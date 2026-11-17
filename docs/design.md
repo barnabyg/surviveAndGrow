@@ -151,8 +151,13 @@ stylised vector art.
   timeline says when.
 - **More sites than money.** Some sites are alternatives, such as a cheap
   shallow port against a costly deep-water one. One game cannot build
-  everything.
-- **Site states are visible:** empty, under construction, operating, decaying.
+  everything. A country file marks the alternatives. Starting a project on one
+  closes the others for good, and the site card says so before the player
+  commits. A closed site is drawn as unavailable and its card says which choice
+  closed it. Alternatives play the same part in a chain, so a site that depends
+  on one is served by whichever is chosen.
+- **Site states are visible:** empty, closed, under construction, operating,
+  decaying.
 - **Sites are revealed over time.** Surveys uncover deposits, and research
   unlocks new site types.
 - **Lenses:** the map switches between country, food, approval, living
