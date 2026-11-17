@@ -19,7 +19,7 @@ import {
   UNREST_KINDS,
 } from '../sim';
 import { formatRange, formatSigned } from './format';
-import { Panel } from './Panel';
+import { DecisionPanel } from './DecisionPanel';
 
 interface BudgetPanelProps {
   readonly game: GameState;
@@ -59,10 +59,9 @@ export function BudgetPanel(props: BudgetPanelProps) {
   const food = foodStatus(game);
 
   return (
-    <Panel
+    <DecisionPanel
       id="budget"
       title="Budget"
-      className="budget"
       note={
         changes > 0 && (
           <span className="pending-note">
@@ -218,7 +217,7 @@ export function BudgetPanel(props: BudgetPanelProps) {
           Commit budget
         </button>
       </div>
-    </Panel>
+    </DecisionPanel>
   );
 }
 

@@ -7,7 +7,7 @@ import {
   type Preview,
   type ReliefDelivery,
 } from '../sim';
-import { Panel } from './Panel';
+import { DecisionPanel } from './DecisionPanel';
 
 interface ReliefPanelProps {
   readonly game: GameState;
@@ -26,10 +26,9 @@ export function ReliefPanel(props: ReliefPanelProps) {
   const { relief } = preview;
 
   return (
-    <Panel
+    <DecisionPanel
       id="relief"
       title="Food relief"
-      className="relief"
       note={
         <span className="section-note">
           {formatMoney(reliefSpending)} moves {formatTonnes(relief.capacity)} a quarter
@@ -71,7 +70,7 @@ export function ReliefPanel(props: ReliefPanelProps) {
           {reliefResult(nameOf(reliefRegionId), relief)}
         </p>
       )}
-    </Panel>
+    </DecisionPanel>
   );
 }
 

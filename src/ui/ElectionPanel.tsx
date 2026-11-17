@@ -7,7 +7,7 @@ import {
   formatQuarters,
 } from '../sim';
 import { formatDate, formatRange } from './format';
-import { Panel } from './Panel';
+import { DecisionPanel } from './DecisionPanel';
 
 interface ElectionPanelProps {
   readonly game: GameState;
@@ -43,10 +43,9 @@ export function ElectionPanel({ game, preview }: ElectionPanelProps) {
   const width = Math.max((forecast.max - forecast.min) / 10, 0.6);
 
   return (
-    <Panel
+    <DecisionPanel
       id="election"
       title="Election"
-      className="election"
       note={
         <span className="section-note">
           {formatDate(election.date)} ·{' '}
@@ -76,6 +75,6 @@ export function ElectionPanel({ game, preview }: ElectionPanelProps) {
         This is the vote as it would go on the approval this quarter will leave. The campaign can
         swing it either way, which is why it is a range.
       </p>
-    </Panel>
+    </DecisionPanel>
   );
 }

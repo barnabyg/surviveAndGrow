@@ -1,13 +1,15 @@
 import { useState, type ReactNode } from 'react';
 import { readClosedPanels, storePanelClosed } from './storage';
 
-interface PanelProps {
-  /** Names the panel, both for its heading's id and for remembering whether it is collapsed. */
+interface DecisionPanelProps {
+  /**
+   * Names the panel: its class, its heading's id, and how the browser remembers it is
+   * collapsed. Renaming one forgets that it was collapsed, which costs the player nothing more.
+   */
   readonly id: string;
   readonly title: string;
   /** What the heading says beside the title. It stays in view when the panel is collapsed. */
   readonly note?: ReactNode;
-  readonly className: string;
   readonly children: ReactNode;
 }
 
@@ -17,12 +19,12 @@ interface PanelProps {
  * the panel stands, such as changes not yet committed. The browser remembers which panels
  * are collapsed.
  */
-export function Panel({ id, title, note, className, children }: PanelProps) {
+export function DecisionPanel({ id, title, note, children }: DecisionPanelProps) {
   const [open, setOpen] = useState(() => !readClosedPanels().includes(id));
   const titleId = `${id}-title`;
   const bodyId = `${id}-body`;
   return (
-    <section className={className} aria-labelledby={titleId}>
+    <section className={id} aria-labelledby={titleId}>
       <div className="section-head">
         <h2 className="section-title" id={titleId}>
           <button
@@ -31,8 +33,9 @@ export function Panel({ id, title, note, className, children }: PanelProps) {
             aria-expanded={open}
             aria-controls={bodyId}
             onClick={() => {
-              storePanelClosed(id, open);
-              setOpen(!open);
+              const closing = open;
+              storePanelClosed(id, closing);
+              setOpen(!closing);
             }}
           >
             <span className="panel__chevron" aria-hidden="true" />

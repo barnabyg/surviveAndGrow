@@ -1,6 +1,6 @@
 import type { DilemmaView } from '../sim';
 import { effectLines } from './DilemmaDialog';
-import { Panel } from './Panel';
+import { DecisionPanel } from './DecisionPanel';
 
 interface DilemmaPanelProps {
   readonly dilemma: DilemmaView;
@@ -17,10 +17,9 @@ interface DilemmaPanelProps {
 export function DilemmaPanel({ dilemma, chosen, onOpen }: DilemmaPanelProps) {
   const option = dilemma.options.find((candidate) => candidate.id === chosen);
   return (
-    <Panel
+    <DecisionPanel
       id="dilemma-panel"
       title="Decision"
-      className="dilemma-panel"
       note={
         <span className={option === undefined ? 'pending-note' : 'section-note'}>
           {option === undefined ? 'Waiting for you' : 'Takes effect when the quarter ends'}
@@ -49,6 +48,6 @@ export function DilemmaPanel({ dilemma, chosen, onOpen }: DilemmaPanelProps) {
           {option === undefined ? 'Decide now' : 'Change your choice'}
         </button>
       </div>
-    </Panel>
+    </DecisionPanel>
   );
 }

@@ -12,7 +12,7 @@ import {
 } from '../sim';
 import { opening } from './schedule';
 import { progressOf } from './SiteMark';
-import { Panel } from './Panel';
+import { DecisionPanel } from './DecisionPanel';
 
 interface ProjectsPanelProps {
   readonly game: GameState;
@@ -54,10 +54,9 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
   };
 
   return (
-    <Panel
+    <DecisionPanel
       id="projects"
       title="Projects"
-      className="projects"
       note={
         <span className="section-note">
           {underway.length === 0
@@ -120,7 +119,7 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
           })}
         </ul>
       )}
-    </Panel>
+    </DecisionPanel>
   );
 }
 
