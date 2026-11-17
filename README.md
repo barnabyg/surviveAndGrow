@@ -60,6 +60,37 @@ drought does not starve a region first.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
+### A Phase 2 play-through
+
+To play the finished Phase 2 game from the start on a seed the balance run knows well:
+
+```powershell
+Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=8'
+```
+
+This starts the game at http://localhost:41730/?seed=8 and opens it in your browser. On seed 8
+the scripted chain builder wins in quarter 37, early in its second term; the scripted player who
+builds only small sites loses the vote in its third term, and one who builds only power in its
+second. Try to win the same way:
+
+1. In the first year, build the Korr Falls power station and then its three power lines, and
+   send relief wherever the risks show hunger. Expect Developing, and a 3-point drop in the
+   approval baseline, soon after the lines open.
+2. Keep the budget a little in surplus and save: the treasury must hold a site's whole cost
+   before it can start. Start Saltmouth port (or the cheaper quay), then the trunk road, then the
+   Korrgate mine, each as soon as the treasury can pay for it. Use the infrastructure lens to see
+   which links of the chain are still missing.
+3. Spend your savings on approval in the last year before each vote. The second vote is the
+   hard one: the chain costs most then, and pays off after it.
+4. Once the mine earns, build the small sites and spend on health and education. The game is won
+   when prosperity has stood at 42 or more, Prosperous, for four quarters running; the top bar
+   counts them.
+
+Expected: the mine adds $60.0m a quarter to the Korr Highlands once its road and port are in use,
+the prosperity breakdown is led by infrastructure access, and a win shows the end-of-game summary
+with each term served. Losing the second vote while the chain is still being built is common: it
+is the risk the game is about.
+
 What is in the game:
 
 - Set the tax rate and the spending for each area in the right column. The panel shows what a
@@ -306,16 +337,22 @@ npm run balance
 ```
 
 This plays scripted players through whole games with no screen, on the countries as they ship,
-and reports how often each wins and what the others lose to: famine, by region, or the vote. It
-prints a table and writes it to `balance-results.md`. It is not one of the checks and gates
-nothing; a short run of the same players over a few seeds is part of the simulation tests.
+for up to four terms each, and reports how often each wins on prosperity, how often it is still in
+office when its terms are up, and what the others lose to: the vote, by term, or famine, by
+region. It also gives the terms served, the quarter of each win, and the prosperity and tier each
+game reached. It prints the tables and writes them to `balance-results.md`. It is not one of the
+checks and gates nothing; a short run of the same players over a few seeds is part of the
+simulation tests. The games are shared out among worker processes, so a run uses most of the
+machine; 300 seeds of every player take a few minutes.
 
-Three players are what the balance is judged by: one that does nothing, one that spends
-everything on popularity, and one that plays sensibly. They are in `tests/balance/players.ts`,
-with a handful of one-lever players that probe for a trick that wins on its own.
+Four players are what the balance is judged by: one that does nothing, one that spends
+everything on popularity, one that plays sensibly but builds no large site, and one that builds
+power and the mine's chain. They are in `tests/balance/players.ts`, with a handful of one-lever
+players that probe for a trick that wins on its own and two that build only part of the chain.
 
-The run the Phase 1 values were tuned to, with its seeds, the values changed and what it showed,
-is recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md).
+The runs the values were tuned to, with their seeds, the values changed and what they showed, are
+recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1 and
+[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2.
 
 Set these before the command to change the run:
 
@@ -323,8 +360,10 @@ Set these before the command to change the run:
 | --- | --- | --- |
 | `BALANCE_SEEDS` | The seeds to play, as `from-to` | `1-300` |
 | `BALANCE_COUNTRY` | `tavara`, `testland` or `both` | `both` |
-| `BALANCE_PLAYERS` | `all` adds the one-lever players | the three |
-| `BALANCE_OUT` | Where the table is written | `balance-results.md` |
+| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players | the four |
+| `BALANCE_TERMS` | The most terms each game is played for | `4` |
+| `BALANCE_WORKERS` | How many games are played at once | all but two processors |
+| `BALANCE_OUT` | Where the tables are written | `balance-results.md` |
 
 ```powershell
 $env:BALANCE_SEEDS = '1001-2200'; $env:BALANCE_PLAYERS = 'all'; npm run balance

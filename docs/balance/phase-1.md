@@ -180,6 +180,14 @@ game, so that fall predates power and needs #39's attention. Against that baseli
 the sensible player's middle vote share from 43.3% to 41.9% on those 100 seeds; the other two
 players are unchanged. Testland's sensible player is still re-elected in 98.6% of games.
 
+## Phase 2 (issue #39)
+
+Phase 2 retuned the game for several terms and the win on prosperity, and changed the scripted
+players and the balance tool; the targets above no longer apply. The balance run now plays up to
+four terms by default (`BALANCE_TERMS=1` gives a single term, as here), and its table's
+**Re-elected** column is now **Still in office**. The values changed, the new targets and the
+runs are recorded in [phase-2.md](phase-2.md).
+
 ## How the runs were made
 
 ```powershell
