@@ -84,6 +84,18 @@ describe.each(scenarios)('the risks ahead in $name', ({ file, regionId, regionNa
     });
   });
 
+  it('leave out a famine too unlikely to matter, and list it once it is not', () => {
+    // A drought always leaves the region short, so the famine is as likely as the drought.
+    // Under 2% it is negligible; from 2% it is remote.
+    const rare = createGame(withDroughtChance(file, { [regionId]: 0.01 }), 3);
+    const lessRare = createGame(withDroughtChance(file, { [regionId]: 0.03 }), 3);
+
+    expect(risksAhead(rare, idle(rare))).toEqual([]);
+    expect(risksAhead(lessRare, idle(lessRare))).toMatchObject([
+      { kind: 'famine', regionId, likelihood: 'remote' },
+    ]);
+  });
+
   it('say that famine is all but certain once the region is going hungry', () => {
     // The failed harvest is in after four quarters, and the region goes short from the fifth.
     const game = play(createGame(withDroughtChance(file, { [regionId]: 1 }), 3), 5);
