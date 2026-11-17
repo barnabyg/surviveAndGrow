@@ -21,7 +21,7 @@ test('a project started from a site’s card is paid for, built and then operate
   await card.getByRole('button', { name: 'Start building' }).click();
 
   // It is planned until the quarter ends, and its first instalment is already in the budget.
-  await expect(site).toHaveAccessibleName('Lowmere grain store, grain store, planned');
+  await expect(site).toHaveAccessibleName('Lowmere grain store, grain store, planned, $6.0m');
   await expect(card).toContainText('Grain store · planned');
   await expect(projects(page).getByRole('group', { name: 'Lowmere grain store' })).toContainText(
     'Planned',
@@ -78,14 +78,16 @@ test('a project planned from the affordable list can be taken back before the qu
 
   // Planning it picks the site out on the map and opens its card.
   await expect(site).toHaveAttribute('aria-pressed', 'true');
-  await expect(site).toHaveAccessibleName('Lowmere irrigation, irrigation scheme, planned');
+  await expect(site).toHaveAccessibleName('Lowmere irrigation, irrigation scheme, planned, $12.0m');
   await expect(offer).toHaveCount(0);
   await expect(spending(page)).toContainText('$40.0m');
 
   const card = page.getByRole('region', { name: 'Lowmere irrigation' });
   await card.getByRole('button', { name: 'Cancel building' }).click();
 
-  await expect(site).toHaveAccessibleName('Lowmere irrigation, irrigation scheme, empty site');
+  await expect(site).toHaveAccessibleName(
+    'Lowmere irrigation, irrigation scheme, empty site, $12.0m',
+  );
   await expect(offer).toBeVisible();
   await expect(spending(page)).toContainText('$36.0m');
   await expect(decisions(page).getByRole('group', { name: 'Fixed costs' })).toHaveCount(0);

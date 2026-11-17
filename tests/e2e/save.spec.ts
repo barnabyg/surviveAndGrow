@@ -17,9 +17,18 @@ const resume = (page: Page) => page.getByRole('button', { name: 'Resume saved ga
 const startNew = (page: Page) => page.getByRole('button', { name: 'Start new game' });
 const date = (page: Page) => page.getByRole('banner').getByText(/^Year \d+ · Quarter \d/);
 
-/** Every saved game in the browser's storage, as text, by the key it is kept under. */
+/**
+ * Every saved game in the browser's storage, as text, by the key it is kept under. Storage
+ * holds other things too, such as which panels are collapsed, which are not saves.
+ */
 async function storedSaves(page: Page): Promise<Record<string, string>> {
-  return page.evaluate(() => Object.fromEntries(Object.entries(window.localStorage)));
+  return page.evaluate(() =>
+    Object.fromEntries(
+      Object.entries(window.localStorage).filter(([key]) =>
+        key.startsWith('survive-and-grow/save/'),
+      ),
+    ),
+  );
 }
 
 /** Plays two quarters with a project begun, relief directed and a budget change committed. */
@@ -137,6 +146,7 @@ test('a save from a newer release is refused, left untouched and never written o
   // The save as a later release of the game would have stamped it.
   await page.evaluate(() => {
     for (const [key, text] of Object.entries(window.localStorage)) {
+      if (!key.startsWith('survive-and-grow/save/')) continue;
       const save = JSON.parse(text as string) as { formatVersion: number };
       window.localStorage.setItem(key, JSON.stringify({ ...save, formatVersion: 2 }));
     }

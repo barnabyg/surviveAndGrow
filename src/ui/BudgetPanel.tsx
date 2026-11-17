@@ -19,6 +19,7 @@ import {
   UNREST_KINDS,
 } from '../sim';
 import { formatRange, formatSigned } from './format';
+import { DecisionPanel } from './DecisionPanel';
 
 interface BudgetPanelProps {
   readonly game: GameState;
@@ -58,18 +59,17 @@ export function BudgetPanel(props: BudgetPanelProps) {
   const food = foodStatus(game);
 
   return (
-    <section className="budget" aria-labelledby="budget-title">
-      <div className="section-head">
-        <h2 className="section-title" id="budget-title">
-          Budget
-        </h2>
-        {changes > 0 && (
+    <DecisionPanel
+      id="budget"
+      title="Budget"
+      note={
+        changes > 0 && (
           <span className="pending-note">
             {changes} {changes === 1 ? 'change' : 'changes'} not committed
           </span>
-        )}
-      </div>
-
+        )
+      }
+    >
       <div className="totals" role="group" aria-label="Budget totals">
         <Total label="Revenue" value={formatRange(after.revenue, formatMoney)} />
         <Total label="Spending" value={formatRange(after.spending, formatMoney)} />
@@ -217,7 +217,7 @@ export function BudgetPanel(props: BudgetPanelProps) {
           Commit budget
         </button>
       </div>
-    </section>
+    </DecisionPanel>
   );
 }
 
