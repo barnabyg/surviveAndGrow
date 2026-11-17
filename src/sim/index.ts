@@ -16,6 +16,7 @@ export {
   type River,
   type Sea,
   type Settlement,
+  type Site,
 } from './country';
 export {
   approvalStatus,
@@ -38,6 +39,7 @@ export {
 export { seasonOf } from './calendar';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
+export { siteTerms, type SiteTerms } from './sites';
 export { advanceQuarter, budgetLimits, createGame, previewQuarter } from './game';
 export {
   type Decisions,
@@ -77,6 +79,8 @@ export {
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SERIOUSNESS_NAMES,
+  SITE_TYPE_NAMES,
+  SITE_TYPES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
   UNREST_LEVELS,
@@ -89,6 +93,8 @@ export {
   type ReportKind,
   type Seriousness,
   type SettlementSize,
+  type SiteForm,
+  type SiteType,
   type SpendingArea,
   type Terrain,
   type Unrest,

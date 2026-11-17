@@ -387,9 +387,9 @@ p {
   position: relative;
 }
 
-/* The card for the region picked out on the map */
+/* The card for the region or the site picked out on the map */
 
-.region-card {
+.map-card {
   position: absolute;
   left: 2.2%;
   bottom: 3%;
@@ -404,29 +404,37 @@ p {
   box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
 }
 
-.region-card__name {
+.map-card__name {
   font-size: 21px;
   font-weight: 600;
 }
 
-.region-card__facts {
+.map-card__list {
   margin: 0;
   display: flex;
   gap: 20px;
   font-size: 15px;
 }
 
-.region-card__facts dt {
+.map-card__list dt,
+.map-card__term {
   color: var(--label);
 }
 
-.region-card__facts dd {
+.map-card__list dd,
+.map-card__value {
   margin: 0;
   font-family: var(--font-figures);
   font-weight: 500;
 }
 
-.region-card__note {
+.map-card__facts {
+  display: flex;
+  gap: 28px;
+  font-size: 15px;
+}
+
+.map-card__note {
   font-size: 15px;
   color: var(--muted);
 }
@@ -478,6 +486,57 @@ p {
 
 .map__region:focus-visible {
   filter: brightness(1.12);
+}
+
+/* A site: its marker, and its route if it has one */
+
+.map__site {
+  cursor: pointer;
+  outline: none;
+}
+
+.map__site:hover {
+  filter: brightness(1.08);
+}
+
+.map__site-focus {
+  stroke: none;
+}
+
+.map__site:focus-visible .map__site-focus {
+  stroke: var(--blue);
+}
+
+/* Beneath the map: the legend */
+
+.map-footer {
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 20px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend svg {
+  color: #c9d2da;
 }
 
 /* Labels and marks sit over the regions and must not swallow the clicks meant for them. */

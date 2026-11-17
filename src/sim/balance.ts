@@ -1,5 +1,5 @@
 import type { EventDefinition } from './events';
-import type { EventType, FoodStage, SpendingArea } from './vocabulary';
+import type { EventType, FoodStage, SiteType, SpendingArea } from './vocabulary';
 
 /**
  * Every value that tunes the game lives here as data. The rules in the rest of the
@@ -117,6 +117,30 @@ export const balance = {
      */
     swingPermille: 30,
   },
+  /**
+   * What can be built. Each type costs `cost` in Money units ($100,000), paid over the
+   * `buildQuarters` it takes to build, and then has its effect for good.
+   */
+  sites: {
+    irrigation: {
+      cost: 120,
+      buildQuarters: 3,
+      /** What is left of the weather's and of drought's hold on its region's harvest, in thousandths. */
+      weatherPermille: 500,
+    },
+    farmRoad: {
+      cost: 90,
+      buildQuarters: 3,
+      /** What is left of the share of its region's surplus lost in transport, in thousandths. */
+      transportLossPermille: 500,
+    },
+    grainStore: {
+      cost: 60,
+      buildQuarters: 2,
+      /** What is left of the share of the national reserve that spoils, in thousandths. */
+      spoilagePermille: 750,
+    },
+  } satisfies Record<SiteType, { cost: number; buildQuarters: number } & Record<string, number>>,
   events: {
     drought: {
       name: 'Drought',

@@ -25,7 +25,10 @@ export interface MapPalette {
   /** The wash and the hatched edge laid over a region that an event has struck. */
   readonly eventTint: string;
   readonly eventLine: string;
-  /** The outline of the region the player has picked out. */
+  /** The round marker of a site, and the dark line of its edge, its symbol and its route. */
+  readonly site: string;
+  readonly siteLine: string;
+  /** The outline of the region or site the player has picked out. */
   readonly selection: string;
   /** The dark tags that carry warnings on the map. */
   readonly tagBackground: string;
@@ -60,6 +63,8 @@ export const tierOnePalette: MapPalette = {
   field: '#9c8c5e',
   eventTint: '#e0762f',
   eventLine: '#c9581c',
+  site: '#f4ecd6',
+  siteLine: '#2b2a22',
   selection: '#f2b33d',
   tagBackground: '#2a1a12',
   tagText: '#ffb58a',

@@ -11,6 +11,7 @@ import {
   type Settlement,
 } from '../sim';
 import { tierOnePalette, type MapPalette } from './mapPalette';
+import { SiteMark } from './SiteMark';
 
 interface MapViewProps {
   readonly game: GameState;
@@ -19,6 +20,9 @@ interface MapViewProps {
   /** The region food relief is being sent to, if any. */
   readonly reliefRegionId: string | null;
   readonly onSelectRegion: (regionId: string) => void;
+  /** The site the player has picked out, if any. */
+  readonly selectedSiteId: string | null;
+  readonly onSelectSite: (siteId: string) => void;
 }
 
 /**
@@ -27,6 +31,7 @@ interface MapViewProps {
  */
 export function MapView(props: MapViewProps) {
   const { game, selectedRegionId, reliefRegionId, onSelectRegion } = props;
+  const { selectedSiteId, onSelectSite } = props;
   const { country } = game;
   const palette = tierOnePalette;
   const terrainOf = new Map(country.regions.map((region) => [region.id, region.terrain]));
@@ -183,6 +188,17 @@ export function MapView(props: MapViewProps) {
           />
         ))}
       </g>
+
+      {/* Sites are drawn last, over everything, so that each can be picked. */}
+      {country.sites.map((site) => (
+        <SiteMark
+          key={site.id}
+          site={site}
+          palette={palette}
+          selected={site.id === selectedSiteId}
+          onSelect={onSelectSite}
+        />
+      ))}
     </svg>
   );
 }

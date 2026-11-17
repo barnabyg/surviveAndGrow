@@ -5,11 +5,13 @@ import { BudgetPanel, countChanges } from './BudgetPanel';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ElectionPanel } from './ElectionPanel';
 import { GameSummary } from './GameSummary';
+import { MapLegend } from './MapLegend';
 import { MapView } from './MapView';
 import { RegionCard } from './RegionCard';
 import { RegionList } from './RegionList';
 import { ReliefPanel } from './ReliefPanel';
 import { ReportList } from './ReportList';
+import { SiteCard } from './SiteCard';
 import { TopBar } from './TopBar';
 
 interface GameScreenProps {
@@ -28,7 +30,9 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
   const [committed, setCommitted] = useState(initialGame.budget);
   const [pending, setPending] = useState(initialGame.budget);
   const [reliefRegionId, setReliefRegionId] = useState<string | null>(null);
+  // One thing is picked out on the map at a time: a region or a site. Its card is the one shown.
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   // The report the player last selected, by its place in the list. It counts as selected
   // only while its region is still the one picked out on the map.
   const [reportPicked, setReportPicked] = useState<number | null>(null);
@@ -42,12 +46,21 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
       ? reportPicked
       : null;
 
+  const selectRegion = (regionId: string | null) => {
+    setSelectedRegionId(regionId);
+    setSelectedSiteId(null);
+  };
+  const selectSite = (siteId: string | null) => {
+    setSelectedSiteId(siteId);
+    setSelectedRegionId(null);
+  };
+
   // Selecting a report picks its region out on the map; selecting it again lets go.
   const selectEntry = (index: number) => {
     const regionId = report?.entries[index]?.regionId;
     if (regionId === undefined) return;
     setReportPicked(index === selectedEntry ? null : index);
-    setSelectedRegionId(index === selectedEntry ? null : regionId);
+    selectRegion(index === selectedEntry ? null : regionId);
   };
 
   const resolveQuarter = () => {
@@ -75,7 +88,7 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
           <RegionList
             game={game}
             selectedRegionId={selectedRegionId}
-            onSelectRegion={setSelectedRegionId}
+            onSelectRegion={selectRegion}
           />
           <ApprovalChart game={game} />
         </aside>
@@ -85,7 +98,9 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
               game={game}
               selectedRegionId={selectedRegionId}
               reliefRegionId={reliefRegionId}
-              onSelectRegion={setSelectedRegionId}
+              onSelectRegion={selectRegion}
+              selectedSiteId={selectedSiteId}
+              onSelectSite={selectSite}
             />
             {preview !== null && selectedRegionId !== null && (
               <RegionCard
@@ -95,10 +110,22 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
                 reliefRegionId={reliefRegionId}
                 onSendRelief={setReliefRegionId}
                 onClose={() => {
-                  setSelectedRegionId(null);
+                  selectRegion(null);
                 }}
               />
             )}
+            {selectedSiteId !== null && (
+              <SiteCard
+                game={game}
+                siteId={selectedSiteId}
+                onClose={() => {
+                  selectSite(null);
+                }}
+              />
+            )}
+          </div>
+          <div className="map-footer">
+            <MapLegend />
           </div>
         </main>
         <aside className="column column--decisions" aria-label="Decisions">

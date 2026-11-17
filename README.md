@@ -54,12 +54,26 @@ What is in the game so far:
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
   is a button: select it to pick that region out on the map and open its card. A quarter in which
   nothing notable happened says so.
+- The map marks the sites where something could be built: an irrigation scheme, a farm road or a
+  grain store. An empty site is a dashed round marker with the symbol of its type, and a possible
+  road is a dashed line. Select one to open a card with its cost, build time and effect. The
+  legend under the map explains the marks.
 
 ## Write a country
 
 A country is one data file; the engine contains no country-specific code. The country that ships
 is [src/countries/tavara.json](src/countries/tavara.json), and it is the best guide to the format.
 All positions are coordinates in a fixed map frame 1080 wide and 720 high.
+
+`sites` lists where things can be built. Each site has an `id`, a `name`, the `region` it belongs
+to and a `type` from the game's own list: `irrigation`, `farmRoad` or `grainStore`. What a type
+costs, how long it takes and what it does are the game's, not the country's.
+
+- An irrigation scheme and a grain store stand in one place, given by `at`, which must lie inside
+  the site's region.
+- A farm road runs along a line, given by `route` as two or more positions. Every position must
+  lie inside the country, and the route must start or end in the site's region, which is the
+  region the road serves.
 
 To try a country of your own, put the file in `public/countries/` and name it in the address:
 `?country=/countries/mine.json`. The game checks the file as it loads and lists everything that

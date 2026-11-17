@@ -393,6 +393,71 @@
       "size": "village"
     }
   ],
+  "sites": [
+    {
+      "id": "lowmere-road",
+      "type": "farmRoad",
+      "name": "Farm road, Arden to Lowmere",
+      "region": "lowmere-plains",
+      "route": [
+        [502, 403],
+        [565, 398],
+        [626, 405]
+      ]
+    },
+    {
+      "id": "lowmere-irrigation",
+      "type": "irrigation",
+      "name": "Lowmere irrigation",
+      "region": "lowmere-plains",
+      "at": [578, 352]
+    },
+    {
+      "id": "lowmere-store",
+      "type": "grainStore",
+      "name": "Lowmere grain store",
+      "region": "lowmere-plains",
+      "at": [674, 390]
+    },
+    {
+      "id": "dustwell-irrigation",
+      "type": "irrigation",
+      "name": "Dustwell irrigation",
+      "region": "dry-east",
+      "at": [795, 345]
+    },
+    {
+      "id": "southbank-store",
+      "type": "grainStore",
+      "name": "Southbank grain store",
+      "region": "south-delta",
+      "at": [652, 552]
+    },
+    {
+      "id": "coast-road",
+      "type": "farmRoad",
+      "name": "Farm road, Westhaven to Arden",
+      "region": "salt-coast",
+      "route": [
+        [212, 426],
+        [300, 416],
+        [380, 406],
+        [472, 401]
+      ]
+    },
+    {
+      "id": "highland-road",
+      "type": "farmRoad",
+      "name": "Farm road, Korrgate to Arden",
+      "region": "korr-highlands",
+      "route": [
+        [462, 198],
+        [470, 262],
+        [480, 334],
+        [486, 386]
+      ]
+    }
+  ],
   "start": {
     "treasury": 42,
     "budget": {

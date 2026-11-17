@@ -33,14 +33,14 @@ export function RegionCard(props: RegionCardProps) {
   const unrest = describeUnrest(state.unrest);
 
   return (
-    <section className="region-card" aria-labelledby="region-card-title">
+    <section className="map-card" aria-labelledby="region-card-title">
       <div>
         <div className="label label--pending">Region · {region.terrain}</div>
-        <h2 className="region-card__name" id="region-card-title">
+        <h2 className="map-card__name" id="region-card-title">
           {region.name}
         </h2>
       </div>
-      <dl className="region-card__facts">
+      <dl className="map-card__list">
         <div>
           <dt>People</dt>
           <dd>{formatCount(state.population)}</dd>
@@ -64,7 +64,7 @@ export function RegionCard(props: RegionCardProps) {
           ▲ {describeEvent(event)}
         </p>
       ))}
-      <p className={shortfall === undefined ? 'region-card__note' : 'warning-note'}>
+      <p className={shortfall === undefined ? 'map-card__note' : 'warning-note'}>
         {shortfall === undefined
           ? 'Its people have enough to eat this quarter.'
           : `▲ Its people will go short of ${formatTonnes(shortfall)} this quarter.`}

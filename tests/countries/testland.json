@@ -80,6 +80,33 @@
       "size": "village"
     }
   ],
+  "sites": [
+    {
+      "id": "north-irrigation",
+      "type": "irrigation",
+      "name": "North irrigation",
+      "region": "northfield",
+      "at": [290, 330]
+    },
+    {
+      "id": "alpha-store",
+      "type": "grainStore",
+      "name": "Alpha grain store",
+      "region": "northfield",
+      "at": [440, 440]
+    },
+    {
+      "id": "sand-road",
+      "type": "farmRoad",
+      "name": "Farm road, Alpha to Beta",
+      "region": "sandreach",
+      "route": [
+        [385, 385],
+        [540, 400],
+        [695, 418]
+      ]
+    }
+  ],
   "start": {
     "treasury": 10,
     "budget": {

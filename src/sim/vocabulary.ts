@@ -39,6 +39,25 @@ export const SPENDING_AREA_NAMES: Readonly<Record<SpendingArea, string>> = {
 export const EVENT_TYPES = ['drought'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
+/** The kinds of thing that can be built. A country file says where each could stand. */
+export const SITE_TYPES = ['irrigation', 'farmRoad', 'grainStore'] as const;
+export type SiteType = (typeof SITE_TYPES)[number];
+
+export const SITE_TYPE_NAMES: Readonly<Record<SiteType, string>> = {
+  irrigation: 'Irrigation scheme',
+  farmRoad: 'Farm road',
+  grainStore: 'Grain store',
+};
+
+/** A site either stands in one place or runs along a route. Its type decides which. */
+export type SiteForm = 'place' | 'route';
+
+export const SITE_FORMS: Readonly<Record<SiteType, SiteForm>> = {
+  irrigation: 'place',
+  farmRoad: 'route',
+  grainStore: 'place',
+};
+
 /** The stages of a region's food situation, from the best to the worst. */
 export const FOOD_STAGES = ['adequate', 'tight', 'shortage', 'famine'] as const;
 export type FoodStage = (typeof FOOD_STAGES)[number];
