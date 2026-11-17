@@ -115,6 +115,41 @@ describe('approval when a game starts in Tavara', () => {
   });
 });
 
+/**
+ * Each country with drought every year in one region and nothing done about it. The failed
+ * harvest is in after four quarters, the region is tight in the fifth and in shortage in the
+ * sixth, and every other region stays where it started. The figures are worked by hand:
+ *
+ * - Tavara: 4,600,000 people at 45.8% and the Dry East's 600,000 at 41.7% average 45.3%
+ *   (2,357,000,000 / 5,200,000 = 453.27). The plain mean of the six regions would be 45.1%.
+ * - Testland: 300,000 at 57.1% and Sandreach's 100,000 at 53.0% average 56.0%
+ *   (224,300,000 / 400,000 = 560.75). The plain mean of the two would be 55.0%.
+ */
+describe.each([
+  { ...withDrought[0], people: 600_000, ofPeople: 5_200_000, hungry: 417, fed: 458, all: 453 },
+  { ...withDrought[1], people: 100_000, ofPeople: 400_000, hungry: 530, fed: 571, all: 560 },
+])('national approval in $name when one region goes hungry', (land) => {
+  it('weighs each region by its people, not region by region', () => {
+    const start = createGame(withDroughtChance(land.file, { [land.regionId]: 1 }), 3);
+    const { state, reports } = play(start, 6);
+
+    expect(regionOf(state, land.regionId)).toMatchObject({
+      population: land.people,
+      approval: land.hungry,
+      foodStage: 'shortage',
+    });
+    for (const region of state.regions) {
+      if (region.id !== land.regionId) expect(region.approval).toBe(land.fed);
+    }
+    expect(state.regions.reduce((total, region) => total + region.population, 0)).toBe(
+      land.ofPeople,
+    );
+
+    expect(national(state)).toBe(land.all);
+    expect(reports.at(-1)?.approval.value).toBe(land.all);
+  });
+});
+
 describe.each(withoutDrought)('approval in %s', (_name, country) => {
   it('does not move while the budget and the food situation stay as they started', () => {
     const start = createGame(country(), 3);

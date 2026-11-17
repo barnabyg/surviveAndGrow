@@ -280,6 +280,64 @@ describe.each(lands)('the vote share forecast in $name', (land) => {
   });
 });
 
+/**
+ * An election held while one region is hungry, so that the regions do not all approve alike.
+ * Drought strikes the region every year and relief carries it until two quarters before the
+ * vote; relief then stops, and the region is in shortage on polling day while the others
+ * stand where they started. Approval on polling day is worked by hand from the regions:
+ *
+ * - Tavara: 4,600,000 people at 45.8% and the Dry East's 600,000 at 41.7% average 45.3%.
+ *   The plain mean of the six regions would be 45.1%.
+ * - Testland: 300,000 at 57.1% and Sandreach's 100,000 at 53.0% average 56.0%. The plain
+ *   mean of the two would be 55.0%.
+ *
+ * The campaign's swing is the seed's: +1.5 points in Tavara and −0.3 in Testland.
+ */
+describe.each([
+  {
+    name: 'Tavara',
+    file: tavaraFile,
+    regionId: 'dry-east',
+    relief: 70,
+    hungry: 417,
+    fed: 458,
+    voteShare: 468,
+    summary:
+      'You took 46.8% of the vote and needed 50%. Approval stood at 45.3% on polling day, and the campaign moved the vote by +1.5 points.',
+  },
+  {
+    name: 'Testland',
+    file: testlandFile,
+    regionId: 'sandreach',
+    relief: 10,
+    hungry: 530,
+    fed: 571,
+    voteShare: 557,
+    summary:
+      'You took 55.7% of the vote and needed 50%. Approval stood at 56.0% on polling day, and the campaign moved the vote by −0.3 points.',
+  },
+])('the vote in $name when one region is hungry', (land) => {
+  it('counts each region by its people, not region by region', () => {
+    const rich = structuredClone(land.file) as { start: { treasury: number } };
+    rich.start.treasury = 500;
+    let game = createGame(withDroughtChance(rich, { [land.regionId]: 1 }), 3);
+    const budget: Budget = {
+      ...game.budget,
+      spending: { ...game.budget.spending, foodRelief: land.relief },
+    };
+
+    for (let quarter = 1; quarter <= 20; quarter += 1) {
+      const reliefRegionId = quarter <= 18 ? land.regionId : null;
+      game = advanceQuarter(game, { budget, reliefRegionId }).state;
+    }
+
+    for (const region of game.regions) {
+      expect(region.approval).toBe(region.id === land.regionId ? land.hungry : land.fed);
+    }
+    expect(electionOf(game)).toMatchObject({ voteShare: land.voteShare, summary: land.summary });
+  });
+});
+
 describe('famine and the election', () => {
   it('ends the game in famine first, long before the vote', () => {
     const country = withDroughtChance(tavaraFile, { 'dry-east': 1 });
