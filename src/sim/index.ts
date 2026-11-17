@@ -28,6 +28,13 @@ export {
   type RegionUnrest,
 } from './approval';
 export { type Budget } from './budget';
+export {
+  pendingDilemma,
+  type AnsweredDilemma,
+  type DilemmaOptionView,
+  type DilemmaView,
+  type PendingDilemma,
+} from './dilemmas';
 export { electionStatus, type ElectionStatus } from './election';
 export { type ActiveEvent } from './events';
 export {
@@ -83,6 +90,7 @@ export {
 export {
   APPROVAL_DRIVER_NAMES,
   APPROVAL_DRIVERS,
+  DILEMMA_TYPES,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
   LIKELIHOOD_NAMES,
@@ -102,6 +110,7 @@ export {
   UNREST_NAMES,
   type ApprovalDriver,
   type DecorationKind,
+  type DilemmaType,
   type EventType,
   type FoodStage,
   type LabelSide,

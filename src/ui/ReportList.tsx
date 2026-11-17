@@ -155,6 +155,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Finished building report',
     path: 'M3,17 H17 M5,17 V9 L10,4 L15,9 V17 M7.5,12.5 L9.5,14.5 L13,10.5',
   },
+  // A road that forks.
+  dilemma: {
+    label: 'Decision report',
+    path: 'M10,18 V11 M10,11 L4,5 M10,11 L16,5 M4,9 V5 H8 M16,9 V5 H12',
+  },
   // A ballot dropping into a box.
   election: {
     label: 'Election report',

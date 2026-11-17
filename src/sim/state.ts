@@ -1,6 +1,7 @@
 import type { ApprovalEffects, RegionUnrest } from './approval';
 import type { Budget } from './budget';
 import type { Country } from './country';
+import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
 import type { Project } from './projects';
@@ -96,6 +97,13 @@ export interface GameState {
    * being decided, in order. The last record is the position now.
    */
   readonly history: readonly VitalSigns[];
+  /**
+   * The dilemma put to the player as this quarter began, or null. The quarter cannot be
+   * resolved until the decisions answer it.
+   */
+  readonly dilemma: PendingDilemma | null;
+  /** Every dilemma the player has answered, in order. */
+  readonly dilemmasAnswered: readonly AnsweredDilemma[];
   readonly outcome: Outcome;
 }
 
@@ -113,6 +121,12 @@ export interface Decisions {
    * hold the whole cost of them all. The first instalment is paid as the quarter ends.
    */
   readonly startProjects?: readonly string[];
+  /**
+   * The answer to the dilemma put to the player this quarter: the id of one of its options.
+   * A quarter with a dilemma pending cannot be resolved without one, though it can be
+   * previewed, and the preview then shows the quarter as it stands with nothing chosen.
+   */
+  readonly dilemmaChoice?: string | null;
 }
 
 /** What happened in a quarter, and why. */

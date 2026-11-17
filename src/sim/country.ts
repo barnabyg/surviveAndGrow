@@ -3,6 +3,7 @@ import { contains } from './geometry';
 import { MONEY_PER_MILLION, type Money } from './types';
 import {
   DECORATION_KINDS,
+  DILEMMA_TYPES,
   EVENT_TYPES,
   LABEL_SIDES,
   MAP_FRAME,
@@ -13,6 +14,7 @@ import {
   SPENDING_AREAS,
   TERRAINS,
   type DecorationKind,
+  type DilemmaType,
   type EventType,
   type LabelSide,
   type SettlementSize,
@@ -114,6 +116,11 @@ export interface Country {
   readonly settlements: readonly Settlement[];
   /** Where things can be built, in the country file's order. */
   readonly sites: readonly Site[];
+  /**
+   * The chance, from 0 to 1, that each dilemma arises as a quarter begins, when the
+   * conditions it needs hold. One the file does not mention never arises.
+   */
+  readonly dilemmaLikelihood: Readonly<Record<DilemmaType, number>>;
   readonly start: {
     readonly treasury: Money;
     /** The budget in force when the game starts. */
@@ -319,34 +326,36 @@ function describe(value: unknown): string {
   return typeof value === 'object' ? 'an object' : 'missing';
 }
 
-/** How likely each event is in a region. An event the file does not mention never strikes. */
-function readEventLikelihood(
+/**
+ * A chance, from 0 to 1, for each of the engine's words of one kind, such as each event. A
+ * word the file does not mention gets no chance, and a word the engine does not have is a fault.
+ */
+function readChances<Word extends string>(
   reader: Reader,
-  region: Json,
+  parent: Json,
+  key: string,
   path: string,
-): Record<EventType, number> {
-  const likelihoodPath = join(path, 'eventLikelihood');
-  const written =
-    region.eventLikelihood === undefined ? {} : reader.object(region, 'eventLikelihood', path);
-  for (const key of Object.keys(written)) {
-    if (!EVENT_TYPES.some((type) => type === key)) {
-      reader.fault(
-        join(likelihoodPath, key),
-        `is not an event this game has (${EVENT_TYPES.join(', ')})`,
-      );
+  words: readonly Word[],
+  kind: string,
+): Record<Word, number> {
+  const chancesPath = join(path, key);
+  const written = parent[key] === undefined ? {} : reader.object(parent, key, path);
+  for (const name of Object.keys(written)) {
+    if (!words.some((word) => word === name)) {
+      reader.fault(join(chancesPath, name), `is not ${kind} this game has (${words.join(', ')})`);
     }
   }
   return Object.fromEntries(
-    EVENT_TYPES.map((type) => {
-      if (written[type] === undefined) return [type, 0];
-      const chance = reader.number(written, type, likelihoodPath);
+    words.map((word) => {
+      if (written[word] === undefined) return [word, 0];
+      const chance = reader.number(written, word, chancesPath);
       if (chance < 0 || chance > 1) {
-        reader.fault(join(likelihoodPath, type), `is ${chance}, but must be a chance from 0 to 1`);
-        return [type, 0];
+        reader.fault(join(chancesPath, word), `is ${chance}, but must be a chance from 0 to 1`);
+        return [word, 0];
       }
-      return [type, chance];
+      return [word, chance];
     }),
-  ) as Record<EventType, number>;
+  ) as Record<Word, number>;
 }
 
 /**
@@ -488,7 +497,7 @@ export function loadCountry(file: unknown): Country {
     population: reader.wholeNumber(item, 'population', path, 1),
     output: reader.money(item, 'output', path),
     farmland: reader.wholeNumber(item, 'farmland', path, 0),
-    eventLikelihood: readEventLikelihood(reader, item, path),
+    eventLikelihood: readChances(reader, item, 'eventLikelihood', path, EVENT_TYPES, 'an event'),
   }));
   if (Array.isArray(file.regions) && regions.length === 0) {
     reader.fault('regions', 'must list at least one region');
@@ -551,6 +560,14 @@ export function loadCountry(file: unknown): Country {
     regions,
     settlements,
     sites,
+    dilemmaLikelihood: readChances(
+      reader,
+      file,
+      'dilemmaLikelihood',
+      '',
+      DILEMMA_TYPES,
+      'a dilemma',
+    ),
     start: {
       treasury: reader.money(start, 'treasury', 'start'),
       budget: readBudget(reader, reader.object(start, 'budget', 'start'), 'start.budget'),

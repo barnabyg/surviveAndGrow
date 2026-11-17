@@ -29,6 +29,8 @@ interface BudgetPanelProps {
   readonly reliefRegionId: string | null;
   /** The sites building is to start on this quarter, whose instalments are a fixed cost. */
   readonly startProjects: readonly string[];
+  /** The answer given to the quarter's dilemma, if there is one, which bears on them too. */
+  readonly dilemmaChoice: string | null;
   readonly onChange: (pending: Budget) => void;
   readonly onCommit: () => void;
   readonly onReset: () => void;
@@ -43,12 +45,13 @@ export function countChanges(pending: Budget, committed: Budget): number {
 }
 
 export function BudgetPanel(props: BudgetPanelProps) {
-  const { game, committed, pending, reliefRegionId, startProjects } = props;
+  const { game, committed, pending, reliefRegionId, startProjects, dilemmaChoice } = props;
+  const held = { reliefRegionId, startProjects, dilemmaChoice };
   const { onChange, onCommit, onReset } = props;
   const changes = countChanges(pending, committed);
   // The same projection twice: where the committed budget leads, and where the sliders would.
-  const before = previewQuarter(game, { budget: committed, reliefRegionId, startProjects });
-  const after = previewQuarter(game, { budget: pending, reliefRegionId, startProjects });
+  const before = previewQuarter(game, { ...held, budget: committed });
+  const after = previewQuarter(game, { ...held, budget: pending });
   const building = after.projectSpending.max > 0 || after.pausedSites.length > 0;
   const { taxRatePercent, spending } = budgetLimits;
   const food = foodStatus(game);

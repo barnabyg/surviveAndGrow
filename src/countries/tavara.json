@@ -458,6 +458,14 @@
       ]
     }
   ],
+  "dilemmaLikelihood": {
+    "grainOffer": 0.35,
+    "merchantOffer": 0.5,
+    "emergencyWorks": 0.6,
+    "strikeTalks": 0.4,
+    "teachersPay": 0.08,
+    "donorGrant": 0.3
+  },
   "start": {
     "treasury": 42,
     "budget": {

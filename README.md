@@ -88,6 +88,16 @@ What is in the game so far:
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
   further. A danger too unlikely to matter is left out, and a risk to one region picks that
   region out on the map. Famine cannot end the game without having been listed first.
+- Some quarters open with a dilemma: a neighbour offering grain, merchants wanting to buy from
+  the reserve, a region in drought asking for emergency works, strikers asking for talks,
+  teachers demanding a pay rise, a donor offering a grant with conditions. Each has two or three
+  options, and each option states everything it will do, in money, food and approval, before you
+  choose. You can put the dilemma aside to look at the country, but the quarter cannot end until
+  you choose, and you can change your choice until it does. An option the treasury or the reserve
+  cannot cover is shown and cannot be chosen. The choice takes effect when the quarter ends, the
+  outlook and the risks count it at once, and the next report says what you chose and what it did.
+- Which dilemmas arise, and when, is fixed by the seed, and they leave the weather a seed brings
+  as it was. The risks ahead suppose that no new dilemma arises, since what one does is your choice.
 - The side columns scroll on their own when they run long, and the map gives up height to the
   timeline, so the whole screen stays in view.
 
@@ -106,6 +116,15 @@ costs, how long it takes and what it does are the game's, not the country's.
 - A farm road runs along a line, given by `route` as two or more positions. Every position must
   lie inside the country, and the route must start or end in the site's region, which is the
   region the road serves.
+
+`dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
+quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:
+`grainOffer` (the reserve is below its safe level), `merchantOffer` (the first quarter of a year,
+with the reserve above its safe level), `emergencyWorks` (a region is in drought), `strikeTalks`
+(a region is striking or protesting), `teachersPay` (any time) and `donorGrant` (the treasury is
+low). One the file leaves out never arises, and the whole entry may be left out. What each
+dilemma offers scales with the country's population, so the same dilemma suits a country of any
+size.
 
 To try a country of your own, put the file in `public/countries/` and name it in the address:
 `?country=/countries/mine.json`. The game checks the file as it loads and lists everything that

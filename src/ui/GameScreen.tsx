@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import {
   advanceQuarter,
+  pendingDilemma,
   previewQuarter,
+  regionName,
   risksAhead,
   siteSchedule,
   type GameState,
@@ -10,6 +12,8 @@ import {
 import { ApprovalChart } from './ApprovalChart';
 import { BudgetPanel, countChanges } from './BudgetPanel';
 import { ConfirmDialog } from './ConfirmDialog';
+import { DilemmaDialog } from './DilemmaDialog';
+import { DilemmaPanel } from './DilemmaPanel';
 import { ElectionPanel } from './ElectionPanel';
 import { GameSummary } from './GameSummary';
 import type { Lens } from './lens';
@@ -54,19 +58,38 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
   // The same for a risk the player selected, kept by its headline since the list changes.
   const [riskPicked, setRiskPicked] = useState<string | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
+  // The answer to the quarter's dilemma, if it has one. Like the relief target it is held
+  // with the other decisions and can be changed until the quarter ends. The dilemma is put
+  // to the player as its quarter begins, and again if they try to end the quarter without
+  // an answer.
+  const [dilemmaChoice, setDilemmaChoice] = useState<string | null>(null);
+  const [dilemmaShown, setDilemmaShown] = useState<'no' | 'yes' | 'pressed'>(
+    initialGame.dilemma === null ? 'no' : 'yes',
+  );
   // What the map shows. It is the player's choice and stays put from quarter to quarter.
   const [lens, setLens] = useState<Lens>('country');
 
   const playing = game.outcome.status === 'playing';
-  const decisions = { budget: committed, reliefRegionId, startProjects: plannedSiteIds };
+  const decisions = {
+    budget: committed,
+    reliefRegionId,
+    startProjects: plannedSiteIds,
+    dilemmaChoice,
+  };
+  const dilemma = playing ? pendingDilemma(game) : null;
   const preview = playing ? previewQuarter(game, decisions) : null;
   // The risks answer to the decisions in force, not to sliders the player is still moving.
   const risks = useMemo(
     () =>
       playing
-        ? risksAhead(game, { budget: committed, reliefRegionId, startProjects: plannedSiteIds })
+        ? risksAhead(game, {
+            budget: committed,
+            reliefRegionId,
+            startProjects: plannedSiteIds,
+            dilemmaChoice,
+          })
         : [],
-    [playing, game, committed, reliefRegionId, plannedSiteIds],
+    [playing, game, committed, reliefRegionId, plannedSiteIds, dilemmaChoice],
   );
   const pickedRisk = risks.findIndex(
     (risk) => risk.headline === riskPicked && risk.regionId === selectedRegionId,
@@ -127,10 +150,14 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
     setReportPicked(null);
     setPlannedSiteIds([]);
     setConfirmingEnd(false);
+    setDilemmaChoice(null);
+    setDilemmaShown(result.state.dilemma === null ? 'no' : 'yes');
   };
 
   const endQuarter = () => {
-    if (countChanges(pending, committed) > 0) {
+    if (dilemma !== null && dilemmaChoice === null) {
+      setDilemmaShown('pressed');
+    } else if (countChanges(pending, committed) > 0) {
       setConfirmingEnd(true);
     } else {
       resolveQuarter();
@@ -206,12 +233,22 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
         <aside className="column column--decisions" aria-label="Decisions">
           {preview !== null && (
             <>
+              {dilemma !== null && (
+                <DilemmaPanel
+                  dilemma={dilemma}
+                  chosen={dilemmaChoice}
+                  onOpen={() => {
+                    setDilemmaShown('yes');
+                  }}
+                />
+              )}
               <BudgetPanel
                 game={game}
                 committed={committed}
                 pending={pending}
                 reliefRegionId={reliefRegionId}
                 startProjects={plannedSiteIds}
+                dilemmaChoice={dilemmaChoice}
                 onChange={setPending}
                 onCommit={() => {
                   setCommitted(pending);
@@ -247,6 +284,21 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
           The budget changes on screen have not been committed. If you end the quarter now, it is
           resolved with the last budget you committed, and the changes stay pending.
         </ConfirmDialog>
+      )}
+      {dilemma !== null && dilemmaShown !== 'no' && (
+        <DilemmaDialog
+          dilemma={dilemma}
+          regionName={dilemma.regionId === null ? null : regionName(game.country, dilemma.regionId)}
+          chosen={dilemmaChoice}
+          pressed={dilemmaShown === 'pressed'}
+          onChoose={(optionId) => {
+            setDilemmaChoice(optionId);
+            setDilemmaShown('no');
+          }}
+          onLater={() => {
+            setDilemmaShown('no');
+          }}
+        />
       )}
       {!playing && <GameSummary game={game} onReplay={onReplay} onNewGame={onNewGame} />}
     </div>

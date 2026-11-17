@@ -10,6 +10,13 @@ import {
   type BudgetOutcome,
 } from './budget';
 import { regionName, type Country } from './country';
+import {
+  answerDilemma,
+  ariseDilemma,
+  choiceFault,
+  rollDilemmas,
+  type DilemmaOutcome,
+} from './dilemmas';
 import { forecastVoteShare, holdElection, isElectionQuarter, rollSwing } from './election';
 import {
   beginEntry,
@@ -74,6 +81,8 @@ export function createGame(country: Country, seed: number): GameState {
     events: [],
     projects: [],
     history: [vitalSigns(opening)],
+    dilemma: null,
+    dilemmasAnswered: [],
     outcome: { status: 'playing' },
   };
 }
@@ -87,12 +96,15 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   checkDecisions(state, decisions);
   // Everything chance decides is drawn here, in a fixed order, and nowhere else.
   const weather = rollWeather(state.rng, state.regions.length);
-  const events = rollEvents(state.country, nextDate(state.date), weather.rng);
+  const next = nextDate(state.date);
+  const events = rollEvents(state.country, next, weather.rng);
   const campaign = isElectionQuarter(state.date) ? rollSwing(events.rng) : null;
   const resolved = resolveQuarter(state, decisions, {
     weatherShocks: weather.shocks,
     struck: events.struck,
     swing: campaign?.swing ?? 0,
+    // Dilemmas answer to the seed and the quarter alone, and leave the generator untouched.
+    dilemmaRolls: rollDilemmas(state.seed, next),
   });
   // The campaign's draw counts only if the vote was held: a state that fell held none.
   const rng = resolved.electionHeld && campaign !== null ? campaign.rng : events.rng;
@@ -110,6 +122,11 @@ export interface Chance {
   readonly struck: readonly EventStrike[];
   /** How far the campaign moves the vote, in thousandths, if an election is held. */
   readonly swing: number;
+  /**
+   * The roll for each kind of dilemma, from 0 up to 1, in the vocabulary's order. One
+   * arises when its roll falls under its chance. A kind with no roll does not arise.
+   */
+  readonly dilemmaRolls: readonly number[];
 }
 
 /** A quarter resolved, with the signs of trouble a projection looks for. */
@@ -128,10 +145,13 @@ export interface QuarterResolved extends TurnResult {
  * nothing: the generator in the state it returns is the one it was given.
  */
 export function resolveQuarter(
-  state: GameState,
+  given: GameState,
   decisions: Decisions,
   chance: Chance,
 ): QuarterResolved {
+  // The answer to a dilemma takes effect first, so the rest of the quarter starts from it.
+  const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
+  const state = withAnswer(given, answer);
   const { budget, building, finances } = resolveMoney(state, decisions);
 
   const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
@@ -150,7 +170,7 @@ export function resolveQuarter(
     state.country,
     state.regions,
     food.regions,
-    approvalInputs(decisions, finances),
+    approvalInputs(decisions, finances, answer),
   );
 
   // A harvest ends the events that were waiting on it; then the new quarter may bring more.
@@ -168,10 +188,30 @@ export function resolveQuarter(
       : null;
   const outcome: Outcome = collapse ?? election?.outcome ?? { status: 'playing' };
 
+  const events = [...remaining, ...begun];
+  const dilemmasAnswered = [...state.dilemmasAnswered, ...answer.answered];
+  // A game still being played may be put a new dilemma as the next quarter begins.
+  const dilemma =
+    outcome.status === 'playing'
+      ? ariseDilemma(
+          {
+            country: state.country,
+            date,
+            treasury: finances.treasury,
+            foodReserve: food.foodReserve,
+            regions: approval.regions,
+            events,
+            dilemmasAnswered,
+          },
+          chance.dilemmaRolls,
+        )
+      : null;
+
   // Within one seriousness the report keeps this order, so what ends the game leads it.
   const entries: ReportEntry[] = [
     ...(collapse === null ? [] : [collapseEntry(collapse)]),
     ...(election === null ? [] : [election.entry]),
+    ...answer.entries,
     ...(budget.cut ? [cutEntry(budget)] : []),
     ...food.entries,
     ...approval.entries,
@@ -193,7 +233,7 @@ export function resolveQuarter(
       // The growing year ends with the harvest.
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
       regions: approval.regions,
-      events: [...remaining, ...begun],
+      events,
       projects: building.projects,
       history: [
         ...state.history,
@@ -204,19 +244,21 @@ export function resolveQuarter(
           regions: approval.regions,
         }),
       ],
+      dilemma,
+      dilemmasAnswered,
       outcome,
     },
     report: {
       date: state.date,
       treasury: {
         value: finances.treasury,
-        change: finances.treasury - state.treasury,
-        contributions: finances.contributions,
+        change: finances.treasury - given.treasury,
+        contributions: [...answer.money, ...finances.contributions],
       },
       food: {
         value: food.foodReserve,
-        change: food.foodReserve - state.foodReserve,
-        contributions: food.contributions,
+        change: food.foodReserve - given.foodReserve,
+        contributions: [...answer.food, ...food.contributions],
       },
       approval: approval.approval,
       harvest: food.harvest,
@@ -235,8 +277,11 @@ export function resolveQuarter(
  * @throws RangeError when a decision is outside what the game allows.
  * @throws Error when the game is already over.
  */
-export function previewQuarter(state: GameState, decisions: Decisions): Preview {
-  checkDecisions(state, decisions);
+export function previewQuarter(given: GameState, decisions: Decisions): Preview {
+  // A dilemma need not be answered to look ahead: unanswered, nothing of it is counted.
+  checkDecisions(given, decisions, false);
+  const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
+  const state = withAnswer(given, answer);
   const { building, finances } = resolveMoney(state, decisions);
   const situation = foodSituation(state);
   const relief = reliefFor(decisions, finances);
@@ -278,7 +323,7 @@ export function previewQuarter(state: GameState, decisions: Decisions): Preview 
     state.country,
     state.regions,
     thisQuarter.regions,
-    approvalInputs(decisions, finances),
+    approvalInputs(decisions, finances, answer),
   );
 
   return {
@@ -319,8 +364,10 @@ export const budgetLimits = balance.budget;
  * @throws RangeError when a decision is outside what the game allows.
  * @throws Error when the game is already over.
  */
-export function checkDecisions(state: GameState, decisions: Decisions): void {
+export function checkDecisions(state: GameState, decisions: Decisions, mustAnswer = true): void {
   if (state.outcome.status !== 'playing') throw new Error('The game is over.');
+  const unanswered = choiceFault(state, decisions.dilemmaChoice ?? null, mustAnswer);
+  if (unanswered !== null) throw new RangeError(unanswered);
   checkBudget(decisions.budget);
   const target = decisions.reliefRegionId ?? null;
   if (target !== null && !state.regions.some((region) => region.id === target)) {
@@ -366,8 +413,26 @@ function reliefFor(decisions: Decisions, finances: BudgetOutcome): FoodInputs['r
 }
 
 /** Approval answers to the tax rate decided and to what was actually spent. */
-function approvalInputs(decisions: Decisions, finances: BudgetOutcome): ApprovalInputs {
-  return { taxRatePercent: decisions.budget.taxRatePercent, spent: finances.spent };
+function approvalInputs(
+  decisions: Decisions,
+  finances: BudgetOutcome,
+  answer: DilemmaOutcome,
+): ApprovalInputs {
+  return {
+    taxRatePercent: decisions.budget.taxRatePercent,
+    spent: finances.spent,
+    pushes: answer.pushes,
+  };
+}
+
+/** The game as the quarter starts once the answer to a dilemma has taken effect. */
+function withAnswer(state: GameState, answer: DilemmaOutcome): GameState {
+  return {
+    ...state,
+    treasury: answer.treasury,
+    foodReserve: answer.foodReserve,
+    regions: answer.regions,
+  };
 }
 
 /** What the events in force leave of each region's harvest, given the sites in use. */

@@ -12,7 +12,14 @@ import {
   type Risk,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { bothCountries, tavara, testland, withDroughtChance } from './countries';
+import {
+  bothCountries,
+  tavara,
+  tavaraAsShipped,
+  testlandAsShipped,
+  withDroughtChance,
+} from './countries';
+import { answering } from './players';
 
 /** Each country with the one region that drought is made to strike in these tests. */
 const scenarios = [
@@ -318,7 +325,7 @@ describe('the risks ahead in Tavara', () => {
  * one at the latest, and in the quarters leading up to it.
  */
 describe.each([
-  ['Tavara as it ships', tavara],
+  ['Tavara as it ships', tavaraAsShipped],
   [
     'Tavara with drought likely everywhere',
     () =>
@@ -327,19 +334,22 @@ describe.each([
         Object.fromEntries(tavaraFile.regions.map((region) => [region.id, 0.4])),
       ),
   ],
-  ['Testland as it ships', testland],
+  ['Testland as it ships', testlandAsShipped],
   [
     'Testland with drought likely everywhere',
     () => withDroughtChance(testlandFile, { northfield: 0.5, sandreach: 0.5 }),
   ],
 ] satisfies [string, () => Country][])('a player who does nothing in %s', (_name, country) => {
+  // A dilemma must be answered, so this player takes the option that costs nothing.
+  const doNothing = (game: GameState) => answering(game, idle(game));
+
   it('is warned of famine in the region before it can end the game', () => {
     const seeds = 300;
     let famines = 0;
     for (let seed = 1; seed <= seeds; seed += 1) {
       const states = [createGame(country(), seed)];
       for (let game = states[0]; game?.outcome.status === 'playing'; game = states.at(-1)) {
-        states.push(advanceQuarter(game, idle(game)).state);
+        states.push(advanceQuarter(game, doNothing(game)).state);
       }
       const { outcome } = states.at(-1) ?? {};
       if (outcome?.status !== 'lost' || outcome.cause !== 'famine') continue;
@@ -350,7 +360,7 @@ describe.each([
       const inTime = states.slice(-5, -2);
       expect(inTime.length).toBeGreaterThan(0);
       for (const game of inTime) {
-        const warned = famineIn(risksAhead(game, idle(game)), outcome.regionId);
+        const warned = famineIn(risksAhead(game, doNothing(game)), outcome.regionId);
         expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
       }
     }

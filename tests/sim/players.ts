@@ -1,5 +1,6 @@
 import {
   FOOD_STAGES,
+  pendingDilemma,
   previewQuarter,
   type Budget,
   type Decisions,
@@ -22,4 +23,13 @@ export function steward(game: GameState, budget: Budget = game.budget): Decision
     (a, b) => stageOf(b.regionId) - stageOf(a.regionId) || b.shortfall - a.shortfall,
   )[0];
   return { budget, reliefRegionId: worst?.regionId ?? null };
+}
+
+/**
+ * The same decisions with any pending dilemma answered. It takes the last option that can
+ * be chosen, which in every dilemma costs neither money nor food.
+ */
+export function answering(game: GameState, decisions: Decisions): Decisions {
+  const choice = pendingDilemma(game)?.options.findLast((option) => option.unavailable === null);
+  return choice === undefined ? decisions : { ...decisions, dilemmaChoice: choice.id };
 }

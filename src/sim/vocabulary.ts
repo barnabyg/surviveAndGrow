@@ -39,6 +39,27 @@ export const SPENDING_AREA_NAMES: Readonly<Record<SpendingArea, string>> = {
 export const EVENT_TYPES = ['drought'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
+/**
+ * The dilemmas the engine knows: events that put a choice to the player. A country file
+ * says how likely each is to arise.
+ */
+export const DILEMMA_TYPES = [
+  'grainOffer',
+  'merchantOffer',
+  'emergencyWorks',
+  'strikeTalks',
+  'teachersPay',
+  'donorGrant',
+] as const;
+export type DilemmaType = (typeof DILEMMA_TYPES)[number];
+
+/**
+ * The kinds of place a dilemma can concern. The region is chosen from the state of the game
+ * by the kind, never by name: one an event has struck, or one that is striking or protesting.
+ */
+export const DILEMMA_PLACES = ['struckByEvent', 'inUnrest'] as const;
+export type DilemmaPlace = (typeof DILEMMA_PLACES)[number];
+
 /** The kinds of thing that can be built. A country file says where each could stand. */
 export const SITE_TYPES = ['irrigation', 'farmRoad', 'grainStore'] as const;
 export type SiteType = (typeof SITE_TYPES)[number];
@@ -148,6 +169,7 @@ export const REPORT_KINDS = [
   'projectStarted',
   'projectPaused',
   'projectCompleted',
+  'dilemma',
   'election',
   'collapse',
   'quiet',

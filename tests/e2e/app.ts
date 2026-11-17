@@ -2,25 +2,50 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { Locator, Page } from '@playwright/test';
 
-/** The crude second country, as its author wrote it. */
+interface CountryFile extends Record<string, unknown> {
+  regions: { id: string; eventLikelihood?: Record<string, number> }[];
+  dilemmaLikelihood?: Record<string, number>;
+}
+
+function read(...file: string[]): CountryFile {
+  return JSON.parse(readFileSync(path.join(import.meta.dirname, ...file), 'utf8')) as CountryFile;
+}
+
+/**
+ * The crude second country as its author wrote it, except that no dilemma arises in it. A
+ * dilemma stops the game until it is answered, so a test meets one only when it asks for it.
+ */
 export function testlandFile(): Record<string, unknown> {
-  const file = path.join(import.meta.dirname, '..', 'countries', 'testland.json');
-  return JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+  return { ...read('..', 'countries', 'testland.json'), dilemmaLikelihood: {} };
+}
+
+/**
+ * Tavara as it ships, with chance pinned down where the test says: drought strikes the
+ * named regions every year and no other region ever, and each dilemma named arises with
+ * the chance given, each quarter that it can, and no other dilemma ever. Drought left
+ * unsaid stays as the country file has it.
+ */
+export function tavaraWith(chances: {
+  readonly drought?: readonly string[];
+  readonly dilemmas?: Record<string, number>;
+}): CountryFile {
+  const country = read('..', '..', 'src', 'countries', 'tavara.json');
+  const { drought } = chances;
+  if (drought !== undefined) {
+    for (const region of country.regions) {
+      region.eventLikelihood = { drought: drought.includes(region.id) ? 1 : 0 };
+    }
+  }
+  country.dilemmaLikelihood = chances.dilemmas ?? {};
+  return country;
 }
 
 /**
  * Tavara as it ships, except that drought strikes the named regions every year and no
- * other region ever.
+ * other region ever, and no dilemma arises.
  */
-export function tavaraWithDroughtIn(regionIds: readonly string[]): unknown {
-  const file = path.join(import.meta.dirname, '..', '..', 'src', 'countries', 'tavara.json');
-  const country = JSON.parse(readFileSync(file, 'utf8')) as {
-    regions: { id: string; eventLikelihood: { drought: number } }[];
-  };
-  for (const region of country.regions) {
-    region.eventLikelihood = { drought: regionIds.includes(region.id) ? 1 : 0 };
-  }
-  return country;
+export function tavaraWithDroughtIn(regionIds: readonly string[]): CountryFile {
+  return tavaraWith({ drought: regionIds });
 }
 
 interface StartOptions {
@@ -28,14 +53,21 @@ interface StartOptions {
   readonly seed?: number;
   /** A country file to play in place of the one that ships, as if an author were serving it. */
   readonly countryFile?: unknown;
+  /**
+   * Play the country built into the game exactly as it ships, dilemmas and all. Left out,
+   * and with no country file given, the game is served Tavara without its dilemmas.
+   */
+  readonly asShipped?: boolean;
 }
 
 /** Opens the app, which loads the country and offers to start a game. */
-export async function openApp(page: Page, { seed = 1, countryFile }: StartOptions = {}) {
-  if (countryFile === undefined) {
+export async function openApp(page: Page, options: StartOptions = {}) {
+  const { seed = 1, asShipped = false } = options;
+  if (asShipped) {
     await page.goto(`/?seed=${seed}`);
     return;
   }
+  const countryFile = options.countryFile ?? tavaraWith({});
   await page.route(
     (url) => url.pathname === '/countries/under-test.json',
     (route) => route.fulfill({ json: countryFile }),
@@ -63,6 +95,9 @@ export const approval = (page: Page): Locator =>
 /** This quarter's reports, in the left column. */
 export const reports = (page: Page): Locator =>
   situation(page).getByRole('region', { name: 'This quarter' });
+/** The dilemma put to the player, while it is open. */
+export const dilemma = (page: Page, title: string | RegExp): Locator =>
+  page.getByRole('dialog', { name: title });
 /** The dangers of the coming quarters, in the left column. */
 export const risks = (page: Page): Locator =>
   situation(page).getByRole('region', { name: 'Risks ahead' });

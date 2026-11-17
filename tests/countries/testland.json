@@ -107,6 +107,11 @@
       ]
     }
   ],
+  "dilemmaLikelihood": {
+    "grainOffer": 0.3,
+    "emergencyWorks": 0.5,
+    "teachersPay": 0.1
+  },
   "start": {
     "treasury": 10,
     "budget": {

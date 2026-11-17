@@ -44,7 +44,7 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
  * @throws Error when the game is already over.
  */
 export function risksAhead(state: GameState, decisions: Decisions): readonly Risk[] {
-  checkDecisions(state, decisions);
+  checkDecisions(state, decisions, false);
   const { horizonQuarters, hungerShowsQuartersLater, weatherOutlooks } = balance.risks;
   // Nothing is looked for beyond the election, which ends the game.
   const quartersLeft = electionStatus(state).quartersAway + 1;
@@ -132,12 +132,14 @@ function play(
   for (let quarter = 0; quarter < quarters && state.outcome.status === 'playing'; quarter += 1) {
     const resolved = resolveQuarter(
       state,
-      // Projects are started in the quarter being decided, and in none after it.
-      quarter === 0 ? decisions : { ...decisions, startProjects: [] },
+      // Projects are started, and a dilemma answered, in the quarter being decided alone.
+      quarter === 0 ? decisions : { ...decisions, startProjects: [], dilemmaChoice: null },
       {
         weatherShocks: state.regions.map(() => shock),
         struck: events.filter((event) => event.afterQuarters === quarter + 1),
         swing: 0,
+        // No dilemma is supposed to arise: what one does is the player's to choose.
+        dilemmaRolls: [],
       },
     );
     path.push(resolved);
