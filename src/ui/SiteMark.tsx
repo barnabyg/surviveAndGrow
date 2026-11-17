@@ -25,6 +25,8 @@ const SYMBOLS: Readonly<Record<SiteType, string>> = {
   trunkRoad: 'M-7,7 L-3,-7 M7,7 L3,-7 M0,7 V4 M0,1 V-2 M0,-5 V-7',
   // An anchor.
   port: 'M0,-7 V7 M-2,-5 H2 M-6,1 C-6,5 -3,7 0,7 C3,7 6,5 6,1',
+  // A small anchor above the waterline.
+  shallowPort: 'M0,-7 V3 M-2,-5 H2 M-4,0 C-4,3 -2,4 0,4 C2,4 4,3 4,0 M-7,7 H7',
 };
 
 /**

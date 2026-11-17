@@ -1,5 +1,5 @@
 import type { Country, Site } from './country';
-import type { Project } from './projects';
+import { siteStatus, type Project } from './projects';
 import { capacityOf } from './sites';
 import type { Money } from './types';
 import { inUse } from './upkeep';
@@ -53,7 +53,7 @@ export interface Chain {
 export function chainOf(building: Building, siteId: string): Chain | null {
   const source = building.country.sites.find((site) => site.id === siteId);
   if (source === undefined || SITE_CHAIN_ROLES[source.type] !== 'source') return null;
-  const links = sitesOf(building.country, source).map((site) => linkOf(building, site));
+  const links = sitesOf(building, source).map((site) => linkOf(building, site));
   const [own, ...dependencies] = links;
   const missing = dependencies
     .filter((link) => link.state !== 'operating' && link.state !== 'decaying')
@@ -114,14 +114,20 @@ export function chainOutputs(building: Building): Money[] {
   );
 }
 
-/** A source and every site it depends on, each once, walking each list of dependencies in order. */
-function sitesOf(country: Country, source: Site): Site[] {
+/**
+ * A source and every site it depends on, each once, walking each list of dependencies in
+ * order. A site depended on that has alternatives stands for whichever of them has been
+ * started, or for itself while none has.
+ */
+function sitesOf(building: Building, source: Site): Site[] {
   const found: Site[] = [];
+  const byId = (id: string) => building.country.sites.find((candidate) => candidate.id === id);
   const walk = (site: Site): void => {
     if (found.includes(site)) return;
     found.push(site);
     for (const id of site.dependsOn) {
-      const next = country.sites.find((candidate) => candidate.id === id);
+      // A site closed by one of its alternatives stands for the one started in its place.
+      const next = byId(siteStatus(building, id).closedBy ?? id);
       if (next !== undefined) walk(next);
     }
   };
@@ -129,9 +135,9 @@ function sitesOf(country: Country, source: Site): Site[] {
   return found;
 }
 
-function linkOf({ projects }: Building, site: Site): ChainLink {
-  const project = projects.find((candidate) => candidate.siteId === site.id);
-  const state: SiteState = project?.status ?? 'empty';
+function linkOf(building: Building, site: Site): ChainLink {
+  const project = building.projects.find((candidate) => candidate.siteId === site.id);
+  const { state } = siteStatus(building, site.id);
   const capacity = capacityOf(site.type, state === 'decaying');
   return {
     siteId: site.id,

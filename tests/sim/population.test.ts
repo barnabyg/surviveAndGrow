@@ -10,8 +10,13 @@ import {
   type GameState,
   type TurnReport,
 } from '../../src/sim';
-import testlandFile from '../countries/testland.json';
-import { tavaraGrowing, testlandFormat1File, testlandGrowing, withChances } from './countries';
+import {
+  tavaraGrowing,
+  testlandFormat1File,
+  testlandFormat2File,
+  testlandGrowing,
+  withChances,
+} from './countries';
 import { faultsOf, withValue } from './files';
 import { steward } from './players';
 
@@ -121,7 +126,7 @@ describe('a region in famine', () => {
 });
 
 describe('a country file', () => {
-  const format2 = withValue(testlandFile, ['formatVersion'], 2);
+  const format2 = testlandFormat2File();
 
   it('may set a region’s yearly growth, which the game holds a quarter at a time', () => {
     const country = loadCountry(withValue(format2, ['regions', 1, 'populationGrowth'], 4));

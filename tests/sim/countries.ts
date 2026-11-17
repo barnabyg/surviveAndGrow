@@ -42,6 +42,20 @@ export function testlandFormat1File(): unknown {
   return file;
 }
 
+/**
+ * Testland's file as format 2 could write it: its quay is not an alternative to its port,
+ * since naming alternatives needs format 3.
+ */
+export function testlandFormat2File(): unknown {
+  const file = structuredClone(testlandFile) as {
+    formatVersion: number;
+    sites: { alternatives?: unknown }[];
+  };
+  file.formatVersion = 2;
+  for (const site of file.sites) delete site.alternatives;
+  return file;
+}
+
 interface Chances {
   formatVersion: number;
   regions: { id: string; eventLikelihood?: Record<string, number>; populationGrowth?: number }[];

@@ -184,13 +184,14 @@ describe('when upkeep cannot keep every site in good repair', () => {
 
 describe('a country file that leaves its starting upkeep out', () => {
   it.each(bothCountries)(
-    'starts %s with enough upkeep to keep every one of its sites in good repair',
+    'starts %s with enough upkeep to keep in good repair every site that can stand together',
     (_name, country) => {
       const game = createGame(country(), 1);
-      const needed = game.country.sites.reduce(
-        (total, site) => total + siteStatus(game, site.id).upkeep,
-        0,
-      );
+      const upkeepOf = (siteId: string) => siteStatus(game, siteId).upkeep;
+      // Of two alternatives, only one can be built: the one that costs more to keep up counts.
+      const needed = game.country.sites
+        .filter((site) => !site.alternatives.some((id) => upkeepOf(id) > upkeepOf(site.id)))
+        .reduce((total, site) => total + upkeepOf(site.id), 0);
 
       expect(game.budget.spending.upkeep).toBeGreaterThanOrEqual(needed);
       expect(game.budget.spending.upkeep - needed).toBeLessThan(10);

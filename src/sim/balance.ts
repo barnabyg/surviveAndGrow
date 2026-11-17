@@ -255,6 +255,17 @@ export const balance = {
       infrastructurePermille: 150,
       capacity: 300,
     },
+    // A port for shallow-draught ships: about half the cost of a deep-water port and quicker
+    // to build, but it ships less than a mine produces. A country offers it as an
+    // alternative to a deep-water port, so choosing it gives up the larger trade for good.
+    shallowPort: {
+      cost: 250,
+      buildQuarters: 5,
+      upkeep: 4,
+      effects: {},
+      infrastructurePermille: 100,
+      capacity: 120,
+    },
   } satisfies Record<SiteType, SiteBalance>,
   /**
    * Upkeep. Each quarter the upkeep spending keeps the sites in use in good repair one by

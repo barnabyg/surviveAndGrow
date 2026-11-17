@@ -83,6 +83,7 @@ export const SITE_TYPES = [
   'mine',
   'trunkRoad',
   'port',
+  'shallowPort',
 ] as const;
 export type SiteType = (typeof SITE_TYPES)[number];
 
@@ -115,6 +116,7 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
   mine: { name: 'Mine', form: 'place', chainRole: 'source' },
   trunkRoad: { name: 'Trunk road', form: 'route', chainRole: 'link' },
   port: { name: 'Port', form: 'place', chainRole: 'outlet' },
+  shallowPort: { name: 'Shallow port', form: 'place', chainRole: 'outlet' },
 };
 
 /**
@@ -175,12 +177,17 @@ export const SITE_EFFECT_DEFINITIONS: Readonly<
 export const PROJECT_STATUSES = ['building', 'paused', 'operating', 'decaying'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
-/** How a site stands: empty until a project is started on it, and then as the project stands. */
-export const SITE_STATES = ['empty', ...PROJECT_STATUSES] as const;
+/**
+ * How a site stands: empty until a project is started on it, and then as the project stands.
+ * A site no project has been started on is closed once one has been started on one of its
+ * alternatives, and can then never be built.
+ */
+export const SITE_STATES = ['empty', 'closed', ...PROJECT_STATUSES] as const;
 export type SiteState = (typeof SITE_STATES)[number];
 
 export const SITE_STATE_NAMES: Readonly<Record<SiteState, string>> = {
   empty: 'Empty',
+  closed: 'Closed',
   building: 'Under construction',
   paused: 'Paused',
   operating: 'Operating',

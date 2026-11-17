@@ -1,5 +1,5 @@
 {
-  "formatVersion": 2,
+  "formatVersion": 3,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -485,6 +485,14 @@
       "name": "Saltmouth port",
       "region": "salt-coast",
       "at": [140, 222]
+    },
+    {
+      "id": "saltmouth-quay",
+      "type": "shallowPort",
+      "name": "Saltmouth quay",
+      "region": "salt-coast",
+      "at": [200, 170],
+      "alternatives": ["saltmouth-port"]
     }
   ],
   "dilemmaLikelihood": {

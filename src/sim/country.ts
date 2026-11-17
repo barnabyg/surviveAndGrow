@@ -1,3 +1,4 @@
+import { sum } from './arithmetic';
 import { balance } from './balance';
 import { spendingFault, taxRateFault, type Budget } from './budget';
 import { contains } from './geometry';
@@ -29,9 +30,10 @@ import {
 /**
  * The newest version of the country file format this game reads. It still reads every
  * earlier version: format 2 added the sites a site depends on and a region's own population
- * growth, which format 1 cannot say.
+ * growth, which format 1 cannot say, and format 3 added sites that are alternatives to each
+ * other, which format 2 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 2;
+export const COUNTRY_FORMAT_VERSION = 3;
 
 /** The oldest country file format this game still reads. */
 const OLDEST_COUNTRY_FORMAT_VERSION = 1;
@@ -78,8 +80,16 @@ interface SiteDetails {
   readonly name: string;
   /** The region the site belongs to, which is the region its effect falls on. */
   readonly regionId: string;
-  /** The ids of the other sites this one depends on, as the country file lists them. */
+  /**
+   * The ids of the other sites this one depends on, as the country file lists them. A site
+   * with alternatives stands for whichever of them is chosen.
+   */
   readonly dependsOn: readonly string[];
+  /**
+   * The ids of the sites this one is an alternative to, in the country file's order. Building
+   * on either rules the other out. The file may say so on either side or on both.
+   */
+  readonly alternatives: readonly string[];
 }
 
 /**
@@ -407,7 +417,8 @@ function readSite(
     type: reader.oneOf(site, 'type', path, SITE_TYPES),
     name: reader.unique(site, 'name', path, names),
     regionId,
-    dependsOn: readDependsOn(reader, site, path),
+    dependsOn: readSiteIds(reader, site, path, 'dependsOn'),
+    alternatives: readSiteIds(reader, site, path, 'alternatives'),
   };
   // A type the game does not know says nothing about how the site should be given.
   if (!SITE_TYPES.some((type) => type === site.type))
@@ -481,13 +492,18 @@ function readGrowth(reader: Reader, region: Json, path: string, formatVersion: n
 }
 
 /**
- * The ids a site lists as depending on. Whether each names a site is checked once every
- * site has been read (`checkDependencies`).
+ * The ids a site lists under `key`, such as the sites it depends on. Whether each names a
+ * site is checked once every site has been read (`checkDependencies`, `checkAlternatives`).
  */
-function readDependsOn(reader: Reader, site: Json, path: string): string[] {
-  const value = site.dependsOn;
+function readSiteIds(
+  reader: Reader,
+  site: Json,
+  path: string,
+  key: 'dependsOn' | 'alternatives',
+): string[] {
+  const value = site[key];
   if (value === undefined) return [];
-  const listPath = join(path, 'dependsOn');
+  const listPath = join(path, key);
   if (!Array.isArray(value)) {
     reader.fault(listPath, wrongKind(value, 'a list of site ids'));
     return [];
@@ -517,8 +533,20 @@ function checkDependencies(reader: Reader, sites: readonly Site[]): void {
       const path = `sites[${index}].dependsOn[${place}]`;
       if (id === site.id) reader.fault(path, `is "${id}": a site cannot depend on itself`);
       else if (!byId.has(id)) reader.fault(path, `is "${id}", which is not the id of a site`);
+      else if (site.alternatives.includes(id)) {
+        reader.fault(
+          path,
+          `is "${id}", one of its alternatives: a site cannot depend on a site it rules out`,
+        );
+      }
     });
   });
+  // A site depended on stands for whichever of its alternatives is chosen.
+  const choices = (id: string): Site[] => {
+    const site = byId.get(id);
+    if (site === undefined) return [];
+    return [site, ...site.alternatives.flatMap((other) => byId.get(other) ?? [])];
+  };
 
   // A depth-first walk; a site met again while its own dependencies are open is a cycle.
   const done = new Set<string>();
@@ -539,9 +567,8 @@ function checkDependencies(reader: Reader, sites: readonly Site[]): void {
       }
       return;
     }
-    for (const id of site.dependsOn) {
-      const next = byId.get(id);
-      if (next !== undefined && next !== site) walk(next, [...trail, site.id]);
+    for (const next of site.dependsOn.flatMap(choices)) {
+      if (next !== site) walk(next, [...trail, site.id]);
     }
     done.add(site.id);
   };
@@ -552,9 +579,16 @@ function checkDependencies(reader: Reader, sites: readonly Site[]): void {
   const outletNames = outlets.map((type) => SITE_TYPE_NAMES[type].toLowerCase()).join(' or ');
   const reaches = (site: Site, seen: ReadonlySet<string>): boolean =>
     site.dependsOn.some((id) => {
-      const next = byId.get(id);
-      if (next === undefined || seen.has(id)) return false;
-      return outlets.includes(next.type) || reaches(next, new Set([...seen, id]));
+      const nexts = choices(id);
+      // Whichever alternative is chosen, the chain must still reach an outlet.
+      return (
+        nexts.length > 0 &&
+        nexts.every(
+          (next) =>
+            outlets.includes(next.type) ||
+            (!seen.has(next.id) && reaches(next, new Set([...seen, next.id]))),
+        )
+      );
     });
   sites.forEach((site, index) => {
     if (SITE_CHAIN_ROLES[site.type] !== 'source' || reaches(site, new Set([site.id]))) return;
@@ -566,10 +600,66 @@ function checkDependencies(reader: Reader, sites: readonly Site[]): void {
 }
 
 /**
+ * Each alternative a site lists must be another site the country has, playing the same part
+ * in a chain, so that whichever is chosen a chain through it still works. Returns the sites
+ * with their alternatives said on both sides: if one rules out another, each rules out the other.
+ */
+function checkAlternatives(reader: Reader, sites: readonly Site[]): Site[] {
+  const byId = new Map(sites.map((site) => [site.id, site]));
+  sites.forEach((site, index) => {
+    site.alternatives.forEach((id, place) => {
+      const path = `sites[${index}].alternatives[${place}]`;
+      const other = byId.get(id);
+      if (id === site.id) {
+        reader.fault(path, `is "${id}": a site cannot be an alternative to itself`);
+      } else if (other === undefined) {
+        reader.fault(path, `is "${id}", which is not the id of a site`);
+      } else if (SITE_CHAIN_ROLES[other.type] !== SITE_CHAIN_ROLES[site.type]) {
+        const name = (type: SiteType) => SITE_TYPE_NAMES[type].toLowerCase();
+        reader.fault(
+          path,
+          `is "${id}", a ${name(other.type)}, but a ${name(site.type)} can only be an alternative to a site that plays the same part in a chain`,
+        );
+      }
+    });
+  });
+  return sites.map((site) => ({
+    ...site,
+    alternatives: sites
+      .filter(
+        (other) =>
+          other !== site &&
+          (site.alternatives.includes(other.id) || other.alternatives.includes(site.id)),
+      )
+      .map((other) => other.id),
+  }));
+}
+
+/**
+ * The sites that could all be in use at once and between them need the most upkeep: every
+ * site, less those ruled out by the alternatives chosen.
+ */
+function costliestTogether(sites: readonly Site[]): Site[] {
+  const upkeepOf = (chosen: readonly Site[]) =>
+    sum(chosen.map((site) => balance.sites[site.type].upkeep));
+  const choose = (left: readonly Site[], chosen: readonly Site[]): Site[] => {
+    const [site, ...rest] = left;
+    if (site === undefined) return [...chosen];
+    if (chosen.some((other) => other.alternatives.includes(site.id))) return choose(rest, chosen);
+    if (site.alternatives.length === 0) return choose(rest, [...chosen, site]);
+    const withIt = choose(rest, [...chosen, site]);
+    const withoutIt = choose(rest, chosen);
+    return upkeepOf(withIt) >= upkeepOf(withoutIt) ? withIt : withoutIt;
+  };
+  return choose(sites, []);
+}
+
+/**
  * The starting budget, written with the tax rate in percent and spending in millions. It
  * is held to the same rules as a budget the player sets. Upkeep may be left out: the game
- * then starts with enough to keep every one of the country's sites in good repair, which
- * costs nothing until they are built, since upkeep is spent only as far as it is needed.
+ * then starts with enough to keep in good repair every one of the country's sites that can
+ * stand together, which costs nothing until they are built, since upkeep is spent only as
+ * far as it is needed.
  */
 function readBudget(reader: Reader, budget: Json, path: string, sites: readonly Site[]): Budget {
   const spendingPath = join(path, 'spending');
@@ -585,7 +675,7 @@ function readBudget(reader: Reader, budget: Json, path: string, sites: readonly 
   const spending = Object.fromEntries(
     SPENDING_AREAS.map((area) => {
       if (area === 'upkeep' && written.upkeep === undefined) {
-        return [area, upkeepForEvery(sites.map((site) => site.type))];
+        return [area, upkeepForEvery(costliestTogether(sites).map((site) => site.type))];
       }
       const before = reader.faults.length;
       const amount = reader.money(written, area, spendingPath);
@@ -667,14 +757,19 @@ export function loadCountry(file: unknown): Country {
   // Reports and the treasury's breakdown name sites, so two sites may not share a name.
   const siteIds = new Map<string, string>();
   const siteNames = new Map<string, string>();
-  const sites = reader.list(file, 'sites', '', (item, path) => {
-    // Format 1 had no way to say what a site depends on.
-    if (formatVersion < 2 && item.dependsOn !== undefined) {
-      reader.fault(join(path, 'dependsOn'), 'needs country file format 2 or later');
-      return readSite(reader, { ...item, dependsOn: undefined }, path, regions, siteIds, siteNames);
+  const listed = reader.list(file, 'sites', '', (item, path) => {
+    // Format 1 had no way to say what a site depends on, and format 2 none to name alternatives.
+    const later = { dependsOn: 2, alternatives: 3 } as const;
+    const fields = { ...item };
+    for (const [key, version] of Object.entries(later)) {
+      if (formatVersion < version && item[key] !== undefined) {
+        reader.fault(join(path, key), `needs country file format ${version} or later`);
+        Reflect.deleteProperty(fields, key);
+      }
     }
-    return readSite(reader, item, path, regions, siteIds, siteNames);
+    return readSite(reader, fields, path, regions, siteIds, siteNames);
   });
+  const sites = checkAlternatives(reader, listed);
   checkDependencies(reader, sites);
 
   const map = reader.object(file, 'map', '');

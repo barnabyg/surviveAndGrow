@@ -15,7 +15,7 @@ describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
     const country = tavara();
 
-    expect(tavaraAsShipped().formatVersion).toBe(2);
+    expect(tavaraAsShipped().formatVersion).toBe(3);
     expect(country.regions.map((region) => [region.name, region.terrain])).toEqual([
       ['Korr Highlands', 'highlands'],
       ['Salt Coast', 'coast'],
@@ -54,6 +54,7 @@ describe('a valid country file', () => {
       ['Korrgate mine', 'mine', 'korr-highlands', 'place'],
       ['Trunk road, Korrgate mine to Saltmouth', 'trunkRoad', 'salt-coast', 'route'],
       ['Saltmouth port', 'port', 'salt-coast', 'place'],
+      ['Saltmouth quay', 'shallowPort', 'salt-coast', 'place'],
     ]);
   });
 
@@ -67,6 +68,7 @@ describe('a valid country file', () => {
         name: 'North irrigation',
         regionId: 'northfield',
         dependsOn: [],
+        alternatives: [],
         form: 'place',
         at: [290, 330],
       },
@@ -76,6 +78,7 @@ describe('a valid country file', () => {
         name: 'Alpha grain store',
         regionId: 'northfield',
         dependsOn: [],
+        alternatives: [],
         form: 'place',
         at: [440, 440],
       },
@@ -85,6 +88,7 @@ describe('a valid country file', () => {
         name: 'Farm road, Alpha to Beta',
         regionId: 'sandreach',
         dependsOn: [],
+        alternatives: [],
         form: 'route',
         route: [
           [385, 385],
@@ -98,6 +102,7 @@ describe('a valid country file', () => {
         name: 'Sandreach mine',
         regionId: 'sandreach',
         dependsOn: ['sand-trunk-road'],
+        alternatives: [],
         form: 'place',
         at: [800, 300],
       },
@@ -107,6 +112,7 @@ describe('a valid country file', () => {
         name: 'Trunk road, Sandreach mine to Alpha port',
         regionId: 'sandreach',
         dependsOn: ['alpha-port'],
+        alternatives: [],
         form: 'route',
         route: [
           [800, 312],
@@ -121,8 +127,19 @@ describe('a valid country file', () => {
         name: 'Alpha port',
         regionId: 'northfield',
         dependsOn: [],
+        alternatives: ['alpha-quay'],
         form: 'place',
         at: [250, 500],
+      },
+      {
+        id: 'alpha-quay',
+        type: 'shallowPort',
+        name: 'Alpha quay',
+        regionId: 'northfield',
+        dependsOn: [],
+        alternatives: ['alpha-port'],
+        form: 'place',
+        at: [235, 545],
       },
     ]);
   });
@@ -177,6 +194,13 @@ describe('the types of site', () => {
       upkeep: 8,
       effect: 'Ships up to $30.0m a quarter of a mine’s output.',
       decayingEffect: 'Ships up to $15.0m a quarter of a mine’s output.',
+    });
+    expect(siteTerms('shallowPort')).toEqual({
+      cost: 250,
+      buildQuarters: 5,
+      upkeep: 4,
+      effect: 'Ships up to $12.0m a quarter of a mine’s output.',
+      decayingEffect: 'Ships up to $6.0m a quarter of a mine’s output.',
     });
   });
 });
@@ -268,11 +292,89 @@ describe('a country file in format 2', () => {
     const file = withValue(testlandFile, ['sites', 4, 'dependsOn'], []);
 
     expect(faultsOf(file)).toEqual([
-      'sites[3].dependsOn must lead, directly or through other sites, to a port: a mine earns only through a chain that reaches one.',
+      'sites[3].dependsOn must lead, directly or through other sites, to a port or shallow port: a mine earns only through a chain that reaches one.',
     ]);
     expect(faultsOf(without(testlandFile, ['sites', 3, 'dependsOn']))).toEqual([
-      'sites[3].dependsOn must lead, directly or through other sites, to a port: a mine earns only through a chain that reaches one.',
+      'sites[3].dependsOn must lead, directly or through other sites, to a port or shallow port: a mine earns only through a chain that reaches one.',
     ]);
+  });
+});
+
+describe('a country file in format 3', () => {
+  /** Testland with its quay's alternatives as given; its quay is the seventh site. */
+  const quayRulingOut = (alternatives: unknown) =>
+    withValue(testlandFile, ['sites', 6, 'alternatives'], alternatives);
+
+  it('may mark sites as alternatives, each ruling out the other whichever side says so', () => {
+    const country = testland();
+
+    expect(country.formatVersion).toBe(3);
+    expect(valueAt(testlandFile, ['sites', 5, 'alternatives'])).toBeUndefined();
+    expect(country.sites.map((site) => [site.id, site.alternatives])).toEqual([
+      ['north-irrigation', []],
+      ['alpha-store', []],
+      ['sand-road', []],
+      ['sand-mine', []],
+      ['sand-trunk-road', []],
+      ['alpha-port', ['alpha-quay']],
+      ['alpha-quay', ['alpha-port']],
+    ]);
+    // Saying so on both sides says nothing more.
+    const both = withValue(testlandFile, ['sites', 5, 'alternatives'], ['alpha-quay']);
+    expect(loadCountry(both).sites.map((site) => site.alternatives)).toEqual(
+      country.sites.map((site) => site.alternatives),
+    );
+  });
+
+  it('starts with upkeep enough for the costliest choice, not for every site', () => {
+    const withoutQuay = withValue(
+      withValue(testlandFile, ['formatVersion'], 2),
+      ['sites'],
+      (valueAt(testlandFile, ['sites']) as unknown[]).slice(0, 6),
+    );
+
+    expect(testland().start.budget.spending.upkeep).toBe(
+      loadCountry(withoutQuay).start.budget.spending.upkeep,
+    );
+  });
+
+  it('is rejected when an alternative is not another site the country has', () => {
+    expect(faultsOf(quayRulingOut(['atlantis']))).toEqual([
+      'sites[6].alternatives[0] is "atlantis", which is not the id of a site.',
+    ]);
+    expect(faultsOf(quayRulingOut(['alpha-quay']))).toEqual([
+      'sites[6].alternatives[0] is "alpha-quay": a site cannot be an alternative to itself.',
+    ]);
+  });
+
+  it('is rejected when the alternatives are not a list of site ids, or repeat one', () => {
+    expect(faultsOf(quayRulingOut('alpha-port'))).toEqual([
+      'sites[6].alternatives must be a list of site ids, but is text.',
+    ]);
+    expect(faultsOf(quayRulingOut(['alpha-port', 'alpha-port', 3]))).toEqual([
+      'sites[6].alternatives[1] repeats "alpha-port".',
+      'sites[6].alternatives[2] must be the id of a site, but is a number.',
+    ]);
+  });
+
+  it('is rejected when alternatives play different parts in a chain', () => {
+    expect(faultsOf(quayRulingOut(['alpha-port', 'alpha-store']))).toEqual([
+      'sites[6].alternatives[1] is "alpha-store", a grain store, but a shallow port can only be an alternative to a site that plays the same part in a chain.',
+    ]);
+  });
+
+  it('is rejected when a site depends on one of its own alternatives', () => {
+    const file = withValue(testlandFile, ['sites', 4, 'alternatives'], ['alpha-port']);
+
+    expect(faultsOf(withValue(file, ['sites', 4, 'dependsOn'], ['alpha-port']))).toContain(
+      'sites[4].dependsOn[0] is "alpha-port", one of its alternatives: a site cannot depend on a site it rules out.',
+    );
+  });
+
+  it('cannot be given alternatives in a format 2 file', () => {
+    const file = withValue(testlandFile, ['formatVersion'], 2);
+
+    expect(faultsOf(file)).toEqual(['sites[6].alternatives needs country file format 3 or later.']);
   });
 });
 
@@ -294,9 +396,9 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it is written for another version of the format', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 3);
+    const file = withValue(testlandFile, ['formatVersion'], 4);
 
-    expect(faultsOf(file)).toEqual(['formatVersion is 3, but this game reads versions 1 to 2.']);
+    expect(faultsOf(file)).toEqual(['formatVersion is 4, but this game reads versions 1 to 3.']);
   });
 
   it('when its format version is not a number', () => {
@@ -402,7 +504,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
     const file = withValue(testlandFile, ['sites', 0, 'type'], 'airport');
 
     expect(faultsOf(file)).toEqual([
-      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port.',
+      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port, shallowPort.',
     ]);
   });
 
