@@ -9,17 +9,15 @@ import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
 import type { Decisions, GameState, RegionState } from './state';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
-import { tierLostBelow } from './tiers';
+import { tierBelow, tierLostBelow, tierRank } from './tiers';
 import {
   FOOD_STAGES,
   LIKELIHOODS,
   RISK_KINDS,
   TIER_NAMES,
-  TIERS,
   UNREST_LEVELS,
   type Likelihood,
   type RiskKind,
-  type Tier,
   type Unrest,
 } from './vocabulary';
 
@@ -380,18 +378,17 @@ function strikeRisk(scope: Scope): Risk[] {
  */
 function tierRisk(scope: Scope): Risk[] {
   const { state, watched } = scope;
-  const rank = (tier: Tier) => TIERS.indexOf(tier);
   const falls = (path: Path) => {
     const quarter = path
       .slice(0, watched)
-      .findIndex((resolved) => rank(resolved.state.tier) < rank(state.tier));
+      .findIndex((resolved) => tierRank(resolved.state.tier) < tierRank(state.tier));
     return quarter === -1 ? null : quarter;
   };
   const finding = weigh(scope, falls);
   const likelihood = finding === null ? null : likelihoodOf(finding.chance);
   if (finding === null || likelihood === null) return [];
   const lost = tierLostBelow(state.tier) ?? 0;
-  const below = TIERS[rank(state.tier) - 1] ?? TIERS[0];
+  const below = tierBelow(state.tier);
   return [
     {
       kind: 'tier',

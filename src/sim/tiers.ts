@@ -15,6 +15,16 @@ export interface TierStatus {
   readonly expectations: number;
 }
 
+/** A tier's place among the tiers: 0 for the lowest. */
+export function tierRank(tier: Tier): number {
+  return TIERS.indexOf(tier);
+}
+
+/** The tier below one, or the lowest tier itself. */
+export function tierBelow(tier: Tier): Tier {
+  return TIERS[tierRank(tier) - 1] ?? TIERS[0];
+}
+
 /** Where a tier begins, in thousandths of prosperity. */
 export function tierFrom(tier: Tier): number {
   return balance.prosperity.tiers[tier].fromPermille;
@@ -27,9 +37,7 @@ export function tierAt(prosperity: number): Tier {
 
 /** The prosperity below which a tier is lost, or null for the lowest, which cannot be. */
 export function tierLostBelow(tier: Tier): number | null {
-  return TIERS.indexOf(tier) === 0
-    ? null
-    : tierFrom(tier) - balance.prosperity.fallBackMarginPermille;
+  return tierRank(tier) === 0 ? null : tierFrom(tier) - balance.prosperity.fallBackMarginPermille;
 }
 
 /**
@@ -38,14 +46,14 @@ export function tierLostBelow(tier: Tier): number | null {
  */
 export function nextTier(current: Tier, prosperity: number): Tier {
   const reached = tierAt(prosperity);
-  if (TIERS.indexOf(reached) >= TIERS.indexOf(current)) return reached;
+  if (tierRank(reached) >= tierRank(current)) return reached;
   let tier = current;
   for (
     let lost = tierLostBelow(tier);
     lost !== null && prosperity < lost;
     lost = tierLostBelow(tier)
   ) {
-    tier = TIERS[TIERS.indexOf(tier) - 1] ?? TIERS[0];
+    tier = tierBelow(tier);
   }
   return tier;
 }
@@ -66,7 +74,7 @@ export function tierStatus(position: {
   readonly prosperity: number;
 }): TierStatus {
   const { tier, startingTier, prosperity } = position;
-  const above = TIERS[TIERS.indexOf(tier) + 1];
+  const above = TIERS[tierRank(tier) + 1];
   return {
     tier,
     next:
@@ -90,7 +98,7 @@ export function tierEntry(
   prosperity: number,
 ): ReportEntry | null {
   if (was === now) return null;
-  const rose = TIERS.indexOf(now) > TIERS.indexOf(was);
+  const rose = tierRank(now) > tierRank(was);
   const shift = expectationsIn(now, startingTier) - expectationsIn(was, startingTier);
   const expectations =
     shift === 0
@@ -111,6 +119,6 @@ export function tierEntry(
     kind: 'tier',
     seriousness: 'serious',
     headline: `Prosperity has fallen back to ${TIER_NAMES[now]}`,
-    cause: `National prosperity has fallen to ${formatIndex(prosperity)}, below the ${formatIndex(lost)} at which ${TIER_NAMES[was]} is lost, and the map's look follows it down. ${expectations}`,
+    cause: `National prosperity has fallen to ${formatIndex(prosperity)}, below the ${formatIndex(lost)} at which ${TIER_NAMES[was]} is lost, and the map’s look follows it down. ${expectations}`,
   };
 }

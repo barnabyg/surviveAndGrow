@@ -3,7 +3,10 @@ import { balance } from './balance';
 import type { Country } from './country';
 import { sitesInUse, type Project } from './projects';
 import type { RegionState } from './state';
-import type { Contribution, Figure, Money } from './types';
+import { MONEY_PER_MILLION, type Contribution, type Figure, type Money } from './types';
+
+/** How many dollars one Money unit is. */
+const DOLLARS_PER_MONEY = 1_000_000 / MONEY_PER_MILLION;
 import {
   LASTING_SERVICES,
   PROSPERITY_PART_NAMES,
@@ -159,7 +162,7 @@ export function infrastructureAccess({
       sum(
         inUse
           .filter((site) => site.regionId === region.id)
-          .map((site) => balance.prosperity.infrastructurePermillePerSite[site.type]),
+          .map((site) => balance.sites[site.type].infrastructurePermille),
       ),
     ),
   );
@@ -179,7 +182,7 @@ function scoresOf(region: RegionState, infrastructure: number): ProsperityScores
 function incomeScore(output: Money, population: number): number {
   if (population <= 0) return 0;
   const full = balance.prosperity.fullIncomeDollarsPerPersonPerQuarter;
-  return clamp(Math.floor((output * 100_000 * 1000) / (population * full)), 0, 1000);
+  return clamp(Math.floor((output * DOLLARS_PER_MONEY * 1000) / (population * full)), 0, 1000);
 }
 
 function weigh(scores: ProsperityScores): number {

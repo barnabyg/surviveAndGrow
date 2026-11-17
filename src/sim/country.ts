@@ -25,8 +25,9 @@ import {
 } from './vocabulary';
 
 /**
- * The version of the country file format this game writes. It still reads every earlier
- * version: format 2 added the sites a site depends on, which format 1 cannot say.
+ * The newest version of the country file format this game reads. It still reads every
+ * earlier version: format 2 added the sites a site depends on and a region's own population
+ * growth, which format 1 cannot say.
  */
 export const COUNTRY_FORMAT_VERSION = 2;
 

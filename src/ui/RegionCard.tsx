@@ -58,7 +58,7 @@ export function RegionCard(props: RegionCardProps) {
         </div>
         {moved.map((line) => (
           <div key={line.label}>
-            <dt>{line.label.startsWith('Growth') ? 'Grew last quarter' : 'Died in famine'}</dt>
+            <dt>{line.amount > 0 ? 'Grew last quarter' : 'Died in famine'}</dt>
             <dd>{formatSignedCount(line.amount)}</dd>
           </div>
         ))}

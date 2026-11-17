@@ -19,6 +19,11 @@ export interface SiteBalance {
   readonly buildQuarters: number;
   /** What the site in use leaves of each thing it bears on, in thousandths. */
   readonly effects: Readonly<Partial<Record<SiteEffect, number>>>;
+  /**
+   * What the site in use adds to its region's infrastructure access, in thousandths of the
+   * whole. A route counts for the region it belongs to.
+   */
+  readonly infrastructurePermille: number;
 }
 
 /**
@@ -188,9 +193,24 @@ export const balance = {
    * many thousandths of what it bears on (see `SITE_EFFECT_DEFINITIONS`).
    */
   sites: {
-    irrigation: { cost: 120, buildQuarters: 3, effects: { harvestWeather: 500 } },
-    farmRoad: { cost: 100, buildQuarters: 3, effects: { transportLoss: 500 } },
-    grainStore: { cost: 60, buildQuarters: 2, effects: { reserveSpoilage: 750 } },
+    irrigation: {
+      cost: 120,
+      buildQuarters: 3,
+      effects: { harvestWeather: 500 },
+      infrastructurePermille: 100,
+    },
+    farmRoad: {
+      cost: 100,
+      buildQuarters: 3,
+      effects: { transportLoss: 500 },
+      infrastructurePermille: 150,
+    },
+    grainStore: {
+      cost: 60,
+      buildQuarters: 2,
+      effects: { reserveSpoilage: 750 },
+      infrastructurePermille: 100,
+    },
   } satisfies Record<SiteType, SiteBalance>,
   /**
    * Living standards and prosperity. Every score is in thousandths: a region's living
@@ -238,15 +258,6 @@ export const balance = {
         wearPermillePerQuarter: number;
       }
     >,
-    /**
-     * Infrastructure access: what each site in use in a region adds to its score, by type,
-     * up to the whole. A route counts for the region it belongs to.
-     */
-    infrastructurePermillePerSite: {
-      irrigation: 100,
-      farmRoad: 150,
-      grainStore: 100,
-    } satisfies Record<SiteType, number>,
     /**
      * Where each tier begins, in thousandths of prosperity, and how far the public's
      * expectations in it lower the approval baseline compared with the lowest tier.
