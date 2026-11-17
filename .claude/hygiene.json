@@ -1,0 +1,4 @@
+{
+  "testCommand": "npm ci && npx vitest run --reporter=verbose && npm run build && E2E_PORT=41791 npx playwright test --reporter=list",
+  "slowTestMs": 3000
+}
