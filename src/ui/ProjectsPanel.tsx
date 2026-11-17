@@ -112,6 +112,18 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
                     {formatMoney(terms.cost)} · {formatQuarters(terms.buildQuarters)} ·{' '}
                     {terms.effect}
                   </div>
+                  {site.alternatives.length > 0 && (
+                    <div className="projects__terms">
+                      ▲ Closes{' '}
+                      {site.alternatives
+                        .map(
+                          (id) =>
+                            game.country.sites.find((candidate) => candidate.id === id)?.name ?? id,
+                        )
+                        .join(', ')}{' '}
+                      for good.
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"

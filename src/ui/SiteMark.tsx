@@ -63,6 +63,8 @@ interface SiteMarkProps {
   readonly missingLink: boolean;
   /** Whether the site is the source of a chain, in use, that earns nothing for want of links. */
   readonly idle: boolean;
+  /** The name of the alternative whose building closed the site, or null while it is open. */
+  readonly closedBy: string | null;
   readonly onSelect: (siteId: string) => void;
 }
 
@@ -72,13 +74,15 @@ interface SiteMarkProps {
  * built wears a ring and says how far it has got, and one in use is solid. One in use that
  * is decaying for want of upkeep also wears the warning triangle and a tag that says so.
  * A missing link in the chain picked out wears a cross and a tag, and its route is dotted.
+ * A site closed by building on one of its alternatives is faded and struck through.
  */
 export function SiteMark(props: SiteMarkProps) {
-  const { site, status, planned, palette, selected, missingLink, idle, onSelect } = props;
+  const { site, status, planned, palette, selected, missingLink, idle, closedBy, onSelect } = props;
   const [x, y] = markerPlace(site);
   const underWay = status.state === 'building' || status.state === 'paused';
   const decaying = status.state === 'decaying';
   const inUse = isInUseState(status.state);
+  const closed = status.state === 'closed';
   // A site not yet begun still has its whole cost to pay, so it says what that is.
   const cost = status.state === 'empty' ? formatMoney(siteTerms(site.type).cost) : null;
   const description = [
@@ -87,6 +91,7 @@ export function SiteMark(props: SiteMarkProps) {
     siteStateName(site, status, planned).toLowerCase(),
     ...(underWay ? [`${progressOf(status)} quarters built`] : []),
     ...(cost === null ? [] : [cost]),
+    ...(closed && closedBy !== null ? [`ruled out by ${closedBy}`] : []),
     ...(missingLink ? ['missing link'] : []),
     ...(idle ? ['earning nothing: its chain is not complete'] : []),
   ].join(', ');
@@ -125,6 +130,7 @@ export function SiteMark(props: SiteMarkProps) {
           built={inUse ? 1 : status.quartersPaid / Math.max(1, status.buildQuarters)}
           started={planned || underWay}
           missing={missingLink}
+          closed={closed}
           palette={palette}
           selected={selected}
         />
@@ -144,19 +150,21 @@ export function SiteMark(props: SiteMarkProps) {
         <circle
           r="13"
           fill={inUse ? palette.siteLine : palette.site}
-          fillOpacity={inUse || selected ? 0.95 : 0.75}
+          fillOpacity={inUse || selected ? 0.95 : closed ? 0.35 : 0.75}
           stroke={inUse ? palette.site : palette.siteLine}
           strokeWidth="1.5"
-          {...(status.state === 'empty' ? { strokeDasharray: '3 3' } : {})}
+          {...(status.state === 'empty' || closed ? { strokeDasharray: '3 3' } : {})}
         />
         <path
           d={SYMBOLS[site.type]}
           fill="none"
           stroke={inUse ? palette.site : palette.siteLine}
+          strokeOpacity={closed ? 0.45 : 1}
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+        {closed && <ClosedStrike palette={palette} />}
         {decaying && <WarningTriangle palette={palette} />}
         {missingLink && <MissingCross palette={palette} />}
       </g>
@@ -204,6 +212,16 @@ function WarningTriangle({ palette }: { readonly palette: MapPalette }) {
   );
 }
 
+/** The stroke struck through a site's marker once one of its alternatives has closed it. */
+function ClosedStrike({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <g className="map__site-closed" strokeLinecap="round">
+      <path d="M-10,10 L10,-10" stroke={palette.tagBackground} strokeWidth="5" />
+      <path d="M-10,10 L10,-10" stroke={palette.tagText} strokeWidth="2.5" />
+    </g>
+  );
+}
+
 /** The cross worn at the bottom right of a site's marker while it is a missing link. */
 function MissingCross({ palette }: { readonly palette: MapPalette }) {
   return (
@@ -227,6 +245,8 @@ interface RouteLineProps {
   readonly started: boolean;
   /** Whether the route is a missing link in the chain picked out, which dots its unbuilt part. */
   readonly missing: boolean;
+  /** Whether one of its alternatives has closed the route, which leaves it faint and finely dashed. */
+  readonly closed: boolean;
   readonly palette: MapPalette;
   readonly selected: boolean;
 }
@@ -235,9 +255,10 @@ interface RouteLineProps {
  * A route. The built part is drawn as a road: a pale line in a dark casing. The part
  * still to build is dashed, in amber once work is planned or under way. A route that is a
  * missing link in the chain picked out is dotted instead, in round dots over a dark line,
- * which no dash of a possible or started route resembles.
+ * which no dash of a possible or started route resembles. A closed route is faint and
+ * finely dashed.
  */
-function RouteLine({ route, built, started, missing, palette, selected }: RouteLineProps) {
+function RouteLine({ route, built, started, missing, closed, palette, selected }: RouteLineProps) {
   const [road, rest] = splitAt(route, built);
   return (
     <g fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -273,9 +294,9 @@ function RouteLine({ route, built, started, missing, palette, selected }: RouteL
         <polyline
           points={line(rest)}
           stroke={started ? palette.construction : palette.siteLine}
-          strokeOpacity={started || selected ? 1 : 0.55}
+          strokeOpacity={started || selected ? 1 : closed ? 0.3 : 0.55}
           strokeWidth={started ? 3 : 2}
-          strokeDasharray={started ? '5 4' : '7 6'}
+          strokeDasharray={started ? '5 4' : closed ? '2 5' : '7 6'}
           strokeLinecap="butt"
         />
       )}

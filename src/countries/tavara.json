@@ -491,7 +491,7 @@
       "type": "shallowPort",
       "name": "Saltmouth quay",
       "region": "salt-coast",
-      "at": [200, 170],
+      "at": [215, 122],
       "alternatives": ["saltmouth-port"]
     }
   ],

@@ -310,19 +310,24 @@ export function MapView(props: MapViewProps) {
       {[
         ...country.sites.filter((site) => site.form === 'route'),
         ...country.sites.filter((site) => site.form === 'place'),
-      ].map((site) => (
-        <SiteMark
-          key={site.id}
-          site={site}
-          status={siteStatus(game, site.id)}
-          planned={plannedSiteIds.includes(site.id)}
-          palette={palette}
-          selected={site.id === selectedSiteId}
-          missingLink={missingLinks.has(site.id)}
-          idle={isIdle(site.id)}
-          onSelect={onSelectSite}
-        />
-      ))}
+      ].map((site) => {
+        const status = siteStatus(game, site.id);
+        const closedBy = country.sites.find((other) => other.id === status.closedBy);
+        return (
+          <SiteMark
+            key={site.id}
+            site={site}
+            status={status}
+            planned={plannedSiteIds.includes(site.id)}
+            palette={palette}
+            selected={site.id === selectedSiteId}
+            missingLink={missingLinks.has(site.id)}
+            idle={isIdle(site.id)}
+            closedBy={closedBy?.name ?? null}
+            onSelect={onSelectSite}
+          />
+        );
+      })}
     </svg>
   );
 }
