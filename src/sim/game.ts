@@ -150,29 +150,8 @@ export function resolveQuarter(
   decisions: Decisions,
   chance: Chance,
 ): QuarterResolved {
-  // The answer to a dilemma takes effect first, so the rest of the quarter starts from it.
-  const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
-  const state = withAnswer(given, answer);
-  const { budget, building, finances } = resolveMoney(state, decisions);
-
-  const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
-  // The sites in use as the quarter begins are the ones that bear on it.
-  const sites = siteEffects(state);
-  const food = resolveFood(foodSituation(state), {
-    agricultureSpentThisYear: agricultureSpent,
-    weatherShocks: chance.weatherShocks,
-    harvestPermille: eventsLeave(state, sites),
-    sites,
-    relief: reliefFor(decisions, finances),
-  });
-  // Strikes in force as the quarter began have already cut its revenue. The approval the
-  // quarter leaves behind decides who strikes in the next.
-  const approval = resolveApproval(
-    state.country,
-    state.regions,
-    food.regions,
-    approvalInputs(decisions, finances, answer),
-  );
+  const lived = liveQuarter(given, decisions, chance.weatherShocks);
+  const { answer, state, budget, building, finances, agricultureSpent, food, approval } = lived;
 
   // A harvest ends the events that were waiting on it; then the new quarter may bring more.
   const date = nextDate(state.date);
@@ -274,6 +253,37 @@ export function resolveQuarter(
 }
 
 /**
+ * What a quarter does to money, food and approval, given the decisions and the weather. The
+ * turn and the preview both live the quarter through here, so they cannot come to differ.
+ */
+function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: readonly number[]) {
+  // The answer to a dilemma takes effect first, so the rest of the quarter starts from it.
+  const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
+  const state = withAnswer(given, answer);
+  const { budget, building, finances } = resolveMoney(state, decisions);
+
+  const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
+  // The sites in use as the quarter begins are the ones that bear on it.
+  const sites = siteEffects(state);
+  const food = resolveFood(foodSituation(state), {
+    agricultureSpentThisYear: agricultureSpent,
+    weatherShocks,
+    harvestPermille: eventsLeave(state, sites),
+    sites,
+    relief: reliefFor(decisions, finances),
+  });
+  // Strikes in force as the quarter began have already cut its revenue. The approval the
+  // quarter leaves behind decides who strikes in the next.
+  const approval = resolveApproval(
+    state.country,
+    state.regions,
+    food.regions,
+    approvalInputs(decisions, finances, answer),
+  );
+  return { answer, state, budget, building, finances, agricultureSpent, sites, food, approval };
+}
+
+/**
  * Projects what a set of decisions would do in the current quarter. It changes nothing and
  * draws nothing from the random generator, so previewing never alters the game that follows.
  * @throws RangeError when a decision is outside what the game allows.
@@ -282,22 +292,14 @@ export function resolveQuarter(
 export function previewQuarter(given: GameState, decisions: Decisions): Preview {
   // A dilemma need not be answered to look ahead: unanswered, nothing of it is counted.
   checkDecisions(given, decisions, false);
-  const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
-  const state = withAnswer(given, answer);
-  const { building, finances } = resolveMoney(state, decisions);
+  // Who goes short this quarter, what relief reaches them and where approval is left do not
+  // turn on the weather, so they are projected exactly by living the quarter without any.
+  const calm = given.regions.map(() => 0);
+  const lived = liveQuarter(given, decisions, calm);
+  const { state, building, finances, sites, food: thisQuarter, approval } = lived;
   const situation = foodSituation(state);
-  const relief = reliefFor(decisions, finances);
   const { quarter } = state.date;
 
-  // Who goes short this quarter, and what relief reaches them, does not turn on the weather.
-  const sites = siteEffects(state);
-  const thisQuarter = resolveFood(situation, {
-    agricultureSpentThisYear: state.agricultureSpentThisYear + finances.spent.agriculture,
-    weatherShocks: state.regions.map(() => 0),
-    harvestPermille: eventsLeave(state, sites),
-    sites,
-    relief,
-  });
   const ahead = quartersToHarvest(state, decisions);
   // The harvest answers to the sites in use in the quarter it comes in.
   const atHarvest = ahead.at(-1)?.sites ?? sites;
@@ -320,13 +322,6 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     ),
     bestHarvestPermille: eventsLeave(state, atHarvest),
   });
-  // Nothing in approval turns on the weather either, so it is projected exactly.
-  const approval = resolveApproval(
-    state.country,
-    state.regions,
-    thisQuarter.regions,
-    approvalInputs(decisions, finances, answer),
-  );
 
   return {
     revenue: exactly(finances.revenue),
