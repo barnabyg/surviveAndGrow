@@ -1060,7 +1060,7 @@
         "weather": 73,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 543,
+        "approval": 458,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
@@ -1079,7 +1079,7 @@
         "weather": 13,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 543,
+        "approval": 458,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
@@ -1098,7 +1098,7 @@
         "weather": -29,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 543,
+        "approval": 458,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
@@ -1117,14 +1117,14 @@
         "weather": 17,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 508,
+        "approval": 413,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
           "health": 7,
           "education": -2,
           "security": -2,
-          "events": -35
+          "events": -45
         },
         "unrest": "calm"
       },
@@ -1136,7 +1136,7 @@
         "weather": -13,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 543,
+        "approval": 458,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
@@ -1155,7 +1155,7 @@
         "weather": 2,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 543,
+        "approval": 458,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
@@ -1224,7 +1224,7 @@
         "treasury": 420,
         "foodReserve": 182000,
         "quarterlyConsumption": 260000,
-        "approval": 543
+        "approval": 458
       },
       {
         "date": {
@@ -1234,7 +1234,7 @@
         "treasury": 307,
         "foodReserve": 167440,
         "quarterlyConsumption": 260000,
-        "approval": 543
+        "approval": 458
       },
       {
         "date": {
@@ -1244,7 +1244,7 @@
         "treasury": 154,
         "foodReserve": 154045,
         "quarterlyConsumption": 260000,
-        "approval": 537
+        "approval": 452
       },
       {
         "date": {
@@ -1254,7 +1254,7 @@
         "treasury": 30,
         "foodReserve": 144803,
         "quarterlyConsumption": 260000,
-        "approval": 538
+        "approval": 452
       }
     ],
     "dilemma": {
@@ -1385,8 +1385,8 @@
       ]
     },
     "approval": {
-      "value": 538,
-      "change": 1,
+      "value": 452,
+      "change": 0,
       "contributions": [
         {
           "label": "Food",
@@ -1407,10 +1407,6 @@
         {
           "label": "Security spending",
           "amount": 0
-        },
-        {
-          "label": "Earlier events fading",
-          "amount": 1
         }
       ]
     },

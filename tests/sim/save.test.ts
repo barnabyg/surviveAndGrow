@@ -523,12 +523,13 @@ describe('the save kept from save format 1', () => {
     expect(game.reliefRegionId).toBe('dry-east');
     expect(game.budget.taxRatePercent).toBe(18);
     expect(game.regions.map((region) => [region.id, region.approval, region.weather])).toEqual([
-      ['korr-highlands', 543, 73],
-      ['salt-coast', 543, 13],
-      ['lowmere-plains', 543, -29],
-      ['dry-east', 508, 17],
-      ['south-delta', 543, -13],
-      ['arden-vale', 543, 2],
+      ['korr-highlands', 458, 73],
+      ['salt-coast', 458, 13],
+      ['lowmere-plains', 458, -29],
+      // Refusing the emergency works cost 5.0 points there, and a tenth of that has faded.
+      ['dry-east', 413, 17],
+      ['south-delta', 458, -13],
+      ['arden-vale', 458, 2],
     ]);
     expect(game.events).toEqual([
       { type: 'drought', regionId: 'dry-east', began: { year: 1, quarter: 2 } },
@@ -540,6 +541,8 @@ describe('the save kept from save format 1', () => {
     ]);
     expect(siteStatus(game, 'lowmere-irrigation')).toMatchObject({ quartersPaid: 2 });
     expect(game.history.map((signs) => signs.treasury)).toEqual([420, 307, 154, 30]);
+    // The Dry East's 600,000 of the country's 5,200,000 people, 5.0 and then 4.5 points down.
+    expect(game.history.map((signs) => signs.approval)).toEqual([458, 458, 452, 452]);
     expect(game.dilemmasAnswered.map((answered) => answered.type)).toEqual([
       'emergencyWorks',
       'grainOffer',

@@ -7,6 +7,9 @@ is a compatibility contract (see [docs/adr/0001-save-format.md](../../docs/adr/0
 **Never regenerate, reformat or edit a kept save.** If a test against one fails, the code has
 broken the contract; fix the code or add a migration. Prettier is told to leave these files alone.
 
+`format-1.json` was written once more before the first release, after Phase 1 was tuned, so that
+it is a save the released game really writes. From that release on it is frozen like any other.
+
 | File | What it holds |
 | --- | --- |
 | `format-1.json` | Tavara with chance pinned (drought in the Dry East, three dilemmas), seed 2026, at Year 1 · Quarter 4: a drought in force, relief directed to the Dry East, a grain store and a farm road in use, an irrigation scheme two quarters built, two dilemmas answered and one waiting. |
