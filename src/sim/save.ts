@@ -100,9 +100,10 @@ const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
 };
 
 /**
- * Format 2 added prosperity. Each region gains levels of health and education, set where
- * the budget in force would hold them, as a new game's are set by its starting budget. The
- * quarters already recorded, and the last report, did not measure prosperity, so they say so.
+ * Format 2 added prosperity and a growing population. Each region gains levels of health and
+ * education, set where the budget in force would hold them, as a new game's are set by its
+ * starting budget. The quarters already recorded, and the last report, measured neither
+ * prosperity nor growth, so they say so.
  */
 function fromFormat1(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
@@ -134,7 +135,9 @@ function fromFormat1(older: Json): Json {
           )
         : state.history,
     },
-    report: isRecord(older.report) ? { ...older.report, prosperity: null } : older.report,
+    report: isRecord(older.report)
+      ? { ...older.report, prosperity: null, population: null }
+      : older.report,
   };
 }
 
@@ -499,6 +502,7 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
     food: figure(saved.food, 'report.food'),
     approval: figure(saved.approval, 'report.approval'),
     prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),
+    population: saved.population === null ? null : figure(saved.population, 'report.population'),
     harvest: saved.harvest === null ? null : harvest(saved.harvest, 'report.harvest'),
     entries: list(saved.entries, 'report.entries', (entry, path): ReportEntry => ({
       kind: oneOf(entry.kind, `${path}.kind`, REPORT_KINDS, 'a kind of report'),

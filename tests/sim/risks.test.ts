@@ -518,7 +518,9 @@ describe.each([
     }
     // The check means nothing unless famine really does end a good share of these games.
     expect(famines).toBeGreaterThan(seeds / 5);
-  });
+    // Three hundred whole games, each looked ahead from every quarter, take seconds; the
+    // default limit of five is too close when the other test files run alongside.
+  }, 30_000);
 });
 
 /**

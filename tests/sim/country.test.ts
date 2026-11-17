@@ -8,14 +8,14 @@ import {
   type GameState,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { tavara, testland } from './countries';
+import { tavara, tavaraAsShipped, testland } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
 
 describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
     const country = tavara();
 
-    expect(country.formatVersion).toBe(1);
+    expect(tavaraAsShipped().formatVersion).toBe(1);
     expect(country.regions.map((region) => [region.name, region.terrain])).toEqual([
       ['Korr Highlands', 'highlands'],
       ['Salt Coast', 'coast'],
@@ -136,7 +136,7 @@ describe('a country file in format 2', () => {
 
   it('plays the same game as the same country in format 1', () => {
     const decisions = (game: GameState) => ({ budget: game.budget });
-    let one = createGame(testland(), 7);
+    let one = createGame(loadCountry(withValue(testlandFile, ['dilemmaLikelihood'], {})), 7);
     let two = createGame(loadCountry(format2({ 0: ['alpha-store'] })), 7);
     for (let quarter = 0; quarter < 8; quarter += 1) {
       one = advanceQuarter(one, decisions(one)).state;

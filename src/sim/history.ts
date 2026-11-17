@@ -36,6 +36,8 @@ export function vitalSigns(position: {
   readonly treasury: Money;
   readonly foodReserve: number;
   readonly regions: readonly RegionState[];
+  /** National prosperity, when it has already been worked out for this position. */
+  readonly prosperity?: number;
 }): VitalSigns {
   return {
     date: position.date,
@@ -43,6 +45,6 @@ export function vitalSigns(position: {
     foodReserve: position.foodReserve,
     quarterlyConsumption: foodStatus(position).quarterlyConsumption,
     approval: nationalApproval(position.regions),
-    prosperity: prosperityStatus(position).value,
+    prosperity: position.prosperity ?? prosperityStatus(position).value,
   };
 }

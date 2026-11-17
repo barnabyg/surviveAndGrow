@@ -1,4 +1,5 @@
 import { approvalStatus, resolveApproval, startingApproval, type ApprovalInputs } from './approval';
+import { sum } from './arithmetic';
 import { balance } from './balance';
 import { nextDate, quartersUntilHarvest } from './calendar';
 import {
@@ -234,6 +235,7 @@ export function resolveQuarter(
           treasury: finances.treasury,
           foodReserve: food.foodReserve,
           regions: approval.regions,
+          prosperity: prosperity.value,
         }),
       ],
       dilemma,
@@ -254,6 +256,11 @@ export function resolveQuarter(
       },
       approval: approval.approval,
       prosperity,
+      population: {
+        value: sum(food.regions.map((region) => region.population)),
+        change: sum(food.population.map((line) => line.amount)),
+        contributions: food.population,
+      },
       harvest: food.harvest,
       entries: compileReport(entries),
     },

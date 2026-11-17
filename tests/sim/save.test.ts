@@ -95,7 +95,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     expect(save.formatVersion).toBe(2);
     expect(save.country.id).toBe(country().id);
-    expect(save.country.formatVersion).toBe(1);
+    expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
     expect(save.rng).toBe(game.rng);
     expect(save.rng).not.toBe(start.rng);
@@ -444,7 +444,7 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when the country file format it records is not the one its country was written in', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['country', 'formatVersion'], 2))).toBe(
+    expect(refusal(withValue(save, ['country', 'formatVersion'], 1))).toBe(
       'The saved game is damaged and cannot be opened: country.formatVersion does not match the country the save carries.',
     );
     expect(refusal(without(save, ['country', 'formatVersion']))).toBe(

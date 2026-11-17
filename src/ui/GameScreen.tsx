@@ -225,6 +225,7 @@ export function GameScreen(props: GameScreenProps) {
               {preview !== null && selectedRegionId !== null && (
                 <RegionCard
                   game={game}
+                  report={report}
                   regionId={selectedRegionId}
                   preview={preview}
                   reliefRegionId={reliefRegionId}

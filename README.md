@@ -88,6 +88,10 @@ What is in the game:
   per head, health, education and infrastructure access (the sites in use there), and prosperity
   is the regions' living standards averaged by population. The region list in the left column
   shows each region's living standard as a figure and a bar, so inequality shows at a glance.
+- Each region's people grow in number every quarter, about 2.4% a year, except where famine has
+  taken hold. Standing still loses: food need, the relief a region needs and the months the
+  reserve lasts all follow the larger population, and output per head falls unless the economy
+  keeps up. A region's card shows how many people it gained, or lost to famine, last quarter.
 - Health and education are lasting levels in each region. Spending on them builds the levels up
   over many quarters, and they wear down without it; a game starts with them where the starting
   budget holds them. Their spending still moves approval at once, as before.
@@ -167,6 +171,9 @@ costs, how long it takes and what it does are the game's, not the country's.
 - In a file of `"formatVersion": 2`, a site may list the `id`s of the sites it depends on in
   `dependsOn`. Each must be another site in the file, and the dependencies must not go round in a
   circle. A file of format 1 cannot say this, and still loads as it is.
+
+In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
+year, from 0 to 10. A region that leaves it out grows at the game's own rate.
 
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:

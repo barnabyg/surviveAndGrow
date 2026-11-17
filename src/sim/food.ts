@@ -69,6 +69,8 @@ export interface FoodOutcome {
   readonly fedPermille: readonly number[];
   /** What the turn report says of the quarter's food. */
   readonly entries: readonly ReportEntry[];
+  /** What moved each region's population: its growth, and deaths in famine. */
+  readonly population: readonly Contribution[];
 }
 
 /** Tonnes a population eats in a quarter. */
@@ -107,6 +109,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const entries: ReportEntry[] = [];
   const shortfalls: RegionShortfall[] = [];
   const fedPermilles: number[] = [];
+  const population: Contribution[] = [];
 
   const spoiled = Math.floor(
     (situation.foodReserve *
@@ -157,10 +160,20 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
       famineQuarters,
     });
     if (entry !== null) entries.push(entry);
+    // People are born and grow up everywhere but where famine has taken hold.
+    const growth =
+      foodStage === 'famine'
+        ? 0
+        : populationGrowth(regionOf(country, region.id), region.population);
+    if (growth > 0)
+      population.push({ label: `Growth in ${name}`, amount: growth, regionId: region.id });
+    if (deaths > 0) {
+      population.push({ label: `Famine deaths in ${name}`, amount: -deaths, regionId: region.id });
+    }
 
     return {
       ...region,
-      population: region.population - deaths,
+      population: region.population - deaths + growth,
       foodStock: region.foodStock - ration,
       weather: region.weather + (inputs.weatherShocks[index] ?? 0),
       foodStage,
@@ -178,6 +191,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
       relief,
       fedPermille: fedPermilles,
       entries,
+      population,
     };
   }
 
@@ -227,7 +241,15 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
     relief,
     fedPermille: fedPermilles,
     entries,
+    population,
   };
+}
+
+/** How many people a region gains in a quarter at its rate of growth. */
+function populationGrowth(region: Region | undefined, people: number): number {
+  const rate =
+    region?.growthPerTenThousandPerQuarter ?? balance.population.growthPerTenThousandPerQuarter;
+  return Math.floor((people * rate) / 10_000);
 }
 
 /** What the forecast assumes about the rest of the growing year. */

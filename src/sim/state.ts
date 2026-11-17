@@ -158,6 +158,12 @@ export interface TurnReport {
    * to it. A report carried over from a save written before prosperity existed has none.
    */
   readonly prosperity: Figure | null;
+  /**
+   * The country's people after the quarter, with what moved their number in each region:
+   * growth, and deaths in famine. A report carried over from a save written before the
+   * population grew has none.
+   */
+  readonly population: Figure | null;
   /** The harvest, in quarter 4, and null in every other quarter. */
   readonly harvest: Harvest | null;
   /**

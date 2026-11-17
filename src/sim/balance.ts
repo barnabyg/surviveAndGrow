@@ -73,6 +73,15 @@ export const balance = {
     /** Tonnes of food that one Money unit ($100,000) of food relief spending can move. */
     tonnesPerMoney: 200,
   },
+  population: {
+    /**
+     * How fast each region's people grow in number, in ten-thousandths a quarter, unless its
+     * country file sets its own rate. 60 is about 2.4% a year. A region in famine does not grow.
+     */
+    growthPerTenThousandPerQuarter: 60,
+    /** The fastest yearly growth, in percent, that a country file may give a region. */
+    maxGrowthPercentPerYear: 10,
+  },
   hunger: {
     /** A region is fed when its people eat at least this share of their needs, in thousandths. */
     fedSharePermille: 950,

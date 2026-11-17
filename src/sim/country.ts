@@ -1,3 +1,4 @@
+import { balance } from './balance';
 import { spendingFault, taxRateFault, type Budget } from './budget';
 import { contains } from './geometry';
 import { MONEY_PER_MILLION, type Money } from './types';
@@ -49,6 +50,11 @@ export interface Region {
   readonly output: Money;
   /** The region's farmland, in units of 1,000 hectares. */
   readonly farmland: number;
+  /**
+   * How fast the region's people grow in number, in ten-thousandths a quarter: the country
+   * file's own rate for the region, or the game's.
+   */
+  readonly growthPerTenThousandPerQuarter: number;
   /** The chance, from 0 to 1, that each kind of event strikes the region in a year. */
   readonly eventLikelihood: Readonly<Record<EventType, number>>;
 }
@@ -446,6 +452,32 @@ function readSite(
 }
 
 /**
+ * A region's population growth. A file of format 2 or later may give it as `populationGrowth`,
+ * in percent a year to at most two decimal places; otherwise the game's own rate applies.
+ */
+function readGrowth(reader: Reader, region: Json, path: string, formatVersion: number): number {
+  const fallback = balance.population.growthPerTenThousandPerQuarter;
+  if (region.populationGrowth === undefined) return fallback;
+  if (formatVersion < 2) {
+    reader.fault(join(path, 'populationGrowth'), 'needs country file format 2 or later');
+    return fallback;
+  }
+  const before = reader.faults.length;
+  const percent = reader.number(region, 'populationGrowth', path);
+  if (reader.faults.length > before) return fallback;
+  const { maxGrowthPercentPerYear } = balance.population;
+  if (percent < 0 || percent > maxGrowthPercentPerYear) {
+    reader.fault(
+      join(path, 'populationGrowth'),
+      `is ${percent}, but must be a yearly percentage from 0 to ${maxGrowthPercentPerYear}`,
+    );
+    return fallback;
+  }
+  // A year is four quarters; the rate is held in ten-thousandths a quarter.
+  return Math.round((percent * 100) / 4);
+}
+
+/**
  * The ids a site lists as depending on. Whether each names a site is checked once every
  * site has been read (`checkDependencies`).
  */
@@ -583,6 +615,7 @@ export function loadCountry(file: unknown): Country {
     population: reader.wholeNumber(item, 'population', path, 1),
     output: reader.money(item, 'output', path),
     farmland: reader.wholeNumber(item, 'farmland', path, 0),
+    growthPerTenThousandPerQuarter: readGrowth(reader, item, path, formatVersion),
     eventLikelihood: readChances(reader, item, 'eventLikelihood', path, EVENT_TYPES, 'an event'),
   }));
   if (Array.isArray(file.regions) && regions.length === 0) {
