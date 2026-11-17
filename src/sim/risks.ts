@@ -7,14 +7,19 @@ import { defeatChancePermille, electionStatus } from './election';
 import { eventName, eventsThatMayBegin, type PossibleEvent } from './events';
 import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
 import type { Decisions, GameState, RegionState } from './state';
-import { articleFor, formatPercent, formatPoints, formatQuarters } from './text';
+import { prosperityStatus } from './prosperity';
+import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
+import { tierLostBelow } from './tiers';
 import {
   FOOD_STAGES,
   LIKELIHOODS,
   RISK_KINDS,
+  TIER_NAMES,
+  TIERS,
   UNREST_LEVELS,
   type Likelihood,
   type RiskKind,
+  type Tier,
   type Unrest,
 } from './vocabulary';
 
@@ -72,6 +77,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
     ...treasuryRisk(whole),
     ...strikeRisk(whole),
+    ...tierRisk(whole),
     ...electionRisk(whole),
   ];
   const rank = (risk: Risk) => LIKELIHOODS.indexOf(risk.likelihood);
@@ -364,6 +370,35 @@ function strikeRisk(scope: Scope): Risk[] {
       reason: `Approval in ${where} is on course to fall below ${formatPercent(mark.belowPermille, 0)} ${when(soonest)}. ${what} cut what a region produces.`,
       ...(threatened.length === 1 ? { regionId: first.region.id } : {}),
       withinQuarters: soonest + 1,
+    },
+  ];
+}
+
+/**
+ * The nation falls back a tier when prosperity drops past the margin below where the tier in
+ * force begins. Prosperity moves slowly, so this warns of it while there is time to act.
+ */
+function tierRisk(scope: Scope): Risk[] {
+  const { state, watched } = scope;
+  const rank = (tier: Tier) => TIERS.indexOf(tier);
+  const falls = (path: Path) => {
+    const quarter = path
+      .slice(0, watched)
+      .findIndex((resolved) => rank(resolved.state.tier) < rank(state.tier));
+    return quarter === -1 ? null : quarter;
+  };
+  const finding = weigh(scope, falls);
+  const likelihood = finding === null ? null : likelihoodOf(finding.chance);
+  if (finding === null || likelihood === null) return [];
+  const lost = tierLostBelow(state.tier) ?? 0;
+  const below = TIERS[rank(state.tier) - 1] ?? TIERS[0];
+  return [
+    {
+      kind: 'tier',
+      likelihood,
+      headline: `Falling back to ${TIER_NAMES[below]}`,
+      reason: `Prosperity, now ${formatIndex(prosperityStatus(state).value)}, is on course to fall below ${formatIndex(lost)} ${when(finding.soonest)}, where ${TIER_NAMES[state.tier]} is lost.`,
+      withinQuarters: finding.soonest + 1,
     },
   ];
 }

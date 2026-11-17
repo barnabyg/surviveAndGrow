@@ -10,7 +10,7 @@ import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import type { SiteSchedule } from './timeline';
 import type { Figure, GameDate, Money, Range } from './types';
-import type { FoodStage, Unrest } from './vocabulary';
+import type { FoodStage, Tier, Unrest } from './vocabulary';
 
 /** What is true of one region at one moment. National figures are derived from the regions. */
 export interface RegionState {
@@ -116,6 +116,13 @@ export interface GameState {
   readonly dilemma: PendingDilemma | null;
   /** Every dilemma the player has answered, in order. */
   readonly dilemmasAnswered: readonly AnsweredDilemma[];
+  /** The tier of prosperity in force. */
+  readonly tier: Tier;
+  /**
+   * The tier the game began in. The public's expectations, which lower the approval
+   * baseline, are what tiers passed since then have raised.
+   */
+  readonly startingTier: Tier;
   readonly outcome: Outcome;
 }
 

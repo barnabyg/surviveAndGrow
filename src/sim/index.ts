@@ -57,6 +57,7 @@ export {
   type ProsperityScores,
   type ProsperityStatus,
 } from './prosperity';
+export { tierFrom, tierStatus, type TierStatus } from './tiers';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export {
   loadSave,
@@ -125,6 +126,8 @@ export {
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
+  TIER_NAMES,
+  TIERS,
   UNREST_KINDS,
   UNREST_NAMES,
   type ApprovalDriver,
@@ -145,5 +148,6 @@ export {
   type SiteType,
   type SpendingArea,
   type Terrain,
+  type Tier,
   type Unrest,
 } from './vocabulary';

@@ -16,7 +16,7 @@ import {
   UNREST_KINDS,
 } from '../sim';
 import { lensFill, needsLightInk, type Lens } from './lens';
-import { tierOnePalette, type MapPalette } from './mapPalette';
+import { TIER_PALETTES, type MapPalette } from './mapPalette';
 import { SiteMark } from './SiteMark';
 
 interface MapViewProps {
@@ -51,7 +51,8 @@ export function MapView(props: MapViewProps) {
   const { game, lens, selectedRegionId, reliefRegionId, onSelectRegion } = props;
   const { selectedSiteId, onSelectSite, plannedSiteIds } = props;
   const { country } = game;
-  const palette = tierOnePalette;
+  // The whole map takes on the look of the tier of prosperity in force.
+  const palette = TIER_PALETTES[game.tier];
   const hatchId = useId();
   const plain = lens === 'country';
   const paintOf = new Map(
@@ -75,6 +76,7 @@ export function MapView(props: MapViewProps) {
       viewBox={`0 0 ${MAP_FRAME.width} ${MAP_FRAME.height}`}
       role="group"
       aria-label={`Map of ${country.name}`}
+      data-tier={game.tier}
       style={{ background: palette.sea }}
     >
       {/* The hatching for strikes, and the cross-hatching for protests. */}

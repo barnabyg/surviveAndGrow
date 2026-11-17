@@ -1,6 +1,6 @@
 import type { GameState } from '../sim';
 import { LENS_NAMES, LENSES, lensScale, type Lens } from './lens';
-import { tierOnePalette } from './mapPalette';
+import { TIER_PALETTES } from './mapPalette';
 
 interface LensBarProps {
   readonly game: GameState;
@@ -21,7 +21,7 @@ const SCALE_TITLES: Readonly<Record<Lens, string>> = {
  * its value as text, so nothing here rests on telling colours apart.
  */
 export function LensBar({ game, lens, onChange }: LensBarProps) {
-  const palette = tierOnePalette;
+  const palette = TIER_PALETTES[game.tier];
   return (
     <div className="lens-bar">
       <div className="lens-bar__buttons" role="group" aria-label="Map lens">

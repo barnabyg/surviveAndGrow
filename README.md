@@ -88,6 +88,13 @@ What is in the game:
   per head, health, education and infrastructure access (the sites in use there), and prosperity
   is the regions' living standards averaged by population. The region list in the left column
   shows each region's living standard as a figure and a bar, so inequality shows at a glance.
+- Prosperity is divided into four tiers: Subsistence, then Developing from 25, Industrialising
+  from 45 and Prosperous from 70, the target. The prosperity figure names the tier in force and
+  how far it is to the next. Passing a tier is reported, gives the whole map a new palette, and
+  raises what people expect, so the approval baseline drops 3 points a tier (shown as
+  Expectations in what approval is made of). A tier is lost only when prosperity falls 2 points
+  below where it begins; falling back is reported too, the map's look follows it down, and
+  expectations ease. The risks ahead warn when the nation is on course to fall back.
 - Each region's people grow in number every quarter, about 2.4% a year, except where famine has
   taken hold. Standing still loses: food need, the relief a region needs and the months the
   reserve lasts all follow the larger population, and output per head falls unless the economy

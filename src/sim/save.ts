@@ -12,8 +12,9 @@ import type { VitalSigns } from './history';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
-import { settledServiceLevel } from './prosperity';
+import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { siteTerms } from './sites';
+import { tierAt } from './tiers';
 import type { GameState, Outcome, RegionState, TurnReport } from './state';
 import { formatQuarters } from './text';
 import type { Contribution, Figure, GameDate, Money, Quarter } from './types';
@@ -29,10 +30,12 @@ import {
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SPENDING_AREAS,
+  TIERS,
   UNREST_LEVELS,
   type ApprovalDriver,
   type LastingService,
   type SpendingArea,
+  type Tier,
 } from './vocabulary';
 
 /**
@@ -100,10 +103,12 @@ const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
 };
 
 /**
- * Format 2 added prosperity and a growing population. Each region gains levels of health and
- * education, set where the budget in force would hold them, as a new game's are set by its
- * starting budget. The quarters already recorded, and the last report, measured neither
- * prosperity nor growth, so they say so.
+ * Format 2 added prosperity, its tiers and a growing population. Each region gains levels of
+ * health and education, set where the budget in force would hold them, as a new game's are
+ * set by its starting budget. The game is put in the tier its prosperity then reaches, and
+ * counts as having begun there, so the public expects no more of it than before. The
+ * quarters already recorded, and the last report, measured neither prosperity nor growth,
+ * so they say so.
  */
 function fromFormat1(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
@@ -119,16 +124,20 @@ function fromFormat1(older: Json): Json {
     const spent = spending[service];
     return typeof spent === 'number' ? settledServiceLevel(service, spent, people) : 0;
   };
+  const lifted = regions.map((region) =>
+    isRecord(region)
+      ? { ...region, health: level('health'), education: level('education') }
+      : region,
+  );
+  const tier = tierOfOldSave(older, lifted, state.projects);
   return {
     ...older,
     formatVersion: 2,
     state: {
       ...state,
-      regions: regions.map((region) =>
-        isRecord(region)
-          ? { ...region, health: level('health'), education: level('education') }
-          : region,
-      ),
+      regions: lifted,
+      tier,
+      startingTier: tier,
       history: Array.isArray(state.history)
         ? (state.history as unknown[]).map((record) =>
             isRecord(record) ? { ...record, prosperity: null } : record,
@@ -139,6 +148,24 @@ function fromFormat1(older: Json): Json {
       ? { ...older.report, prosperity: null, population: null }
       : older.report,
   };
+}
+
+/**
+ * The tier an old save's game has reached, judged by the same rules as a game in play. A save
+ * too damaged to judge is put in the lowest tier, and checking the rest of it will refuse it.
+ */
+function tierOfOldSave(older: Json, regions: readonly unknown[], projects: unknown): Tier {
+  try {
+    const carried = isRecord(older.country) ? older.country.file : undefined;
+    const { value } = prosperityStatus({
+      country: loadCountry(carried),
+      regions: regions as RegionState[],
+      projects: Array.isArray(projects) ? (projects as Project[]) : [],
+    });
+    return Number.isFinite(value) ? tierAt(value) : TIERS[0];
+  } catch {
+    return TIERS[0];
+  }
 }
 
 /**
@@ -168,6 +195,8 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       history: game.history,
       dilemma: game.dilemma,
       dilemmasAnswered: game.dilemmasAnswered,
+      tier: game.tier,
+      startingTier: game.startingTier,
       outcome: game.outcome,
     },
     report,
@@ -234,6 +263,8 @@ export function loadSave(
         };
       },
     ),
+    tier: oneOf(state.tier, 'state.tier', TIERS, 'a tier of prosperity'),
+    startingTier: oneOf(state.startingTier, 'state.startingTier', TIERS, 'a tier of prosperity'),
     outcome: readOutcome(record(state.outcome, 'state.outcome'), 'state.outcome', region),
   };
   const report =

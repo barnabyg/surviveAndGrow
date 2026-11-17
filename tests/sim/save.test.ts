@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
+  approvalStatus,
   createGame,
   loadSave,
   pendingDilemma,
@@ -18,6 +19,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import format1Save from '../saves/format-1.json';
+import format2Save from '../saves/format-2.json';
 import {
   bothCountries,
   tavara,
@@ -652,6 +654,11 @@ describe('the save kept from save format 1', () => {
     expect(game.regions.map((region) => [region.health, region.education])).toEqual(
       game.regions.map(() => [148, 126]),
     );
+    // The grain store and farm road in use in Lowmere carry it just into Developing. It is put
+    // in the tier it reaches and counts as having begun there, so nobody expects more of it.
+    expect(game.tier).toBe('developing');
+    expect(game.startingTier).toBe('developing');
+    expect(approvalStatus(game).causes.map((cause) => cause.label)).not.toContain('Expectations');
     // Nothing recorded before format 2 measured prosperity.
     expect(game.history.map((signs) => signs.prosperity)).toEqual([null, null, null, null]);
     expect(report?.prosperity).toBeNull();
@@ -664,5 +671,54 @@ describe('the save kept from save format 1', () => {
 
     expect(next.state.history.at(-1)?.prosperity).toEqual(expect.any(Number));
     expect(next.report.prosperity?.value).toBe(next.state.history.at(-1)?.prosperity);
+  });
+});
+
+describe('the save kept from save format 2', () => {
+  it('still opens on the game it was written from, prosperity, tiers and growth and all', () => {
+    const { game, report } = loadSave(format2Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(game.treasury).toBe(10);
+    // Three quarters of growth at 0.6% each, region by region.
+    expect(game.regions.map((region) => region.population)).toEqual([
+      509054, 814485, 1425351, 610864, 1018108, 916296,
+    ]);
+    expect(game.regions.map((region) => [region.health, region.education])).toEqual(
+      game.regions.map(() => [game.regions[0]?.health, game.regions[0]?.education]),
+    );
+    expect(game.history.map((signs) => signs.prosperity)).toEqual([237, 237, 243, 251]);
+    // It passed into Developing as the farm road came into use, and people expect more.
+    expect(game.tier).toBe('developing');
+    expect(game.startingTier).toBe('subsistence');
+    expect(approvalStatus(game).causes).toContainEqual({ label: 'Expectations', amount: -30 });
+    expect(game.regions.map((region) => region.unrest)).toContain('strikes');
+    expect(report?.prosperity?.value).toBe(251);
+    expect(report?.population?.contributions.map((line) => line.label)).toContain(
+      'Growth in Lowmere Plains',
+    );
+    expect(report?.entries.map((entry) => entry.headline)).toContain(
+      'Prosperity has reached a new tier: Developing',
+    );
+  });
+
+  it('can be played on from there to the end of the game', () => {
+    let { game } = loadSave(format2Save);
+
+    for (let quarter = 0; quarter < 20 && game.outcome.status === 'playing'; quarter += 1) {
+      game = advanceQuarter(game, answering(game, steward(game))).state;
+    }
+
+    expect(game.outcome.status).not.toBe('playing');
+  });
+
+  // This holds for as long as format 2 is the current format: saving must write exactly
+  // what the kept save holds. If it fails, what a save holds has changed, which needs a new
+  // format version and a migration, and then this check moves to the newer kept save.
+  it('is exactly what the game still writes', () => {
+    expect(SAVE_FORMAT_VERSION).toBe(2);
+    const { game, report } = loadSave(format2Save);
+
+    expect(stored(saveGame(game, report))).toEqual(format2Save);
   });
 });

@@ -14,7 +14,7 @@ test('prosperity is a vital sign, shown against its target', async ({ page }) =>
 
   await expect(prosperity(page).getByRole('button')).toContainText('23.7');
   await expect(prosperity(page).getByRole('button')).toContainText('of 70');
-  await expect(prosperity(page)).toContainText('46.3 to the target');
+  await expect(prosperity(page)).toContainText('Subsistence · 1.3 to Developing');
   await expect(prosperity(page)).toContainText('Opening position');
 });
 

@@ -55,6 +55,7 @@ import {
   startingServices,
 } from './prosperity';
 import { compileReport, type ReportEntry } from './report';
+import { expectationsIn, nextTier, tierAt, tierEntry } from './tiers';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { scheduleAhead } from './timeline';
@@ -82,6 +83,9 @@ export function createGame(country: Country, seed: number): GameState {
       ...services,
     })),
   } as const;
+  const signs = vitalSigns(opening);
+  // The game begins in whatever tier its starting prosperity reaches.
+  const tier = tierAt(signs.prosperity ?? 0);
   return {
     seed,
     rng: seedGenerator(seed),
@@ -90,9 +94,11 @@ export function createGame(country: Country, seed: number): GameState {
     reliefRegionId: null,
     agricultureSpentThisYear: 0,
     events: [],
-    history: [vitalSigns(opening)],
+    history: [signs],
     dilemma: null,
     dilemmasAnswered: [],
+    tier,
+    startingTier: tier,
     outcome: { status: 'playing' },
   };
 }
@@ -161,7 +167,8 @@ export function resolveQuarter(
 ): QuarterResolved {
   const lived = liveQuarter(given, decisions, chance.weatherShocks);
   const { answer, state, budget, building, finances, agricultureSpent, food, approval } = lived;
-  const { prosperity } = lived;
+  const { prosperity, tier } = lived;
+  const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
   // A harvest ends the events that were waiting on it; then the new quarter may bring more.
   const date = nextDate(state.date);
@@ -206,6 +213,7 @@ export function resolveQuarter(
     ...food.entries,
     ...approval.entries,
     ...building.entries,
+    ...(passed === null ? [] : [passed]),
     ...ended.map((event) => endEntry(state.country, event)),
     ...begun.map((event) =>
       beginEntry(state.country, event, holdOn(state.country, building.projects, event.regionId)),
@@ -240,6 +248,7 @@ export function resolveQuarter(
       ],
       dilemma,
       dilemmasAnswered,
+      tier,
       outcome,
     },
     report: {
@@ -293,23 +302,24 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   });
   // What was spent on health and education builds up, or lets wear down, their lasting levels.
   const served = resolveServices(food.regions, finances.spent);
-  // Strikes in force as the quarter began have already cut its revenue. The approval the
-  // quarter leaves behind decides who strikes in the next.
-  const approval = resolveApproval(
-    state.country,
-    state.regions,
-    served,
-    approvalInputs(decisions, finances, answer),
-  );
   // Prosperity is judged on the regions and the sites in use as the quarter leaves them.
+  // Approval plays no part in it, so it is judged first, and the tier it reaches sets what
+  // the public expects of the government from now on.
   const prosperity = prosperityFigure(
     prosperityStatus(given),
-    prosperityStatus({
-      country: state.country,
-      regions: approval.regions,
-      projects: building.projects,
-    }),
+    prosperityStatus({ country: state.country, regions: served, projects: building.projects }),
   );
+  const tier = nextTier(state.tier, prosperity.value);
+  const expectations = {
+    was: expectationsIn(state.tier, state.startingTier),
+    now: expectationsIn(tier, state.startingTier),
+  };
+  // Strikes in force as the quarter began have already cut its revenue. The approval the
+  // quarter leaves behind decides who strikes in the next.
+  const approval = resolveApproval(state.country, state.regions, served, {
+    ...approvalInputs(decisions, finances, answer),
+    expectations,
+  });
   return {
     answer,
     state,
@@ -321,6 +331,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     food,
     approval,
     prosperity,
+    tier,
   };
 }
 

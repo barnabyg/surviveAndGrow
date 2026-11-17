@@ -75,7 +75,7 @@ export function prosperityStatus(situation: ProsperitySituation): ProsperityStat
     people === 0 ? numerators.map(() => 0) : apportion(numerators, people * 1000, value);
   return {
     value,
-    target: balance.prosperity.targetPermille,
+    target: balance.prosperity.tiers.prosperous.fromPermille,
     parts: PROSPERITY_PARTS.map((part, index) => ({
       label: PROSPERITY_PART_NAMES[part],
       amount: amounts[index] ?? 0,

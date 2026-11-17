@@ -60,6 +60,16 @@ export function tavaraWith(chances: {
 }
 
 /**
+ * Tavara with no drought and every region producing 30% more, which leaves its prosperity
+ * just short of Developing: a quarter of generous health and education spending passes it.
+ */
+export function tavaraPoisedBelowDeveloping(): CountryFile {
+  const country = tavaraWith({ drought: [] }) as CountryFile & { regions: { output: number }[] };
+  for (const region of country.regions) region.output = Math.round(region.output * 13) / 10;
+  return country;
+}
+
+/**
  * Tavara as it ships, except that drought strikes the named regions every year and no
  * other region ever, and no dilemma arises.
  */

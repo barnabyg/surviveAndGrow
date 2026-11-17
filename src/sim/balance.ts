@@ -10,6 +10,7 @@ import type {
   SiteEffect,
   SiteType,
   SpendingArea,
+  Tier,
 } from './vocabulary';
 
 /** The balance values of one type of site. */
@@ -246,8 +247,22 @@ export const balance = {
       farmRoad: 150,
       grainStore: 100,
     } satisfies Record<SiteType, number>,
-    /** The prosperity the country is aiming for, in thousandths. */
-    targetPermille: 700,
+    /**
+     * Where each tier begins, in thousandths of prosperity, and how far the public's
+     * expectations in it lower the approval baseline compared with the lowest tier.
+     */
+    tiers: {
+      subsistence: { fromPermille: 0, expectationsPermille: 0 },
+      developing: { fromPermille: 250, expectationsPermille: 30 },
+      industrialising: { fromPermille: 450, expectationsPermille: 60 },
+      // The last tier is the target the country is aiming for.
+      prosperous: { fromPermille: 700, expectationsPermille: 90 },
+    } satisfies Record<Tier, { fromPermille: number; expectationsPermille: number }>,
+    /**
+     * A tier once reached is lost only when prosperity falls this many thousandths below
+     * where it begins, so that a figure hovering at the line does not pass it every quarter.
+     */
+    fallBackMarginPermille: 20,
   },
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */

@@ -10,6 +10,10 @@ import {
   formatSignedPoints,
   monthsOfFood,
   prosperityStatus,
+  tierFrom,
+  TIER_NAMES,
+  TIERS,
+  tierStatus,
   regionName,
   seasonOf,
   UNREST_NAMES,
@@ -52,6 +56,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
   const approval = approvalStatus(game);
   const election = electionStatus(game);
   const prosperity = prosperityStatus(game);
+  const tier = tierStatus({ ...game, prosperity: prosperity.value });
   const target: Mark = {
     value: prosperity.target,
     label: `Target: ${formatIndex(prosperity.target, 0)}`,
@@ -169,7 +174,19 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
           figure={report?.prosperity ?? null}
           formatChange={formatSignedIndex}
           formatMovement={formatIndex}
-          note={`${formatIndex(Math.max(0, prosperity.target - prosperity.value))} to the target`}
+          remark={
+            tier.lostBelow !== null && prosperity.value < tierFrom(tier.tier)
+              ? {
+                  text: `${TIER_NAMES[tier.tier]} is lost below ${formatIndex(tier.lostBelow)}`,
+                  tone: 'warning',
+                }
+              : undefined
+          }
+          note={
+            tier.next === null
+              ? `${TIER_NAMES[tier.tier]} · the target is reached`
+              : `${TIER_NAMES[tier.tier]} · ${formatIndex(tier.next.distance)} to ${TIER_NAMES[tier.next.tier]}`
+          }
           breakdownTitle="What moved prosperity"
           trend={
             <TrendLine
@@ -202,7 +219,26 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
           </table>
           <p className="breakdown__empty">
             Prosperity is the regions’ living standards averaged by population. Health and education
-            build up slowly with spending and wear down without it.
+            build up slowly with spending and wear down without it. Passing a tier raises what
+            people expect, which lowers the approval baseline.
+          </p>
+          <h2 className="label">Tiers</h2>
+          <table className="breakdown__table" aria-label="Tiers of prosperity">
+            <tbody>
+              {TIERS.map((each) => (
+                <tr key={each} aria-current={each === tier.tier ? 'true' : undefined}>
+                  <th scope="row">
+                    {each === tier.tier ? '▶ ' : ''}
+                    {TIER_NAMES[each]}
+                  </th>
+                  <td>from {formatIndex(tierFrom(each), 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="breakdown__empty">
+            The target of {formatIndex(prosperity.target, 0)} is where{' '}
+            {TIER_NAMES[TIERS[TIERS.length - 1] ?? 'prosperous']} begins.
           </p>
         </VitalSign>
         {/* The election is a date, not a figure that moves, so it opens to nothing. */}

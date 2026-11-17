@@ -161,6 +161,17 @@ export const PROSPERITY_PART_NAMES: Readonly<Record<ProsperityPart, string>> = {
   infrastructure: 'Infrastructure access',
 };
 
+/** The tiers prosperity is divided into, from the lowest. The last is the win target. */
+export const TIERS = ['subsistence', 'developing', 'industrialising', 'prosperous'] as const;
+export type Tier = (typeof TIERS)[number];
+
+export const TIER_NAMES: Readonly<Record<Tier, string>> = {
+  subsistence: 'Subsistence',
+  developing: 'Developing',
+  industrialising: 'Industrialising',
+  prosperous: 'Prosperous',
+};
+
 /** The public services whose level in each region lasts, built up by spending over time. */
 export const LASTING_SERVICES = ['health', 'education'] as const;
 export type LastingService = (typeof LASTING_SERVICES)[number];
@@ -213,7 +224,7 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 };
 
 /** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
-export const RISK_KINDS = ['famine', 'treasury', 'strikes', 'election'] as const;
+export const RISK_KINDS = ['famine', 'treasury', 'strikes', 'tier', 'election'] as const;
 export type RiskKind = (typeof RISK_KINDS)[number];
 
 /** How likely a risk is, from the least to the most. A risk less likely than remote is not listed. */
@@ -244,6 +255,7 @@ export const REPORT_KINDS = [
   'projectPaused',
   'projectCompleted',
   'dilemma',
+  'tier',
   'election',
   'collapse',
   'quiet',

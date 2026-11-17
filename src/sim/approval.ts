@@ -4,6 +4,7 @@ import { regionName, type Country } from './country';
 import type { ReportEntry } from './report';
 import type { RegionState } from './state';
 import { formatPercent } from './text';
+import { expectationsIn } from './tiers';
 import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVER_NAMES,
@@ -12,6 +13,7 @@ import {
   type ApprovalDriver,
   type FoodStage,
   type SpendingArea,
+  type Tier,
   type Unrest,
 } from './vocabulary';
 
@@ -41,6 +43,11 @@ export interface ApprovalInputs {
   readonly spent: Readonly<Record<SpendingArea, Money>>;
   /** One-off pushes landing this quarter. */
   readonly pushes?: readonly ApprovalPush[];
+  /**
+   * How far the public's expectations lowered the approval baseline as the quarter began
+   * (`was`) and lower it once it ends (`now`), in thousandths. Left out, there are none.
+   */
+  readonly expectations?: { readonly was: number; readonly now: number };
 }
 
 export interface RegionUnrest {
@@ -87,7 +94,7 @@ export function startingApproval(
 ): Pick<RegionState, 'approval' | 'approvalEffects' | 'unrest'> {
   const people = sum(country.regions.map((region) => region.population));
   const approvalEffects = settledEffects('adequate', toInputs(country.start.budget), people);
-  const approval = approvalFrom(approvalEffects);
+  const approval = approvalFrom(approvalEffects, 0);
   return { approval, approvalEffects, unrest: unrestAt(approval) };
 }
 
@@ -108,6 +115,8 @@ export function resolveApproval(
 ): ApprovalOutcome {
   const people = sum(after.map((region) => region.population));
   const pushes = inputs.pushes ?? [];
+  const expectations = inputs.expectations ?? { was: 0, now: 0 };
+  const raised = expectations.now - expectations.was;
   const moves = after.map((region) => {
     const settled = settledEffects(region.foodStage, inputs, people);
     const landing = pushes.filter(
@@ -123,7 +132,7 @@ export function resolveApproval(
         drift[driver] +
         (driver === 'events' ? sum(landing.map((push) => push.permille)) : 0),
     );
-    const approval = approvalFrom(approvalEffects);
+    const approval = approvalFrom(approvalEffects, expectations.now);
     const unrest = unrestAt(approval);
     return {
       region: { ...region, approval, approvalEffects, unrest },
@@ -133,13 +142,14 @@ export function resolveApproval(
       // What the limits took back from the sum of the movements.
       limited:
         approval -
-        region.approval -
+        region.approval +
+        raised -
         sum(
           APPROVAL_DRIVERS.map(
             (driver) => approvalEffects[driver] - region.approvalEffects[driver],
           ),
         ),
-      settlesAt: approvalFrom(settled),
+      settlesAt: approvalFrom(settled, expectations.now),
     };
   });
   const regions = moves.map((move) => move.region);
@@ -161,6 +171,11 @@ export function resolveApproval(
       ),
       always: true,
     })),
+    {
+      label: raised > 0 ? 'Rising expectations' : 'Easing expectations',
+      numerator: -raised * people,
+      always: false,
+    },
     { label: LIMIT_LABEL, numerator: weighted((move) => move.limited), always: false },
     {
       // Where people live changed, which moves the average even where no opinion did.
@@ -202,8 +217,16 @@ export function nationalApproval(regions: readonly RegionState[]): number {
 
 export function approvalStatus(situation: {
   readonly regions: readonly RegionState[];
+  /**
+   * The tier of prosperity in force and the one the game began in, whose difference sets how
+   * far the public's expectations lower the baseline. Left out, they lower it not at all.
+   */
+  readonly tier?: Tier;
+  readonly startingTier?: Tier;
 }): ApprovalStatus {
-  const { regions } = situation;
+  const { regions, tier, startingTier } = situation;
+  const expectations =
+    tier === undefined || startingTier === undefined ? 0 : expectationsIn(tier, startingTier);
   const people = populationOf(regions);
   const approval = nationalApproval(regions);
   const { baselinePermille } = balance.approval;
@@ -218,7 +241,11 @@ export function approvalStatus(situation: {
     {
       label: LIMIT_LABEL,
       numerator: weighted(
-        (region) => region.approval - baselinePermille - sum(Object.values(region.approvalEffects)),
+        (region) =>
+          region.approval -
+          baselinePermille +
+          expectations -
+          sum(Object.values(region.approvalEffects)),
       ),
       always: false,
     },
@@ -229,7 +256,7 @@ export function approvalStatus(situation: {
       : apportion(
           lines.map((entry) => entry.numerator),
           people,
-          approval - baselinePermille,
+          approval - baselinePermille + expectations,
         );
   return {
     approval,
@@ -237,6 +264,9 @@ export function approvalStatus(situation: {
     protestsBelow: balance.unrest.protests.belowPermille,
     causes: [
       { label: 'Baseline', amount: people === 0 ? 0 : baselinePermille },
+      ...(expectations === 0 || people === 0
+        ? []
+        : [{ label: 'Expectations', amount: -expectations }]),
       ...lines.flatMap((entry, index): Contribution[] => {
         const amount = amounts[index] ?? 0;
         return entry.always || amount !== 0 ? [{ label: entry.label, amount }] : [];
@@ -321,9 +351,11 @@ function stepTowards(current: number, settled: number): number {
   return gap > 0 ? step : -step;
 }
 
-function approvalFrom(effects: ApprovalEffects): number {
+function approvalFrom(effects: ApprovalEffects, expectations: number): number {
   return clamp(
-    balance.approval.baselinePermille + sum(APPROVAL_DRIVERS.map((driver) => effects[driver])),
+    balance.approval.baselinePermille -
+      expectations +
+      sum(APPROVAL_DRIVERS.map((driver) => effects[driver])),
     LIMITS.min,
     LIMITS.max,
   );
