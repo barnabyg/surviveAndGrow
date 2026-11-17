@@ -45,9 +45,10 @@ test('lens buttons sit above the map, and the country view is the one chosen fir
     'Food',
     'Approval',
     'Living standards',
+    'Infrastructure',
   ]);
   await expect(lens(page, 'Country')).toHaveAttribute('aria-pressed', 'true');
-  for (const name of ['Food', 'Approval', 'Living standards']) {
+  for (const name of ['Food', 'Approval', 'Living standards', 'Infrastructure']) {
     await expect(lens(page, name)).toHaveAttribute('aria-pressed', 'false');
   }
 
@@ -198,6 +199,73 @@ test('the living-standards lens colours each region by its living standard, and 
   }
 });
 
+test('the infrastructure lens colours each region by its access and rings every missing link', async ({
+  page,
+}) => {
+  await startGame(page, { countryFile: tavaraWithDroughtIn([]) });
+  const ringed = map(page).locator('.map__missing-ring');
+  const site = (name: string) => map(page).getByRole('button', { name: new RegExp(`^${name},`) });
+
+  // Elsewhere a missing link is marked only while a site of its chain is picked out.
+  await expect(ringed).toHaveCount(0);
+  await expect(map(page).getByText('✕ Missing link')).toHaveCount(0);
+
+  await lens(page, 'Infrastructure').click();
+
+  await expect(lens(page, 'Infrastructure')).toHaveAttribute('aria-pressed', 'true');
+  const steps = scale(page, 'Infrastructure');
+  await expect(steps.getByRole('listitem')).toHaveText([
+    'None',
+    'Under 10',
+    '10 to 20',
+    '20 to 35',
+    '35 to 50',
+    '50 and over',
+    '✕ Ringed: missing link in a chain',
+  ]);
+  // Nothing is built yet: every region has no access, and says so in words.
+  await expect(map(page).getByText('Infrastructure: 0.0', { exact: true })).toHaveCount(6);
+  await expect(region(page, 'Lowmere Plains')).toHaveAccessibleName(
+    'Lowmere Plains, infrastructure access 0.0',
+  );
+  const none = await swatchOf(steps, 'None');
+  expect(await fillOf(region(page, 'Lowmere Plains'))).toBe(none);
+
+  // Every link missing from a chain is ringed, tagged and named, with nothing picked out.
+  await expect(ringed).toHaveCount(2);
+  await expect(map(page).getByText('✕ Missing link')).toHaveCount(2);
+  await expect(site('Saltmouth port')).toHaveAccessibleName(/missing link/);
+  await expect(site('Trunk road, Korrgate mine to Saltmouth')).toHaveAccessibleName(/missing link/);
+
+  // A grain store built in Lowmere Plains gives it access, and the region changes colour.
+  await site('Lowmere grain store').click();
+  await page
+    .getByRole('region', { name: 'Lowmere grain store' })
+    .getByRole('button', { name: 'Start building' })
+    .click();
+  await endQuarters(page, 2);
+  await expect(site('Lowmere grain store')).toHaveAccessibleName(/operating/);
+  await expect(map(page).getByText('Infrastructure: 10.0', { exact: true })).toBeVisible();
+  await expect(region(page, 'Lowmere Plains')).toHaveAccessibleName(
+    'Lowmere Plains, infrastructure access 10.0',
+  );
+  const built = await fillOf(region(page, 'Lowmere Plains'));
+  expect(built).toBe(await swatchOf(steps, '10 to 20'));
+  expect(built).not.toBe(none);
+  expect(await fillOf(region(page, 'Salt Coast'))).toBe(none);
+
+  // Every region's lettering stands out from its lens colour at 4.5 to 1 or better.
+  for (const name of [
+    ...['Korr Highlands', 'Salt Coast', 'Lowmere Plains'],
+    ...['The Dry East', 'South Delta', 'Arden Vale'],
+  ]) {
+    const ink = await map(page)
+      .getByText(name, { exact: true })
+      .evaluate((element) => getComputedStyle(element).fill);
+    expect(contrast(ink, await fillOf(region(page, name)))).toBeGreaterThanOrEqual(4.5);
+  }
+});
+
 test('the chosen lens stays from quarter to quarter, with sites, events and relief still shown', async ({
   page,
 }) => {
@@ -262,5 +330,13 @@ test('a second country is seen through the same lenses', async ({ page }) => {
   );
   await expect(map(page, 'Testland').getByRole('img', { name: /^Alpha:/ })).toHaveAccessibleName(
     'Alpha: 9 buildings, 4 lit',
+  );
+
+  await lens(page, 'Infrastructure').click();
+  await expect(map(page, 'Testland').getByText('Infrastructure: 0.0', { exact: true })).toHaveCount(
+    2,
+  );
+  expect(await fillOf(region(page, 'Northfield', 'Testland'))).toBe(
+    await swatchOf(scale(page, 'Infrastructure'), 'None'),
   );
 });

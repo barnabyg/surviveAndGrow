@@ -66,6 +66,11 @@ interface SiteMarkProps {
    * needs and that is not yet in use.
    */
   readonly missingLink: boolean;
+  /**
+   * Whether a missing link is ringed as well, as the infrastructure lens draws every one, and
+   * its route dotted more boldly.
+   */
+  readonly ringed: boolean;
   /** Whether the site is the source of a chain, in use, that earns nothing for want of links. */
   readonly idle: boolean;
   /** The name of the alternative whose building closed the site, or null while it is open. */
@@ -78,11 +83,13 @@ interface SiteMarkProps {
  * its own shape as well as its own colour: an empty site is a dashed marker, one being
  * built wears a ring and says how far it has got, and one in use is solid. One in use that
  * is decaying for want of upkeep also wears the warning triangle and a tag that says so.
- * A missing link in the chain picked out wears a cross and a tag, and its route is dotted.
+ * A missing link in the chain picked out wears a cross and a tag, and its route is dotted;
+ * ringed, it also wears a broken ring, and its route's dots are larger.
  * A site closed by building on one of its alternatives is faded and struck through.
  */
 export function SiteMark(props: SiteMarkProps) {
-  const { site, status, planned, palette, selected, missingLink, idle, closedBy, onSelect } = props;
+  const { site, status, planned, palette, selected, missingLink, ringed, idle, closedBy } = props;
+  const { onSelect } = props;
   const [x, y] = markerPlace(site);
   const underWay = status.state === 'building' || status.state === 'paused';
   const decaying = status.state === 'decaying';
@@ -135,6 +142,7 @@ export function SiteMark(props: SiteMarkProps) {
           built={inUse ? 1 : status.quartersPaid / Math.max(1, status.buildQuarters)}
           started={planned || underWay}
           missing={missingLink}
+          bold={ringed}
           closed={closed}
           power={SITE_POWER_ROLES[site.type] === 'line'}
           palette={palette}
@@ -143,6 +151,7 @@ export function SiteMark(props: SiteMarkProps) {
       )}
       <g transform={`translate(${x},${y})`}>
         <circle className="map__site-focus" r="21" fill="none" strokeWidth="2.5" />
+        {ringed && <MissingRing palette={palette} />}
         {selected && <circle r="21" fill="none" stroke={palette.selection} strokeWidth="2" />}
         {(planned || underWay) && (
           <circle
@@ -228,6 +237,16 @@ function ClosedStrike({ palette }: { readonly palette: MapPalette }) {
   );
 }
 
+/** The broken ring round a missing link, over a dark one so that it shows on any ground. */
+function MissingRing({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <g className="map__missing-ring" fill="none">
+      <circle r="19" stroke={palette.tagBackground} strokeWidth="5" />
+      <circle r="19" stroke={palette.tagText} strokeWidth="2.5" strokeDasharray="6 4" />
+    </g>
+  );
+}
+
 /** The cross worn at the bottom right of a site's marker while it is a missing link. */
 function MissingCross({ palette }: { readonly palette: MapPalette }) {
   return (
@@ -263,6 +282,8 @@ interface RouteLineProps {
   readonly started: boolean;
   /** Whether the route is a missing link in the chain picked out, which dots its unbuilt part. */
   readonly missing: boolean;
+  /** Whether a missing route is drawn as the infrastructure lens rings it: in larger dots. */
+  readonly bold: boolean;
   /** Whether one of its alternatives has closed the route, which leaves it faint and finely dashed. */
   readonly closed: boolean;
   /** Whether the route is a power line, which is finely dashed in every state. */
@@ -280,7 +301,7 @@ interface RouteLineProps {
  * once built, pale dashes along a thin dark line, which no road resembles.
  */
 function RouteLine(props: RouteLineProps) {
-  const { route, built, started, missing, closed, power, palette, selected } = props;
+  const { route, built, started, missing, bold, closed, power, palette, selected } = props;
   const [road, rest] = splitAt(route, built);
   const unbuilt = UNBUILT[power ? 'power' : 'road'];
   return (
@@ -306,15 +327,15 @@ function RouteLine(props: RouteLineProps) {
           <polyline
             points={line(rest)}
             stroke={palette.tagBackground}
-            strokeWidth="6"
+            strokeWidth={bold ? 9 : 6}
             strokeOpacity="0.85"
           />
           <polyline
             className="map__missing-link"
             points={line(rest)}
             stroke={palette.tagText}
-            strokeWidth="4"
-            strokeDasharray="0.1 9"
+            strokeWidth={bold ? 6 : 4}
+            strokeDasharray={bold ? '0.1 11' : '0.1 9'}
             strokeLinecap="round"
           />
         </>

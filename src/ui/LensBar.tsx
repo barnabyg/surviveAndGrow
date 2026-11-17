@@ -1,6 +1,6 @@
 import type { GameState } from '../sim';
 import { LENS_NAMES, LENSES, lensScale, type Lens } from './lens';
-import { TIER_PALETTES } from './mapPalette';
+import { TIER_PALETTES, type MapPalette } from './mapPalette';
 
 interface LensBarProps {
   readonly game: GameState;
@@ -14,6 +14,7 @@ const SCALE_TITLES: Readonly<Record<Lens, string>> = {
   food: 'Food situation',
   approval: 'Approval',
   living: 'Living standard',
+  infrastructure: 'Infrastructure access',
 };
 
 /**
@@ -65,9 +66,30 @@ export function LensBar({ game, lens, onChange }: LensBarProps) {
               </li>
             </>
           )}
+          {lens === 'infrastructure' && (
+            <li>
+              <MissingRingSwatch palette={palette} />✕ Ringed: missing link in a chain
+            </li>
+          )}
         </ul>
       </div>
     </div>
+  );
+}
+
+/** The ring the infrastructure lens draws round every missing link in a chain. */
+function MissingRingSwatch({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <svg
+      className="lens-scale__mark"
+      width="18"
+      height="18"
+      viewBox="-9 -9 18 18"
+      aria-hidden="true"
+    >
+      <circle r="7" fill="none" stroke={palette.tagBackground} strokeWidth="3.5" />
+      <circle r="7" fill="none" stroke={palette.tagText} strokeWidth="2" strokeDasharray="3 2" />
+    </svg>
   );
 }
 
