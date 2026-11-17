@@ -125,8 +125,8 @@ const LIVING_STANDARD_CUTS: readonly number[] = (() => {
   const developing = tierFrom('developing');
   const industrialising = tierFrom('industrialising');
   return [
-    // Seven tenths of the way to Developing, so that the poorest regions stand apart in a
-    // country that starts, as Tavara does, a little above it.
+    // Seven tenths of the way to Developing, so that the poorest regions stand apart on the
+    // opening map.
     Math.round((developing * 7) / 10),
     developing,
     // Halfway from Developing to Industrialising.

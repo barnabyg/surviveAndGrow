@@ -336,7 +336,9 @@ Spreads are least / middle / most. Won is the win on prosperity: Prosperous held
 
 Only data was changed, all of it in `src/sim/balance.ts`. No rule of the simulation was touched,
 and neither country file was. The infrastructure lens's steps (`src/ui/lens.ts`) were doubled to
-match the sites' doubled infrastructure access.
+match the sites' doubled infrastructure access, and the living-standards lens's lowest step moved
+from four fifths to seven tenths of Developing, so that the poorest regions still stand apart
+on the opening map now that Developing begins at 30.
 
 | Value | From | To | Why |
 | --- | --- | --- | --- |
