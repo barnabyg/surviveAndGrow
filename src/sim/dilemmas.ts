@@ -400,6 +400,11 @@ function unavailable(
     : null;
 }
 
+/** The ids of the options a dilemma of one type puts to the player. */
+export function optionIdsOf(type: DilemmaType): readonly string[] {
+  return definitions[type].options.map((option) => option.id);
+}
+
 /** One effect in words, without a full stop: "Costs $4.2m". */
 function describeEffect(country: Country, effect: DilemmaEffect): string {
   switch (effect.kind) {

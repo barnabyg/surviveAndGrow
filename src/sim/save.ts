@@ -1,12 +1,18 @@
 import { fitBudget, type Budget } from './budget';
 import { CountryFileError, loadCountry, type Country } from './country';
-import type { AnsweredDilemma, DilemmaEffect, PendingDilemma } from './dilemmas';
+import {
+  optionIdsOf,
+  type AnsweredDilemma,
+  type DilemmaEffect,
+  type PendingDilemma,
+} from './dilemmas';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
+import { siteTerms } from './sites';
 import type { GameState, Outcome, RegionState, TurnReport } from './state';
 import type { Contribution, Figure, GameDate, Money, Quarter } from './types';
 import {
@@ -169,12 +175,15 @@ export function loadSave(
     dilemmasAnswered: list(
       state.dilemmasAnswered,
       'state.dilemmasAnswered',
-      (item, path): AnsweredDilemma => ({
-        type: oneOf(item.type, `${path}.type`, DILEMMA_TYPES, 'a dilemma'),
-        quarter: whole(item.quarter, `${path}.quarter`, 1),
-        regionId: regionOrNone(item.regionId, `${path}.regionId`),
-        optionId: text(item.optionId, `${path}.optionId`),
-      }),
+      (item, path): AnsweredDilemma => {
+        const type = oneOf(item.type, `${path}.type`, DILEMMA_TYPES, 'a dilemma');
+        return {
+          type,
+          quarter: whole(item.quarter, `${path}.quarter`, 1),
+          regionId: regionOrNone(item.regionId, `${path}.regionId`),
+          optionId: optionOf(type, item.optionId, `${path}.optionId`),
+        };
+      },
     ),
     outcome: readOutcome(record(state.outcome, 'state.outcome'), 'state.outcome', region),
   };
@@ -219,6 +228,9 @@ function readCountry(saved: Json): Country {
     );
   }
   if (saved.id !== country.id) fail('country.id', 'does not match the country the save carries');
+  if (saved.formatVersion !== country.formatVersion) {
+    fail('country.formatVersion', 'does not match the country the save carries');
+  }
   return country;
 }
 
@@ -265,16 +277,31 @@ function readRegions(saved: unknown, path: string, regionIds: readonly string[])
   return regions;
 }
 
-/** The projects, each on a site the country has and no two on the same one. */
+/**
+ * The projects, each on a site the country has, no two on the same one, and none paid for
+ * beyond the quarters its site takes to build.
+ */
 function readProjects(saved: unknown, path: string, country: Country): Project[] {
   const siteIds = country.sites.map((site) => site.id);
-  const projects = list(saved, path, (item, itemPath): Project => ({
-    siteId: oneOf(item.siteId, `${itemPath}.siteId`, siteIds, 'a site'),
-    began: date(item.began, `${itemPath}.began`),
-    quartersPaid: whole(item.quartersPaid, `${itemPath}.quartersPaid`, 0),
-    status: oneOf(item.status, `${itemPath}.status`, PROJECT_STATUSES, 'a state of building'),
-    opened: item.opened === null ? null : date(item.opened, `${itemPath}.opened`),
-  }));
+  const projects = list(saved, path, (item, itemPath): Project => {
+    const siteId = oneOf(item.siteId, `${itemPath}.siteId`, siteIds, 'a site');
+    const site = country.sites.find((candidate) => candidate.id === siteId);
+    const quartersPaid = whole(item.quartersPaid, `${itemPath}.quartersPaid`, 0);
+    const buildQuarters = site === undefined ? 0 : siteTerms(site.type).buildQuarters;
+    if (quartersPaid > buildQuarters) {
+      fail(
+        `${itemPath}.quartersPaid`,
+        `is ${quartersPaid}, but the site takes ${buildQuarters} ${buildQuarters === 1 ? 'quarter' : 'quarters'} to build`,
+      );
+    }
+    return {
+      siteId,
+      began: date(item.began, `${itemPath}.began`),
+      quartersPaid,
+      status: oneOf(item.status, `${itemPath}.status`, PROJECT_STATUSES, 'a state of building'),
+      opened: item.opened === null ? null : date(item.opened, `${itemPath}.opened`),
+    };
+  });
   if (new Set(projects.map((project) => project.siteId)).size !== projects.length) {
     fail(path, 'builds on the same site twice');
   }
@@ -293,21 +320,40 @@ function readHistory(saved: unknown, path: string): VitalSigns[] {
   return history;
 }
 
+/**
+ * A dilemma waiting for its answer. Its options must be ones that dilemma has, each once,
+ * and one that concerns no region cannot move grain to a region's own stock.
+ */
 function readDilemma(
   saved: Json,
   path: string,
   regionOrNone: (value: unknown, path: string) => string | null,
 ): PendingDilemma {
-  return {
-    type: oneOf(saved.type, `${path}.type`, DILEMMA_TYPES, 'a dilemma'),
-    regionId: regionOrNone(saved.regionId, `${path}.regionId`),
-    options: list(saved.options, `${path}.options`, (option, optionPath) => ({
-      id: text(option.id, `${optionPath}.id`),
-      effects: list(option.effects, `${optionPath}.effects`, (effect, effectPath) =>
-        readEffect(effect, effectPath, regionOrNone),
-      ),
-    })),
-  };
+  const type = oneOf(saved.type, `${path}.type`, DILEMMA_TYPES, 'a dilemma');
+  const regionId = regionOrNone(saved.regionId, `${path}.regionId`);
+  const options = list(saved.options, `${path}.options`, (option, optionPath) => ({
+    id: optionOf(type, option.id, `${optionPath}.id`),
+    effects: list(option.effects, `${optionPath}.effects`, (effect, effectPath) => {
+      const read = readEffect(effect, effectPath, regionOrNone);
+      if (read.kind === 'regionGrain' && regionId === null) {
+        fail(effectPath, 'moves grain to a region, but the dilemma concerns no region');
+      }
+      return read;
+    }),
+  }));
+  if (new Set(options.map((option) => option.id)).size !== options.length) {
+    fail(`${path}.options`, 'offers the same option twice');
+  }
+  return { type, regionId, options };
+}
+
+/** The id of an option, which must be one that a dilemma of the type puts to the player. */
+function optionOf(type: PendingDilemma['type'], value: unknown, path: string): string {
+  const id = text(value, path);
+  if (!optionIdsOf(type).includes(id)) {
+    fail(path, `is "${id}", which is not an option this dilemma has`);
+  }
+  return id;
 }
 
 function readEffect(

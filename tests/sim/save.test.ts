@@ -430,6 +430,80 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
       'The saved game is damaged and cannot be opened: state.projects builds on the same site twice.',
     );
   });
+
+  it('when a project has paid for more quarters than its site takes to build', () => {
+    // The grain store takes two quarters, and both have been paid for.
+    const { game, save } = midGameSave(country);
+    expect(game.projects[0]).toMatchObject({ quartersPaid: 2, status: 'operating' });
+
+    expect(refusal(withValue(save, ['state', 'projects', 0, 'quartersPaid'], 3))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[0].quartersPaid is 3, but the site takes 2 quarters to build.',
+    );
+  });
+
+  it('when the country file format it records is not the one its country was written in', () => {
+    const { save } = midGameSave(country);
+
+    expect(refusal(withValue(save, ['country', 'formatVersion'], 2))).toBe(
+      'The saved game is damaged and cannot be opened: country.formatVersion does not match the country the save carries.',
+    );
+    expect(refusal(without(save, ['country', 'formatVersion']))).toBe(
+      'The saved game is damaged and cannot be opened: country.formatVersion does not match the country the save carries.',
+    );
+  });
+});
+
+describe.each(countries)('a save of a game in $name with a dilemma is refused', ({ file, dry }) => {
+  /** A game saved with the teachers' dilemma waiting, or answered a quarter later. */
+  function teachersSave(answered: boolean): unknown {
+    const start = createGame(withChances(file, { dilemmas: { teachersPay: 1 } }), 5);
+    let { state: game, report } = advanceQuarter(start, { budget: start.budget });
+    expect(game.dilemma?.type).toBe('teachersPay');
+    if (answered) {
+      ({ state: game, report } = advanceQuarter(game, answering(game, { budget: game.budget })));
+      expect(game.dilemmasAnswered).toMatchObject([{ type: 'teachersPay', optionId: 'refuse' }]);
+    }
+    return stored(saveGame(game, report));
+  }
+
+  it('when the waiting dilemma offers an option that dilemma does not have', () => {
+    const save = withValue(teachersSave(false), ['state', 'dilemma', 'options', 0, 'id'], 'bribe');
+
+    expect(refusal(save)).toBe(
+      'The saved game is damaged and cannot be opened: state.dilemma.options[0].id is "bribe", which is not an option this dilemma has.',
+    );
+  });
+
+  it('when the waiting dilemma offers the same option twice', () => {
+    const save = teachersSave(false);
+    const [option] = valueAt(save, ['state', 'dilemma', 'options']) as unknown[];
+
+    expect(refusal(withValue(save, ['state', 'dilemma', 'options'], [option, option]))).toBe(
+      'The saved game is damaged and cannot be opened: state.dilemma.options offers the same option twice.',
+    );
+  });
+
+  it('when an answered dilemma records an option that dilemma does not have', () => {
+    const save = withValue(teachersSave(true), ['state', 'dilemmasAnswered', 0, 'optionId'], 'run');
+
+    expect(refusal(save)).toBe(
+      'The saved game is damaged and cannot be opened: state.dilemmasAnswered[0].optionId is "run", which is not an option this dilemma has.',
+    );
+  });
+
+  it('when a dilemma that concerns no region would move grain to its region', () => {
+    const country = withChances(file, { drought: { [dry]: 1 }, dilemmas: { emergencyWorks: 1 } });
+    const start = createGame(country, 5);
+    const { state: game, report } = advanceQuarter(start, { budget: start.budget });
+    // The second option sends grain from the national reserve to the region's own stock.
+    expect(game.dilemma).toMatchObject({ type: 'emergencyWorks', regionId: dry });
+    expect(game.dilemma?.options[1]?.effects[0]).toMatchObject({ kind: 'regionGrain' });
+    const save = stored(saveGame(game, report));
+
+    expect(refusal(withValue(save, ['state', 'dilemma', 'regionId'], null))).toBe(
+      'The saved game is damaged and cannot be opened: state.dilemma.options[1].effects[0] moves grain to a region, but the dilemma concerns no region.',
+    );
+  });
 });
 
 describe.each(bothCountries)('a save of a game in %s from an older format', (_name, country) => {
