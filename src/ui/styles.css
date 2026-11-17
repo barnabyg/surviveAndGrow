@@ -1700,6 +1700,11 @@ p {
   border-top: 1px solid var(--line);
 }
 
+.term-figures td.term-figures__ending {
+  font-family: inherit;
+  font-weight: 400;
+}
+
 .term-figures__trend .trend {
   display: block;
   margin: 0 0 0 auto;

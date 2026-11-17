@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react';
 import {
-  electionStatus,
+  formatIndex,
   formatMoney,
   formatPercent,
   monthsOfFood,
+  termRecords,
   type GameState,
+  type TermRecord,
   type VitalSigns,
   formatQuarters,
 } from '../sim';
+import { formatDate } from './format';
 import { TrendLine } from './TrendLine';
 
 interface GameSummaryProps {
@@ -18,14 +21,15 @@ interface GameSummaryProps {
   readonly onNewGame: () => void;
 }
 
-/** One vital sign over the term, as the summary's table and trend line show it. */
-interface TermFigure {
+/** One vital sign over the game, as the summary's table and trend line show it. */
+interface GameFigure {
   readonly label: string;
-  readonly valueOf: (record: VitalSigns) => number;
+  /** The figure in a record, or null where the record does not hold it. */
+  readonly valueOf: (record: VitalSigns) => number | null;
   readonly format: (value: number) => string;
 }
 
-const FIGURES: readonly TermFigure[] = [
+const FIGURES: readonly GameFigure[] = [
   { label: 'Treasury', valueOf: (record) => record.treasury, format: formatMoney },
   {
     label: 'Food reserve',
@@ -33,11 +37,34 @@ const FIGURES: readonly TermFigure[] = [
     format: (months) => `${months.toFixed(1)} months`,
   },
   { label: 'Approval', valueOf: (record) => record.approval, format: formatPercent },
+  // Quarters recorded before prosperity was measured are left out.
+  {
+    label: 'Prosperity',
+    valueOf: (record) => record.prosperity,
+    format: (value) => formatIndex(value),
+  },
 ];
 
+/** How each term ended, in a few words. */
+const TERM_ENDINGS: Readonly<Record<TermRecord['ending'], string>> = {
+  reelected: 'Re-elected',
+  defeated: '▲ Lost the election',
+  collapsed: '▲ The state collapsed',
+  won: '★ Won on prosperity',
+  inOffice: 'In office',
+};
+
+/** How long the government lasted, over how many terms, in a sentence. */
+function tenure(terms: readonly TermRecord[]): string {
+  const quarters = terms.reduce((total, term) => total + term.quarters, 0);
+  const count = terms.length === 1 ? 'one term' : `${terms.length} terms`;
+  return `Your government was in office for ${formatQuarters(quarters)}, over ${count}.`;
+}
+
 /**
- * The end of the game, whichever way it ended: the outcome, its cause, and the main
- * figures over the term. From here the player replays the same game or starts another.
+ * The end of the game, whichever way it ended: the outcome and its cause, the terms served,
+ * and the main figures over the whole game, prosperity among them, term by term. From here
+ * the player replays the same game or starts another.
  */
 export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -50,8 +77,7 @@ export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {
   const { outcome, history } = game;
   if (outcome.status === 'playing') return null;
   const won = outcome.status === 'won';
-  const played = history.length - 1;
-  const term = electionStatus(game).termQuarters;
+  const terms = termRecords(game);
 
   return (
     <dialog
@@ -72,15 +98,13 @@ export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {
       <div className="dialog__body">
         <p>{outcome.summary}</p>
         <p>
-          {played === term
-            ? `The term ran its full ${formatQuarters(term)}.`
-            : `Your government fell after ${formatQuarters(played)} of a ${term}-quarter term.`}
+          {tenure(terms)}
           {outcome.cause === 'famine' &&
             ' The warnings were in the quarterly reports and on the map: food relief sent in time would have held the famine off.'}
         </p>
       </div>
 
-      <table className="term-figures" aria-label="The term in figures">
+      <table className="term-figures" aria-label="The game in figures">
         <thead>
           <tr>
             <td />
@@ -88,12 +112,13 @@ export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {
             <th scope="col">End</th>
             <th scope="col">Lowest</th>
             <th scope="col">Highest</th>
-            <th scope="col">Over the term</th>
+            <th scope="col">Over the game</th>
           </tr>
         </thead>
         <tbody>
           {FIGURES.map(({ label, valueOf, format }) => {
-            const values = history.map(valueOf);
+            const values = history.flatMap((record) => valueOf(record) ?? []);
+            if (values.length === 0) return null;
             return (
               <tr key={label}>
                 <th scope="row">{label}</th>
@@ -107,6 +132,29 @@ export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {
               </tr>
             );
           })}
+        </tbody>
+      </table>
+
+      <table className="term-figures" aria-label="Term by term">
+        <thead>
+          <tr>
+            <td />
+            <th scope="col">From</th>
+            <th scope="col">To</th>
+            <th scope="col">Prosperity</th>
+            <th scope="col">How it ended</th>
+          </tr>
+        </thead>
+        <tbody>
+          {terms.map((term) => (
+            <tr key={term.term}>
+              <th scope="row">Term {term.term}</th>
+              <td>{formatDate(term.from)}</td>
+              <td>{formatDate(term.to)}</td>
+              <td>{prosperityOver(term)}</td>
+              <td className="term-figures__ending">{TERM_ENDINGS[term.ending]}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
@@ -124,4 +172,12 @@ export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {
       </div>
     </dialog>
   );
+}
+
+/** Prosperity from the start of a term to the end of it: `23.7 → 41.2`. */
+function prosperityOver({ prosperity }: TermRecord): string {
+  const { start, end } = prosperity;
+  if (start === null && end === null) return 'Not measured';
+  if (start === null || end === null) return formatIndex(start ?? end ?? 0);
+  return `${formatIndex(start)} → ${formatIndex(end)}`;
 }

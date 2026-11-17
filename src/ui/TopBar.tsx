@@ -17,6 +17,7 @@ import {
   regionName,
   seasonOf,
   UNREST_NAMES,
+  victoryStatus,
   type ApprovalStatus,
   type GameState,
   type TurnReport,
@@ -57,6 +58,8 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
   const election = electionStatus(game);
   const prosperity = prosperityStatus(game);
   const tier = tierStatus({ ...game, prosperity: prosperity.value });
+  const victory = victoryStatus(game);
+  const targetName = TIER_NAMES[victory.tier];
   const target: Mark = {
     value: prosperity.target,
     label: `Target: ${formatIndex(prosperity.target, 0)}`,
@@ -184,7 +187,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
           }
           note={
             tier.next === null
-              ? `${TIER_NAMES[tier.tier]} · the target is reached`
+              ? `${TIER_NAMES[tier.tier]} · held ${victory.held} of ${victory.needed} quarters to win`
               : `${TIER_NAMES[tier.tier]} · ${formatIndex(tier.next.distance)} to ${TIER_NAMES[tier.next.tier]}`
           }
           breakdownTitle="What moved prosperity"
@@ -237,8 +240,9 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
             </tbody>
           </table>
           <p className="breakdown__empty">
-            The target of {formatIndex(prosperity.target, 0)} is where{' '}
-            {TIER_NAMES[TIERS[TIERS.length - 1] ?? 'prosperous']} begins.
+            The target of {formatIndex(prosperity.target, 0)} is where {targetName} begins. Hold{' '}
+            {targetName} for {victory.needed} quarters running to win the game: {victory.held} of{' '}
+            {victory.needed} held so far.
           </p>
         </VitalSign>
         {/* The election is a date, not a figure that moves, so it opens to nothing. */}
@@ -261,7 +265,9 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
                 </>
               )}
             </span>
-            <div className="vital__note">{formatDate(election.date)}</div>
+            <div className="vital__note">
+              Term {election.term} · {formatDate(election.date)}
+            </div>
           </div>
         </div>
       </div>

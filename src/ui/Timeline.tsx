@@ -1,4 +1,5 @@
 import {
+  dateOfQuarter,
   formatMoney,
   siteTerms,
   termCalendar,
@@ -26,9 +27,10 @@ interface TimelineProps {
 }
 
 /**
- * The whole term under the map: every quarter to the election, with the harvests and the
- * vote marked, and each project as a bar followed by the quarters it will be in use before
- * the vote. It is a table, so every mark is also read out in words.
+ * The whole of the current term under the map: every quarter to the election that closes it,
+ * with the harvests and the vote marked, and each project as a bar followed by the quarters
+ * it will be in use before the vote. A government that is re-elected moves on to the next
+ * term's timeline. It is a table, so every mark is also read out in words.
  */
 export function Timeline(props: TimelineProps) {
   const { game, schedule, considered, pausedSites, onSelectSite } = props;
@@ -46,8 +48,9 @@ export function Timeline(props: TimelineProps) {
           This term
         </h2>
         <span className="section-note">
-          {calendar.now <= calendar.termQuarters
-            ? `Quarter ${calendar.now} of ${calendar.termQuarters}`
+          Term {calendar.term} ·{' '}
+          {calendar.now <= calendar.last
+            ? `Quarter ${calendar.now - calendar.first + 1} of ${calendar.termQuarters}`
             : 'The term is over'}{' '}
           · An underlined quarter brings in the harvest · Hatched quarters are over
         </span>
@@ -145,12 +148,15 @@ function ProjectRow(props: ProjectRowProps) {
   const { game, calendar, schedule, supposed, unpaid, onSelectSite } = props;
   const site = game.country.sites.find((candidate) => candidate.id === schedule.siteId);
   if (!site) return null;
-  const { termQuarters } = calendar;
+  const { first, last } = calendar;
   const { state, begins, opens, inUseBeforeVote } = schedule;
   // A site that began after the term, or would, has no place on the term's timeline.
-  if (begins > termQuarters) return null;
+  if (begins > last) return null;
 
-  const lastBuilt = Math.min(opens - 1, termQuarters);
+  // Building that began in an earlier term is drawn from the start of this one, and building
+  // that ended in an earlier term not at all.
+  const buildFrom = Math.max(begins, first);
+  const lastBuilt = Math.min(opens - 1, last);
   const tentative = state === 'planned';
   const buildLabel = {
     planned: supposed ? 'If started now' : 'Planned',
@@ -175,12 +181,14 @@ function ProjectRow(props: ProjectRowProps) {
           {statusLine(schedule, calendar, supposed, unpaid, siteTerms(site.type))}
         </span>
       </th>
-      {begins > 1 && <td colSpan={begins - 1} />}
-      <td colSpan={lastBuilt - begins + 1}>
-        <div className={`timeline__bar timeline__bar--${state}`} title={buildLabel}>
-          {buildLabel}
-        </div>
-      </td>
+      {buildFrom > first && <td colSpan={buildFrom - first} />}
+      {lastBuilt >= buildFrom && (
+        <td colSpan={lastBuilt - buildFrom + 1}>
+          <div className={`timeline__bar timeline__bar--${state}`} title={buildLabel}>
+            {buildLabel}
+          </div>
+        </td>
+      )}
       {inUseBeforeVote > 0 ? (
         <td colSpan={inUseBeforeVote}>
           <div
@@ -199,7 +207,7 @@ function ProjectRow(props: ProjectRowProps) {
           </div>
         </td>
       ) : (
-        lastBuilt < termQuarters && <td colSpan={termQuarters - lastBuilt} />
+        lastBuilt < last && <td colSpan={last - Math.max(lastBuilt, buildFrom - 1)} />
       )}
     </tr>
   );
@@ -214,10 +222,7 @@ function statusLine(
   terms: { readonly cost: number; readonly buildQuarters: number },
 ): string {
   const { state, inUseBeforeVote } = schedule;
-  if (state === 'operating') {
-    const opened = calendar.quarters[schedule.opens - 1]?.date;
-    return opened === undefined ? 'In use' : `In use since ${formatDate(opened)}`;
-  }
+  if (state === 'operating') return `In use since ${formatDate(dateOfQuarter(schedule.opens))}`;
   if (inUseBeforeVote === 0) {
     return `▲ ${state === 'planned' ? 'Would' : 'Will'} not be finished before the vote`;
   }
