@@ -75,6 +75,12 @@ What is in the game so far:
   vote. Pick out an empty site on the map and the timeline shows, dashed, what building there
   would mean if it began now, or says that it would not be finished before the vote. A project
   the treasury cannot pay for opens a quarter later for each quarter it waits.
+- Buttons above the map choose what it shows. The country view is the land as it looks. The food
+  lens colours each region by its food situation, and the approval lens by its approval, with
+  hatching over a region on strike and cross-hatching over one in protest. Each lens has a scale
+  beside the buttons, its steps differ in lightness, and every region also carries its value as
+  text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
+  relief are drawn the same under all of them.
 - The side columns scroll on their own when they run long, and the map gives up height to the
   timeline, so the whole screen stays in view.
 

@@ -11,6 +11,8 @@ import { BudgetPanel, countChanges } from './BudgetPanel';
 import { ConfirmDialog } from './ConfirmDialog';
 import { ElectionPanel } from './ElectionPanel';
 import { GameSummary } from './GameSummary';
+import type { Lens } from './lens';
+import { LensBar } from './LensBar';
 import { MapLegend } from './MapLegend';
 import { MapView } from './MapView';
 import { ProjectsPanel } from './ProjectsPanel';
@@ -48,6 +50,8 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
   // only while its region is still the one picked out on the map.
   const [reportPicked, setReportPicked] = useState<number | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
+  // What the map shows. It is the player's choice and stays put from quarter to quarter.
+  const [lens, setLens] = useState<Lens>('country');
 
   const playing = game.outcome.status === 'playing';
   const decisions = { budget: committed, reliefRegionId, startProjects: plannedSiteIds };
@@ -123,10 +127,12 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
           <ApprovalChart game={game} />
         </aside>
         <main className="column column--country" aria-label="Country">
+          <LensBar game={game} lens={lens} onChange={setLens} />
           <div className="map-frame">
             <div className="map-stage">
               <MapView
                 game={game}
+                lens={lens}
                 selectedRegionId={selectedRegionId}
                 reliefRegionId={reliefRegionId}
                 onSelectRegion={selectRegion}

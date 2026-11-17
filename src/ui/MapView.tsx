@@ -1,9 +1,12 @@
+import { Fragment, useId } from 'react';
 import {
   describeEvent,
   describeUnrest,
   FOOD_STAGE_NAMES,
+  formatPercent,
   MAP_FRAME,
   siteStatus,
+  UNREST_NAMES,
   type Decoration,
   type GameState,
   type LabelSide,
@@ -11,11 +14,14 @@ import {
   type Region,
   type Settlement,
 } from '../sim';
+import { lensFill, needsLightInk, type Lens } from './lens';
 import { tierOnePalette, type MapPalette } from './mapPalette';
 import { SiteMark } from './SiteMark';
 
 interface MapViewProps {
   readonly game: GameState;
+  /** What the map shows: the country as it looks, or its regions coloured by one figure. */
+  readonly lens: Lens;
   /** The region the player has picked out, if any. */
   readonly selectedRegionId: string | null;
   /** The region food relief is being sent to, if any. */
@@ -28,16 +34,39 @@ interface MapViewProps {
   readonly plannedSiteIds: readonly string[];
 }
 
+/** How one region is painted under the chosen lens. */
+interface Paint {
+  readonly fill: string;
+  /** The colour of lettering that can be read over the fill. */
+  readonly ink: string;
+}
+
 /**
  * The country, drawn entirely from its country file and the state of the game. Nothing
- * here knows any one country.
+ * here knows any one country. A lens recolours the regions and changes the figure each is
+ * labelled with; sites, routes, events and tags are drawn the same under every lens.
  */
 export function MapView(props: MapViewProps) {
-  const { game, selectedRegionId, reliefRegionId, onSelectRegion } = props;
+  const { game, lens, selectedRegionId, reliefRegionId, onSelectRegion } = props;
   const { selectedSiteId, onSelectSite, plannedSiteIds } = props;
   const { country } = game;
   const palette = tierOnePalette;
-  const terrainOf = new Map(country.regions.map((region) => [region.id, region.terrain]));
+  const hatchId = useId();
+  const plain = lens === 'country';
+  const paintOf = new Map(
+    country.regions.map((region): [string, Paint] => {
+      const state = game.regions.find((candidate) => candidate.id === region.id);
+      const fill = lensFill(lens, game, region, state, palette);
+      const ink = plain
+        ? palette.regionLabel
+        : needsLightInk(fill)
+          ? palette.lensLabelLight
+          : palette.lensLabelDark;
+      return [region.id, { fill, ink }];
+    }),
+  );
+  const paint = (regionId: string): Paint =>
+    paintOf.get(regionId) ?? { fill: palette.terrain.plains, ink: palette.regionLabel };
 
   return (
     <svg
@@ -47,6 +76,26 @@ export function MapView(props: MapViewProps) {
       aria-label={`Map of ${country.name}`}
       style={{ background: palette.sea }}
     >
+      {/* The hatching for strikes, and the cross-hatching for protests. */}
+      <defs>
+        {(['strikes', 'protests'] as const).map((unrest) => (
+          <pattern
+            key={unrest}
+            id={`${hatchId}-${unrest}`}
+            width="10"
+            height="10"
+            patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)"
+          >
+            <path
+              d={unrest === 'strikes' ? 'M0,0 V10' : 'M0,0 V10 M0,0 H10'}
+              stroke={palette.unrestMark}
+              strokeOpacity="0.55"
+              strokeWidth="2.4"
+            />
+          </pattern>
+        ))}
+      </defs>
       {/* Shallow water: a soft glow where land meets the sea. */}
       <g fill="none" stroke={palette.coastGlow} strokeLinejoin="round" aria-hidden="true">
         {country.regions.map((region) => (
@@ -98,21 +147,39 @@ export function MapView(props: MapViewProps) {
           <polygon key={region.id} points={outline(region.shape)} />
         ))}
       </g>
-      {country.regions.map((region) => (
-        <RegionShape
-          key={region.id}
-          region={region}
-          game={game}
-          palette={palette}
-          selected={region.id === selectedRegionId}
-          relieved={region.id === reliefRegionId}
-          onSelect={onSelectRegion}
-        />
-      ))}
+      {/* Each region's land, and over it the approval lens's mark for unrest: hatching,
+          which reads without its colour. The two are drawn region by region, so a region
+          lying inside another covers its neighbour's hatching as it covers its land. */}
+      {country.regions.map((region) => {
+        const unrest = game.regions.find((state) => state.id === region.id)?.unrest ?? 'calm';
+        return (
+          <Fragment key={region.id}>
+            <RegionShape
+              region={region}
+              game={game}
+              lens={lens}
+              fill={paint(region.id).fill}
+              selected={region.id === selectedRegionId}
+              relieved={region.id === reliefRegionId}
+              onSelect={onSelectRegion}
+            />
+            {lens === 'approval' && unrest !== 'calm' && (
+              <polygon
+                className="map__overlay"
+                points={outline(region.shape)}
+                fill={`url(#${hatchId}-${unrest})`}
+                role="img"
+                aria-label={`${UNREST_NAMES[unrest]} in ${region.name}`}
+              />
+            )}
+          </Fragment>
+        );
+      })}
 
       {/* Everything from here down is drawn over the regions and lets clicks through. */}
       <g className="map__overlay">
-        {/* A region struck by an event is tinted and hatched round its edge. */}
+        {/* A region struck by an event is tinted and hatched round its edge. Under a lens
+            the tint is left off, so that the lens's colours stay true to its scale. */}
         {game.events.map((event) => {
           const region = country.regions.find((candidate) => candidate.id === event.regionId);
           return (
@@ -120,7 +187,7 @@ export function MapView(props: MapViewProps) {
               <polygon
                 key={`${event.type}-${event.regionId}`}
                 points={outline(region.shape)}
-                fill={palette.eventTint}
+                fill={plain ? palette.eventTint : 'none'}
                 fillOpacity="0.18"
                 stroke={palette.eventLine}
                 strokeWidth="2"
@@ -130,15 +197,18 @@ export function MapView(props: MapViewProps) {
           );
         })}
 
-        <g aria-hidden="true">
-          {country.map.decorations.map((decoration, index) => (
-            <DecorationMark key={index} decoration={decoration} palette={palette} />
-          ))}
-        </g>
+        {/* The marks of the land belong to the country view; a lens shows one figure. */}
+        {plain && (
+          <g aria-hidden="true">
+            {country.map.decorations.map((decoration, index) => (
+              <DecorationMark key={index} decoration={decoration} palette={palette} />
+            ))}
+          </g>
+        )}
 
         <g
           fill="none"
-          stroke={palette.regionBorder}
+          stroke={plain ? palette.regionBorder : palette.lensBorder}
           strokeWidth="1.2"
           strokeDasharray="5 4"
           strokeOpacity="0.75"
@@ -149,7 +219,14 @@ export function MapView(props: MapViewProps) {
           ))}
         </g>
 
-        <g fill="none" stroke={palette.river} strokeWidth="3" strokeLinecap="round">
+        {/* Under a lens the river is drawn in the sea's dark blue, which shows against
+            every step of both scales. */}
+        <g
+          fill="none"
+          stroke={plain ? palette.river : palette.sea}
+          strokeWidth="3"
+          strokeLinecap="round"
+        >
           {country.map.rivers.map((river) => (
             <path key={river.id} d={flowing(river.course)}>
               <title>{river.name}</title>
@@ -177,7 +254,8 @@ export function MapView(props: MapViewProps) {
             key={settlement.id}
             settlement={settlement}
             palette={palette}
-            ground={palette.terrain[terrainOf.get(settlement.regionId) ?? 'plains']}
+            ground={paint(settlement.regionId).fill}
+            ink={plain ? null : paint(settlement.regionId).ink}
           />
         ))}
 
@@ -186,7 +264,9 @@ export function MapView(props: MapViewProps) {
             key={region.id}
             region={region}
             game={game}
+            lens={lens}
             palette={palette}
+            paint={paint(region.id)}
             relieved={region.id === reliefRegionId}
           />
         ))}
@@ -211,21 +291,28 @@ export function MapView(props: MapViewProps) {
 interface RegionShapeProps {
   readonly region: Region;
   readonly game: GameState;
-  readonly palette: MapPalette;
+  readonly lens: Lens;
+  readonly fill: string;
   readonly selected: boolean;
   readonly relieved: boolean;
   readonly onSelect: (regionId: string) => void;
 }
 
-/** The land of one region. It is a button: picking it opens the region's card. */
-function RegionShape({ region, game, palette, selected, relieved, onSelect }: RegionShapeProps) {
+/**
+ * The land of one region. It is a button: picking it opens the region's card. Its name
+ * gives the figure the lens shows, so the colour is never the only way to read it.
+ */
+function RegionShape(props: RegionShapeProps) {
+  const { region, game, lens, fill, selected, relieved, onSelect } = props;
   const state = game.regions.find((candidate) => candidate.id === region.id);
   const stage = state?.foodStage ?? 'adequate';
   const unrest = describeUnrest(state?.unrest ?? 'calm');
   const events = game.events.filter((event) => event.regionId === region.id);
   const description = [
     region.name,
-    `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
+    lens === 'approval'
+      ? `approval ${formatPercent(state?.approval ?? 0)}`
+      : `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
     ...events.map((event) => describeEvent(game, event)),
     ...(unrest === null ? [] : [unrest]),
     ...(relieved ? ['food relief being sent'] : []),
@@ -234,7 +321,7 @@ function RegionShape({ region, game, palette, selected, relieved, onSelect }: Re
     <polygon
       className="map__region"
       points={outline(region.shape)}
-      fill={palette.terrain[region.terrain]}
+      fill={fill}
       role="button"
       tabIndex={0}
       aria-label={description}
@@ -255,16 +342,19 @@ function RegionShape({ region, game, palette, selected, relieved, onSelect }: Re
 interface RegionLabelProps {
   readonly region: Region;
   readonly game: GameState;
+  readonly lens: Lens;
   readonly palette: MapPalette;
+  readonly paint: Paint;
   readonly relieved: boolean;
 }
 
 /**
- * A region's name, with its food stage beneath and a tag for each event and for relief.
- * A region in trouble gets a dark tag with a warning mark, so the stage never rests on
- * colour alone.
+ * A region's name, with the figure the lens shows beneath: its approval under the approval
+ * lens, and its food stage otherwise. Then a tag for hunger, for each event, for unrest and
+ * for relief. A region in trouble gets a dark tag with a warning mark, so its state never
+ * rests on colour alone.
  */
-function RegionLabel({ region, game, palette, relieved }: RegionLabelProps) {
+function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLabelProps) {
   const [x, y] = region.label;
   const state = game.regions.find((candidate) => candidate.id === region.id);
   const stage = state?.foodStage ?? 'adequate';
@@ -277,18 +367,40 @@ function RegionLabel({ region, game, palette, relieved }: RegionLabelProps) {
     ...(unrest === null ? [] : [`▲ ${unrest}`]),
     ...(relieved ? ['Food relief on its way'] : []),
   ];
+  // Under a lens the lettering is the figure the colour stands for, so it is written at
+  // full strength, with a halo of the region's own colour to carry it over any hatching.
+  const lettering =
+    lens === 'country' ? {} : { stroke: paint.fill, className: 'map__region-figure' };
+  const figure =
+    lens === 'approval'
+      ? `Approval: ${formatPercent(state?.approval ?? 0)}`
+      : stage === 'adequate'
+        ? `Food: ${FOOD_STAGE_NAMES[stage]}`
+        : null;
   return (
     <g>
-      <text className="map__region-label" x={x} y={y} fill={palette.regionLabel}>
+      <text
+        x={x}
+        y={y}
+        fill={paint.ink}
+        {...lettering}
+        className={`map__region-label ${lettering.className ?? ''}`.trim()}
+      >
         {region.name}
       </text>
-      {stage === 'adequate' && (
-        <text className="map__region-stage" x={x} y={y + 15} fill={palette.regionLabel}>
-          Food: {FOOD_STAGE_NAMES[stage]}
+      {figure !== null && (
+        <text
+          x={x}
+          y={y + 15}
+          fill={paint.ink}
+          {...lettering}
+          className={`map__region-stage ${lettering.className ?? ''}`.trim()}
+        >
+          {figure}
         </text>
       )}
       {tags.map((tag, index) => {
-        const top = y + (stage === 'adequate' ? 22 : 7) + index * 26;
+        const top = y + (figure === null ? 7 : 22) + index * 26;
         const width = tag.length * 6.7 + 22;
         return (
           <g key={tag}>
@@ -407,14 +519,16 @@ interface SettlementMarkProps {
   readonly palette: MapPalette;
   /** The colour of the land beneath, used as a halo so the name stays readable. */
   readonly ground: string;
+  /** The colour to letter in over a lens's colour, or null to use the palette's own. */
+  readonly ink: string | null;
 }
 
-function SettlementMark({ settlement, palette, ground }: SettlementMarkProps) {
+function SettlementMark({ settlement, palette, ground, ink }: SettlementMarkProps) {
   const [x, y] = settlement.at;
   const place = LABEL_PLACES[settlement.labelSide];
   return (
     <g>
-      <g fill={palette.settlement} aria-hidden="true">
+      <g fill={ink ?? palette.settlement} aria-hidden="true">
         {BUILDINGS[settlement.size].map(([dx, dy]) => (
           <rect key={`${dx},${dy}`} x={x + dx} y={y + dy} width="5" height="5" />
         ))}
@@ -424,7 +538,7 @@ function SettlementMark({ settlement, palette, ground }: SettlementMarkProps) {
         x={x + place.dx}
         y={y + place.dy}
         textAnchor={place.anchor}
-        fill={palette.settlementLabel}
+        fill={ink ?? palette.settlementLabel}
         stroke={ground}
       >
         {settlement.name}
