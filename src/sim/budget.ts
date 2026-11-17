@@ -1,6 +1,7 @@
 import { outputPermille } from './approval';
 import { balance } from './balance';
 import { clamp, sum } from './arithmetic';
+import { chainEarnings } from './chains';
 import { regionName, type Country } from './country';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
@@ -103,13 +104,30 @@ export function resolveBudget(
   { country, treasury, regions, projects }: Finances,
   budget: Budget,
 ): BudgetOutcome {
+  const earnings = chainEarnings({ country, projects });
   const taxes = regions.flatMap((region): Contribution[] => {
     const name = regionName(country, region.id);
-    const inFull = percentOf(region.output, budget.taxRatePercent);
-    const produced = Math.floor((region.output * outputPermille(region.unrest)) / 1000);
-    const lost = inFull - percentOf(produced, budget.taxRatePercent);
+    // What a chain adds to the region's output is taxed as a line of its own, under its source.
+    const sources = [
+      { label: `Tax from ${name}`, output: region.output },
+      ...earnings
+        .filter(({ site }) => site.regionId === region.id)
+        .map(({ site, output }) => ({ label: `Tax from ${site.name}`, output })),
+    ];
+    const kept = outputPermille(region.unrest);
+    const lost = sum(
+      sources.map(
+        ({ output }) =>
+          percentOf(output, budget.taxRatePercent) -
+          percentOf(Math.floor((output * kept) / 1000), budget.taxRatePercent),
+      ),
+    );
     return [
-      { label: `Tax from ${name}`, amount: inFull, regionId: region.id },
+      ...sources.map(({ label, output }) => ({
+        label,
+        amount: percentOf(output, budget.taxRatePercent),
+        regionId: region.id,
+      })),
       ...(lost > 0
         ? [
             {

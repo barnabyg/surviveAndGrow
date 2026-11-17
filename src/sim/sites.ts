@@ -1,7 +1,10 @@
 import { percentOff } from './arithmetic';
-import { balance } from './balance';
+import { balance, type SiteBalance } from './balance';
+import { formatMoney } from './text';
 import type { Money } from './types';
 import {
+  CHAIN_ROLE_SENTENCES,
+  SITE_CHAIN_ROLES,
   SITE_EFFECT_DEFINITIONS,
   SITE_EFFECTS,
   type SiteEffect,
@@ -58,6 +61,16 @@ export function infrastructureOf(type: SiteType, decaying = false): number {
   return decaying ? weakened(permille) : permille;
 }
 
+/**
+ * What a site of one type in use produces or carries in a quarter as part of a chain, or
+ * null for a type that plays no part in one. A decaying site has only part of it.
+ */
+export function capacityOf(type: SiteType, decaying = false): Money | null {
+  const { capacity }: SiteBalance = balance.sites[type];
+  if (capacity === undefined || SITE_CHAIN_ROLES[type] === null) return null;
+  return decaying ? weakened(capacity) : capacity;
+}
+
 /** What is left of something a site does while it decays. */
 function weakened(permille: number): number {
   return Math.floor((permille * balance.upkeep.decayingEffectPermille) / 1000);
@@ -65,9 +78,14 @@ function weakened(permille: number): number {
 
 /** A site's effects in words, written from the same figures the rules use. */
 function effectOf(type: SiteType, decaying: boolean): string {
-  return siteEffectsOf(type, decaying)
-    .map(([effect, permille]) =>
+  const role = SITE_CHAIN_ROLES[type];
+  const capacity = capacityOf(type, decaying);
+  return [
+    ...siteEffectsOf(type, decaying).map(([effect, permille]) =>
       SITE_EFFECT_DEFINITIONS[effect].sentence.replace('{percent}', String(percentOff(permille))),
-    )
-    .join(' ');
+    ),
+    ...(role === null || capacity === null
+      ? []
+      : [CHAIN_ROLE_SENTENCES[role].replace('{money}', formatMoney(capacity))]),
+  ].join(' ');
 }

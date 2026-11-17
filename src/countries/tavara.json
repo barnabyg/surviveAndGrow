@@ -1,5 +1,5 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -456,6 +456,36 @@
         [480, 334],
         [486, 386]
       ]
+    },
+    {
+      "id": "korr-mine",
+      "type": "mine",
+      "name": "Korrgate mine",
+      "region": "korr-highlands",
+      "at": [365, 118],
+      "dependsOn": ["korr-trunk-road"]
+    },
+    {
+      "id": "korr-trunk-road",
+      "type": "trunkRoad",
+      "name": "Trunk road, Korrgate mine to Westhaven",
+      "region": "salt-coast",
+      "route": [
+        [365, 128],
+        [335, 175],
+        [318, 240],
+        [290, 300],
+        [240, 350],
+        [165, 392]
+      ],
+      "dependsOn": ["westhaven-port"]
+    },
+    {
+      "id": "westhaven-port",
+      "type": "port",
+      "name": "Westhaven port",
+      "region": "salt-coast",
+      "at": [150, 395]
     }
   ],
   "dilemmaLikelihood": {

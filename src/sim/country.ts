@@ -10,6 +10,7 @@ import {
   LABEL_SIDES,
   MAP_FRAME,
   SETTLEMENT_SIZES,
+  SITE_CHAIN_ROLES,
   SITE_FORMS,
   SITE_TYPE_NAMES,
   SITE_TYPES,
@@ -545,6 +546,23 @@ function checkDependencies(reader: Reader, sites: readonly Site[]): void {
     done.add(site.id);
   };
   for (const site of sites) walk(site, []);
+
+  // A source earns only through a chain that reaches an outlet, so it must lead to one.
+  const outlets = SITE_TYPES.filter((type) => SITE_CHAIN_ROLES[type] === 'outlet');
+  const outletNames = outlets.map((type) => SITE_TYPE_NAMES[type].toLowerCase()).join(' or ');
+  const reaches = (site: Site, seen: ReadonlySet<string>): boolean =>
+    site.dependsOn.some((id) => {
+      const next = byId.get(id);
+      if (next === undefined || seen.has(id)) return false;
+      return outlets.includes(next.type) || reaches(next, new Set([...seen, id]));
+    });
+  sites.forEach((site, index) => {
+    if (SITE_CHAIN_ROLES[site.type] !== 'source' || reaches(site, new Set([site.id]))) return;
+    reader.fault(
+      `sites[${index}].dependsOn`,
+      `must lead, directly or through other sites, to a ${outletNames}: a ${SITE_TYPE_NAMES[site.type].toLowerCase()} earns only through a chain that reaches one`,
+    );
+  });
 }
 
 /**

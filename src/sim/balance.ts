@@ -29,6 +29,12 @@ export interface SiteBalance {
    * whole. A route counts for the region it belongs to.
    */
   readonly infrastructurePermille: number;
+  /**
+   * For a site that plays a part in a chain (`SITE_TYPE_DEFINITIONS`), what it produces or
+   * carries in a quarter, in Money units, while in good repair. A chain yields the least of
+   * its sites' capacities, and a decaying site has only part of its capacity.
+   */
+  readonly capacity?: number;
 }
 
 /**
@@ -222,6 +228,32 @@ export const balance = {
       upkeep: 2,
       effects: { reserveSpoilage: 750 },
       infrastructurePermille: 100,
+    },
+    // The large sites of a chain. Each is slow to build and costs several quarters' tax, so
+    // one started late in a term opens after the election.
+    mine: {
+      cost: 400,
+      buildQuarters: 6,
+      upkeep: 6,
+      effects: {},
+      infrastructurePermille: 50,
+      capacity: 200,
+    },
+    trunkRoad: {
+      cost: 300,
+      buildQuarters: 5,
+      upkeep: 5,
+      effects: {},
+      infrastructurePermille: 200,
+      capacity: 240,
+    },
+    port: {
+      cost: 500,
+      buildQuarters: 8,
+      upkeep: 8,
+      effects: {},
+      infrastructurePermille: 150,
+      capacity: 300,
     },
   } satisfies Record<SiteType, SiteBalance>,
   /**

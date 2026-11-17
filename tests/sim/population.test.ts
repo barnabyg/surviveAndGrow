@@ -11,7 +11,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { tavaraGrowing, testlandGrowing, withChances } from './countries';
+import { tavaraGrowing, testlandFormat1File, testlandGrowing, withChances } from './countries';
 import { faultsOf, withValue } from './files';
 import { steward } from './players';
 
@@ -151,9 +151,9 @@ describe('a country file', () => {
     expect(faultsOf(withValue(format2, ['regions', 0, 'populationGrowth'], 'fast'))).toEqual([
       'regions[0].populationGrowth must be a number, but is text.',
     ]);
-    expect(faultsOf(withValue(testlandFile, ['regions', 0, 'populationGrowth'], 2))).toEqual([
-      'regions[0].populationGrowth needs country file format 2 or later.',
-    ]);
+    expect(
+      faultsOf(withValue(testlandFormat1File(), ['regions', 0, 'populationGrowth'], 2)),
+    ).toEqual(['regions[0].populationGrowth needs country file format 2 or later.']);
   });
 });
 

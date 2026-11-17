@@ -18,6 +18,12 @@ const SYMBOLS: Readonly<Record<SiteType, string>> = {
   farmRoad: 'M-5,7 L-2,-7 M5,7 L2,-7 M0,6 V3 M0,0 V-3',
   // A store house with its door.
   grainStore: 'M-5,6 V-2 L0,-7 L5,-2 V6Z M-2,6 V2 H2 V6',
+  // Crossed pick and hammer.
+  mine: 'M-6,6 L5,-5 M2,-7 C5,-7 7,-5 7,-2 M6,6 L-4,-4 M-7,-3 L-3,-7',
+  // A wide road with two lanes and their dividing line.
+  trunkRoad: 'M-7,7 L-3,-7 M7,7 L3,-7 M0,7 V4 M0,1 V-2 M0,-5 V-7',
+  // An anchor.
+  port: 'M0,-7 V7 M-2,-5 H2 M-6,1 C-6,5 -3,7 0,7 C3,7 6,5 6,1',
 };
 
 /**

@@ -76,23 +76,56 @@ export const OUTCOME_STATUSES = ['playing', 'won', 'lost'] as const;
 export const ENDING_CAUSES = ['famine', 'election', 'prosperity'] as const;
 
 /** The kinds of thing that can be built. A country file says where each could stand. */
-export const SITE_TYPES = ['irrigation', 'farmRoad', 'grainStore'] as const;
+export const SITE_TYPES = [
+  'irrigation',
+  'farmRoad',
+  'grainStore',
+  'mine',
+  'trunkRoad',
+  'port',
+] as const;
 export type SiteType = (typeof SITE_TYPES)[number];
 
 /** A site either stands in one place or runs along a route. Its type decides which. */
 export type SiteForm = 'place' | 'route';
 
 /**
- * What the engine knows of each type of site: its name and how it is laid out. What it costs
- * and what it does are balance values (`balance.sites`), so a type is added here and there
- * and in no rule.
+ * The part a site plays in a chain. A source produces output, but only while every site it
+ * depends on, directly or through others, is in use; a link carries that output on; an
+ * outlet ships it out. A source's chain must lead to an outlet. What each can produce or
+ * carry is a balance value (`capacity`), and the least of them is what the chain yields.
+ */
+export const CHAIN_ROLES = ['source', 'link', 'outlet'] as const;
+export type ChainRole = (typeof CHAIN_ROLES)[number];
+
+/**
+ * What the engine knows of each type of site: its name, how it is laid out and the part it
+ * plays in a chain, if any. What it costs and what it does are balance values
+ * (`balance.sites`), so a type is added here and there and in no rule.
  */
 export const SITE_TYPE_DEFINITIONS: Readonly<
-  Record<SiteType, { readonly name: string; readonly form: SiteForm }>
+  Record<
+    SiteType,
+    { readonly name: string; readonly form: SiteForm; readonly chainRole: ChainRole | null }
+  >
 > = {
-  irrigation: { name: 'Irrigation scheme', form: 'place' },
-  farmRoad: { name: 'Farm road', form: 'route' },
-  grainStore: { name: 'Grain store', form: 'place' },
+  irrigation: { name: 'Irrigation scheme', form: 'place', chainRole: null },
+  farmRoad: { name: 'Farm road', form: 'route', chainRole: null },
+  grainStore: { name: 'Grain store', form: 'place', chainRole: null },
+  mine: { name: 'Mine', form: 'place', chainRole: 'source' },
+  trunkRoad: { name: 'Trunk road', form: 'route', chainRole: 'link' },
+  port: { name: 'Port', form: 'place', chainRole: 'outlet' },
+};
+
+/**
+ * What a site in each part of a chain does, in a sentence the player can be shown.
+ * `{money}` is what it produces or carries a quarter.
+ */
+export const CHAIN_ROLE_SENTENCES: Readonly<Record<ChainRole, string>> = {
+  source:
+    'Adds {money} a quarter to its region’s output, but only while its chain to a port is complete.',
+  link: 'Carries up to {money} a quarter of a mine’s output along its chain.',
+  outlet: 'Ships up to {money} a quarter of a mine’s output.',
 };
 
 export const SITE_TYPE_NAMES: Readonly<Record<SiteType, string>> = Object.fromEntries(
@@ -102,6 +135,10 @@ export const SITE_TYPE_NAMES: Readonly<Record<SiteType, string>> = Object.fromEn
 export const SITE_FORMS: Readonly<Record<SiteType, SiteForm>> = Object.fromEntries(
   SITE_TYPES.map((type) => [type, SITE_TYPE_DEFINITIONS[type].form]),
 ) as Record<SiteType, SiteForm>;
+
+export const SITE_CHAIN_ROLES: Readonly<Record<SiteType, ChainRole | null>> = Object.fromEntries(
+  SITE_TYPES.map((type) => [type, SITE_TYPE_DEFINITIONS[type].chainRole]),
+) as Record<SiteType, ChainRole | null>;
 
 /**
  * The things a site in use can lessen. A site's effect leaves a share, in thousandths, of

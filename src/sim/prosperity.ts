@@ -1,5 +1,6 @@
 import { apportion, clamp, sum } from './arithmetic';
 import { balance } from './balance';
+import { chainOutputs } from './chains';
 import type { Country } from './country';
 import { infrastructureFrom, sitesInUse, type Project } from './projects';
 import type { RegionState } from './state';
@@ -48,8 +49,12 @@ export interface ProsperitySituation {
 /** Each region's living standard. */
 export function livingStandards(situation: ProsperitySituation): LivingStandard[] {
   const access = infrastructureAccess(situation);
+  const fromChains = chainOutputs(situation);
   return situation.regions.map((region, index) => {
-    const scores = scoresOf(region, access[index] ?? 0);
+    // What a chain earns is part of its region's output, and so of its people's income.
+    const regionIndex = situation.country.regions.findIndex((other) => other.id === region.id);
+    const output = region.output + (fromChains[regionIndex] ?? 0);
+    const scores = scoresOf({ ...region, output }, access[index] ?? 0);
     return { regionId: region.id, value: weigh(scores), scores };
   });
 }

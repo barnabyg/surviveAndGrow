@@ -50,6 +50,7 @@ export { dateOfQuarter, seasonOf } from './calendar';
 export { drawAt } from './rng';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
+export { chainOf, chainsThrough, type Chain, type ChainLink } from './chains';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
 export {
   livingStandards,
@@ -118,6 +119,7 @@ export {
   type Range,
 } from './types';
 export {
+  CHAIN_ROLES,
   DILEMMA_TYPES,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
@@ -129,6 +131,7 @@ export {
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SERIOUSNESS_NAMES,
+  SITE_CHAIN_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
@@ -138,6 +141,7 @@ export {
   UNREST_KINDS,
   UNREST_NAMES,
   type ApprovalDriver,
+  type ChainRole,
   type DecorationKind,
   type DilemmaType,
   type EventType,
