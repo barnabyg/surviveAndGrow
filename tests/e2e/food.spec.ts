@@ -71,16 +71,16 @@ test('the harvest forecast is a range, and agriculture spending moves it and the
 
   // With a year of weather still to come, and droughts that could yet begin in the four
   // regions prone to them, the range is wide.
-  await expect(forecast).toHaveText('Harvest forecast0.86 to 1.46 Mt');
-  await expect(reserve).toHaveText('Food reserve after harvest2.2 to 5.7 months');
+  await expect(forecast).toHaveText('Harvest forecast0.94 to 1.61 Mt');
+  await expect(reserve).toHaveText('Food reserve after harvest2.7 to 7.1 months');
 
   await decisions(page).getByRole('slider', { name: 'Agriculture' }).fill('20');
 
   // $20.0m a quarter on agriculture empties the treasury by quarter 4, when the budget is
   // cut, so the forecast counts a little less than a full year at that rate.
-  await expect(forecast).toHaveText('Harvest forecast0.86 to 1.46 Mt → 0.95 to 1.62 Mt');
+  await expect(forecast).toHaveText('Harvest forecast0.94 to 1.61 Mt → 1.09 to 1.86 Mt');
   await expect(reserve).toHaveText(
-    /Food reserve after harvest2\.2 to 5\.7 months → \d\.\d to \d\.\d months/,
+    /Food reserve after harvest2\.7 to 7\.1 months → \d\.\d to \d\.\d months/,
   );
 
   // The range narrows as the harvest approaches.

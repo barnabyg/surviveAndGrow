@@ -726,10 +726,10 @@ describe('the save kept from save format 1', () => {
     expect(game.regions.map((region) => [region.health, region.education])).toEqual(
       game.regions.map(() => [148, 126]),
     );
-    // The grain store and farm road in use in Lowmere carry it just into Developing. It is put
-    // in the tier it reaches and counts as having begun there, so nobody expects more of it.
-    expect(game.tier).toBe('developing');
-    expect(game.startingTier).toBe('developing');
+    // It is put in the tier its prosperity reaches, with the grain store and farm road in use
+    // in Lowmere, and counts as having begun there, so nobody expects more of it.
+    expect(game.tier).toBe('subsistence');
+    expect(game.startingTier).toBe('subsistence');
     expect(approvalStatus(game).causes.map((cause) => cause.label)).not.toContain('Expectations');
     // Nothing recorded before format 2 measured prosperity.
     expect(game.history.map((signs) => signs.prosperity)).toEqual([null, null, null, null]);

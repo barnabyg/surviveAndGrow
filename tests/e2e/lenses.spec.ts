@@ -123,19 +123,19 @@ test('the approval lens colours each region by approval, labels it with the figu
     'Hatched: strikes',
     'Cross-hatched: protests',
   ]);
-  await expect(map(page).getByText('Approval: 45.8%', { exact: true })).toHaveCount(6);
-  await expect(region(page, 'Arden Vale')).toHaveAccessibleName('Arden Vale, approval 45.8%');
-  expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '40% to 50%'));
+  await expect(map(page).getByText('Approval: 51.8%', { exact: true })).toHaveCount(6);
+  await expect(region(page, 'Arden Vale')).toHaveAccessibleName('Arden Vale, approval 51.8%');
+  expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '50% to 60%'));
   await expect(map(page).getByRole('img', { name: /^Strikes in/ })).toHaveCount(0);
 
-  // The top rate of tax drives every region below 40% within three quarters.
+  // The top rate of tax drives every region below 40% within six quarters.
   await decisions(page).getByRole('slider', { name: 'Tax rate' }).fill('40');
   await decisions(page).getByRole('button', { name: 'Commit budget' }).click();
-  await endQuarters(page, 3);
+  await endQuarters(page, 6);
 
-  await expect(map(page).getByText('Approval: 38.5%', { exact: true })).toHaveCount(6);
+  await expect(map(page).getByText('Approval: 39.1%', { exact: true })).toHaveCount(6);
   await expect(region(page, 'Arden Vale')).toHaveAccessibleName(
-    'Arden Vale, approval 38.5%, Strikes · output −30%',
+    'Arden Vale, approval 39.1%, Strikes · output −30%',
   );
   expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '30% to 40%'));
   await expect(map(page).getByRole('img', { name: 'Strikes in Arden Vale' })).toBeVisible();
@@ -158,34 +158,34 @@ test('the living-standards lens colours each region by its living standard, and 
   await expect(lens(page, 'Living standards')).toHaveAttribute('aria-pressed', 'true');
   const steps = scale(page, 'Living standards');
   await expect(steps.getByRole('listitem')).toHaveText([
-    'Under 20',
-    '20 to 25',
-    '25 to 35',
-    '35 to 45',
-    '45 to 70',
-    '70 and over',
+    'Under 21',
+    '21 to 30',
+    '30 to 34',
+    '34 to 38',
+    '38 to 42',
+    '42 and over',
   ]);
   // Every region carries its living standard as text, and its colour is the one the scale gives it.
   await expect(map(page).getByText(/^Living standard: /)).toHaveCount(6);
-  await expect(region(page, 'Arden Vale')).toHaveAccessibleName('Arden Vale, living standard 26.2');
-  await expect(map(page).getByText('Living standard: 22.4', { exact: true })).toBeVisible();
-  expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '25 to 35'));
-  expect(await fillOf(region(page, 'The Dry East'))).toBe(await swatchOf(steps, '20 to 25'));
+  await expect(region(page, 'Arden Vale')).toHaveAccessibleName('Arden Vale, living standard 22.5');
+  await expect(map(page).getByText('Living standard: 20.3', { exact: true })).toBeVisible();
+  expect(await fillOf(region(page, 'Arden Vale'))).toBe(await swatchOf(steps, '21 to 30'));
+  expect(await fillOf(region(page, 'The Dry East'))).toBe(await swatchOf(steps, 'Under 21'));
 
   // The richest region's town is more built up and better lit than a poorer region's village.
   const settlement = (name: string) =>
     map(page).getByRole('img', { name: new RegExp(`^${name}:`) });
-  await expect(settlement('Arden')).toHaveAccessibleName('Arden: 9 buildings, 3 lit');
+  await expect(settlement('Arden')).toHaveAccessibleName('Arden: 9 buildings, 4 lit');
   await expect(settlement('Dustwell')).toHaveAccessibleName('Dustwell: 4 buildings, 1 lit');
-  await expect(settlement('Westhaven')).toHaveAccessibleName('Westhaven: 4 buildings, 1 lit');
+  await expect(settlement('Westhaven')).toHaveAccessibleName('Westhaven: 4 buildings, 2 lit');
 
   // A drought left alone: by the sixth quarter the Dry East is in shortage, its living
   // standard has fallen, and Dustwell's lights have gone out while Westhaven's stay on.
   await endQuarters(page, 6);
   await expect(map(page).getByText('▲ Food: Shortage', { exact: true })).toBeVisible();
-  expect(await fillOf(region(page, 'The Dry East'))).toBe(await swatchOf(steps, 'Under 20'));
+  await expect(map(page).getByText('Living standard: 20.3', { exact: true })).toHaveCount(0);
   await expect(settlement('Dustwell')).toHaveAccessibleName('Dustwell: 3 buildings, 0 lit');
-  await expect(settlement('Westhaven')).toHaveAccessibleName('Westhaven: 4 buildings, 1 lit');
+  await expect(settlement('Westhaven')).toHaveAccessibleName('Westhaven: 4 buildings, 2 lit');
 
   // Every region's lettering stands out from its lens colour at 4.5 to 1 or better.
   for (const name of [
@@ -216,11 +216,11 @@ test('the infrastructure lens colours each region by its access and rings every 
   const steps = scale(page, 'Infrastructure');
   await expect(steps.getByRole('listitem')).toHaveText([
     'None',
-    'Under 10',
-    '10 to 20',
-    '20 to 35',
-    '35 to 50',
-    '50 and over',
+    'Under 20',
+    '20 to 40',
+    '40 to 60',
+    '60 to 80',
+    '80 and over',
     '✕ Ringed: missing link in a chain',
   ]);
   // Nothing is built yet: every region has no access, and says so in words.
@@ -245,12 +245,12 @@ test('the infrastructure lens colours each region by its access and rings every 
     .click();
   await endQuarters(page, 2);
   await expect(site('Lowmere grain store')).toHaveAccessibleName(/operating/);
-  await expect(map(page).getByText('Infrastructure: 10.0', { exact: true })).toBeVisible();
+  await expect(map(page).getByText('Infrastructure: 20.0', { exact: true })).toBeVisible();
   await expect(region(page, 'Lowmere Plains')).toHaveAccessibleName(
-    'Lowmere Plains, infrastructure access 10.0',
+    'Lowmere Plains, infrastructure access 20.0',
   );
   const built = await fillOf(region(page, 'Lowmere Plains'));
-  expect(built).toBe(await swatchOf(steps, '10 to 20'));
+  expect(built).toBe(await swatchOf(steps, '20 to 40'));
   expect(built).not.toBe(none);
   expect(await fillOf(region(page, 'Salt Coast'))).toBe(none);
 
@@ -275,7 +275,7 @@ test('the chosen lens stays from quarter to quarter, with sites, events and reli
   await endQuarters(page, 2);
 
   await expect(lens(page, 'Approval')).toHaveAttribute('aria-pressed', 'true');
-  await expect(map(page).getByText('Approval: 45.8%', { exact: true })).toHaveCount(6);
+  await expect(map(page).getByText('Approval: 51.8%', { exact: true })).toHaveCount(6);
   await expect(page.getByRole('banner').getByText('Year 1 · Quarter 3')).toBeVisible();
 
   // Relief sent to a region is tagged on the map whichever lens is chosen.
@@ -310,9 +310,9 @@ test('a second country is seen through the same lenses', async ({ page }) => {
   await expect(scale(page, 'Country').getByRole('listitem')).toHaveText(['Plains', 'Arid']);
 
   await lens(page, 'Approval').click();
-  await expect(map(page, 'Testland').getByText('Approval: 57.1%', { exact: true })).toHaveCount(2);
+  await expect(map(page, 'Testland').getByText('Approval: 63.1%', { exact: true })).toHaveCount(2);
   expect(await fillOf(region(page, 'Northfield', 'Testland'))).toBe(
-    await swatchOf(scale(page, 'Approval'), '50% to 60%'),
+    await swatchOf(scale(page, 'Approval'), '60% and over'),
   );
 
   await lens(page, 'Food').click();
@@ -323,13 +323,13 @@ test('a second country is seen through the same lenses', async ({ page }) => {
 
   await lens(page, 'Living standards').click();
   await expect(
-    map(page, 'Testland').getByText('Living standard: 32.6', { exact: true }),
+    map(page, 'Testland').getByText('Living standard: 27.2', { exact: true }),
   ).toBeVisible();
   expect(await fillOf(region(page, 'Northfield', 'Testland'))).toBe(
-    await swatchOf(scale(page, 'Living standards'), '25 to 35'),
+    await swatchOf(scale(page, 'Living standards'), '21 to 30'),
   );
   await expect(map(page, 'Testland').getByRole('img', { name: /^Alpha:/ })).toHaveAccessibleName(
-    'Alpha: 9 buildings, 4 lit',
+    'Alpha: 9 buildings, 5 lit',
   );
 
   await lens(page, 'Infrastructure').click();

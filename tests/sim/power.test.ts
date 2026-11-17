@@ -180,7 +180,7 @@ describe.each(countries)('power in %s', (_name, country) => {
     const access = (after?.infrastructure ?? []).reduce((total, part) => total + part.amount, 0);
     expect(after?.scores.infrastructure).toBe(Math.min(1000, access));
     expect((after?.scores.infrastructure ?? 0) - (before?.scores.infrastructure ?? 0)).toBe(
-      150 + (station.regionId === line.regionId ? 50 : 0),
+      150 + (station.regionId === line.regionId ? 100 : 0),
     );
     expect(after?.value).toBeGreaterThan(before?.value ?? 0);
     // The extra output is taxed as a line of its own, and only once power arrives.
@@ -244,7 +244,7 @@ describe('a site that depends on power', () => {
       { budget, startProjects: [line.id, station.id] },
       ...quarters(5, { budget }),
     ]);
-    expect(chainOf(state, mine.id)).toMatchObject({ complete: true, output: 200 });
+    expect(chainOf(state, mine.id)).toMatchObject({ complete: true, output: 600 });
   });
 });
 

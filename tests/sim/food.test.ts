@@ -101,12 +101,12 @@ describe('the harvest', () => {
   it.each(seeds)('depends on the terrain of the land (seed %i)', (seed) => {
     const [plains, arid] = harvestOf(playYear(createGame(evenTestland(), seed))).regions;
 
-    // 100 units of farmland with $1.0m a quarter on agriculture (86.5% of full yield):
+    // 100 units of farmland with $1.0m a quarter on agriculture (87.4% of full yield):
     // plains give 1,200 t a unit and arid land 500 t, each within 16% for the weather.
-    expect(plains?.grown).toBeGreaterThanOrEqual(87_192);
-    expect(plains?.grown).toBeLessThanOrEqual(120_408);
-    expect(arid?.grown).toBeGreaterThanOrEqual(36_330);
-    expect(arid?.grown).toBeLessThanOrEqual(50_170);
+    expect(plains?.grown).toBeGreaterThanOrEqual(88_099);
+    expect(plains?.grown).toBeLessThanOrEqual(121_661);
+    expect(arid?.grown).toBeGreaterThanOrEqual(36_708);
+    expect(arid?.grown).toBeLessThanOrEqual(50_692);
   });
 
   it('follows the weather, which follows the seed', () => {
@@ -128,8 +128,8 @@ describe('the harvest', () => {
     for (const [index, region] of funded.regions.entries()) {
       expect(region.grown).toBeGreaterThan(neglected.regions[index]?.grown ?? Infinity);
     }
-    // No spending leaves 85% of the full yield; the most the budget allows gives 115%.
-    expect(funded.total / neglected.total).toBeCloseTo(1.15 / 0.85, 3);
+    // No spending leaves 85% of the full yield; the most the budget allows gives 133%.
+    expect(funded.total / neglected.total).toBeCloseTo(1.33 / 0.85, 3);
   });
 
   it('loses a share of what each region sends to the reserve in transport', () => {

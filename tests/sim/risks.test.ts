@@ -22,10 +22,25 @@ import {
 } from './countries';
 import { answering, inFirstTerm } from './players';
 
-/** Each country with the one region that drought is made to strike in these tests. */
+/**
+ * Each country with the one region that drought is made to strike in these tests, and how
+ * many quarters of the harsh budget bring its approval within four quarters of strikes.
+ */
 const scenarios = [
-  { name: 'Tavara', file: tavaraFile, regionId: 'dry-east', regionName: 'The Dry East' },
-  { name: 'Testland', file: testlandFile, regionId: 'sandreach', regionName: 'Sandreach' },
+  {
+    name: 'Tavara',
+    file: tavaraFile,
+    regionId: 'dry-east',
+    regionName: 'The Dry East',
+    harshQuarters: 0,
+  },
+  {
+    name: 'Testland',
+    file: testlandFile,
+    regionId: 'sandreach',
+    regionName: 'Sandreach',
+    harshQuarters: 4,
+  },
 ] as const;
 
 /** A player who does nothing: the starting budget, no relief, nothing built. */
@@ -65,122 +80,126 @@ const ruinous: Budget = {
   },
 };
 
-describe.each(scenarios)('the risks ahead in $name', ({ file, regionId, regionName }) => {
-  it('are none while the country is comfortable and no drought can come', () => {
-    const game = createGame(withDroughtChance(file, {}), 3);
+describe.each(scenarios)(
+  'the risks ahead in $name',
+  ({ file, regionId, regionName, harshQuarters }) => {
+    it('are none while the country is comfortable and no drought can come', () => {
+      const game = createGame(withDroughtChance(file, {}), 3);
 
-    expect(risksAhead(game, idle(game))).toEqual([]);
-  });
-
-  it('include famine in a region once a drought has spoiled its coming harvest', () => {
-    // The drought begins as the calendar moves into the planting season.
-    const game = play(createGame(withDroughtChance(file, { [regionId]: 1 }), 3), 1);
-
-    const famine = risksAhead(game, idle(game)).find((risk) => risk.kind === 'famine');
-
-    expect(famine).toMatchObject({ headline: `Famine in ${regionName}`, regionId });
-  });
-
-  it('grade the famine a drought would bring before any drought has begun', () => {
-    const game = createGame(withDroughtChance(file, { [regionId]: 0.5 }), 3);
-
-    // Half the years bring a drought, and a drought always leaves the region short.
-    expect(famineIn(risksAhead(game, idle(game)), regionId)).toMatchObject({
-      likelihood: 'possible',
-      reason: expect.stringContaining('a 50% chance') as string,
+      expect(risksAhead(game, idle(game))).toEqual([]);
     });
-  });
 
-  it.each([
-    [0.07, 'a 7% chance'],
-    [0.08, 'an 8% chance'],
-    [0.11, 'an 11% chance'],
-    [0.18, 'an 18% chance'],
-    [0.8, 'an 80% chance'],
-    [0.81, 'an 81% chance'],
-    [0.1, 'a 10% chance'],
-  ])('write a drought’s chance of %f as it is said: “%s”', (chance, said) => {
-    const game = createGame(withDroughtChance(file, { [regionId]: chance }), 3);
+    it('include famine in a region once a drought has spoiled its coming harvest', () => {
+      // The drought begins as the calendar moves into the planting season.
+      const game = play(createGame(withDroughtChance(file, { [regionId]: 1 }), 3), 1);
 
-    expect(famineIn(risksAhead(game, idle(game)), regionId)?.reason).toContain(`, ${said},`);
-  });
+      const famine = risksAhead(game, idle(game)).find((risk) => risk.kind === 'famine');
 
-  it('leave out a famine too unlikely to matter, and list it once it is not', () => {
-    // A drought always leaves the region short, so the famine is as likely as the drought.
-    // Under 2% it is negligible; from 2% it is remote.
-    const rare = createGame(withDroughtChance(file, { [regionId]: 0.01 }), 3);
-    const lessRare = createGame(withDroughtChance(file, { [regionId]: 0.03 }), 3);
-
-    expect(risksAhead(rare, idle(rare))).toEqual([]);
-    expect(risksAhead(lessRare, idle(lessRare))).toMatchObject([
-      { kind: 'famine', regionId, likelihood: 'remote' },
-    ]);
-  });
-
-  it('say that famine is all but certain once the region is going hungry', () => {
-    // The failed harvest is in after four quarters, and the region goes short from the fifth.
-    const game = play(createGame(withDroughtChance(file, { [regionId]: 1 }), 3), 5);
-
-    expect(famineIn(risksAhead(game, idle(game)), regionId)).toEqual({
-      kind: 'famine',
-      likelihood: 'almostCertain',
-      headline: `Famine in ${regionName}`,
-      reason: 'Its people are going hungry. Left alone, that is famine within 2 quarters.',
-      regionId,
-      withinQuarters: 1,
+      expect(famine).toMatchObject({ headline: `Famine in ${regionName}`, regionId });
     });
-  });
 
-  it('drop the famine once relief that reaches the region is being sent', () => {
-    const game = play(createGame(withDroughtChance(file, { [regionId]: 1 }), 3), 4);
-    const budget: Budget = {
-      taxRatePercent: 30,
-      spending: { ...game.budget.spending, foodRelief: 70 },
-    };
+    it('grade the famine a drought would bring before any drought has begun', () => {
+      const game = createGame(withDroughtChance(file, { [regionId]: 0.5 }), 3);
 
-    expect(famineIn(risksAhead(game, { budget }), regionId)).toBeDefined();
-    expect(famineIn(risksAhead(game, { budget, reliefRegionId: regionId }), regionId)).toBe(
-      undefined,
-    );
-  });
-
-  it('warn of strikes when approval is on course to fall below the threshold', () => {
-    const game = createGame(withDroughtChance(file, {}), 3);
-
-    const strikes = ofKind(risksAhead(game, { budget: harsh(game) }), 'strikes');
-
-    // Tax and spending bear on every region alike, so they are named together.
-    expect(strikes).toMatchObject({ likelihood: 'almostCertain', headline: 'Strikes' });
-    expect(strikes?.reason).toContain('Approval in every region is on course to fall below 40%');
-    expect(strikes?.regionId).toBe(undefined);
-  });
-
-  it('warn of protests where strikes have already begun', () => {
-    const start = createGame(withDroughtChance(file, {}), 3);
-    let game = start;
-    while (game.regions.every((region) => region.unrest === 'calm')) {
-      game = advanceQuarter(game, { budget: harsh(start) }).state;
-    }
-
-    const risk = ofKind(risksAhead(game, { budget: harsh(start) }), 'strikes');
-
-    expect(risk).toMatchObject({ headline: 'Protests', likelihood: 'almostCertain' });
-    expect(risk?.reason).toContain('fall below 30%');
-  });
-
-  it('warn that the treasury runs out this quarter under a budget it cannot cover', () => {
-    const game = createGame(withDroughtChance(file, {}), 3);
-
-    expect(ofKind(risksAhead(game, { budget: ruinous }), 'treasury')).toEqual({
-      kind: 'treasury',
-      likelihood: 'almostCertain',
-      headline: 'Empty treasury',
-      reason:
-        'As things stand the treasury cannot cover the budget this quarter, and every area will be cut.',
-      withinQuarters: 1,
+      // Half the years bring a drought, and a drought always leaves the region short.
+      expect(famineIn(risksAhead(game, idle(game)), regionId)).toMatchObject({
+        likelihood: 'possible',
+        reason: expect.stringContaining('a 50% chance') as string,
+      });
     });
-  });
-});
+
+    it.each([
+      [0.07, 'a 7% chance'],
+      [0.08, 'an 8% chance'],
+      [0.11, 'an 11% chance'],
+      [0.18, 'an 18% chance'],
+      [0.8, 'an 80% chance'],
+      [0.81, 'an 81% chance'],
+      [0.1, 'a 10% chance'],
+    ])('write a drought’s chance of %f as it is said: “%s”', (chance, said) => {
+      const game = createGame(withDroughtChance(file, { [regionId]: chance }), 3);
+
+      expect(famineIn(risksAhead(game, idle(game)), regionId)?.reason).toContain(`, ${said},`);
+    });
+
+    it('leave out a famine too unlikely to matter, and list it once it is not', () => {
+      // A drought always leaves the region short, so the famine is as likely as the drought.
+      // Under 2% it is negligible; from 2% it is remote.
+      const rare = createGame(withDroughtChance(file, { [regionId]: 0.01 }), 3);
+      const lessRare = createGame(withDroughtChance(file, { [regionId]: 0.03 }), 3);
+
+      expect(risksAhead(rare, idle(rare))).toEqual([]);
+      expect(risksAhead(lessRare, idle(lessRare))).toMatchObject([
+        { kind: 'famine', regionId, likelihood: 'remote' },
+      ]);
+    });
+
+    it('say that famine is all but certain once the region is going hungry', () => {
+      // The failed harvest is in after four quarters, and the region goes short from the fifth.
+      const game = play(createGame(withDroughtChance(file, { [regionId]: 1 }), 3), 5);
+
+      expect(famineIn(risksAhead(game, idle(game)), regionId)).toEqual({
+        kind: 'famine',
+        likelihood: 'almostCertain',
+        headline: `Famine in ${regionName}`,
+        reason: 'Its people are going hungry. Left alone, that is famine within 2 quarters.',
+        regionId,
+        withinQuarters: 1,
+      });
+    });
+
+    it('drop the famine once relief that reaches the region is being sent', () => {
+      const game = play(createGame(withDroughtChance(file, { [regionId]: 1 }), 3), 4);
+      const budget: Budget = {
+        taxRatePercent: 30,
+        spending: { ...game.budget.spending, foodRelief: 70 },
+      };
+
+      expect(famineIn(risksAhead(game, { budget }), regionId)).toBeDefined();
+      expect(famineIn(risksAhead(game, { budget, reliefRegionId: regionId }), regionId)).toBe(
+        undefined,
+      );
+    });
+
+    it('warn of strikes when approval is on course to fall below the threshold', () => {
+      const start = createGame(withDroughtChance(file, {}), 3);
+      const game = play(start, harshQuarters, (state) => ({ budget: harsh(state) }));
+
+      const strikes = ofKind(risksAhead(game, { budget: harsh(game) }), 'strikes');
+
+      // Tax and spending bear on every region alike, so they are named together.
+      expect(strikes).toMatchObject({ likelihood: 'almostCertain', headline: 'Strikes' });
+      expect(strikes?.reason).toContain('Approval in every region is on course to fall below 40%');
+      expect(strikes?.regionId).toBe(undefined);
+    });
+
+    it('warn of protests where strikes have already begun', () => {
+      const start = createGame(withDroughtChance(file, {}), 3);
+      let game = start;
+      while (game.regions.every((region) => region.unrest === 'calm')) {
+        game = advanceQuarter(game, { budget: harsh(start) }).state;
+      }
+
+      const risk = ofKind(risksAhead(game, { budget: harsh(start) }), 'strikes');
+
+      expect(risk).toMatchObject({ headline: 'Protests', likelihood: 'almostCertain' });
+      expect(risk?.reason).toContain('fall below 30%');
+    });
+
+    it('warn that the treasury runs out this quarter under a budget it cannot cover', () => {
+      const game = createGame(withDroughtChance(file, {}), 3);
+
+      expect(ofKind(risksAhead(game, { budget: ruinous }), 'treasury')).toEqual({
+        kind: 'treasury',
+        likelihood: 'almostCertain',
+        headline: 'Empty treasury',
+        reason:
+          'As things stand the treasury cannot cover the budget this quarter, and every area will be cut.',
+        withinQuarters: 1,
+      });
+    });
+  },
+);
 
 describe.each(bothCountries)('looking ahead for risks in %s', (_name, country) => {
   it('does not change the game', () => {
@@ -288,8 +307,8 @@ describe('the risks ahead in Tavara', () => {
         kind: 'famine',
         likelihood: 'almostCertain',
         headline: 'Famine in The Dry East',
-        reason:
-          'The drought has cut its harvest. It runs short of food in 3 quarters, and left alone that is famine 2 quarters later.',
+        // Farm spending now lifts the harvest enough that only the best weather would spare it.
+        reason: 'Poor weather before the harvest would leave it short of food in 3 quarters.',
         regionId: 'dry-east',
         withinQuarters: 4,
       },
@@ -361,15 +380,16 @@ describe('the risks ahead in Tavara', () => {
   });
 
   it('look no further than the election', () => {
-    // Revenue and spending are both $31.0m, so the treasury stays at $42.0m. The farms get
-    // what relief does not need, so every region grows enough and nobody strikes.
+    // Revenue and spending are both $31.0m, so the treasury stays at $42.0m. Nothing goes on
+    // health or education, so approval sinks towards 41.3%: the vote is lost, but nobody
+    // strikes. The farms get all they can use, so every region grows enough.
     const balanced: Budget = {
       taxRatePercent: 18,
       spending: {
-        agriculture: 130,
-        foodRelief: 0,
-        health: 70,
-        education: 60,
+        agriculture: 200,
+        foodRelief: 60,
+        health: 0,
+        education: 0,
         security: 50,
         upkeep: 0,
       },
@@ -377,7 +397,7 @@ describe('the risks ahead in Tavara', () => {
     // Losing $13.0m a quarter, $42.0m covers three quarters and not a fourth.
     const deficit: Budget = {
       ...balanced,
-      spending: { ...balanced.spending, agriculture: 200, foodRelief: 60 },
+      spending: { ...balanced.spending, foodRelief: 190 },
     };
     const keep = () => ({ budget: balanced });
     const fourLeft = play(createGame(calm(), 3), 16, keep);
@@ -394,7 +414,7 @@ describe('the risks ahead in Tavara', () => {
 
 /**
  * Each country started at a tax rate that holds approval where it can be worked out by hand,
- * as the election tests do: the baseline is 45.5%, each point of tax above 18% costs 1.2
+ * as the election tests do: the baseline is 51.5%, each point of tax above 18% costs 1.2
  * points, and the starting spending on health, education and security is worth +0.3 in
  * Tavara and +14.0 in Testland. The campaign moves the vote by a whole number of tenths of a
  * point from 3.0 down to 3.0 up, 61 swings in all, and 50.0% wins.
@@ -403,25 +423,25 @@ const polls = [
   {
     name: 'Tavara',
     file: tavaraFile,
-    // Tax at 12% holds approval at 53.0%: the worst swing still leaves 50.0%.
-    safeTax: 12,
-    // Tax at 15% holds it at 49.4%: the 36 swings of +0.5 or less lose, 590 in a thousand.
-    closeTax: 15,
+    // Tax at 17% holds approval at 53.0%: the worst swing still leaves 50.0%.
+    safeTax: 17,
+    // Tax at 20% holds it at 49.4%: the 36 swings of +0.5 or less lose, 590 in a thousand.
+    closeTax: 20,
     closeApproval: '49.4%',
-    // Tax at 21% holds it at 42.2%: no swing wins.
-    lostTax: 21,
+    // Tax at 26% holds it at 42.2%: no swing wins.
+    lostTax: 26,
     lostApproval: '42.2%',
   },
   {
     name: 'Testland',
     file: testlandFile,
-    // Tax at 20% holds approval at 57.1%.
+    // Tax at 20% holds approval at 63.1%.
     safeTax: 20,
-    // Tax at 26% holds it at 49.9%: the 31 swings of 0.0 or less lose, 508 in a thousand.
-    closeTax: 26,
+    // Tax at 31% holds it at 49.9%: the 31 swings of 0.0 or less lose, 508 in a thousand.
+    closeTax: 31,
     closeApproval: '49.9%',
-    // Tax at 30% holds it at 45.1%.
-    lostTax: 30,
+    // Tax at 35% holds it at 45.1%.
+    lostTax: 35,
     lostApproval: '45.1%',
   },
 ] as const;
@@ -476,7 +496,7 @@ describe.each(polls)('the risk of losing the vote in $name', (poll) => {
 
 describe('the risk of losing the vote in Tavara', () => {
   it('is listed as remote when only the worst swing would lose, however small that chance', () => {
-    const game = play(createGame(startingAt(tavaraFile, 12), 3), 19);
+    const game = play(createGame(startingAt(tavaraFile, 17), 3), 19);
     // Health cut from $7.0m to $6.0m in the last quarter takes approval from 53.0% to 52.9%.
     // Only the swing of 3.0 points down then loses: one in 61, under the 2% that would
     // otherwise be too little to list. An outcome that ends the game is never left out.

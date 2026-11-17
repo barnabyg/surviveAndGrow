@@ -16,11 +16,11 @@ import { startingAt, withDroughtChance } from './countries';
 
 /**
  * Each country with no drought, and approval worked out by hand from the approval rules.
- * The baseline is 45.5%, each point of tax above 18% costs 1.2 points, and the starting
+ * The baseline is 51.5%, each point of tax above 18% costs 1.2 points, and the starting
  * spending on health, education and security is worth +0.3 in Tavara and +14.0 in Testland.
  *
- * - `steady` keeps approval where the country as shipped starts it (Tavara 45.8%, Testland
- *   57.1%). In Tavara it drops food relief, which no one needs, so the treasury lasts.
+ * - `steady` keeps approval where the country as shipped starts it (Tavara 51.8%, Testland
+ *   63.1%). In Tavara it drops food relief, which no one needs, so the treasury lasts.
  * - `approving` starts at a tax rate that leaves approval 3 points or more above the 50%
  *   the election needs, `disapproving` at one that leaves it 3 points or more below, and
  *   `close` at one that leaves it within a point of 50%.
@@ -34,30 +34,30 @@ const lands = [
       ...budget,
       spending: { ...budget.spending, foodRelief: 0 },
     }),
-    steadyApproval: 458,
-    // Tax at 12%: six points under 18% are worth +7.2 points.
-    approving: () => startingAt(tavaraFile, 12),
+    steadyApproval: 518,
+    // Tax at 17%: one point under 18% is worth +1.2 points.
+    approving: () => startingAt(tavaraFile, 17),
     approvingApproval: 530,
-    // Tax at 21%: three points over cost 3.6.
-    disapproving: () => startingAt(tavaraFile, 21),
-    disapprovingApproval: 422,
-    // Tax at 15%: three points under are worth +3.6.
-    close: () => startingAt(tavaraFile, 15),
+    // Tax at 22%: four points over cost 4.8.
+    disapproving: () => startingAt(tavaraFile, 22),
+    disapprovingApproval: 470,
+    // Tax at 20%: two points over cost 2.4.
+    close: () => startingAt(tavaraFile, 20),
     closeApproval: 494,
   },
   {
     name: 'Testland',
     country: () => withDroughtChance(testlandFile, {}),
     steady: (budget: Budget): Budget => budget,
-    steadyApproval: 571,
+    steadyApproval: 631,
     // Tax at 20%, as the file has it: two points over 18% cost 2.4.
     approving: () => startingAt(testlandFile, 20),
-    approvingApproval: 571,
-    // Tax at 30%: twelve points over cost 14.4.
-    disapproving: () => startingAt(testlandFile, 30),
-    disapprovingApproval: 451,
-    // Tax at 26%: eight points over cost 9.6.
-    close: () => startingAt(testlandFile, 26),
+    approvingApproval: 631,
+    // Tax at 34%: sixteen points over cost 19.2.
+    disapproving: () => startingAt(testlandFile, 34),
+    disapprovingApproval: 463,
+    // Tax at 31%: thirteen points over cost 15.6.
+    close: () => startingAt(testlandFile, 31),
     closeApproval: 499,
   },
 ] as const;
@@ -291,10 +291,10 @@ describe.each(lands)('the vote share forecast in $name', (land) => {
  * vote; relief then stops, and the region is in shortage on polling day while the others
  * stand where they started. Approval on polling day is worked by hand from the regions:
  *
- * - Tavara: 4,600,000 people at 45.8% and the Dry East's 600,000 at 41.7% average 45.3%.
- *   The plain mean of the six regions would be 45.1%.
- * - Testland: 300,000 at 57.1% and Sandreach's 100,000 at 53.0% average 56.0%. The plain
- *   mean of the two would be 55.0%.
+ * - Tavara: 4,600,000 people at 51.8% and the Dry East's 600,000 at 47.7% average 51.3%.
+ *   The plain mean of the six regions would be 51.1%.
+ * - Testland: 300,000 at 63.1% and Sandreach's 100,000 at 59.0% average 62.0%. The plain
+ *   mean of the two would be 61.0%.
  *
  * The campaign's swing is the seed's: +1.5 points in Tavara and −0.3 in Testland.
  */
@@ -304,22 +304,22 @@ describe.each([
     file: tavaraFile,
     regionId: 'dry-east',
     relief: 70,
-    hungry: 417,
-    fed: 458,
-    voteShare: 468,
+    hungry: 477,
+    fed: 518,
+    voteShare: 528,
     summary:
-      'You took 46.8% of the vote and needed 50%. Approval stood at 45.3% on polling day, and the campaign moved the vote by +1.5 points.',
+      'You took 52.8% of the vote and needed 50%. Approval stood at 51.3% on polling day, and the campaign moved the vote by +1.5 points.',
   },
   {
     name: 'Testland',
     file: testlandFile,
     regionId: 'sandreach',
     relief: 10,
-    hungry: 530,
-    fed: 571,
-    voteShare: 557,
+    hungry: 590,
+    fed: 631,
+    voteShare: 617,
     summary:
-      'You took 55.7% of the vote and needed 50%. Approval stood at 56.0% on polling day, and the campaign moved the vote by −0.3 points.',
+      'You took 61.7% of the vote and needed 50%. Approval stood at 62.0% on polling day, and the campaign moved the vote by −0.3 points.',
   },
 ])('the vote in $name when one region is hungry', (land) => {
   it('counts each region by its people, not region by region', () => {

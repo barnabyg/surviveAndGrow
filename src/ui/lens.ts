@@ -102,10 +102,10 @@ export function lensScale(lens: Lens, game: GameState, palette: MapPalette): Len
 /**
  * Where the infrastructure lens changes colour, in thousandths of access, lowest first.
  * Every region starts with none, which is a step of its own. One ordinary site in use adds
- * 10 to 15 and power 15, so building one moves a region up a step; the top step is reached
+ * 20 to 30 and power 15, so building one moves a region up a step; the top step is reached
  * only by a region with most of what it can build in use.
  */
-const INFRASTRUCTURE_CUTS: readonly number[] = [1, 100, 200, 350, 500];
+const INFRASTRUCTURE_CUTS: readonly number[] = [1, 200, 400, 600, 800];
 
 /** A region's infrastructure access, in thousandths. */
 export function infrastructureOf(game: GameState, regionId: string): number {
@@ -125,8 +125,9 @@ const LIVING_STANDARD_CUTS: readonly number[] = (() => {
   const developing = tierFrom('developing');
   const industrialising = tierFrom('industrialising');
   return [
-    // Four fifths of the way to Developing, so that the poorest regions stand apart.
-    Math.round((developing * 4) / 5),
+    // Seven tenths of the way to Developing, so that the poorest regions stand apart in a
+    // country that starts, as Tavara does, a little above it.
+    Math.round((developing * 7) / 10),
     developing,
     // Halfway from Developing to Industrialising.
     Math.round((developing + industrialising) / 2),

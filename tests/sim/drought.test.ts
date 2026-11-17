@@ -182,9 +182,12 @@ describe.each(scenarios)('a drought in $name', ({ file, regionId, regionName }) 
     });
 
     it('ends the game in a loss that says why', () => {
-      // A year to the failed harvest, then one quarter each of tight, shortage and famine,
-      // and the second quarter of famine brings the state down.
-      expect(played.states).toHaveLength(8);
+      // A year to the failed harvest, then tight and shortage as the region's own stock runs
+      // out, and the second quarter of famine brings the state down.
+      const stages = played.states.map((state) => region(state, regionId).foodStage);
+      expect(stages.findIndex((stage) => stage !== 'adequate')).toBeGreaterThanOrEqual(4);
+      expect(stages.indexOf('famine')).toBe(stages.length - 2);
+      expect(stages.at(-1)).toBe('famine');
       expect(played.state.outcome).toEqual({
         status: 'lost',
         cause: 'famine',

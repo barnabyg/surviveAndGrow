@@ -41,14 +41,14 @@ describe.each([
   ['Tavara', tavaraGrowing],
   ['Testland', testlandGrowing],
 ])('the population of %s', (_name, country) => {
-  it('grows in every region every quarter, by 0.6% at the game’s own rate', () => {
+  it('grows in every region every quarter, by 0.3% at the game’s own rate', () => {
     const start = createGame(country(), 1);
 
     const { state } = advanceQuarter(start, steward(start));
 
     state.regions.forEach((region, index) => {
       const before = start.regions[index]?.population ?? 0;
-      expect(region.population).toBe(before + Math.floor((before * 60) / 10_000));
+      expect(region.population).toBe(before + Math.floor((before * 30) / 10_000));
     });
   });
 
@@ -61,7 +61,7 @@ describe.each([
     for (let quarter = 1; quarter < consumption.length; quarter += 1) {
       expect(consumption[quarter]).toBeGreaterThan(consumption[quarter - 1] ?? 0);
     }
-    expect(peopleOf(state)).toBeGreaterThan(Math.floor(peopleOf(start) * 1.1));
+    expect(peopleOf(state)).toBeGreaterThan(Math.floor(peopleOf(start) * 1.05));
     // What the country eats, and so the months the reserve lasts, follow the larger population.
     const status = foodStatus(state);
     expect(status.quarterlyConsumption).toBe(
@@ -132,7 +132,7 @@ describe('a country file', () => {
     const country = loadCountry(withValue(format2, ['regions', 1, 'populationGrowth'], 4));
 
     expect(country.regions.map((region) => region.growthPerTenThousandPerQuarter)).toEqual([
-      60, 100,
+      30, 100,
     ]);
   });
 

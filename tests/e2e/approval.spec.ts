@@ -21,7 +21,7 @@ async function taxAtTheTopRate(page: Page): Promise<void> {
 test('approval is a vital sign, with the strike threshold stated', async ({ page }) => {
   await startGame(page, { countryFile: tavaraWithDroughtIn([]) });
 
-  await expect(approval(page).getByRole('button')).toContainText('45.8%');
+  await expect(approval(page).getByRole('button')).toContainText('51.8%');
   await expect(approval(page)).toContainText('Opening position');
   await expect(approval(page)).toContainText('Strikes below 40%');
 });
@@ -32,16 +32,16 @@ test('the budget panel shows what a tax rise would do to approval before it is c
   await startGame(page, { countryFile: tavaraWithDroughtIn([]) });
   const nextQuarter = outlook(page).getByRole('group', { name: 'Approval next quarter' });
   const heading = outlook(page).getByRole('group', { name: 'Approval is heading for' });
-  await expect(nextQuarter).toHaveText('Approval next quarter45.8%');
+  await expect(nextQuarter).toHaveText('Approval next quarter51.8%');
 
   await decisions(page).getByRole('slider', { name: 'Tax rate' }).fill('40');
 
   // 22 points of tax above the 18% people accept cost 26.4 points in the end, and a tenth
   // of them, 2.7 rounded up, in the first quarter.
-  await expect(nextQuarter).toHaveText('Approval next quarter45.8% → 43.1%');
-  await expect(heading).toHaveText('Approval is heading for45.8% → 19.4%');
+  await expect(nextQuarter).toHaveText('Approval next quarter51.8% → 49.1%');
+  await expect(heading).toHaveText('Approval is heading for51.8% → 25.4%');
   // Nothing has happened to approval itself.
-  await expect(approval(page).getByRole('button')).toContainText('45.8%');
+  await expect(approval(page).getByRole('button')).toContainText('51.8%');
 });
 
 test('raising tax sharply makes approval fall, and the figure opens to say why', async ({
@@ -52,7 +52,7 @@ test('raising tax sharply makes approval fall, and the figure opens to say why',
 
   await endQuarters(page, 1);
 
-  await expect(approval(page).getByRole('button')).toContainText('43.1%');
+  await expect(approval(page).getByRole('button')).toContainText('49.1%');
   await expect(approval(page)).toContainText('▼ 2.7 points this quarter');
 
   await approval(page).getByRole('button').click();
@@ -66,14 +66,14 @@ test('raising tax sharply makes approval fall, and the figure opens to say why',
   );
 
   const madeOf = breakdown.getByRole('table', { name: 'What approval is made of' });
-  await expect(madeOf.getByRole('row', { name: 'Baseline' })).toContainText('45.5%');
+  await expect(madeOf.getByRole('row', { name: 'Baseline' })).toContainText('51.5%');
   await expect(madeOf.getByRole('row', { name: 'Tax rate' })).toContainText('−2.7 points');
   await expect(madeOf.getByRole('row', { name: 'Health spending' })).toContainText('+0.7 points');
-  await expect(madeOf.getByRole('row', { name: 'Approval now' })).toContainText('43.1%');
+  await expect(madeOf.getByRole('row', { name: 'Approval now' })).toContainText('49.1%');
 
   // It goes on falling in the quarters that follow, a tenth of what is left each time.
   await endQuarters(page, 1);
-  await expect(approval(page).getByRole('button')).toContainText('40.7%');
+  await expect(approval(page).getByRole('button')).toContainText('46.7%');
   await expect(approval(page)).toContainText('▼ 2.4 points this quarter');
 });
 
@@ -84,15 +84,15 @@ test('strikes begin when approval falls below the threshold, and cost the treasu
   await taxAtTheTopRate(page);
 
   // The panel warns one quarter before they begin.
-  await endQuarters(page, 2);
+  await endQuarters(page, 5);
   await expect(outlook(page)).toContainText('▲ When the quarter ends, strikes in Korr Highlands');
 
   await endQuarters(page, 1);
-  await expect(approval(page).getByRole('button')).toContainText('38.5%');
+  await expect(approval(page).getByRole('button')).toContainText('39.1%');
   await expect(approval(page)).toContainText('▲ Unrest in 6 regions');
   const strike = reports(page).getByRole('listitem').filter({ hasText: 'Strikes in Arden Vale' });
   await expect(strike).toContainText(
-    'Approval there has fallen to 38.5%, below the 40% at which strikes begin. While they last the region produces 30% less.',
+    'Approval there has fallen to 39.1%, below the 40% at which strikes begin. While they last the region produces 30% less.',
   );
   await expect(strike.getByRole('img', { name: 'Strike report' })).toBeVisible();
 
@@ -100,7 +100,7 @@ test('strikes begin when approval falls below the threshold, and cost the treasu
   await expect(map(page).getByText('▲ Strikes · output −30%')).toHaveCount(6);
   await strike.getByRole('button').click();
   const card = page.getByRole('region', { name: 'Arden Vale' });
-  await expect(card).toContainText('38.5%');
+  await expect(card).toContainText('39.1%');
   await expect(card).toContainText('▲ Strikes · output −30%');
 
   // The next quarter's tax is paid on what the strikers still produce.

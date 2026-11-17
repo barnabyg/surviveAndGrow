@@ -9,14 +9,14 @@ describe('how a settlement looks at a living standard', () => {
   });
 
   it('is built up and lit throughout once the region reaches the prosperity target', () => {
-    expect(settlementLook('town', 700)).toEqual({ buildings: 13, lit: 13 });
-    expect(settlementLook('village', 700)).toEqual({ buildings: 7, lit: 7 });
+    expect(settlementLook('town', 420)).toEqual({ buildings: 10, lit: 10 });
+    expect(settlementLook('village', 420)).toEqual({ buildings: 5, lit: 5 });
     expect(settlementLook('town', 1000)).toEqual({ buildings: 16, lit: 16 });
   });
 
   it('grows denser and lights more of its buildings as living standards rise', () => {
-    expect(settlementLook('town', 230)).toEqual({ buildings: 9, lit: 2 });
-    expect(settlementLook('town', 450)).toEqual({ buildings: 11, lit: 7 });
+    expect(settlementLook('town', 230)).toEqual({ buildings: 9, lit: 4 });
+    expect(settlementLook('town', 350)).toEqual({ buildings: 10, lit: 8 });
     for (const size of ['town', 'village'] as const) {
       for (let standard = 0; standard < 1000; standard += 10) {
         const lower = settlementLook(size, standard);

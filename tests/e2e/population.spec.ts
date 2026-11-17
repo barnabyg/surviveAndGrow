@@ -11,7 +11,7 @@ test('a region’s people grow each quarter, and its card says by how many', asy
     .click();
 
   const card = page.getByRole('region', { name: 'Lowmere Plains' });
-  // 0.6% of 1,400,000 people.
-  await expect(card).toContainText('1,408,400');
-  await expect(card).toContainText('Grew last quarter+8,400');
+  // 0.3% of 1,400,000 people.
+  await expect(card).toContainText('1,404,200');
+  await expect(card).toContainText('Grew last quarter+4,200');
 });

@@ -25,15 +25,18 @@ const lands = [
   {
     name: 'Tavara',
     approving: () => startingAt(tavaraFile, 12),
-    // Starting on $1.0m a quarter each for health and education, prosperity passes into
-    // Prosperous in the 25th quarter, in the second term, once those have built up.
-    rising: () => wealthy(tavaraFile, 1),
+    // With a tenth of its people, starting on nothing for health and education and then
+    // spending $3.0m a quarter on each, it passes into Prosperous in the second term.
+    rising: () => wealthy(tavaraFile, 0, 10),
+    generousSpending: 30,
   },
   {
     name: 'Testland',
     approving: () => startingAt(testlandFile, 20),
-    // Starting on nothing for either, it passes into Prosperous in the 30th quarter.
-    rising: () => wealthy(testlandFile, 0),
+    // With all its people, starting on nothing for either and then spending $4.0m a quarter
+    // on each, it passes into Prosperous in the second term.
+    rising: () => wealthy(testlandFile, 0, 1),
+    generousSpending: 40,
   },
 ] as const;
 
@@ -43,24 +46,27 @@ interface Wealth {
 }
 
 /**
- * A country file with a tenth of the people, so that every region is rich per head, and a
- * treasury that lasts. It starts with the spending on health and education given, in
- * millions a quarter, which sets where their levels start. No drought or dilemma comes.
+ * A country file with its people divided by the number given, so that every region is as
+ * rich per head as wanted, and a treasury that lasts. It starts with the spending on health
+ * and education given, in millions a quarter, which sets where their levels start. No
+ * drought or dilemma comes.
  */
-function wealthy(file: unknown, services: number): Country {
+function wealthy(file: unknown, services: number, peopleDividedBy = 10): Country {
   const copy = structuredClone(file) as Wealth;
-  for (const region of copy.regions) region.population = Math.round(region.population / 10);
+  for (const region of copy.regions) {
+    region.population = Math.round(region.population / peopleDividedBy);
+  }
   copy.start.treasury = 2000;
   copy.start.budget.spending.health = services;
   copy.start.budget.spending.education = services;
   return withChances(copy, {});
 }
 
-/** Low tax, and as much on health and education as the budget allows. */
-function generous(game: GameState): Budget {
+/** Low tax, and the amount given, in Money units, on each of health and education. */
+function generous(game: GameState, amount: number): Budget {
   return {
     taxRatePercent: 10,
-    spending: { ...game.budget.spending, health: 200, education: 200 },
+    spending: { ...game.budget.spending, health: amount, education: amount },
   };
 }
 
@@ -150,7 +156,7 @@ describe.each(lands)('the win on prosperity in $name', (land) => {
     let game = createGame(land.rising(), 3);
     let last: TurnReport | undefined;
     while (game.outcome.status === 'playing' && game.history.length <= 60) {
-      const result = advanceQuarter(game, { budget: generous(game) });
+      const result = advanceQuarter(game, { budget: generous(game, land.generousSpending) });
       if (result.state.tier === 'prosperous' && game.tier !== 'prosperous') {
         passed.push(game.history.length);
       }
@@ -173,14 +179,14 @@ describe.each(lands)('the win on prosperity in $name', (land) => {
       cause: 'prosperity',
       headline: 'The nation is prosperous',
       summary:
-        'National prosperity has stood in Prosperous, from 70 up, for 4 quarters running. You have won.',
+        'National prosperity has stood in Prosperous, from 42 up, for 4 quarters running. You have won.',
     });
     expect(last?.entries).toContainEqual({
       kind: 'victory',
       seriousness: 'notable',
       headline: 'The nation is prosperous',
       cause:
-        'National prosperity has stood in Prosperous, from 70 up, for 4 quarters running. You have won.',
+        'National prosperity has stood in Prosperous, from 42 up, for 4 quarters running. You have won.',
     });
     expect(() => advanceQuarter(game, { budget: game.budget })).toThrow('The game is over.');
   });

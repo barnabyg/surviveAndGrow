@@ -44,9 +44,9 @@ test('a dilemma is put to the player, who chooses and sees what it did', async (
   await teachers.getByRole('button', { name: /^Refuse it/ }).click();
   await expect(teachers).toBeHidden();
   await expect(decision(page)).toContainText('You chose: Refuse it');
-  // The choice is counted in the outlook at once: three points off 45.8%.
+  // The choice is counted in the outlook at once: three points off 51.8%.
   await expect(outlook(page).getByRole('group', { name: 'Approval next quarter' })).toContainText(
-    '42.8%',
+    '48.8%',
   );
 
   // Until the quarter ends the choice can be changed.
@@ -59,7 +59,7 @@ test('a dilemma is put to the player, who chooses and sees what it did', async (
   await expect(decision(page)).toContainText('You chose: Grant the rise');
   await expect(decision(page)).toContainText('Costs $4.2m.');
   await expect(outlook(page).getByRole('group', { name: 'Approval next quarter' })).toContainText(
-    '47.8%',
+    '53.8%',
   );
 
   await endQuarters(page, 1);
@@ -137,17 +137,17 @@ test('in the country as it ships, the seed decides which dilemma arises and when
   await expect(decision(page)).toHaveCount(0);
 
   // Seed 3 opens it with a neighbour's offer of grain, the reserve being below its safe level.
-  // What it offers is reckoned on the people there are, who have grown by a quarter's 0.6%.
+  // What it offers is reckoned on the people there are, who have grown by a quarter's 0.3%.
   await startGame(page, { seed: 3, asShipped: true });
   await endQuarters(page, 1);
   const offer = dilemma(page, 'A neighbour offers grain');
   await expect(offer).toBeVisible();
   await expect(offer.getByRole('button', { name: /^Buy the whole shipment/ })).toContainText(
-    'Costs $12.6m.',
+    'Costs $12.5m.',
   );
   const half = offer.getByRole('button', { name: /^Buy half of it/ });
   await expect(half).toContainText('Costs $6.3m.');
-  await expect(half).toContainText('Adds 26,156 t to the national reserve.');
+  await expect(half).toContainText('Adds 26,078 t to the national reserve.');
 
   await half.click();
   await expect(decision(page)).toContainText('You chose: Buy half of it');
@@ -172,5 +172,5 @@ test('in the country as it ships, the seed decides which dilemma arises and when
     page
       .getByRole('region', { name: 'What moved the food reserve' })
       .getByRole('row', { name: 'Grain from a neighbour' }),
-  ).toContainText('+26,156 t');
+  ).toContainText('+26,078 t');
 });

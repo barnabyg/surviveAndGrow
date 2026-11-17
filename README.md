@@ -47,7 +47,7 @@ the saved game or to start a new one:
 
 The first term is 20 quarters, ending in an election. Win it and you govern on into another term;
 the game itself is won on prosperity, held in the top tier.
-It is meant to be hard. You take office with approval near 46%, a budget that loses $5.0m a
+It is meant to be hard. You take office with approval near 52%, a budget that loses $5.0m a
 quarter, and a food reserve below its safe level. Left alone, the country votes you out, if a
 drought does not starve a region first.
 
@@ -91,18 +91,21 @@ What is in the game:
 - A region whose approval falls below 40% goes on strike and produces 30% less, which costs the
   treasury tax. Below 30% it protests and produces 60% less. Both end when approval recovers.
 - Prosperity, the game's objective, is the fourth figure in the top bar, on a scale of 0 to 100
-  against the target of 70. Each region has a living standard built from food security, income
-  per head, health, education and infrastructure access (the sites in use there, and power), and prosperity
-  is the regions' living standards averaged by population. The region list in the left column
+  against the target of 42. Each region has a living standard built from food security, income
+  per head, health, education and infrastructure access (the sites in use there, and power),
+  weighted 15% each for the first four and 40% for infrastructure, so building is the main road
+  to prosperity. A small site in use adds 20 to 30 points of infrastructure access to its region,
+  a large one 10 to 40, and power 15. Prosperity is the regions' living standards averaged by
+  population. The region list in the left column
   shows each region's living standard as a figure and a bar, so inequality shows at a glance.
-- Prosperity is divided into four tiers: Subsistence, then Developing from 25, Industrialising
-  from 45 and Prosperous from 70, the target. The prosperity figure names the tier in force and
+- Prosperity is divided into four tiers: Subsistence, then Developing from 30, Industrialising
+  from 38 and Prosperous from 42, the target. Tavara starts at about 21. The prosperity figure names the tier in force and
   how far it is to the next. Passing a tier is reported, gives the whole map a new palette, and
   raises what people expect, so the approval baseline drops 3 points a tier (shown as
   Expectations in what approval is made of). A tier is lost only when prosperity falls 2 points
   below where it begins; falling back is reported too, the map's look follows it down, and
   expectations ease. The risks ahead warn when the nation is on course to fall back.
-- Each region's people grow in number every quarter, about 2.4% a year, except where famine has
+- Each region's people grow in number every quarter, about 1.2% a year, except where famine has
   taken hold. Standing still loses: food need, the relief a region needs and the months the
   reserve lasts all follow the larger population, and output per head falls unless the economy
   keeps up. A region's card shows how many people it gained, or lost to famine, last quarter.
@@ -146,9 +149,9 @@ What is in the game:
   warning triangle on the map, and its card says why and what restores it. A quarter in which its
   upkeep is paid restores it from the next. Decay and recovery are reported, and the risks ahead
   warn when upkeep will fall short.
-- Some sites form a chain. A mine adds $20.0m a quarter to its region's output, which is taxed and
+- Some sites form a chain. A mine adds $60.0m a quarter to its region's output, which is taxed and
   raises its people's income, but only while a trunk road links it to a port and both are in
-  use. Each link carries only so much: a trunk road $24.0m a quarter and a port $30.0m, and a
+  use. Each link carries only so much: a trunk road $72.0m a quarter and a port $90.0m, and a
   decaying link half as much, so the chain yields no more than its weakest link. These are large
   projects ($40.0m, $30.0m and $50.0m; 6, 5 and 8 quarters to build; $0.6m, $0.5m and $0.8m
   upkeep), and one started late in a term opens after the vote. A mine's card lists every site
@@ -158,7 +161,7 @@ What is in the game:
   nothing is tagged "▲ Earning nothing", and what a mine earns is taxed as a line of its own.
 - Some sites are alternatives: one game cannot build everything. Next to Saltmouth port, Tavara's
   deep-water port, is Saltmouth quay, a shallow port at half the cost ($25.0m, 5 quarters to
-  build, $0.4m upkeep) that ships only $12.0m a quarter, less than the mine produces. Either
+  build, $0.4m upkeep) that ships only $36.0m a quarter, less than the mine produces. Either
   completes the mine's chain. The card of a site with alternatives, and the affordable list, say
   what starting it closes for good, and the two cannot be planned together. Once building begins
   on one, the other is closed: it is faded and struck through on the map, and its card says which

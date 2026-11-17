@@ -57,7 +57,7 @@ function neglect(game: GameState): Budget {
  * spending on health and education carries it into the next tier, with the chances given.
  */
 function poised(file: unknown, chances: Parameters<typeof withChances>[1] = {}): Country {
-  for (let percent = 100; percent <= 400; percent += 5) {
+  for (let percent = 100; percent <= 1000; percent += 5) {
     const country = withChances(scaled(file, percent), chances);
     const game = createGame(country, 1);
     if (advanceQuarter(game, { budget: generous(game) }).state.tier !== game.tier) return country;
@@ -67,12 +67,12 @@ function poised(file: unknown, chances: Parameters<typeof withChances>[1] = {}):
 
 const countries = [
   { name: 'Tavara', file: tavaraFile, starts: 'subsistence', next: 'developing' },
-  { name: 'Testland', file: testlandFile, starts: 'developing', next: 'industrialising' },
+  { name: 'Testland', file: testlandFile, starts: 'subsistence', next: 'developing' },
 ] as const;
 
 describe('the tiers of prosperity', () => {
-  it('begin at 25, 45 and 70, and the last is the target', () => {
-    expect([0, 249, 250, 449, 450, 699, 700, 1000].map(tierAt)).toEqual([
+  it('begin at 30, 38 and 42, and the last is the target', () => {
+    expect([0, 299, 300, 379, 380, 419, 420, 1000].map(tierAt)).toEqual([
       'subsistence',
       'subsistence',
       'developing',
@@ -82,15 +82,15 @@ describe('the tiers of prosperity', () => {
       'prosperous',
       'prosperous',
     ]);
-    expect(prosperityStatus(createGame(withChances(tavaraFile, {}), 1)).target).toBe(700);
+    expect(prosperityStatus(createGame(withChances(tavaraFile, {}), 1)).target).toBe(420);
   });
 
   it('are passed at once, but lost only 2 points below where they begin', () => {
-    expect(nextTier('subsistence', 250)).toBe('developing');
-    expect(nextTier('subsistence', 470)).toBe('industrialising');
-    expect(nextTier('developing', 240)).toBe('developing');
-    expect(nextTier('developing', 230)).toBe('developing');
-    expect(nextTier('developing', 229)).toBe('subsistence');
+    expect(nextTier('subsistence', 300)).toBe('developing');
+    expect(nextTier('subsistence', 400)).toBe('industrialising');
+    expect(nextTier('developing', 290)).toBe('developing');
+    expect(nextTier('developing', 280)).toBe('developing');
+    expect(nextTier('developing', 279)).toBe('subsistence');
     expect(nextTier('industrialising', 200)).toBe('subsistence');
   });
 
@@ -110,7 +110,7 @@ describe.each(countries)('the tier in force in $name', ({ file, starts, next }) 
     expect(game.startingTier).toBe(starts);
     expect(tierStatus({ ...game, prosperity })).toMatchObject({
       tier: starts,
-      next: { tier: next, distance: (next === 'developing' ? 250 : 450) - prosperity },
+      next: { tier: next, distance: 300 - prosperity },
       expectations: 0,
     });
   });
