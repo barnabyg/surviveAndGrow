@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
@@ -175,11 +175,13 @@ describe.each(lands)('the election in $name', (land) => {
   });
 
   // Six hundred close-run terms, one for each seed, played once for the tests that follow.
-  let played: readonly Played[] | undefined;
-  const closeRunTerms = () =>
-    (played ??= Array.from({ length: 600 }, (_, index) =>
-      term(land.close(), index + 1, unchanged),
-    ));
+  // They take a few seconds alone and several times that while the whole suite runs, so
+  // they are played before the tests, under a limit of their own.
+  let played: readonly Played[] = [];
+  beforeAll(() => {
+    played = Array.from({ length: 600 }, (_, index) => term(land.close(), index + 1, unchanged));
+  }, 60_000);
+  const closeRunTerms = () => played;
 
   it('turns on exactly half the vote: 50.0% wins and 49.9% loses', () => {
     const shares = new Map<number, boolean>();
