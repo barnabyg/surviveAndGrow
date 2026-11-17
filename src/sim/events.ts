@@ -1,3 +1,4 @@
+import { percentOff } from './arithmetic';
 import { balance } from './balance';
 import { entersBeforeHarvest } from './calendar';
 import { regionName, type Country } from './country';
@@ -207,5 +208,5 @@ export function describeEventWithHold(event: ActiveEvent, hold: number): string 
 
 /** How much of a harvest the event takes, as a whole percentage. */
 function harvestCutPercent(definition: EventDefinition, hold: number): number {
-  return Math.round((1000 - leftBy(definition, hold)) / 10);
+  return percentOff(leftBy(definition, hold));
 }

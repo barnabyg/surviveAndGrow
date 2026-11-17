@@ -6,8 +6,9 @@ import {
   type SiteSchedule,
   type TermCalendar,
   type TermQuarter,
+  formatQuarters,
 } from '../sim';
-import { formatDate, formatQuarters } from './format';
+import { formatDate } from './format';
 import { opening } from './schedule';
 
 interface TimelineProps {

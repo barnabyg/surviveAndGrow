@@ -1,4 +1,10 @@
-import { approvalStatus, electionStatus, formatPercent, type GameState } from '../sim';
+import {
+  approvalStatus,
+  electionStatus,
+  formatPercent,
+  type GameState,
+  formatQuarters,
+} from '../sim';
 import { describeTrend, hasTrend, recent, TREND_QUARTERS, verticalScale, type Mark } from './trend';
 
 /** The level below which a region strikes, as charts mark it. */
@@ -45,7 +51,7 @@ export function ApprovalChart({ game }: { readonly game: GameState }) {
         </h2>
         {hasTrend(values) && (
           <span className="section-note">
-            Last {quarters === 1 ? 'quarter' : `${quarters} quarters`}
+            Last {quarters === 1 ? 'quarter' : formatQuarters(quarters)}
           </span>
         )}
       </div>

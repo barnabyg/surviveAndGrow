@@ -8,8 +8,8 @@ import {
   type Preview,
   type Site,
   type SiteStatus,
+  formatQuarters,
 } from '../sim';
-import { formatQuarters } from './format';
 import { opening } from './schedule';
 import { progressOf } from './SiteMark';
 

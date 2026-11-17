@@ -13,6 +13,7 @@ import {
   type ApprovalStatus,
   type GameState,
   type TurnReport,
+  quartersWord,
 } from '../sim';
 import { strikeMark } from './ApprovalChart';
 import { Crest } from './Crest';
@@ -166,10 +167,7 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
               ) : (
                 <>
                   {election.quartersAway}
-                  <span className="vital__unit">
-                    {' '}
-                    {election.quartersAway === 1 ? 'quarter' : 'quarters'}
-                  </span>
+                  <span className="vital__unit"> {quartersWord(election.quartersAway)}</span>
                 </>
               )}
             </span>

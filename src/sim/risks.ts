@@ -7,7 +7,7 @@ import { defeatChancePermille, electionStatus } from './election';
 import { eventName, eventsThatMayBegin, type PossibleEvent } from './events';
 import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
 import type { Decisions, GameState, RegionState } from './state';
-import { formatPercent, formatPoints } from './text';
+import { articleFor, formatPercent, formatPoints, formatQuarters } from './text';
 import {
   FOOD_STAGES,
   LIKELIHOODS,
@@ -262,12 +262,13 @@ function famineReason(state: GameState, region: RegionState, finding: Finding): 
     return `Famine has hold of it. ${left <= 1 ? 'Another quarter' : `${left} more quarters`} of it and the state collapses.`;
   }
   if (finding.soonest === 0 && region.foodStage !== 'adequate') {
-    return `Its people are going hungry. Left alone, that is famine within ${quarters(stagesToFamine)}.`;
+    return `Its people are going hungry. Left alone, that is famine within ${formatQuarters(stagesToFamine)}.`;
   }
   const short = `short of food ${when(finding.soonest)}`;
   if (finding.event !== null) {
     const { type, chance } = finding.event;
-    return `A ${eventName(type).toLowerCase()} there this year, a ${Math.round(chance * 100)}% chance, would leave it ${short}.`;
+    const percent = Math.round(chance * 100);
+    return `A ${eventName(type).toLowerCase()} there this year, ${articleFor(percent)} ${percent}% chance, would leave it ${short}.`;
   }
   if (!finding.sure) return `Poor weather before the harvest would leave it ${short}.`;
   const event = state.events.find((active) => active.regionId === region.id);
@@ -277,7 +278,7 @@ function famineReason(state: GameState, region: RegionState, finding: Finding): 
       : finding.soonest === 0
         ? 'It has too little food to last until the harvest.'
         : 'Its harvest will be too small to last the year.';
-  return `${cause} It runs ${short}, and left alone that is famine ${quarters(stagesToFamine - 1)} later.`;
+  return `${cause} It runs ${short}, and left alone that is famine ${formatQuarters(stagesToFamine - 1)} later.`;
 }
 
 /** The treasury runs out when it cannot cover the budget, or an instalment on a project. */
@@ -424,10 +425,6 @@ function electionRisk(scope: Scope): Risk[] {
 function when(quartersAway: number): string {
   if (quartersAway === 0) return 'this quarter';
   return quartersAway === 1 ? 'next quarter' : `in ${quartersAway} quarters`;
-}
-
-function quarters(count: number): string {
-  return `${count} ${count === 1 ? 'quarter' : 'quarters'}`;
 }
 
 /** Names in a line: "A", "A and B", "A, B and 2 other regions". */

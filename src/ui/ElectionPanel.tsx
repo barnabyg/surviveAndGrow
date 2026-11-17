@@ -1,5 +1,12 @@
-import { electionStatus, formatPercent, type GameState, type Preview, type Range } from '../sim';
-import { formatDate, formatQuarters, formatRange } from './format';
+import {
+  electionStatus,
+  formatPercent,
+  type GameState,
+  type Preview,
+  type Range,
+  formatQuarters,
+} from '../sim';
+import { formatDate, formatRange } from './format';
 
 interface ElectionPanelProps {
   readonly game: GameState;

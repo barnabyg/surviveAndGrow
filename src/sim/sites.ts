@@ -1,3 +1,4 @@
+import { percentOff } from './arithmetic';
 import { balance } from './balance';
 import type { Money } from './types';
 import type { SiteType } from './vocabulary';
@@ -22,15 +23,10 @@ function effectOf(type: SiteType): string {
   const { sites } = balance;
   switch (type) {
     case 'irrigation':
-      return `Weather and drought move its region’s harvest ${percentLess(sites.irrigation.weatherPermille)} less.`;
+      return `Weather and drought move its region’s harvest ${percentOff(sites.irrigation.weatherPermille)}% less.`;
     case 'farmRoad':
-      return `${percentLess(sites.farmRoad.transportLossPermille)} less of its region’s surplus is lost on the way to the national reserve.`;
+      return `${percentOff(sites.farmRoad.transportLossPermille)}% less of its region’s surplus is lost on the way to the national reserve.`;
     case 'grainStore':
-      return `${percentLess(sites.grainStore.spoilagePermille)} less of the national reserve spoils each quarter.`;
+      return `${percentOff(sites.grainStore.spoilagePermille)}% less of the national reserve spoils each quarter.`;
   }
-}
-
-/** How much is taken off by a multiplier written in thousandths: 750 takes off "25%". */
-function percentLess(permilleLeft: number): string {
-  return `${Math.round((1000 - permilleLeft) / 10)}%`;
 }

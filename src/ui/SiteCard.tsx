@@ -8,8 +8,9 @@ import {
   termCalendar,
   type GameState,
   type SiteSchedule,
+  formatQuarters,
 } from '../sim';
-import { formatDate, formatQuarters } from './format';
+import { formatDate } from './format';
 import { opening } from './schedule';
 import { progressOf, siteStateName } from './SiteMark';
 

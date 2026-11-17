@@ -14,6 +14,7 @@ import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import { siteTerms } from './sites';
 import type { GameState, Outcome, RegionState, TurnReport } from './state';
+import { formatQuarters } from './text';
 import type { Contribution, Figure, GameDate, Money, Quarter } from './types';
 import {
   APPROVAL_DRIVERS,
@@ -291,7 +292,7 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
     if (quartersPaid > buildQuarters) {
       fail(
         `${itemPath}.quartersPaid`,
-        `is ${quartersPaid}, but the site takes ${buildQuarters} ${buildQuarters === 1 ? 'quarter' : 'quarters'} to build`,
+        `is ${quartersPaid}, but the site takes ${formatQuarters(buildQuarters)} to build`,
       );
     }
     return {

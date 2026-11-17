@@ -4,7 +4,7 @@ import { nextDate } from './calendar';
 import type { Country, Site } from './country';
 import type { ReportEntry } from './report';
 import { siteTerms, type SiteTerms } from './sites';
-import { formatMoney } from './text';
+import { formatMoney, formatQuarters } from './text';
 import type { Contribution, GameDate, Money } from './types';
 import type { ProjectStatus, SiteState } from './vocabulary';
 
@@ -203,16 +203,12 @@ interface Told {
   readonly terms: SiteTerms;
 }
 
-function quarters(count: number): string {
-  return `${count} ${count === 1 ? 'quarter' : 'quarters'}`;
-}
-
 function startedEntry({ name, regionId, terms }: Told): ReportEntry {
   return {
     kind: 'projectStarted',
     seriousness: 'notable',
     headline: `Building begins: ${name}`,
-    cause: `It costs ${formatMoney(terms.cost)}, paid over the ${quarters(terms.buildQuarters)} it takes to build.`,
+    cause: `It costs ${formatMoney(terms.cost)}, paid over the ${formatQuarters(terms.buildQuarters)} it takes to build.`,
     regionId,
   };
 }
@@ -232,7 +228,7 @@ function resumedEntry({ name, regionId, terms }: Told, quartersPaid: number): Re
     kind: 'projectStarted',
     seriousness: 'notable',
     headline: `Building resumes: ${name}`,
-    cause: `${quartersPaid} of its ${quarters(terms.buildQuarters)} of building ${quartersPaid === 1 ? 'is' : 'are'} now done.`,
+    cause: `${quartersPaid} of its ${formatQuarters(terms.buildQuarters)} of building ${quartersPaid === 1 ? 'is' : 'are'} now done.`,
     regionId,
   };
 }

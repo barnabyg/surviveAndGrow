@@ -84,6 +84,20 @@ describe.each(scenarios)('the risks ahead in $name', ({ file, regionId, regionNa
     });
   });
 
+  it.each([
+    [0.07, 'a 7% chance'],
+    [0.08, 'an 8% chance'],
+    [0.11, 'an 11% chance'],
+    [0.18, 'an 18% chance'],
+    [0.8, 'an 80% chance'],
+    [0.81, 'an 81% chance'],
+    [0.1, 'a 10% chance'],
+  ])('write a drought’s chance of %f as it is said: “%s”', (chance, said) => {
+    const game = createGame(withDroughtChance(file, { [regionId]: chance }), 3);
+
+    expect(famineIn(risksAhead(game, idle(game)), regionId)?.reason).toContain(`, ${said},`);
+  });
+
   it('leave out a famine too unlikely to matter, and list it once it is not', () => {
     // A drought always leaves the region short, so the famine is as likely as the drought.
     // Under 2% it is negligible; from 2% it is remote.

@@ -5,7 +5,7 @@ import { regionName, type Country, type Region } from './country';
 import type { SiteEffects } from './projects';
 import type { ReportEntry } from './report';
 import type { RegionShortfall, RegionState, ReliefDelivery } from './state';
-import { formatCount, formatTonnes } from './text';
+import { formatCount, formatQuarters, formatTonnes } from './text';
 import type { Contribution, Money, Quarter, Range } from './types';
 import { FOOD_STAGE_NAMES, FOOD_STAGES, type FoodStage } from './vocabulary';
 
@@ -355,7 +355,7 @@ function hungerEntry(change: HungerChange): ReportEntry | null {
     const left = balance.hunger.collapseAfterFamineQuarters - famineQuarters;
     const warning =
       left > 0
-        ? `If the famine lasts ${left} more ${left === 1 ? 'quarter' : 'quarters'}, the state will collapse.`
+        ? `If the famine lasts ${formatQuarters(left, 'more')}, the state will collapse.`
         : 'The state cannot survive it.';
     return {
       kind: 'hunger',

@@ -2,6 +2,14 @@ export function sum(amounts: readonly number[]): number {
   return amounts.reduce((total, amount) => total + amount, 0);
 }
 
+/**
+ * What a multiplier written in thousandths takes off, as a whole percentage: 750 takes
+ * off 25.
+ */
+export function percentOff(permilleLeft: number): number {
+  return Math.round((1000 - permilleLeft) / 10);
+}
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }

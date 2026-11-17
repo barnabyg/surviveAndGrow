@@ -85,8 +85,10 @@ export {
   formatMoney,
   formatPercent,
   formatPoints,
+  formatQuarters,
   formatSignedPoints,
   formatTonnes,
+  quartersWord,
 } from './text';
 export {
   exactly,

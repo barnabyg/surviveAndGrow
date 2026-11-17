@@ -6,8 +6,8 @@ import {
   monthsOfFood,
   type GameState,
   type VitalSigns,
+  formatQuarters,
 } from '../sim';
-import { formatQuarters } from './format';
 import { TrendLine } from './TrendLine';
 
 interface GameSummaryProps {

@@ -4,7 +4,7 @@ import { clamp, sum } from './arithmetic';
 import { regionName, type Country } from './country';
 import type { ReportEntry } from './report';
 import type { RegionState } from './state';
-import { formatMoney } from './text';
+import { formatMoney, formatQuarters } from './text';
 import type { Contribution, Money } from './types';
 import { SPENDING_AREA_NAMES, SPENDING_AREAS, UNREST_NAMES, type SpendingArea } from './vocabulary';
 
@@ -190,7 +190,7 @@ export function budgetEntry(outcome: BudgetOutcome): ReportEntry {
     const lasts =
       quarters === 0
         ? 'The treasury cannot cover another quarter like it.'
-        : `At this deficit the treasury lasts ${quarters} more ${quarters === 1 ? 'quarter' : 'quarters'}.`;
+        : `At this deficit the treasury lasts ${formatQuarters(quarters, 'more')}.`;
     return {
       kind: 'budget',
       seriousness: 'warning',

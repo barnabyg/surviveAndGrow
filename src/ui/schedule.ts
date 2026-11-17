@@ -1,5 +1,4 @@
-import type { SiteSchedule, TermCalendar } from '../sim';
-import { formatQuarters } from './format';
+import { formatQuarters, type SiteSchedule, type TermCalendar } from '../sim';
 
 /**
  * When a site still being built opens, counted from the quarter being decided: "next

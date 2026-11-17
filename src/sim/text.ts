@@ -18,6 +18,32 @@ export function formatCount(count: number): string {
   return count.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/** The word for a count of quarters: `quarter` for one and `quarters` for any other. */
+export function quartersWord(count: number): string {
+  return count === 1 ? 'quarter' : 'quarters';
+}
+
+/**
+ * A count of quarters: `1 quarter`, `19 quarters`. A word given to qualify it goes between
+ * the two: `3 more quarters`.
+ */
+export function formatQuarters(count: number, qualifier = ''): string {
+  return `${count} ${qualifier === '' ? '' : `${qualifier} `}${quartersWord(count)}`;
+}
+
+/**
+ * The article before a whole number, by how the number is said: `an` 8, 11, 18 or 80, and
+ * `a` 7, 10 or 100.
+ */
+export function articleFor(count: number): 'a' | 'an' {
+  const digits = Math.abs(Math.trunc(count)).toFixed(0);
+  // Eight, eighty and eight hundred begin with a vowel sound. So do eleven and eighteen,
+  // alone or leading the thousands or millions, as in eleven thousand.
+  const leadsWithTeen =
+    digits.length % 3 === 2 && (digits.startsWith('11') || digits.startsWith('18'));
+  return digits.startsWith('8') || leadsWithTeen ? 'an' : 'a';
+}
+
 /** A size in points of approval, written from thousandths: `1.2 points`, `1.0 point`. */
 export function formatPoints(permille: number): string {
   return `${(permille / 10).toFixed(1)} ${permille === 10 ? 'point' : 'points'}`;

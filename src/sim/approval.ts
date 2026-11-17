@@ -1,4 +1,4 @@
-import { apportion, clamp, sum } from './arithmetic';
+import { apportion, clamp, percentOff, sum } from './arithmetic';
 import { balance } from './balance';
 import { regionName, type Country } from './country';
 import type { ReportEntry } from './report';
@@ -344,7 +344,7 @@ function weightedApproval(regions: readonly RegionState[]): number {
 }
 
 function outputCutPercent(unrest: Exclude<Unrest, 'calm'>): number {
-  return Math.round((1000 - balance.unrest[unrest].outputPermille) / 10);
+  return percentOff(balance.unrest[unrest].outputPermille);
 }
 
 /** What the turn report says when a region's unrest begins, deepens, eases or ends. */
