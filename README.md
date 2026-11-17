@@ -45,7 +45,8 @@ the saved game or to start a new one:
 
 ### Your first term
 
-The game is the first phase of the design, "Survive a term": 20 quarters, ending in an election.
+The first term is 20 quarters, ending in an election. Win it and you govern on into another term;
+the game itself is won on prosperity, held in the top tier.
 It is meant to be hard. You take office with approval near 46%, a budget that loses $5.0m a
 quarter, and a food reserve below its safe level. Left alone, the country votes you out, if a
 drought does not starve a region first.
@@ -69,12 +70,18 @@ What is in the game:
   goes from adequate to tight, to shortage, to famine. Pick the region on the map, or in the food
   relief panel, to send it relief from the national reserve.
 - A famine that lasts two quarters running collapses the state and ends the game.
-- The term is 20 quarters, and the election is held when the last of them ends. The vote share is
+- A term is 20 quarters, and an election is held when the last of them ends. The vote share is
   national approval on polling day, moved up to 3 points either way by the campaign. With 50% or
-  more you win the game; with less you lose it. The top bar counts down to the election, and the
-  right column forecasts the vote as a range against the 50% needed.
-- However the game ends, a summary gives the outcome, its cause and the treasury, food reserve
-  and approval over the term. From it you can replay the same game or start a new one.
+  more you are re-elected and a new term begins, with no limit on how many; with less you lose
+  the game. The top bar counts down to the election that closes the current term, and the right
+  column forecasts the vote as a range against the 50% needed.
+- You win the game by holding national prosperity in the top tier, Prosperous, for four quarters
+  running. Once there, the prosperity figure in the top bar shows how many of the four you have
+  held. (The design also asks for debt at a sustainable level; borrowing arrives in Phase 3.)
+- However the game ends, a summary gives the outcome and its cause, how long you were in office
+  over how many terms, the treasury, food reserve, approval and prosperity over the whole game,
+  and each term in turn with prosperity at its start and end. From it you can replay the same
+  game or start a new one.
 - Approval is the third vital sign. Each region has its own, and the national figure is their
   average by population. It answers to the region's food situation, the tax rate, and health,
   education and security spending per head, and it moves a tenth of the way each quarter towards
@@ -127,7 +134,7 @@ What is in the game:
   drought move its region's harvest; a farm road halves the share of its region's surplus lost on
   the way to the reserve; a grain store cuts what spoils in the national reserve by a quarter.
   Several of one type multiply together.
-- Under the map a timeline shows the whole term: every quarter to the election, with the past
+- Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the
   vote. Pick out an empty site on the map and the timeline shows, dashed, what building there

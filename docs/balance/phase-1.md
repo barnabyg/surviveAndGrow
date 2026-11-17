@@ -74,6 +74,15 @@ growth and tiers together is Phase 2 work.
 | Sensible | 0.9% | 99.0% | 0.1% | 28.8% / 42.7% / 52.1% |
 | Hover then spend | 15.1% | 84.9% | 0.0% | 35.0% / 46.9% / 53.9% |
 
+## After multiple terms (issue #33)
+
+From issue #33 a won election no longer wins the game: a new term begins, and the game is won
+by holding Prosperous for four quarters running. The balance run therefore plays each game for
+at most one term by default (`BALANCE_TERMS` sets more), so the Phase 1 figures above keep their
+meaning. Its table gains a column: **Re-elected** is what **Won** counted before, a game still in
+office when its terms are up, and **Won** now counts only the win on prosperity. Nothing in the
+rules of a single term changed, so the figures above stand; no new run was recorded.
+
 ## How the runs were made
 
 ```powershell

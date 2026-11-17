@@ -14,6 +14,7 @@ it is a save the released game really writes. From that release on it is frozen 
 | --- | --- |
 | `format-1.json` | Tavara with chance pinned (drought in the Dry East, three dilemmas), seed 2026, at Year 1 · Quarter 4: a drought in force, relief directed to the Dry East, a grain store and a farm road in use, an irrigation scheme two quarters built, two dilemmas answered and one waiting. |
 | `format-2.json` | The same Tavara game, seed 2026, at Year 1 · Quarter 4, played as it ships with health and education raised: three quarters of population growth, prosperity measured each quarter and just past Developing (the tier passed as the farm road came into use, so expectations have risen), strikes in the Dry East, the irrigation scheme paused for want of money, and a dilemma waiting. |
+| `format-3.json` | Tavara with a tenth of its people (so every region is rich per head), a $2,000.0m treasury, no drought and the merchants calling each new year, seed 2026, at Year 7 · Quarter 4: re-elected at the end of Year 5 and in its second term, played on low tax with health and education as high as the budget allows, with prosperity two quarters into Prosperous (two of the four quarters held towards the win), a grain store and farm road in Lowmere in use, and no dilemma waiting. |
 
 ## Adding one
 

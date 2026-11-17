@@ -50,7 +50,11 @@ Every system must feed this tension. A feature that does not is cut.
 
 - **Win:** hold the prosperity target for four consecutive quarters with debt
   at a sustainable level. The debt condition blocks a win bought with a
-  one-off borrowing binge.
+  one-off borrowing binge. The debt test has its place in the rules
+  (`debtSustainable` in `src/sim/victory.ts`); until Phase 3 brings borrowing
+  there is no debt, so it always passes, and Phase 3 enforces it.
+- **Terms:** an election every 20 quarters. Winning it begins a new term, with
+  no limit on how many; it does not by itself win the game.
 - **Lose:** election defeat, a coup, or state collapse from famine.
 - **Insolvency is not an instant loss.** It triggers a bailout with forced
   austerity, which then threatens approval.
@@ -165,7 +169,8 @@ Designed for 2560 x 1440 or larger, in three columns split by purpose.
   likelihoods, living standards by region, and an approval chart.
 - **Centre, the country:** the map with its lens buttons, and a card for the
   selected site.
-- **Under the map, the term timeline:** all 20 quarters to the election, with
+- **Under the map, the term timeline:** all 20 quarters of the current term to
+  its election, with
   harvests marked and each project as a bar. A planned project shows how many
   quarters it would be in use before the vote.
 - **Right, what you do:** budget sliders with a live projection of their
