@@ -61,6 +61,7 @@ export function Timeline(props: TimelineProps) {
           {calendar.quarters.map((quarter) => (
             <col key={quarter.number} />
           ))}
+          <col className="timeline__after" />
         </colgroup>
         <thead>
           <tr>
@@ -76,12 +77,16 @@ export function Timeline(props: TimelineProps) {
                 <span>{year}</span>
               </th>
             ))}
+            <td />
           </tr>
           <tr>
             <th scope="row">Quarter</th>
             {calendar.quarters.map((quarter) => (
               <QuarterHead key={quarter.number} quarter={quarter} />
             ))}
+            <th scope="col" className="timeline__quarter timeline__quarter--after">
+              <span>After the vote</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -142,7 +147,8 @@ interface ProjectRowProps {
 
 /**
  * One project: a bar over the quarters it is built in, then a bar over the quarters it is
- * in use before the vote. A bar that is only planned is drawn dashed.
+ * in use before the vote. A bar that is only planned is drawn dashed. A project that will
+ * be finished only after the vote says when it opens in the column beyond it.
  */
 function ProjectRow(props: ProjectRowProps) {
   const { game, calendar, schedule, supposed, unpaid, onSelectSite } = props;
@@ -166,6 +172,7 @@ function ProjectRow(props: ProjectRowProps) {
     decaying: 'Built',
   }[state];
   const inUse = `In use for ${formatQuarters(inUseBeforeVote)} before the vote`;
+  const afterVote = opens > last ? `Opens ${formatDate(dateOfQuarter(opens))}` : null;
 
   return (
     <tr>
@@ -210,6 +217,16 @@ function ProjectRow(props: ProjectRowProps) {
       ) : (
         lastBuilt < last && <td colSpan={last - Math.max(lastBuilt, buildFrom - 1)} />
       )}
+      <td>
+        {afterVote !== null && (
+          <div
+            className={`timeline__bar timeline__bar--after${tentative ? ' timeline__bar--tentative' : ''}`}
+            title={`${afterVote}, after the vote`}
+          >
+            ▶ {afterVote}
+          </div>
+        )}
+      </td>
     </tr>
   );
 }
@@ -226,7 +243,8 @@ function statusLine(
   if (state === 'operating') return `In use since ${formatDate(dateOfQuarter(schedule.opens))}`;
   if (state === 'decaying') return '▲ Decaying for want of upkeep';
   if (inUseBeforeVote === 0) {
-    return `▲ ${state === 'planned' ? 'Would' : 'Will'} not be finished before the vote`;
+    const opens = formatDate(dateOfQuarter(schedule.opens));
+    return `▲ ${state === 'planned' ? 'Would' : 'Will'} not be finished before the vote · opens ${opens}`;
   }
   const opens = opening(schedule, calendar);
   if (unpaid) return `▲ Cannot be paid for this quarter · would open ${opens}`;

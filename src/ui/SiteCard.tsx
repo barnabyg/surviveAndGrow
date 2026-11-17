@@ -1,13 +1,16 @@
 import {
+  chainsThrough,
   DECAYING_SHARE,
   formatMoney,
   regionName,
+  SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
   siteStatus,
   siteTerms,
   startFault,
   termCalendar,
   UPKEEP_ORDER_RULE,
+  type Chain,
   type GameState,
   type SiteSchedule,
   formatQuarters,
@@ -118,6 +121,9 @@ export function SiteCard(props: SiteCardProps) {
           {UPKEEP_ORDER_RULE}
         </p>
       )}
+      {chainsThrough(game, site.id).map((chain) => (
+        <ChainList key={chain.sourceId} game={game} chain={chain} siteId={site.id} />
+      ))}
       {fault !== null && <p className="warning-note">▲ {fault}</p>}
 
       <div className="button-row">
@@ -137,6 +143,79 @@ export function SiteCard(props: SiteCardProps) {
           </button>
         )}
       </div>
+    </section>
+  );
+}
+
+interface ChainListProps {
+  readonly game: GameState;
+  readonly chain: Chain;
+  /** The site whose card this is. */
+  readonly siteId: string;
+}
+
+/**
+ * A chain the site is part of: what its source earns, every site the chain runs through
+ * with how it stands, the missing links and the bottleneck. Each mark is spelt out in
+ * words, so none of it rests on colour.
+ */
+function ChainList({ game, chain, siteId }: ChainListProps) {
+  const nameOf = (id: string) =>
+    game.country.sites.find((candidate) => candidate.id === id)?.name ?? id;
+  const source = nameOf(chain.sourceId);
+  const own = chain.sourceId === siteId;
+  const title = own ? 'Chain to a port' : `Part of the chain of ${source}`;
+  const missing = chain.missing.map(nameOf).join(', ');
+  return (
+    <section className="map-card__chain" aria-label={title}>
+      <div className="map-card__term">{title}</div>
+      {chain.output > 0 ? (
+        <p className="map-card__note" role="status">
+          Earning: {source} adds {formatMoney(chain.output)} a quarter to its region’s output.
+        </p>
+      ) : (
+        <p className="warning-note" role="status">
+          ▲ {source} earns nothing
+          {chain.complete
+            ? ' until it is built.'
+            : `: its chain is missing ${missing}, which must be built and in use.`}
+        </p>
+      )}
+      <ul className="map-card__links" aria-label="Links">
+        {chain.links.map((link) => {
+          const inUse = link.state === 'operating' || link.state === 'decaying';
+          const isMissing = chain.missing.includes(link.siteId);
+          const marks = [
+            ...(link.siteId === chain.sourceId ? ['source'] : []),
+            ...(isMissing ? ['✕ Missing'] : []),
+            ...(link.siteId === chain.bottleneck ? ['◆ Bottleneck'] : []),
+          ];
+          return (
+            <li key={link.siteId}>
+              <span className="map-card__link-name">{nameOf(link.siteId)}</span>
+              <span className="map-card__link-state">
+                {[
+                  SITE_STATE_NAMES[link.state],
+                  ...(inUse && link.carries !== null
+                    ? [`carries ${formatMoney(link.carries)}`]
+                    : []),
+                  ...marks,
+                ].join(' · ')}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {chain.bottleneck !== null && (
+        <p className="map-card__note">
+          Bottleneck: {nameOf(chain.bottleneck)}
+          {chain.missing.includes(chain.bottleneck)
+            ? ', which is missing.'
+            : chain.output > 0
+              ? `, which holds the chain to ${formatMoney(chain.output)} a quarter.`
+              : ', which is not yet built.'}
+        </p>
+      )}
     </section>
   );
 }

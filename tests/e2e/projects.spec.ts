@@ -97,7 +97,8 @@ test('only what the treasury can cover is offered, and a site says why it cannot
   page,
 }) => {
   await startGame(page);
-  await expect(affordable(page).getByRole('listitem')).toHaveCount(7);
+  // Every site but the port, the one that costs more than the treasury holds.
+  await expect(affordable(page).getByRole('listitem')).toHaveCount(9);
 
   // $34.0m of the $42.0m is spoken for: two irrigation schemes and a road.
   for (const name of ['Lowmere irrigation', 'Dustwell irrigation', 'Farm road, Arden to Lowmere']) {
@@ -139,6 +140,7 @@ test('a road is built along its route, and the legend explains every state', asy
     'Decaying',
     'Possible route',
     'Road',
+    '✕ Missing link in a chain',
   ]);
 
   await endQuarters(page, 1);

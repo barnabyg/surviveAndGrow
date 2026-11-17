@@ -54,6 +54,18 @@ export function MapLegend() {
         </svg>
         Road
       </li>
+      <li>
+        <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
+          <path
+            d="M3,8 H23"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            strokeDasharray="0.1 6"
+            strokeLinecap="round"
+          />
+        </svg>
+        ✕ Missing link in a chain
+      </li>
     </ul>
   );
 }

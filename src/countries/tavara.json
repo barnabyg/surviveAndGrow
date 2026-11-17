@@ -468,24 +468,23 @@
     {
       "id": "korr-trunk-road",
       "type": "trunkRoad",
-      "name": "Trunk road, Korrgate mine to Westhaven",
+      "name": "Trunk road, Korrgate mine to Saltmouth",
       "region": "salt-coast",
       "route": [
-        [365, 128],
-        [335, 175],
-        [318, 240],
-        [290, 300],
-        [240, 350],
-        [165, 392]
+        [358, 135],
+        [330, 180],
+        [290, 205],
+        [220, 222],
+        [155, 222]
       ],
-      "dependsOn": ["westhaven-port"]
+      "dependsOn": ["saltmouth-port"]
     },
     {
-      "id": "westhaven-port",
+      "id": "saltmouth-port",
       "type": "port",
-      "name": "Westhaven port",
+      "name": "Saltmouth port",
       "region": "salt-coast",
-      "at": [150, 395]
+      "at": [140, 222]
     }
   ],
   "dilemmaLikelihood": {

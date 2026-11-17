@@ -1,5 +1,7 @@
 import { Fragment, useId } from 'react';
 import {
+  chainOf,
+  chainsThrough,
   describeEvent,
   describeUnrest,
   drawAt,
@@ -73,6 +75,17 @@ export function MapView(props: MapViewProps) {
   );
   const paint = (regionId: string): Paint =>
     paintOf.get(regionId) ?? { fill: palette.terrain.plains, ink: palette.regionLabel };
+  // The links missing from the chains of the site picked out are drawn as such.
+  const missingLinks = new Set(
+    selectedSiteId === null
+      ? []
+      : chainsThrough(game, selectedSiteId).flatMap((chain) => chain.missing),
+  );
+  const isIdle = (siteId: string) => {
+    const chain = chainOf(game, siteId);
+    const state = siteStatus(game, siteId).state;
+    return chain !== null && chain.output === 0 && (state === 'operating' || state === 'decaying');
+  };
   // Settlements are built up and lit by their region's living standard, under every lens.
   const looks = settlementLooks(game);
   const lookOf = (settlementId: string): SettlementLook =>
@@ -291,8 +304,12 @@ export function MapView(props: MapViewProps) {
         ))}
       </g>
 
-      {/* Sites are drawn last, over everything, so that each can be picked. */}
-      {country.sites.map((site) => (
+      {/* Sites are drawn last, over everything, so that each can be picked. Routes go under
+          the sites that stand in one place, so a route that starts at a site never covers it. */}
+      {[
+        ...country.sites.filter((site) => site.form === 'route'),
+        ...country.sites.filter((site) => site.form === 'place'),
+      ].map((site) => (
         <SiteMark
           key={site.id}
           site={site}
@@ -300,6 +317,8 @@ export function MapView(props: MapViewProps) {
           planned={plannedSiteIds.includes(site.id)}
           palette={palette}
           selected={site.id === selectedSiteId}
+          missingLink={missingLinks.has(site.id)}
+          idle={isIdle(site.id)}
           onSelect={onSelectSite}
         />
       ))}

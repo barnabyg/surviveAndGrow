@@ -165,3 +165,37 @@ test('a second country’s projects are drawn on the timeline through the same c
   );
   await expect(quarter(page, 'Year 1, Quarter 2, now')).toHaveText('Now');
 });
+
+test('a large project that will be finished only after the vote shows when it opens', async ({
+  page,
+}) => {
+  const country = tavaraWithDroughtIn([]) as ReturnType<typeof tavaraWithDroughtIn> & {
+    start: { treasury: number };
+  };
+  country.start.treasury = 300;
+  await startGame(page, { countryFile: country });
+  await endQuarters(page, 14);
+
+  // In quarter 15 a port, eight quarters in the building, would open in the next term.
+  await map(page)
+    .getByRole('button', { name: /^Saltmouth port/ })
+    .click();
+  const port = bars(page, 'Saltmouth port');
+  await expect(quarter(page, 'After the vote')).toBeVisible();
+  await expect(port).toContainText(
+    '▲ Would not be finished before the vote · opens Year 6, Quarter 3',
+  );
+  await expect(port.getByRole('cell', { name: '▶ Opens Year 6, Quarter 3' })).toBeVisible();
+  await expect(port).not.toContainText('In use for');
+
+  await page
+    .getByRole('region', { name: 'Saltmouth port' })
+    .getByRole('button', { name: 'Start building' })
+    .click();
+  await endQuarters(page, 1);
+  await expect(port).toContainText(
+    '▲ Will not be finished before the vote · opens Year 6, Quarter 3',
+  );
+  await expect(port.getByRole('cell', { name: 'Building', exact: true })).toBeVisible();
+  await expect(port.getByRole('cell', { name: '▶ Opens Year 6, Quarter 3' })).toBeVisible();
+});

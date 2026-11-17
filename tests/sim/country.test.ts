@@ -52,8 +52,8 @@ describe('a valid country file', () => {
       ['Farm road, Westhaven to Arden', 'farmRoad', 'salt-coast', 'route'],
       ['Farm road, Korrgate to Arden', 'farmRoad', 'korr-highlands', 'route'],
       ['Korrgate mine', 'mine', 'korr-highlands', 'place'],
-      ['Trunk road, Korrgate mine to Westhaven', 'trunkRoad', 'salt-coast', 'route'],
-      ['Westhaven port', 'port', 'salt-coast', 'place'],
+      ['Trunk road, Korrgate mine to Saltmouth', 'trunkRoad', 'salt-coast', 'route'],
+      ['Saltmouth port', 'port', 'salt-coast', 'place'],
     ]);
   });
 

@@ -88,6 +88,7 @@ test('a legend explains the marks for sites and routes', async ({ page }) => {
     'Decaying',
     'Possible route',
     'Road',
+    '✕ Missing link in a chain',
   ]);
 });
 
