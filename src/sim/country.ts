@@ -23,8 +23,14 @@ import {
   type Terrain,
 } from './vocabulary';
 
-/** The version of the country file format this game reads. */
-export const COUNTRY_FORMAT_VERSION = 1;
+/**
+ * The version of the country file format this game writes. It still reads every earlier
+ * version: format 2 added the sites a site depends on, which format 1 cannot say.
+ */
+export const COUNTRY_FORMAT_VERSION = 2;
+
+/** The oldest country file format this game still reads. */
+const OLDEST_COUNTRY_FORMAT_VERSION = 1;
 
 /** A position in the map frame: x from the left edge, y from the top edge. */
 export type Point = readonly [x: number, y: number];
@@ -63,6 +69,8 @@ interface SiteDetails {
   readonly name: string;
   /** The region the site belongs to, which is the region its effect falls on. */
   readonly regionId: string;
+  /** The ids of the other sites this one depends on, as the country file lists them. */
+  readonly dependsOn: readonly string[];
 }
 
 /**
@@ -390,6 +398,7 @@ function readSite(
     type: reader.oneOf(site, 'type', path, SITE_TYPES),
     name: reader.unique(site, 'name', path, names),
     regionId,
+    dependsOn: readDependsOn(reader, site, path),
   };
   // A type the game does not know says nothing about how the site should be given.
   if (!SITE_TYPES.some((type) => type === site.type))
@@ -434,6 +443,74 @@ function readSite(
     reader.fault(join(path, 'at'), `is (${at[0]}, ${at[1]}), outside its region "${regionId}"`);
   }
   return { ...details, form: 'place', at };
+}
+
+/**
+ * The ids a site lists as depending on. Whether each names a site is checked once every
+ * site has been read (`checkDependencies`).
+ */
+function readDependsOn(reader: Reader, site: Json, path: string): string[] {
+  const value = site.dependsOn;
+  if (value === undefined) return [];
+  const listPath = join(path, 'dependsOn');
+  if (!Array.isArray(value)) {
+    reader.fault(listPath, wrongKind(value, 'a list of site ids'));
+    return [];
+  }
+  const ids: string[] = [];
+  value.forEach((item: unknown, index) => {
+    const itemPath = `${listPath}[${index}]`;
+    if (typeof item !== 'string' || item.trim() === '') {
+      reader.fault(itemPath, wrongKind(item, 'the id of a site'));
+    } else if (ids.includes(item)) {
+      reader.fault(itemPath, `repeats "${item}"`);
+    } else {
+      ids.push(item);
+    }
+  });
+  return ids;
+}
+
+/**
+ * Each site a site depends on must be another site the country has, and no chain of
+ * dependencies may lead back to where it started.
+ */
+function checkDependencies(reader: Reader, sites: readonly Site[]): void {
+  const byId = new Map(sites.map((site) => [site.id, site]));
+  sites.forEach((site, index) => {
+    site.dependsOn.forEach((id, place) => {
+      const path = `sites[${index}].dependsOn[${place}]`;
+      if (id === site.id) reader.fault(path, `is "${id}": a site cannot depend on itself`);
+      else if (!byId.has(id)) reader.fault(path, `is "${id}", which is not the id of a site`);
+    });
+  });
+
+  // A depth-first walk; a site met again while its own dependencies are open is a cycle.
+  const done = new Set<string>();
+  const reported = new Set<string>();
+  const walk = (site: Site, trail: readonly string[]): void => {
+    if (done.has(site.id)) return;
+    const loopsAt = trail.indexOf(site.id);
+    if (loopsAt >= 0) {
+      const cycle = [...trail.slice(loopsAt), site.id];
+      const key = [...cycle.slice(0, -1)].sort().join(' ');
+      if (!reported.has(key)) {
+        reported.add(key);
+        const index = sites.indexOf(site);
+        reader.fault(
+          `sites[${index}].dependsOn`,
+          `goes round in a circle: ${cycle.map((id) => `"${id}"`).join(' depends on ')}`,
+        );
+      }
+      return;
+    }
+    for (const id of site.dependsOn) {
+      const next = byId.get(id);
+      if (next !== undefined && next !== site) walk(next, [...trail, site.id]);
+    }
+    done.add(site.id);
+  };
+  for (const site of sites) walk(site, []);
 }
 
 /**
@@ -484,9 +561,13 @@ export function loadCountry(file: unknown): Country {
   if (typeof formatVersion !== 'number') {
     throw new CountryFileError([`formatVersion ${wrongKind(formatVersion, 'a number')}.`]);
   }
-  if (formatVersion !== COUNTRY_FORMAT_VERSION) {
+  if (
+    !Number.isInteger(formatVersion) ||
+    formatVersion < OLDEST_COUNTRY_FORMAT_VERSION ||
+    formatVersion > COUNTRY_FORMAT_VERSION
+  ) {
     throw new CountryFileError([
-      `formatVersion is ${formatVersion}, but this game reads version ${COUNTRY_FORMAT_VERSION}.`,
+      `formatVersion is ${formatVersion}, but this game reads versions ${OLDEST_COUNTRY_FORMAT_VERSION} to ${COUNTRY_FORMAT_VERSION}.`,
     ]);
   }
 
@@ -528,9 +609,15 @@ export function loadCountry(file: unknown): Country {
   // Reports and the treasury's breakdown name sites, so two sites may not share a name.
   const siteIds = new Map<string, string>();
   const siteNames = new Map<string, string>();
-  const sites = reader.list(file, 'sites', '', (item, path) =>
-    readSite(reader, item, path, regions, siteIds, siteNames),
-  );
+  const sites = reader.list(file, 'sites', '', (item, path) => {
+    // Format 1 had no way to say what a site depends on.
+    if (formatVersion < 2 && item.dependsOn !== undefined) {
+      reader.fault(join(path, 'dependsOn'), 'needs country file format 2 or later');
+      return readSite(reader, { ...item, dependsOn: undefined }, path, regions, siteIds, siteNames);
+    }
+    return readSite(reader, item, path, regions, siteIds, siteNames);
+  });
+  checkDependencies(reader, sites);
 
   const map = reader.object(file, 'map', '');
   const neighbourIds = new Map<string, string>();

@@ -155,6 +155,9 @@ costs, how long it takes and what it does are the game's, not the country's.
 - A farm road runs along a line, given by `route` as two or more positions. Every position must
   lie inside the country, and the route must start or end in the site's region, which is the
   region the road serves.
+- In a file of `"formatVersion": 2`, a site may list the `id`s of the sites it depends on in
+  `dependsOn`. Each must be another site in the file, and the dependencies must not go round in a
+  circle. A file of format 1 cannot say this, and still loads as it is.
 
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:

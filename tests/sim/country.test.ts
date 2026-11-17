@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { loadCountry, MAP_FRAME, siteTerms } from '../../src/sim';
+import {
+  advanceQuarter,
+  createGame,
+  loadCountry,
+  MAP_FRAME,
+  siteTerms,
+  type GameState,
+} from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { tavara, testland } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
@@ -56,6 +63,7 @@ describe('a valid country file', () => {
         type: 'irrigation',
         name: 'North irrigation',
         regionId: 'northfield',
+        dependsOn: [],
         form: 'place',
         at: [290, 330],
       },
@@ -64,6 +72,7 @@ describe('a valid country file', () => {
         type: 'grainStore',
         name: 'Alpha grain store',
         regionId: 'northfield',
+        dependsOn: [],
         form: 'place',
         at: [440, 440],
       },
@@ -72,6 +81,7 @@ describe('a valid country file', () => {
         type: 'farmRoad',
         name: 'Farm road, Alpha to Beta',
         regionId: 'sandreach',
+        dependsOn: [],
         form: 'route',
         route: [
           [385, 385],
@@ -103,6 +113,76 @@ describe('the types of site', () => {
   });
 });
 
+describe('a country file in format 2', () => {
+  const format2 = (dependsOn: Record<number, unknown>) => {
+    // No dilemma arises, so a game in it can be played on without answering one.
+    let file = withValue(withValue(testlandFile, ['formatVersion'], 2), ['dilemmaLikelihood'], {});
+    for (const [index, value] of Object.entries(dependsOn)) {
+      file = withValue(file, ['sites', Number(index), 'dependsOn'], value);
+    }
+    return file;
+  };
+
+  it('may say which other sites a site depends on', () => {
+    const country = loadCountry(format2({ 2: ['north-irrigation', 'alpha-store'] }));
+
+    expect(country.formatVersion).toBe(2);
+    expect(country.sites.map((site) => site.dependsOn)).toEqual([
+      [],
+      [],
+      ['north-irrigation', 'alpha-store'],
+    ]);
+  });
+
+  it('plays the same game as the same country in format 1', () => {
+    const decisions = (game: GameState) => ({ budget: game.budget });
+    let one = createGame(testland(), 7);
+    let two = createGame(loadCountry(format2({ 0: ['alpha-store'] })), 7);
+    for (let quarter = 0; quarter < 8; quarter += 1) {
+      one = advanceQuarter(one, decisions(one)).state;
+      two = advanceQuarter(two, decisions(two)).state;
+      expect(two.regions).toEqual(one.regions);
+      expect(two.treasury).toBe(one.treasury);
+    }
+  });
+
+  it('is rejected when a site depends on a site the country does not have', () => {
+    expect(faultsOf(format2({ 0: ['atlantis'] }))).toEqual([
+      'sites[0].dependsOn[0] is "atlantis", which is not the id of a site.',
+    ]);
+  });
+
+  it('is rejected when a site depends on itself', () => {
+    expect(faultsOf(format2({ 1: ['alpha-store'] }))).toEqual([
+      'sites[1].dependsOn[0] is "alpha-store": a site cannot depend on itself.',
+    ]);
+  });
+
+  it('is rejected when dependencies go round in a circle, naming the circle once', () => {
+    expect(
+      faultsOf(format2({ 0: ['alpha-store'], 1: ['sand-road'], 2: ['north-irrigation'] })),
+    ).toEqual([
+      'sites[0].dependsOn goes round in a circle: "north-irrigation" depends on "alpha-store" depends on "sand-road" depends on "north-irrigation".',
+    ]);
+  });
+
+  it('is rejected when the dependencies are not a list of site ids, or repeat one', () => {
+    expect(faultsOf(format2({ 0: 'alpha-store' }))).toEqual([
+      'sites[0].dependsOn must be a list of site ids, but is text.',
+    ]);
+    expect(faultsOf(format2({ 0: ['alpha-store', 'alpha-store', 3] }))).toEqual([
+      'sites[0].dependsOn[1] repeats "alpha-store".',
+      'sites[0].dependsOn[2] must be the id of a site, but is a number.',
+    ]);
+  });
+
+  it('cannot be given dependencies in a format 1 file', () => {
+    const file = withValue(testlandFile, ['sites', 0, 'dependsOn'], ['alpha-store']);
+
+    expect(faultsOf(file)).toEqual(['sites[0].dependsOn needs country file format 2 or later.']);
+  });
+});
+
 describe('an invalid country file is rejected with a message naming the fault', () => {
   it('when it is not an object', () => {
     expect(faultsOf('tavara')).toEqual(['The file must be an object, but is text.']);
@@ -121,9 +201,9 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it is written for another version of the format', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 2);
+    const file = withValue(testlandFile, ['formatVersion'], 3);
 
-    expect(faultsOf(file)).toEqual(['formatVersion is 2, but this game reads version 1.']);
+    expect(faultsOf(file)).toEqual(['formatVersion is 3, but this game reads versions 1 to 2.']);
   });
 
   it('when its format version is not a number', () => {

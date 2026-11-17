@@ -111,7 +111,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const spoiled = Math.floor(
     (situation.foodReserve *
       food.reserveSpoilagePermillePerQuarter *
-      inputs.sites.spoilagePermille) /
+      inputs.sites.national.reserveSpoilage) /
       1_000_000,
   );
   if (spoiled > 0) contributions.push({ label: 'Spoiled in store', amount: -spoiled });
@@ -187,7 +187,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
     const land = regionOf(country, region.id);
     // Irrigation leaves the weather only a part of its hold on the harvest.
     const weather = Math.trunc(
-      (region.weather * (inputs.sites.weatherPermille[index] ?? 1000)) / 1000,
+      (region.weather * (inputs.sites.inRegion.harvestWeather[index] ?? 1000)) / 1000,
     );
     const grown =
       land === undefined
@@ -195,7 +195,9 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
         : grow(land, weather, yieldPermille, inputs.harvestPermille[index] ?? 1000);
     const surplus = Math.max(0, region.foodStock + grown - regionKeep(region.population));
     const lost = Math.floor(
-      (surplus * food.transportLossPermille * (inputs.sites.transportLossPermille[index] ?? 1000)) /
+      (surplus *
+        food.transportLossPermille *
+        (inputs.sites.inRegion.transportLoss[index] ?? 1000)) /
         1_000_000,
     );
     harvests.push({ regionId: region.id, grown, surplus, lost });

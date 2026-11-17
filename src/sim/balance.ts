@@ -5,9 +5,18 @@ import type {
   EventType,
   FoodStage,
   Likelihood,
+  SiteEffect,
   SiteType,
   SpendingArea,
 } from './vocabulary';
+
+/** The balance values of one type of site. */
+export interface SiteBalance {
+  readonly cost: number;
+  readonly buildQuarters: number;
+  /** What the site in use leaves of each thing it bears on, in thousandths. */
+  readonly effects: Readonly<Partial<Record<SiteEffect, number>>>;
+}
 
 /**
  * Every value that tunes the game lives here as data. The rules in the rest of the
@@ -163,28 +172,14 @@ export const balance = {
   },
   /**
    * What can be built. Each type costs `cost` in Money units ($100,000), paid over the
-   * `buildQuarters` it takes to build, and then has its effect for good.
+   * `buildQuarters` it takes to build, and then has its effects for good: each leaves that
+   * many thousandths of what it bears on (see `SITE_EFFECT_DEFINITIONS`).
    */
   sites: {
-    irrigation: {
-      cost: 120,
-      buildQuarters: 3,
-      /** What is left of the weather's and of drought's hold on its region's harvest, in thousandths. */
-      weatherPermille: 500,
-    },
-    farmRoad: {
-      cost: 100,
-      buildQuarters: 3,
-      /** What is left of the share of its region's surplus lost in transport, in thousandths. */
-      transportLossPermille: 500,
-    },
-    grainStore: {
-      cost: 60,
-      buildQuarters: 2,
-      /** What is left of the share of the national reserve that spoils, in thousandths. */
-      spoilagePermille: 750,
-    },
-  } satisfies Record<SiteType, { cost: number; buildQuarters: number } & Record<string, number>>,
+    irrigation: { cost: 120, buildQuarters: 3, effects: { harvestWeather: 500 } },
+    farmRoad: { cost: 100, buildQuarters: 3, effects: { transportLoss: 500 } },
+    grainStore: { cost: 60, buildQuarters: 2, effects: { reserveSpoilage: 750 } },
+  } satisfies Record<SiteType, SiteBalance>,
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */
     earliestQuarter: 2,

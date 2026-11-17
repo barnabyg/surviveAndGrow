@@ -73,19 +73,56 @@ export const ENDING_CAUSES = ['famine', 'election'] as const;
 export const SITE_TYPES = ['irrigation', 'farmRoad', 'grainStore'] as const;
 export type SiteType = (typeof SITE_TYPES)[number];
 
-export const SITE_TYPE_NAMES: Readonly<Record<SiteType, string>> = {
-  irrigation: 'Irrigation scheme',
-  farmRoad: 'Farm road',
-  grainStore: 'Grain store',
-};
-
 /** A site either stands in one place or runs along a route. Its type decides which. */
 export type SiteForm = 'place' | 'route';
 
-export const SITE_FORMS: Readonly<Record<SiteType, SiteForm>> = {
-  irrigation: 'place',
-  farmRoad: 'route',
-  grainStore: 'place',
+/**
+ * What the engine knows of each type of site: its name and how it is laid out. What it costs
+ * and what it does are balance values (`balance.sites`), so a type is added here and there
+ * and in no rule.
+ */
+export const SITE_TYPE_DEFINITIONS: Readonly<
+  Record<SiteType, { readonly name: string; readonly form: SiteForm }>
+> = {
+  irrigation: { name: 'Irrigation scheme', form: 'place' },
+  farmRoad: { name: 'Farm road', form: 'route' },
+  grainStore: { name: 'Grain store', form: 'place' },
+};
+
+export const SITE_TYPE_NAMES: Readonly<Record<SiteType, string>> = Object.fromEntries(
+  SITE_TYPES.map((type) => [type, SITE_TYPE_DEFINITIONS[type].name]),
+) as Record<SiteType, string>;
+
+export const SITE_FORMS: Readonly<Record<SiteType, SiteForm>> = Object.fromEntries(
+  SITE_TYPES.map((type) => [type, SITE_TYPE_DEFINITIONS[type].form]),
+) as Record<SiteType, SiteForm>;
+
+/**
+ * The things a site in use can lessen. A site's effect leaves a share, in thousandths, of
+ * one of them; several sites bearing on the same thing multiply together.
+ */
+export const SITE_EFFECTS = ['harvestWeather', 'transportLoss', 'reserveSpoilage'] as const;
+export type SiteEffect = (typeof SITE_EFFECTS)[number];
+
+/**
+ * Where each effect falls: on the region the site belongs to, or on the whole nation, and
+ * the sentence that tells the player what it does. `{percent}` is what the site takes off.
+ */
+export const SITE_EFFECT_DEFINITIONS: Readonly<
+  Record<SiteEffect, { readonly reach: 'region' | 'nation'; readonly sentence: string }>
+> = {
+  harvestWeather: {
+    reach: 'region',
+    sentence: 'Weather and drought move its region’s harvest {percent}% less.',
+  },
+  transportLoss: {
+    reach: 'region',
+    sentence: '{percent}% less of its region’s surplus is lost on the way to the national reserve.',
+  },
+  reserveSpoilage: {
+    reach: 'nation',
+    sentence: '{percent}% less of the national reserve spoils each quarter.',
+  },
 };
 
 /** How a project stands: being built, held up for want of money, or built and in use. */

@@ -284,8 +284,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when the country it carries will not load', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 2))).toBe(
-      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 2, but this game reads version 1.',
+    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 3))).toBe(
+      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 3, but this game reads versions 1 to 2.',
     );
     expect(refusal(without(save, ['country', 'file']))).toMatch(/country cannot be loaded/);
     expect(refusal(without(save, ['country']))).toBe(

@@ -1,7 +1,12 @@
 import { percentOff } from './arithmetic';
 import { balance } from './balance';
 import type { Money } from './types';
-import type { SiteType } from './vocabulary';
+import {
+  SITE_EFFECT_DEFINITIONS,
+  SITE_EFFECTS,
+  type SiteEffect,
+  type SiteType,
+} from './vocabulary';
 
 /** What it takes to build a site of one type, and what the site then does. */
 export interface SiteTerms {
@@ -18,15 +23,20 @@ export function siteTerms(type: SiteType): SiteTerms {
   return { cost, buildQuarters, effect: effectOf(type) };
 }
 
-/** A site's effect in words, written from the same figures the rules use. */
+/** What a site of one type in use leaves of each thing it bears on, in thousandths. */
+export function siteEffectsOf(type: SiteType): readonly (readonly [SiteEffect, number])[] {
+  const effects: Readonly<Partial<Record<SiteEffect, number>>> = balance.sites[type].effects;
+  return SITE_EFFECTS.flatMap((effect) => {
+    const permille = effects[effect];
+    return permille === undefined ? [] : [[effect, permille] as const];
+  });
+}
+
+/** A site's effects in words, written from the same figures the rules use. */
 function effectOf(type: SiteType): string {
-  const { sites } = balance;
-  switch (type) {
-    case 'irrigation':
-      return `Weather and drought move its region’s harvest ${percentOff(sites.irrigation.weatherPermille)}% less.`;
-    case 'farmRoad':
-      return `${percentOff(sites.farmRoad.transportLossPermille)}% less of its region’s surplus is lost on the way to the national reserve.`;
-    case 'grainStore':
-      return `${percentOff(sites.grainStore.spoilagePermille)}% less of the national reserve spoils each quarter.`;
-  }
+  return siteEffectsOf(type)
+    .map(([effect, permille]) =>
+      SITE_EFFECT_DEFINITIONS[effect].sentence.replace('{percent}', String(percentOff(permille))),
+    )
+    .join(' ');
 }

@@ -317,7 +317,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
         state.events,
         region.id,
         quarter,
-        atHarvest.weatherPermille[index] ?? 1000,
+        atHarvest.inRegion.harvestWeather[index] ?? 1000,
       ),
     ),
     bestHarvestPermille: eventsLeave(state, atHarvest),
@@ -435,14 +435,14 @@ function withAnswer(state: GameState, answer: DilemmaOutcome): GameState {
 /** What the events in force leave of each region's harvest, given the sites in use. */
 function eventsLeave(state: Pick<GameState, 'regions' | 'events'>, sites: SiteEffects): number[] {
   return state.regions.map((region, index) =>
-    harvestPermille(state.events, region.id, sites.weatherPermille[index] ?? 1000),
+    harvestPermille(state.events, region.id, sites.inRegion.harvestWeather[index] ?? 1000),
   );
 }
 
 /** What irrigation in use leaves of the weather's and of events' hold on one region. */
 function holdOn(country: Country, projects: readonly Project[], regionId: string): number {
   const index = country.regions.findIndex((region) => region.id === regionId);
-  return siteEffects({ country, projects }).weatherPermille[index] ?? 1000;
+  return siteEffects({ country, projects }).inRegion.harvestWeather[index] ?? 1000;
 }
 
 interface QuarterAhead {

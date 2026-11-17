@@ -1,12 +1,17 @@
 import { sum } from './arithmetic';
-import { balance } from './balance';
 import { nextDate } from './calendar';
 import type { Country, Site } from './country';
 import type { ReportEntry } from './report';
-import { siteTerms, type SiteTerms } from './sites';
+import { siteEffectsOf, siteTerms, type SiteTerms } from './sites';
 import { formatMoney, formatQuarters } from './text';
 import type { Contribution, GameDate, Money } from './types';
-import type { ProjectStatus, SiteState } from './vocabulary';
+import {
+  SITE_EFFECT_DEFINITIONS,
+  SITE_EFFECTS,
+  type ProjectStatus,
+  type SiteEffect,
+  type SiteState,
+} from './vocabulary';
 
 /**
  * Something being built on a site, or built and in use. Anything with a cost, a build time
@@ -151,38 +156,45 @@ export function resolveProjects(
 
 /**
  * What the sites in use do, as what each leaves of something, in thousandths: 1000 leaves
- * it whole. Several sites of one type bearing on the same thing multiply together.
+ * it whole. Several sites bearing on the same thing multiply together. An effect that falls
+ * on its site's region is counted region by region; one that falls on the nation, once.
  */
 export interface SiteEffects {
-  /** What is left of the weather's and of events' hold on each region's harvest. */
-  readonly weatherPermille: readonly number[];
-  /** What is left of the share of each region's surplus lost in transport. */
-  readonly transportLossPermille: readonly number[];
-  /** What is left of the share of the national reserve that spoils. */
-  readonly spoilagePermille: number;
+  /** For each effect, what is left of it in each region, in the country file's order. */
+  readonly inRegion: Readonly<Record<SiteEffect, readonly number[]>>;
+  /** For each effect, what is left of it across the nation. */
+  readonly national: Readonly<Record<SiteEffect, number>>;
 }
 
-/** The effects of the sites in use as a quarter begins. Each list has one entry per region. */
+/** The effects of the sites in use as a quarter begins. */
 export function siteEffects({ country, projects }: Building): SiteEffects {
-  const inUse = country.sites.filter((site) =>
+  const inRegion = Object.fromEntries(
+    SITE_EFFECTS.map((effect) => [effect, country.regions.map(() => 1000)]),
+  ) as Record<SiteEffect, number[]>;
+  const national = Object.fromEntries(SITE_EFFECTS.map((effect) => [effect, 1000])) as Record<
+    SiteEffect,
+    number
+  >;
+  const leave = (left: number, permille: number) => Math.floor((left * permille) / 1000);
+  for (const site of sitesInUse({ country, projects })) {
+    const regionIndex = country.regions.findIndex((region) => region.id === site.regionId);
+    for (const [effect, permille] of siteEffectsOf(site.type)) {
+      if (SITE_EFFECT_DEFINITIONS[effect].reach === 'nation') {
+        national[effect] = leave(national[effect], permille);
+      } else if (regionIndex >= 0) {
+        const left = inRegion[effect];
+        left[regionIndex] = leave(left[regionIndex] ?? 1000, permille);
+      }
+    }
+  }
+  return { inRegion, national };
+}
+
+/** The sites in use, in the country file's order. */
+export function sitesInUse({ country, projects }: Building): readonly Site[] {
+  return country.sites.filter((site) =>
     projects.some((project) => project.siteId === site.id && project.status === 'operating'),
   );
-  const compound = (sites: readonly Site[], permille: number) =>
-    sites.reduce((left) => Math.floor((left * permille) / 1000), 1000);
-  const { irrigation, farmRoad, grainStore } = balance.sites;
-  const ofType = (type: Site['type'], regionId?: string) =>
-    inUse.filter(
-      (site) => site.type === type && (regionId === undefined || site.regionId === regionId),
-    );
-  return {
-    weatherPermille: country.regions.map((region) =>
-      compound(ofType('irrigation', region.id), irrigation.weatherPermille),
-    ),
-    transportLossPermille: country.regions.map((region) =>
-      compound(ofType('farmRoad', region.id), farmRoad.transportLossPermille),
-    ),
-    spoilagePermille: compound(ofType('grainStore'), grainStore.spoilagePermille),
-  };
 }
 
 /**
