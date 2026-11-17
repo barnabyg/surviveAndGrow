@@ -42,10 +42,16 @@ interface GameScreenProps {
   readonly onReplay: () => void;
   /** Leaves this game for the start screen, where a new one begins. */
   readonly onNewGame: () => void;
+  /**
+   * Gives up the game in play, which the player has confirmed: its save is forgotten, and
+   * it is either replayed from its first quarter or left for the start screen.
+   */
+  readonly onRestart: (how: 'replay' | 'new') => void;
 }
 
 export function GameScreen(props: GameScreenProps) {
-  const { initialGame, initialReport, saveNotice, onQuarterEnded, onReplay, onNewGame } = props;
+  const { initialGame, initialReport, saveNotice, onQuarterEnded, onReplay, onNewGame, onRestart } =
+    props;
   const [game, setGame] = useState(initialGame);
   const [report, setReport] = useState<TurnReport | null>(initialReport);
   // The committed budget is what the quarter will be resolved with. The pending budget is
@@ -66,6 +72,7 @@ export function GameScreen(props: GameScreenProps) {
   // The same for a risk the player selected, kept by its headline since the list changes.
   const [riskPicked, setRiskPicked] = useState<string | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
+  const [confirmingRestart, setConfirmingRestart] = useState(false);
   // The answer to the quarter's dilemma, if it has one. Like the relief target it is held
   // with the other decisions and can be changed until the quarter ends. The dilemma is put
   // to the player as its quarter begins, and again if they try to end the quarter without
@@ -175,7 +182,14 @@ export function GameScreen(props: GameScreenProps) {
 
   return (
     <div className="game">
-      <TopBar game={game} report={report} onEndQuarter={endQuarter} />
+      <TopBar
+        game={game}
+        report={report}
+        onEndQuarter={endQuarter}
+        onRestart={() => {
+          setConfirmingRestart(true);
+        }}
+      />
       <div className="columns">
         <aside className="column column--situation" aria-label="Situation">
           {saveNotice !== null && (
@@ -304,6 +318,29 @@ export function GameScreen(props: GameScreenProps) {
         >
           The budget changes on screen have not been committed. If you end the quarter now, it is
           resolved with the last budget you committed, and the changes stay pending.
+        </ConfirmDialog>
+      )}
+      {confirmingRestart && (
+        <ConfirmDialog
+          title="Restart this game?"
+          cancelLabel="Keep playing"
+          confirmLabel="Replay this game"
+          onCancel={() => {
+            setConfirmingRestart(false);
+          }}
+          onConfirm={() => {
+            onRestart('replay');
+          }}
+          alternative={{
+            label: 'New game',
+            onChoose: () => {
+              onRestart('new');
+            },
+          }}
+        >
+          Everything played so far is lost, and the saved game with it. Replaying starts this game
+          again from its first quarter, with the same weather and the same events. A new game goes
+          back to the start screen.
         </ConfirmDialog>
       )}
       {dilemma !== null && dilemmaShown !== 'no' && (

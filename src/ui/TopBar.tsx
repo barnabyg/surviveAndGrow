@@ -27,6 +27,8 @@ interface TopBarProps {
   /** The report on the quarter just ended, or null before any quarter has ended. */
   readonly report: TurnReport | null;
   readonly onEndQuarter: () => void;
+  /** Asks to give up this game for a fresh one. */
+  readonly onRestart: () => void;
 }
 
 /** What the approval figure says while regions are striking or protesting. */
@@ -41,7 +43,7 @@ function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
   return { text, tone } as const;
 }
 
-export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
+export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
@@ -176,14 +178,22 @@ export function TopBar({ game, report, onEndQuarter }: TopBarProps) {
         </div>
       </div>
 
-      <button
-        type="button"
-        className="button button--primary"
-        disabled={game.outcome.status !== 'playing'}
-        onClick={onEndQuarter}
-      >
-        End quarter
-      </button>
+      <div className="topbar__actions">
+        {/* A finished game offers its own replay on the summary, so this is for one in play. */}
+        {game.outcome.status === 'playing' && (
+          <button type="button" className="button" onClick={onRestart}>
+            Restart
+          </button>
+        )}
+        <button
+          type="button"
+          className="button button--primary"
+          disabled={game.outcome.status !== 'playing'}
+          onClick={onEndQuarter}
+        >
+          End quarter
+        </button>
+      </div>
     </header>
   );
 }

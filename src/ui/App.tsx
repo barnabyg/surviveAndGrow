@@ -179,6 +179,16 @@ function Session({ country, storageKey }: SessionProps) {
   }
 
   const { game } = play;
+  const replay = () => {
+    writeSeedToAddress(game.seed);
+    // The same game again is the same seed on the country this game was played on.
+    begin({ game: createGame(game.country, game.seed), report: null });
+  };
+  const newGame = () => {
+    // A new game is a different game, so the address stops naming this one's seed.
+    writeSeedToAddress(null);
+    setPlay(null);
+  };
   const saveNotice =
     stored.status === 'refused'
       ? 'This game is not being saved, so that the saved game which could not be opened is left as it is.'
@@ -197,15 +207,16 @@ function Session({ country, storageKey }: SessionProps) {
         if (kept) setStored({ status: 'ready', game: ended, report });
         setStoringFailed(!kept);
       }}
-      onReplay={() => {
-        writeSeedToAddress(game.seed);
-        // The same game again is the same seed on the country this game was played on.
-        begin({ game: createGame(game.country, game.seed), report: null });
-      }}
-      onNewGame={() => {
-        // A new game is a different game, so the address stops naming this one's seed.
-        writeSeedToAddress(null);
-        setPlay(null);
+      onReplay={replay}
+      onNewGame={newGame}
+      onRestart={(how) => {
+        // The player has given this game up, so its save goes too and a reload does not
+        // bring it back. A save the game could not open is still never touched.
+        if (stored.status !== 'refused' && discardStoredGame(storageKey)) {
+          setStored({ status: 'none' });
+        }
+        if (how === 'replay') replay();
+        else newGame();
       }}
     />
   );

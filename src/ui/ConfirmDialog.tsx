@@ -7,11 +7,13 @@ interface ConfirmDialogProps {
   readonly confirmLabel: string;
   readonly onCancel: () => void;
   readonly onConfirm: () => void;
+  /** A second way to go ahead, offered beside the main one. */
+  readonly alternative?: { readonly label: string; readonly onChoose: () => void };
 }
 
 /** A question the player must answer before the game carries on. Escape cancels. */
 export function ConfirmDialog(props: ConfirmDialogProps) {
-  const { title, children, cancelLabel, confirmLabel, onCancel, onConfirm } = props;
+  const { title, children, cancelLabel, confirmLabel, onCancel, onConfirm, alternative } = props;
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -38,6 +40,11 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
         <button type="button" className="button" onClick={onCancel}>
           {cancelLabel}
         </button>
+        {alternative !== undefined && (
+          <button type="button" className="button" onClick={alternative.onChoose}>
+            {alternative.label}
+          </button>
+        )}
         <button type="button" className="button button--commit" onClick={onConfirm}>
           {confirmLabel}
         </button>

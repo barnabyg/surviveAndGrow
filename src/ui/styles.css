@@ -230,6 +230,12 @@ p {
   text-transform: uppercase;
 }
 
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .topbar__date {
   font-size: 15px;
   color: var(--muted);
