@@ -17,6 +17,11 @@ import type {
 export interface SiteBalance {
   readonly cost: number;
   readonly buildQuarters: number;
+  /**
+   * What keeping the site in good repair costs, in Money units ($100,000) a quarter, from
+   * its first quarter in use. Left unpaid, the site decays (see `balance.upkeep`).
+   */
+  readonly upkeep: number;
   /** What the site in use leaves of each thing it bears on, in thousandths. */
   readonly effects: Readonly<Partial<Record<SiteEffect, number>>>;
   /**
@@ -200,22 +205,36 @@ export const balance = {
     irrigation: {
       cost: 120,
       buildQuarters: 3,
+      upkeep: 4,
       effects: { harvestWeather: 500 },
       infrastructurePermille: 100,
     },
     farmRoad: {
       cost: 100,
       buildQuarters: 3,
+      upkeep: 3,
       effects: { transportLoss: 500 },
       infrastructurePermille: 150,
     },
     grainStore: {
       cost: 60,
       buildQuarters: 2,
+      upkeep: 2,
       effects: { reserveSpoilage: 750 },
       infrastructurePermille: 100,
     },
   } satisfies Record<SiteType, SiteBalance>,
+  /**
+   * Upkeep. Each quarter the upkeep spending keeps the sites in use in good repair one by
+   * one, in the order building began on them, until what is left will not cover the next:
+   * that site and every one started after it go without, so the newest decay first. A site
+   * that goes without is decaying from the next quarter, and does only
+   * `decayingEffectPermille` thousandths of what it does in good repair, until a quarter in
+   * which its upkeep is paid restores it.
+   */
+  upkeep: {
+    decayingEffectPermille: 500,
+  },
   /**
    * Living standards and prosperity. Every score is in thousandths: a region's living
    * standard is its five parts' scores weighted by `weightsPermille`, which add up to 1000.

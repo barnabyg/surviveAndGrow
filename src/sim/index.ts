@@ -92,6 +92,7 @@ export {
   type ReliefDelivery,
   type TurnReport,
   type TurnResult,
+  type UpkeepPreview,
 } from './state';
 export {
   formatCount,

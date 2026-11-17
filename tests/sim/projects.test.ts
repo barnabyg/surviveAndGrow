@@ -18,16 +18,26 @@ import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland, withDroughtChance } from './countries';
 import { steward } from './players';
 
-/** Every tax the country can bear and nothing spent, so the treasury only grows. */
+/**
+ * Every tax the country can bear and nothing spent but the upkeep of what is built, so the
+ * treasury only grows and every site in use stays in good repair.
+ */
 const austere: Budget = {
   taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0 },
+  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 200 },
 };
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left over. */
 const ruinous: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 interface Played {
@@ -152,6 +162,7 @@ describe('starting a project in Tavara', () => {
       quartersPaid: 1,
       buildQuarters: 3,
       cost: 120,
+      upkeep: 4,
       instalment: 40,
       began: { year: 1, quarter: 1 },
       opened: null,
@@ -333,7 +344,14 @@ describe('a project the treasury cannot pay for', () => {
     // $42.0m and $31.0m of revenue, less $68.0m of spending, leaves $5.0m for building.
     const tight: Budget = {
       taxRatePercent: 18,
-      spending: { agriculture: 200, foodRelief: 200, health: 200, education: 80, security: 0 },
+      spending: {
+        agriculture: 200,
+        foodRelief: 200,
+        health: 200,
+        education: 80,
+        security: 0,
+        upkeep: 0,
+      },
     };
 
     const { state, reports } = play(game, [
@@ -586,8 +604,18 @@ describe('previewing a quarter with projects', () => {
           .filter((project) => project.status === 'paused')
           .map((project) => project.siteId),
       );
+      // A quarter the treasury cannot cover cuts upkeep too, and the sites in use decay.
+      expect(preview.upkeep.short).toEqual(
+        state.projects
+          .filter((project) => project.status === 'operating' || project.status === 'decaying')
+          .map((project) => project.siteId)
+          .filter((siteId) => siteStatus(result.state, siteId).state === 'decaying'),
+      );
       ({ state } = result);
     }
-    expect(state.projects.some((project) => project.status === 'operating')).toBe(true);
+    expect(state.projects.some((project) => project.status === 'decaying')).toBe(true);
+    expect(
+      state.projects.filter((project) => ['operating', 'decaying'].includes(project.status)),
+    ).not.toEqual([]);
   });
 });

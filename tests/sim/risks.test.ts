@@ -55,7 +55,14 @@ function harsh(game: GameState): Budget {
 /** The lowest tax and the most the game allows on every area: more than any treasury covers. */
 const ruinous: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 describe.each(scenarios)('the risks ahead in $name', ({ file, regionId, regionName }) => {
@@ -316,7 +323,14 @@ describe('the risks ahead in Tavara', () => {
     // Revenue is $31.0m. Spending $69.0m leaves $4.0m, which the first instalment takes.
     const spree: Budget = {
       taxRatePercent: 18,
-      spending: { agriculture: 200, foodRelief: 200, health: 200, education: 60, security: 30 },
+      spending: {
+        agriculture: 200,
+        foodRelief: 200,
+        health: 200,
+        education: 60,
+        security: 30,
+        upkeep: 0,
+      },
     };
     const game = advanceQuarter(start, {
       budget: spree,
@@ -326,7 +340,14 @@ describe('the risks ahead in Tavara', () => {
     // A budget that spends exactly what comes in leaves nothing for the next instalment.
     const balanced: Budget = {
       taxRatePercent: 18,
-      spending: { agriculture: 110, foodRelief: 70, health: 70, education: 60, security: 0 },
+      spending: {
+        agriculture: 110,
+        foodRelief: 70,
+        health: 70,
+        education: 60,
+        security: 0,
+        upkeep: 0,
+      },
     };
 
     expect(ofKind(risksAhead(game, { budget: balanced }), 'treasury')).toEqual({
@@ -344,7 +365,14 @@ describe('the risks ahead in Tavara', () => {
     // what relief does not need, so every region grows enough and nobody strikes.
     const balanced: Budget = {
       taxRatePercent: 18,
-      spending: { agriculture: 130, foodRelief: 0, health: 70, education: 60, security: 50 },
+      spending: {
+        agriculture: 130,
+        foodRelief: 0,
+        health: 70,
+        education: 60,
+        security: 50,
+        upkeep: 0,
+      },
     };
     // Losing $13.0m a quarter, $42.0m covers three quarters and not a fourth.
     const deficit: Budget = {

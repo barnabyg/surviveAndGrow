@@ -24,6 +24,7 @@ import testlandFile from '../countries/testland.json';
 import format1Save from '../saves/format-1.json';
 import format2Save from '../saves/format-2.json';
 import format3Save from '../saves/format-3.json';
+import format4Save from '../saves/format-4.json';
 import {
   bothCountries,
   tavara,
@@ -48,13 +49,20 @@ const countries = [
 /** Every tax the country can bear and nothing spent, so the treasury only grows. */
 const austere: Budget = {
   taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0 },
+  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
 };
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left over. */
 const ruinous: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 /**
@@ -99,7 +107,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(3);
+    expect(save.formatVersion).toBe(4);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -149,20 +157,27 @@ describe.each(countries)(
       },
     );
 
-    it('is the same with a project being built, paused for want of money, and finished', () => {
+    it('is the same with a project being built, paused for want of money, finished, decaying and restored', () => {
       const country = withChances(file, {});
       const store = country.sites.find((site) => site.type === 'grainStore');
       if (!store) throw new Error('The country has no grain store site');
 
-      const passed = playThroughSaves(createGame(country, 4), 6, (_game, quarter) => ({
+      const passed = playThroughSaves(createGame(country, 4), 7, (_game, quarter) => ({
         // Building is begun in a quarter that empties the treasury, which then fills again.
-        budget: quarter === 0 ? ruinous : austere,
+        // Austere pays no upkeep, so the store decays once in use, until upkeep is paid.
+        budget:
+          quarter === 0
+            ? ruinous
+            : quarter === 6
+              ? { ...austere, spending: { ...austere.spending, upkeep: 10 } }
+              : austere,
         ...(quarter === 0 ? { startProjects: [store.id] } : {}),
       }));
 
       const statuses = passed.map((game) => game.projects[0]?.status);
       expect(statuses).toContain('paused');
       expect(statuses).toContain('building');
+      expect(statuses).toContain('decaying');
       expect(statuses.at(-1)).toBe('operating');
     });
 
@@ -276,8 +291,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 4))).toBe(
-      'The saved game was written by a newer release of the game (save format 4; this release reads format 3). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 5))).toBe(
+      'The saved game was written by a newer release of the game (save format 5; this release reads format 4). Open it with that release.',
     );
   });
 
@@ -612,14 +627,28 @@ describe('a save written under other budget limits', () => {
     const { save } = midGameSave(tavara);
     const outside = {
       taxRatePercent: 90,
-      spending: { agriculture: 205, foodRelief: 1000, health: 0, education: 70, security: 13 },
+      spending: {
+        agriculture: 205,
+        foodRelief: 1000,
+        health: 0,
+        education: 70,
+        security: 13,
+        upkeep: 0,
+      },
     };
 
     const restored = loadSave(withValue(save, ['state', 'budget'], outside));
 
     expect(restored.game.budget).toEqual({
       taxRatePercent: 40,
-      spending: { agriculture: 200, foodRelief: 200, health: 0, education: 70, security: 10 },
+      spending: {
+        agriculture: 200,
+        foodRelief: 200,
+        health: 0,
+        education: 70,
+        security: 10,
+        upkeep: 0,
+      },
     });
   });
 });
@@ -840,13 +869,63 @@ describe('the save kept from save format 3', () => {
     expect(game.outcome).toMatchObject({ status: 'won', cause: 'prosperity' });
   });
 
-  // This holds for as long as format 3 is the current format: saving must write exactly
+  it('is lifted to format 4 with upkeep enough for every site, so nothing decays', () => {
+    let { game } = loadSave(format3Save);
+    const sites = game.country.sites.map((site) => siteStatus(game, site.id));
+    const needed = sites.reduce((total, status) => total + status.upkeep, 0);
+
+    // Every site's upkeep, $2.1m, brought up to the next step of the budget.
+    expect(needed).toBe(21);
+    expect(game.budget.spending.upkeep).toBe(30);
+    expect(game.budget.spending).toMatchObject({ health: 200, education: 200 });
+    for (let quarter = 0; quarter < 2; quarter += 1) {
+      game = advanceQuarter(game, answering(game, { budget: game.budget })).state;
+    }
+    expect(game.projects.map((project) => project.status)).toEqual(['operating', 'operating']);
+  });
+});
+
+describe('the save kept from save format 4', () => {
+  it('still opens on the game it was written from, with the farm road decaying', () => {
+    const { game, report } = loadSave(format4Save);
+
+    expect(game.date).toEqual({ year: 2, quarter: 1 });
+    expect(game.budget.spending.upkeep).toBe(10);
+    expect(
+      ['lowmere-irrigation', 'dustwell-irrigation', 'lowmere-road'].map(
+        (siteId) => siteStatus(game, siteId).state,
+      ),
+    ).toEqual(['operating', 'operating', 'decaying']);
+    expect(report?.entries.filter((entry) => entry.kind === 'siteDecaying')).toEqual([
+      expect.objectContaining({ headline: 'Decaying: Farm road, Arden to Lowmere' }),
+    ]);
+  });
+
+  it('restores the farm road once its upkeep is paid again', () => {
+    let { game } = loadSave(format4Save);
+
+    const result = advanceQuarter(
+      game,
+      answering(game, {
+        ...steward(game),
+        budget: { ...game.budget, spending: { ...game.budget.spending, upkeep: 20 } },
+      }),
+    );
+    game = result.state;
+
+    expect(siteStatus(game, 'lowmere-road').state).toBe('operating');
+    expect(result.report.entries.map((entry) => entry.headline)).toContain(
+      'Restored: Farm road, Arden to Lowmere',
+    );
+  });
+
+  // This holds for as long as format 4 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(3);
-    const { game, report } = loadSave(format3Save);
+    expect(SAVE_FORMAT_VERSION).toBe(4);
+    const { game, report } = loadSave(format4Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format3Save);
+    expect(stored(saveGame(game, report))).toEqual(format4Save);
   });
 });

@@ -57,13 +57,20 @@ const harsh = (game: GameState): Budget => ({
 /** The lowest tax and the most the game allows on every area, which empties any treasury. */
 const ruinous = (): Budget => ({
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 });
 
 /** The tax as it stands and nothing spent, so that no answer can force a spending cut. */
 const austere = (game: GameState): Budget => ({
   taxRatePercent: game.budget.taxRatePercent,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0 },
+  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
 });
 
 /**

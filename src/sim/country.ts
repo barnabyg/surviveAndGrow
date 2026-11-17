@@ -2,6 +2,7 @@ import { balance } from './balance';
 import { spendingFault, taxRateFault, type Budget } from './budget';
 import { contains } from './geometry';
 import { MONEY_PER_MILLION, type Money } from './types';
+import { upkeepForEvery } from './upkeep';
 import {
   DECORATION_KINDS,
   DILEMMA_TYPES,
@@ -548,9 +549,11 @@ function checkDependencies(reader: Reader, sites: readonly Site[]): void {
 
 /**
  * The starting budget, written with the tax rate in percent and spending in millions. It
- * is held to the same rules as a budget the player sets.
+ * is held to the same rules as a budget the player sets. Upkeep may be left out: the game
+ * then starts with enough to keep every one of the country's sites in good repair, which
+ * costs nothing until they are built, since upkeep is spent only as far as it is needed.
  */
-function readBudget(reader: Reader, budget: Json, path: string): Budget {
+function readBudget(reader: Reader, budget: Json, path: string, sites: readonly Site[]): Budget {
   const spendingPath = join(path, 'spending');
   const written = reader.object(budget, 'spending', path);
   for (const key of Object.keys(written)) {
@@ -563,6 +566,9 @@ function readBudget(reader: Reader, budget: Json, path: string): Budget {
   }
   const spending = Object.fromEntries(
     SPENDING_AREAS.map((area) => {
+      if (area === 'upkeep' && written.upkeep === undefined) {
+        return [area, upkeepForEvery(sites.map((site) => site.type))];
+      }
       const before = reader.faults.length;
       const amount = reader.money(written, area, spendingPath);
       const fault = reader.faults.length === before ? spendingFault(amount) : null;
@@ -696,7 +702,7 @@ export function loadCountry(file: unknown): Country {
     ),
     start: {
       treasury: reader.money(start, 'treasury', 'start'),
-      budget: readBudget(reader, reader.object(start, 'budget', 'start'), 'start.budget'),
+      budget: readBudget(reader, reader.object(start, 'budget', 'start'), 'start.budget', sites),
       foodReserve: reader.wholeNumber(start, 'foodReserve', 'start', 0),
     },
     // A copy, so that nothing done to the file afterwards reaches the country.

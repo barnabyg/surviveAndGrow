@@ -163,6 +163,7 @@ function ProjectRow(props: ProjectRowProps) {
     building: 'Building',
     paused: '▲ Paused',
     operating: 'Built',
+    decaying: 'Built',
   }[state];
   const inUse = `In use for ${formatQuarters(inUseBeforeVote)} before the vote`;
 
@@ -223,6 +224,7 @@ function statusLine(
 ): string {
   const { state, inUseBeforeVote } = schedule;
   if (state === 'operating') return `In use since ${formatDate(dateOfQuarter(schedule.opens))}`;
+  if (state === 'decaying') return '▲ Decaying for want of upkeep';
   if (inUseBeforeVote === 0) {
     return `▲ ${state === 'planned' ? 'Would' : 'Will'} not be finished before the vote`;
   }

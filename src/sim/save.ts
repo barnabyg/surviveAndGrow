@@ -17,6 +17,7 @@ import { siteTerms } from './sites';
 import { tierAt } from './tiers';
 import type { ElectionResult, GameState, Outcome, RegionState, TurnReport } from './state';
 import { formatQuarters } from './text';
+import { upkeepForEvery } from './upkeep';
 import type { Contribution, Figure, GameDate, Money, Quarter } from './types';
 import {
   APPROVAL_DRIVERS,
@@ -43,7 +44,7 @@ import {
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 3;
+export const SAVE_FORMAT_VERSION = 4;
 
 /** Everything about a game except what a save records beside it. */
 export type SavedState = Omit<GameState, 'country' | 'seed' | 'rng'>;
@@ -101,6 +102,7 @@ export type SaveMigration = (older: Json) => Json;
 const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   1: fromFormat1,
   2: fromFormat2,
+  3: fromFormat3,
 };
 
 /**
@@ -194,6 +196,39 @@ function fromFormat2(older: Json): Json {
     },
     report: isRecord(older.report) ? { ...older.report, election } : older.report,
   };
+}
+
+/**
+ * Format 4 added upkeep: a spending area of its own, and sites that decay when it falls
+ * short. A game written before it gains upkeep enough to keep every one of its country's
+ * sites in good repair, the same as a new game on that country starts with, so that nothing
+ * in it decays unless the player cuts it. Its sites are all in good repair.
+ */
+function fromFormat3(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const budget = isRecord(state.budget) ? state.budget : {};
+  const spending = isRecord(budget.spending) ? budget.spending : {};
+  return {
+    ...older,
+    formatVersion: 4,
+    state: {
+      ...state,
+      budget: { ...budget, spending: { ...spending, upkeep: upkeepForOldSave(older) } },
+    },
+  };
+}
+
+/**
+ * Upkeep for every site of the country an old save carries. A save whose country will not
+ * load is given none, and checking the rest of it will refuse it.
+ */
+function upkeepForOldSave(older: Json): Money {
+  try {
+    const carried = isRecord(older.country) ? older.country.file : undefined;
+    return upkeepForEvery(loadCountry(carried).sites.map((site) => site.type));
+  } catch {
+    return 0;
+  }
 }
 
 /**

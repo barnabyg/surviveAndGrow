@@ -61,6 +61,7 @@ import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { scheduleAhead } from './timeline';
 import { exactly } from './types';
+import { resolveUpkeep } from './upkeep';
 
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
@@ -153,6 +154,8 @@ export interface QuarterResolved extends TurnResult {
   readonly spendingCut: boolean;
   /** The sites where building paused because the treasury could not pay. */
   readonly pausedSites: readonly string[];
+  /** The sites in use that went without upkeep, and are decaying from the next quarter. */
+  readonly upkeepShort: readonly string[];
   /** The share of their needs each region's people ate, in thousandths, in the regions' order. */
   readonly fedPermille: readonly number[];
   readonly electionHeld: boolean;
@@ -168,7 +171,8 @@ export function resolveQuarter(
   chance: Chance,
 ): QuarterResolved {
   const lived = liveQuarter(given, decisions, chance.weatherShocks);
-  const { answer, state, budget, building, finances, agricultureSpent, food, approval } = lived;
+  const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
+    lived;
   const { prosperity, tier } = lived;
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
@@ -223,10 +227,11 @@ export function resolveQuarter(
     ...food.entries,
     ...approval.entries,
     ...building.entries,
+    ...upkept.entries,
     ...(passed === null ? [] : [passed]),
     ...ended.map((event) => endEntry(state.country, event)),
     ...begun.map((event) =>
-      beginEntry(state.country, event, holdOn(state.country, building.projects, event.regionId)),
+      beginEntry(state.country, event, holdOn(state.country, upkept.projects, event.regionId)),
     ),
     budgetEntry(finances),
   ];
@@ -243,12 +248,12 @@ export function resolveQuarter(
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
       regions: approval.regions,
       events,
-      projects: building.projects,
+      projects: upkept.projects,
       history: [
         ...state.history,
         vitalSigns({
           country: state.country,
-          projects: building.projects,
+          projects: upkept.projects,
           date,
           treasury: finances.treasury,
           foodReserve: food.foodReserve,
@@ -287,6 +292,7 @@ export function resolveQuarter(
     },
     spendingCut: budget.cut,
     pausedSites: building.paused,
+    upkeepShort: finances.upkeep.short,
     fedPermille: food.fedPermille,
     electionHeld: election !== null,
   };
@@ -300,7 +306,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   // The answer to a dilemma takes effect first, so the rest of the quarter starts from it.
   const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
   const state = withAnswer(given, answer);
-  const { budget, building, finances } = resolveMoney(state, decisions);
+  const { budget, building, upkept, finances } = resolveMoney(state, decisions);
 
   const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
   // The sites in use as the quarter begins are the ones that bear on it.
@@ -319,7 +325,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   // the public expects of the government from now on.
   const prosperity = prosperityFigure(
     prosperityStatus(given),
-    prosperityStatus({ country: state.country, regions: served, projects: building.projects }),
+    prosperityStatus({ country: state.country, regions: served, projects: upkept.projects }),
   );
   const tier = nextTier(state.tier, prosperity.value);
   const expectations = {
@@ -337,6 +343,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     state,
     budget,
     building,
+    upkept,
     finances,
     agricultureSpent,
     sites,
@@ -392,6 +399,11 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     spending: exactly(finances.spending),
     projectSpending: exactly(building.paid),
     pausedSites: building.paused,
+    upkeep: {
+      needed: finances.upkeep.needed,
+      spent: finances.upkeep.spent,
+      short: finances.upkeep.short,
+    },
     schedule: scheduleAhead(state, decisions.startProjects ?? [], building.paused),
     balance: exactly(finances.balance),
     treasury: exactly(finances.treasury),
@@ -444,13 +456,16 @@ interface QuarterMoney {
   readonly budget: BudgetOutcome;
   /** What building did with the money the budget left. */
   readonly building: BuildingOutcome;
+  /** The projects once upkeep has told on the sites in use, and what the report says of it. */
+  readonly upkept: ReturnType<typeof resolveUpkeep>;
   /** The two together: the quarter's whole effect on the treasury. */
   readonly finances: BudgetOutcome;
 }
 
 /**
  * One quarter of money. The budget's own spending comes first, cut if the treasury cannot
- * cover it; then the instalments on projects are paid out of what is left.
+ * cover it; then the instalments on projects are paid out of what is left. The sites that
+ * upkeep did not reach are decaying from the next quarter.
  */
 function resolveMoney(
   state: Pick<GameState, 'country' | 'treasury' | 'regions' | 'projects' | 'date'>,
@@ -462,6 +477,7 @@ function resolveMoney(
   return {
     budget,
     building,
+    upkept: resolveUpkeep({ country: state.country, projects: building.projects }, budget.upkeep),
     finances: withFixedCosts(budget, building.paid, building.contributions),
   };
 }
@@ -532,7 +548,7 @@ function quartersToHarvest(state: GameState, decisions: Decisions): QuarterAhead
     const money = resolveMoney({ ...state, treasury, projects, date }, decisions, starts);
     quarterly.push({ finances: money.finances, sites: siteEffects({ ...state, projects }) });
     ({ treasury } = money.finances);
-    ({ projects } = money.building);
+    ({ projects } = money.upkept);
     date = nextDate(date);
   }
   return quarterly;

@@ -2,9 +2,10 @@ import { sum } from './arithmetic';
 import { nextDate } from './calendar';
 import type { Country, Site } from './country';
 import type { ReportEntry } from './report';
-import { siteEffectsOf, siteTerms, type SiteTerms } from './sites';
+import { infrastructureOf, siteEffectsOf, siteTerms, type SiteTerms } from './sites';
 import { formatMoney, formatQuarters } from './text';
 import type { Contribution, GameDate, Money } from './types';
+import { inUse } from './upkeep';
 import {
   SITE_EFFECT_DEFINITIONS,
   SITE_EFFECTS,
@@ -28,13 +29,15 @@ export interface Project {
   readonly opened: GameDate | null;
 }
 
-/** How one site stands: empty, being built, or in use. */
+/** How one site stands: empty, being built, or in use in good repair or decaying. */
 export interface SiteStatus {
   readonly siteId: string;
   readonly state: SiteState;
   readonly quartersPaid: number;
   readonly buildQuarters: number;
   readonly cost: Money;
+  /** What keeping the site in good repair costs each quarter it is in use. */
+  readonly upkeep: Money;
   /** What the next quarter of building costs, or nothing once the site is built. */
   readonly instalment: Money;
   /** The quarter building began, or null on an empty site. */
@@ -60,6 +63,7 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
     quartersPaid,
     buildQuarters: terms?.buildQuarters ?? 0,
     cost: terms?.cost ?? 0,
+    upkeep: terms?.upkeep ?? 0,
     instalment: terms === null ? 0 : instalment(terms, quartersPaid),
     began: project?.began ?? null,
     opened: project?.opened ?? null,
@@ -82,7 +86,7 @@ export function startFault(
     if (sites.includes(site)) return `${site.name} is listed twice.`;
     const project = projects.find((candidate) => candidate.siteId === siteId);
     if (project !== undefined) {
-      return `${site.name} is already ${project.status === 'operating' ? 'built' : 'being built'}.`;
+      return `${site.name} is already ${inUse(project) ? 'built' : 'being built'}.`;
     }
     sites.push(site);
   }
@@ -131,7 +135,7 @@ export function resolveProjects(
 
   const after = [...projects, ...begun].map((project): Project => {
     const site = country.sites.find((candidate) => candidate.id === project.siteId);
-    if (site === undefined || project.status === 'operating') return project;
+    if (site === undefined || inUse(project)) return project;
     const terms = siteTerms(site.type);
     const due = instalment(terms, project.quartersPaid);
     const told = { name: site.name, regionId: site.regionId, terms };
@@ -176,9 +180,9 @@ export function siteEffects({ country, projects }: Building): SiteEffects {
     number
   >;
   const leave = (left: number, permille: number) => Math.floor((left * permille) / 1000);
-  for (const site of sitesInUse({ country, projects })) {
+  for (const { site, decaying } of sitesInUse({ country, projects })) {
     const regionIndex = country.regions.findIndex((region) => region.id === site.regionId);
-    for (const [effect, permille] of siteEffectsOf(site.type)) {
+    for (const [effect, permille] of siteEffectsOf(site.type, decaying)) {
       if (SITE_EFFECT_DEFINITIONS[effect].reach === 'nation') {
         national[effect] = leave(national[effect], permille);
       } else if (regionIndex >= 0) {
@@ -190,11 +194,25 @@ export function siteEffects({ country, projects }: Building): SiteEffects {
   return { inRegion, national };
 }
 
+/** A site in use, and whether it is decaying for want of upkeep. */
+export interface SiteInUse {
+  readonly site: Site;
+  readonly decaying: boolean;
+}
+
 /** The sites in use, in the country file's order. */
-export function sitesInUse({ country, projects }: Building): readonly Site[] {
-  return country.sites.filter((site) =>
-    projects.some((project) => project.siteId === site.id && project.status === 'operating'),
-  );
+export function sitesInUse({ country, projects }: Building): readonly SiteInUse[] {
+  return country.sites.flatMap((site) => {
+    const project = projects.find((candidate) => candidate.siteId === site.id);
+    return project !== undefined && inUse(project)
+      ? [{ site, decaying: project.status === 'decaying' }]
+      : [];
+  });
+}
+
+/** What a site in use adds to its region's infrastructure access, in thousandths. */
+export function infrastructureFrom({ site, decaying }: SiteInUse): number {
+  return infrastructureOf(site.type, decaying);
 }
 
 /**

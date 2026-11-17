@@ -13,16 +13,26 @@ import {
 import { bothCountries, tavara } from './countries';
 import { steward } from './players';
 
-/** Every tax the country can bear and nothing spent, so every instalment can be paid. */
+/**
+ * Every tax the country can bear and nothing spent but the upkeep of what is built, so every
+ * instalment can be paid and every site in use stays in good repair.
+ */
 const austere: Budget = {
   taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0 },
+  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 200 },
 };
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left for building. */
 const ruinous: Budget = {
   taxRatePercent: 5,
-  spending: { agriculture: 200, foodRelief: 200, health: 200, education: 200, security: 200 },
+  spending: {
+    agriculture: 200,
+    foodRelief: 200,
+    health: 200,
+    education: 200,
+    security: 200,
+    upkeep: 200,
+  },
 };
 
 /** Plays one quarter for each set of decisions given, in order. */

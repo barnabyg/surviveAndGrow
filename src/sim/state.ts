@@ -227,6 +227,11 @@ export interface Preview {
   /** The sites where building will pause this quarter because the treasury cannot pay. */
   readonly pausedSites: readonly string[];
   /**
+   * What the sites in use need for their upkeep this quarter, what would be spent on it, and
+   * the sites that would go without and decay from next quarter.
+   */
+  readonly upkeep: UpkeepPreview;
+  /**
    * When each project is built and comes into use: those there are and those about to be
    * started, in the order they were started. A site that will pause this quarter opens a
    * quarter later for it.
@@ -268,6 +273,14 @@ export interface Preview {
    * approval as this quarter will leave it. The campaign's swing makes it a range.
    */
   readonly voteShare: Range;
+}
+
+/** A quarter's upkeep as the preview sees it. */
+export interface UpkeepPreview {
+  readonly needed: Money;
+  readonly spent: Money;
+  /** The sites in use that would go without, in the order building began on them. */
+  readonly short: readonly string[];
 }
 
 /** What food relief does in a quarter, in tonnes. */

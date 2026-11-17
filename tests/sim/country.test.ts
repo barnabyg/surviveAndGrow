@@ -94,21 +94,28 @@ describe('a valid country file', () => {
 });
 
 describe('the types of site', () => {
-  it('each have a cost, a build time and an effect', () => {
+  it('each have a cost, a build time, an upkeep and an effect, which decay halves', () => {
     expect(siteTerms('irrigation')).toEqual({
       cost: 120,
       buildQuarters: 3,
+      upkeep: 4,
       effect: 'Weather and drought move its region’s harvest 50% less.',
+      decayingEffect: 'Weather and drought move its region’s harvest 25% less.',
     });
     expect(siteTerms('farmRoad')).toEqual({
       cost: 100,
       buildQuarters: 3,
+      upkeep: 3,
       effect: '50% less of its region’s surplus is lost on the way to the national reserve.',
+      decayingEffect:
+        '25% less of its region’s surplus is lost on the way to the national reserve.',
     });
     expect(siteTerms('grainStore')).toEqual({
       cost: 60,
       buildQuarters: 2,
+      upkeep: 2,
       effect: '25% less of the national reserve spoils each quarter.',
+      decayingEffect: '13% less of the national reserve spoils each quarter.',
     });
   });
 });

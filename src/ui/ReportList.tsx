@@ -154,6 +154,16 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Finished building report',
     path: 'M3,17 H17 M5,17 V9 L10,4 L15,9 V17 M7.5,12.5 L9.5,14.5 L13,10.5',
   },
+  // A finished building with a crack running down it.
+  siteDecaying: {
+    label: 'Decaying site report',
+    path: 'M3,17 H17 M5,17 V9 L10,4 L15,9 V17 M10,6.5 L8.5,10 L11,12 L9.5,17',
+  },
+  // A finished building with a spanner beside it.
+  siteRestored: {
+    label: 'Restored site report',
+    path: 'M2,17 H12 M3.5,17 V10 L7,6.5 L10.5,10 V17 M14,17 V9 M12,5 A2.5,2.5 0 1 0 16,5 M14,7.5 V9',
+  },
   // A road that forks.
   dilemma: {
     label: 'Decision report',

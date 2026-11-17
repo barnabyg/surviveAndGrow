@@ -17,13 +17,18 @@ export type SettlementSize = (typeof SETTLEMENT_SIZES)[number];
 export const LABEL_SIDES = ['right', 'left', 'above', 'below'] as const;
 export type LabelSide = (typeof LABEL_SIDES)[number];
 
-/** Where the budget can be spent. Each area costs money; what it buys is that area's own rule. */
+/**
+ * Where the budget can be spent. Each area costs money; what it buys is that area's own rule.
+ * Upkeep is spent only as far as the sites in use need it: what is set beyond that stays in
+ * the treasury.
+ */
 export const SPENDING_AREAS = [
   'agriculture',
   'foodRelief',
   'health',
   'education',
   'security',
+  'upkeep',
 ] as const;
 export type SpendingArea = (typeof SPENDING_AREAS)[number];
 
@@ -33,6 +38,7 @@ export const SPENDING_AREA_NAMES: Readonly<Record<SpendingArea, string>> = {
   health: 'Health',
   education: 'Education',
   security: 'Security',
+  upkeep: 'Upkeep',
 };
 
 /** The kinds of event the engine knows. A country file says how likely each is, region by region. */
@@ -125,8 +131,11 @@ export const SITE_EFFECT_DEFINITIONS: Readonly<
   },
 };
 
-/** How a project stands: being built, held up for want of money, or built and in use. */
-export const PROJECT_STATUSES = ['building', 'paused', 'operating'] as const;
+/**
+ * How a project stands: being built, held up for want of money, or built and in use. A site
+ * in use is operating while its upkeep is paid and decaying while it is not.
+ */
+export const PROJECT_STATUSES = ['building', 'paused', 'operating', 'decaying'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 /** How a site stands: empty until a project is started on it, and then as the project stands. */
@@ -138,6 +147,7 @@ export const SITE_STATE_NAMES: Readonly<Record<SiteState, string>> = {
   building: 'Under construction',
   paused: 'Paused',
   operating: 'Operating',
+  decaying: 'Decaying',
 };
 
 /**
@@ -224,7 +234,7 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 };
 
 /** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
-export const RISK_KINDS = ['famine', 'treasury', 'strikes', 'tier', 'election'] as const;
+export const RISK_KINDS = ['famine', 'treasury', 'upkeep', 'strikes', 'tier', 'election'] as const;
 export type RiskKind = (typeof RISK_KINDS)[number];
 
 /** How likely a risk is, from the least to the most. A risk less likely than remote is not listed. */
@@ -254,6 +264,8 @@ export const REPORT_KINDS = [
   'projectStarted',
   'projectPaused',
   'projectCompleted',
+  'siteDecaying',
+  'siteRestored',
   'dilemma',
   'tier',
   'election',
