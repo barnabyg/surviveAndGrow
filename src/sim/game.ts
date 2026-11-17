@@ -10,16 +10,18 @@ import {
   type BudgetOutcome,
 } from './budget';
 import { regionName, type Country } from './country';
-import { forecastVoteShare, holdElection, isElectionQuarter } from './election';
+import { forecastVoteShare, holdElection, isElectionQuarter, rollSwing } from './election';
 import {
   beginEntry,
-  beginEvents,
+  beginStruck,
   describeEventWithHold,
   endEntry,
   endEventsAfterHarvest,
   harvestPermille,
+  rollEvents,
   worstHarvestPermille,
   type ActiveEvent,
+  type EventStrike,
 } from './events';
 import {
   forecastFood,
@@ -83,15 +85,61 @@ export function createGame(country: Country, seed: number): GameState {
  */
 export function advanceQuarter(state: GameState, decisions: Decisions): TurnResult {
   checkDecisions(state, decisions);
+  // Everything chance decides is drawn here, in a fixed order, and nowhere else.
+  const weather = rollWeather(state.rng, state.regions.length);
+  const events = rollEvents(state.country, nextDate(state.date), weather.rng);
+  const campaign = isElectionQuarter(state.date) ? rollSwing(events.rng) : null;
+  const resolved = resolveQuarter(state, decisions, {
+    weatherShocks: weather.shocks,
+    struck: events.struck,
+    swing: campaign?.swing ?? 0,
+  });
+  // The campaign's draw counts only if the vote was held: a state that fell held none.
+  const rng = resolved.electionHeld && campaign !== null ? campaign.rng : events.rng;
+  return { state: { ...resolved.state, rng }, report: resolved.report };
+}
+
+/**
+ * What chance decides in a quarter. A turn draws it from the game's generator; a projection
+ * supposes it, which is how the game looks ahead without drawing anything.
+ */
+export interface Chance {
+  /** How far the quarter's weather moves each region's coming harvest, in thousandths. */
+  readonly weatherShocks: readonly number[];
+  /** The events that strike as the calendar moves into the next quarter. */
+  readonly struck: readonly EventStrike[];
+  /** How far the campaign moves the vote, in thousandths, if an election is held. */
+  readonly swing: number;
+}
+
+/** A quarter resolved, with the signs of trouble a projection looks for. */
+export interface QuarterResolved extends TurnResult {
+  /** True when the treasury could not cover the budget and every area was cut. */
+  readonly spendingCut: boolean;
+  /** The sites where building paused because the treasury could not pay. */
+  readonly pausedSites: readonly string[];
+  /** The share of their needs each region's people ate, in thousandths, in the regions' order. */
+  readonly fedPermille: readonly number[];
+  readonly electionHeld: boolean;
+}
+
+/**
+ * One quarter, given the decisions and what chance decided. It checks nothing and draws
+ * nothing: the generator in the state it returns is the one it was given.
+ */
+export function resolveQuarter(
+  state: GameState,
+  decisions: Decisions,
+  chance: Chance,
+): QuarterResolved {
   const { budget, building, finances } = resolveMoney(state, decisions);
 
-  const weather = rollWeather(state.rng, state.regions.length);
   const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
   // The sites in use as the quarter begins are the ones that bear on it.
   const sites = siteEffects(state);
   const food = resolveFood(foodSituation(state), {
     agricultureSpentThisYear: agricultureSpent,
-    weatherShocks: weather.shocks,
+    weatherShocks: chance.weatherShocks,
     harvestPermille: eventsLeave(state, sites),
     sites,
     relief: reliefFor(decisions, finances),
@@ -111,12 +159,12 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
     food.harvest === null
       ? { ended: [], remaining: state.events }
       : endEventsAfterHarvest(state.events);
-  const rolled = beginEvents(state.country, remaining, date, weather.rng);
+  const begun = beginStruck(remaining, chance.struck, date);
   const collapse = collapseOf(state.country, approval.regions);
   // The vote is held as the term's last quarter ends, unless the state has already fallen.
   const election =
     collapse === null && isElectionQuarter(state.date)
-      ? holdElection(approval.regions, rolled.rng)
+      ? holdElection(approval.regions, chance.swing)
       : null;
   const outcome: Outcome = collapse ?? election?.outcome ?? { status: 'playing' };
 
@@ -129,7 +177,7 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
     ...approval.entries,
     ...building.entries,
     ...ended.map((event) => endEntry(state.country, event)),
-    ...rolled.begun.map((event) =>
+    ...begun.map((event) =>
       beginEntry(state.country, event, holdOn(state.country, building.projects, event.regionId)),
     ),
     budgetEntry(finances),
@@ -138,7 +186,6 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   return {
     state: {
       ...state,
-      rng: election?.rng ?? rolled.rng,
       date,
       treasury: finances.treasury,
       budget: decisions.budget,
@@ -146,7 +193,7 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
       // The growing year ends with the harvest.
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
       regions: approval.regions,
-      events: [...remaining, ...rolled.begun],
+      events: [...remaining, ...begun],
       projects: building.projects,
       history: [
         ...state.history,
@@ -175,6 +222,10 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
       harvest: food.harvest,
       entries: compileReport(entries),
     },
+    spendingCut: budget.cut,
+    pausedSites: building.paused,
+    fedPermille: food.fedPermille,
+    electionHeld: election !== null,
   };
 }
 
@@ -264,7 +315,11 @@ export function describeEvent(
 /** The ranges the budget may be set within. */
 export const budgetLimits = balance.budget;
 
-function checkDecisions(state: GameState, decisions: Decisions): void {
+/**
+ * @throws RangeError when a decision is outside what the game allows.
+ * @throws Error when the game is already over.
+ */
+export function checkDecisions(state: GameState, decisions: Decisions): void {
   if (state.outcome.status !== 'playing') throw new Error('The game is over.');
   checkBudget(decisions.budget);
   const target = decisions.reliefRegionId ?? null;

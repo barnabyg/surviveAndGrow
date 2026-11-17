@@ -1,7 +1,8 @@
 /**
  * The simulation. Everything outside this folder uses it through this file alone. It has
  * three operations: create a game from a country and a seed, advance one quarter given the
- * player's decisions, and preview a set of decisions without changing the game.
+ * player's decisions, and preview a set of decisions without changing the game. Looking
+ * further ahead for danger (`risksAhead`) is a preview too: it changes and draws nothing.
  */
 export {
   COUNTRY_FORMAT_VERSION,
@@ -40,6 +41,7 @@ export { seasonOf } from './calendar';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
+export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export { siteTerms, type SiteTerms } from './sites';
 export {
   siteSchedule,
@@ -83,8 +85,11 @@ export {
   APPROVAL_DRIVERS,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
+  LIKELIHOOD_NAMES,
+  LIKELIHOODS,
   MAP_FRAME,
   REPORT_KINDS,
+  RISK_KINDS,
   SERIOUSNESS_LEVELS,
   SERIOUSNESS_NAMES,
   SITE_STATE_NAMES,
@@ -100,8 +105,10 @@ export {
   type EventType,
   type FoodStage,
   type LabelSide,
+  type Likelihood,
   type ProjectStatus,
   type ReportKind,
+  type RiskKind,
   type Seriousness,
   type SettlementSize,
   type SiteForm,

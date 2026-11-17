@@ -36,31 +36,68 @@ export interface ActiveEvent {
 
 const definitions: Readonly<Record<EventType, EventDefinition>> = balance.events;
 
+/** An event striking a region: it begins there unless one of its type is already under way. */
+export interface EventStrike {
+  readonly type: EventType;
+  readonly regionId: string;
+}
+
+/** An event that could begin in a region, and the chance the country file gives it. */
+export interface PossibleEvent extends EventStrike {
+  /** The chance, from 0 to 1, that it strikes. */
+  readonly chance: number;
+}
+
+/** Every event that could begin as the calendar moves into `date`, where the chance is not nil. */
+export function eventsThatMayBegin(country: Country, date: GameDate): PossibleEvent[] {
+  return EVENT_TYPES.filter((type) =>
+    definitions[type].conditions.beginsInQuarters.includes(date.quarter),
+  ).flatMap((type) =>
+    country.regions
+      .filter((region) => region.eventLikelihood[type] > 0)
+      .map((region) => ({ type, regionId: region.id, chance: region.eventLikelihood[type] })),
+  );
+}
+
 /**
  * Rolls for every event that can begin as the calendar moves into `date`. One number is
  * drawn for every region whatever its likelihood, so the same seed gives the same weather
  * in every country file.
  */
-export function beginEvents(
+export function rollEvents(
   country: Country,
-  active: readonly ActiveEvent[],
   date: GameDate,
   rng: RngState,
-): { readonly begun: readonly ActiveEvent[]; readonly rng: RngState } {
-  const begun: ActiveEvent[] = [];
+): { readonly struck: readonly EventStrike[]; readonly rng: RngState } {
+  const struck: EventStrike[] = [];
   let current = rng;
   for (const type of EVENT_TYPES) {
     if (!definitions[type].conditions.beginsInQuarters.includes(date.quarter)) continue;
     for (const region of country.regions) {
       const roll = nextRandom(current);
       current = roll.state;
-      const strikes = roll.value / 2 ** 32 < region.eventLikelihood[type];
-      if (strikes && !isActive(active, type, region.id)) {
-        begun.push({ type, regionId: region.id, began: date });
+      if (roll.value / 2 ** 32 < region.eventLikelihood[type]) {
+        struck.push({ type, regionId: region.id });
       }
     }
   }
-  return { begun, rng: current };
+  return { struck, rng: current };
+}
+
+/** The events that begin on `date`: each strike, unless one of its type is already under way there. */
+export function beginStruck(
+  active: readonly ActiveEvent[],
+  struck: readonly EventStrike[],
+  date: GameDate,
+): ActiveEvent[] {
+  return struck
+    .filter((strike) => !isActive(active, strike.type, strike.regionId))
+    .map((strike) => ({ type: strike.type, regionId: strike.regionId, began: date }));
+}
+
+/** The name of a kind of event, as the player reads it: "Drought". */
+export function eventName(type: EventType): string {
+  return definitions[type].name;
 }
 
 /** Splits the events into those a harvest brings to an end and those that carry on. */

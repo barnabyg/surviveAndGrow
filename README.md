@@ -81,6 +81,13 @@ What is in the game so far:
   beside the buttons, its steps differ in lightness, and every region also carries its value as
   text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
   relief are drawn the same under all of them.
+- The left column lists the risks ahead: famine in a region, strikes, and a treasury that runs
+  out. The game plays the next four quarters with your committed decisions held as they are, once
+  for each course the weather could take and each drought that could still begin, and lists each
+  danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
+  shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
+  further. A danger too unlikely to matter is left out, and a risk to one region picks that
+  region out on the map. Famine cannot end the game without having been listed first.
 - The side columns scroll on their own when they run long, and the map gives up height to the
   timeline, so the whole screen stays in view.
 

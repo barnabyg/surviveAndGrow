@@ -63,6 +63,9 @@ export const approval = (page: Page): Locator =>
 /** This quarter's reports, in the left column. */
 export const reports = (page: Page): Locator =>
   situation(page).getByRole('region', { name: 'This quarter' });
+/** The dangers of the coming quarters, in the left column. */
+export const risks = (page: Page): Locator =>
+  situation(page).getByRole('region', { name: 'Risks ahead' });
 /** The projection card in the budget panel, whichever of its two headings it carries. */
 export const outlook = (page: Page): Locator =>
   decisions(page).getByRole('region', { name: /Outlook|If you commit/ });

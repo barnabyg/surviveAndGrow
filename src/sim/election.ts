@@ -49,17 +49,25 @@ export function forecastVoteShare(approval: number): Range {
 export type ElectionOutcome = Extract<Outcome, { readonly cause: 'election' }>;
 
 /**
+ * Draws how far the campaign moves the vote, in thousandths, from the game's generator: up
+ * to the swing either way.
+ */
+export function rollSwing(rng: RngState): { readonly swing: number; readonly rng: RngState } {
+  const { swingPermille } = balance.election;
+  const roll = nextRandom(rng);
+  return { swing: (roll.value % (2 * swingPermille + 1)) - swingPermille, rng: roll.state };
+}
+
+/**
  * Holds the election. The vote share is national approval as the term's last quarter left
- * it, moved by a swing drawn from the game's generator, so the same seed and the same
- * decisions always give the same result.
+ * it, moved by the campaign's swing, which the game draws by the seed, so the same seed and
+ * the same decisions always give the same result.
  */
 export function holdElection(
   regions: readonly RegionState[],
-  rng: RngState,
-): { readonly outcome: ElectionOutcome; readonly entry: ReportEntry; readonly rng: RngState } {
-  const { swingPermille, winSharePermille } = balance.election;
-  const roll = nextRandom(rng);
-  const swing = (roll.value % (2 * swingPermille + 1)) - swingPermille;
+  swing: number,
+): { readonly outcome: ElectionOutcome; readonly entry: ReportEntry } {
+  const { winSharePermille } = balance.election;
   const approval = nationalApproval(regions);
   const voteShare = shareOf(approval + swing);
   const won = voteShare >= winSharePermille;
@@ -80,7 +88,6 @@ export function holdElection(
       headline: outcome.headline,
       cause: outcome.summary,
     },
-    rng: roll.state,
   };
 }
 

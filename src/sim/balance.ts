@@ -1,5 +1,5 @@
 import type { EventDefinition } from './events';
-import type { EventType, FoodStage, SiteType, SpendingArea } from './vocabulary';
+import type { EventType, FoodStage, Likelihood, SiteType, SpendingArea } from './vocabulary';
 
 /**
  * Every value that tunes the game lives here as data. The rules in the rest of the
@@ -116,6 +116,42 @@ export const balance = {
      * many thousandths either way, by the seed.
      */
     swingPermille: 30,
+  },
+  /** How the game looks ahead for danger, holding the player's decisions as they are. */
+  risks: {
+    /** How many quarters ahead the dangers are looked for, counting the one being decided. */
+    horizonQuarters: 4,
+    /**
+     * A harvest that fails leaves its region hungry from the quarter after it. So that a
+     * harvest inside the horizon is judged by what it leaves, hunger alone is looked for
+     * this many quarters further on.
+     */
+    hungerShowsQuartersLater: 1,
+    /**
+     * The weather that is supposed, from the worst to the best: each quarter's weather as a
+     * share of its full swing, in thousandths, and how much of the chance that course of
+     * weather stands for, in thousandths that add up to 1000. The two ends are the limits of
+     * what can happen, so nothing possible is left out, and they are given more weight than
+     * a run of such weather really has: the list errs towards warning.
+     */
+    weatherOutlooks: [
+      { swingSharePermille: -1000, weightPermille: 100 },
+      { swingSharePermille: -500, weightPermille: 200 },
+      { swingSharePermille: 0, weightPermille: 400 },
+      { swingSharePermille: 500, weightPermille: 200 },
+      { swingSharePermille: 1000, weightPermille: 100 },
+    ],
+    /**
+     * A risk is given a likelihood when its chance, in thousandths, is at least this much.
+     * A chance below the first is negligible, and the risk is not listed.
+     */
+    likelihoodFromPermille: {
+      remote: 20,
+      unlikely: 100,
+      possible: 300,
+      likely: 600,
+      almostCertain: 900,
+    } satisfies Record<Likelihood, number>,
   },
   /**
    * What can be built. Each type costs `cost` in Money units ($100,000), paid over the

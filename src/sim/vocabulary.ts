@@ -117,6 +117,22 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
   protests: 'Protests',
 };
 
+/** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
+export const RISK_KINDS = ['famine', 'treasury', 'strikes'] as const;
+export type RiskKind = (typeof RISK_KINDS)[number];
+
+/** How likely a risk is, from the least to the most. A risk less likely than remote is not listed. */
+export const LIKELIHOODS = ['remote', 'unlikely', 'possible', 'likely', 'almostCertain'] as const;
+export type Likelihood = (typeof LIKELIHOODS)[number];
+
+export const LIKELIHOOD_NAMES: Readonly<Record<Likelihood, string>> = {
+  remote: 'Remote',
+  unlikely: 'Unlikely',
+  possible: 'Possible',
+  likely: 'Likely',
+  almostCertain: 'Almost certain',
+};
+
 /**
  * The kinds of thing a turn report can tell the player. Each kind has its own icon in the
  * interface, so a new kind is added here and given an icon there.

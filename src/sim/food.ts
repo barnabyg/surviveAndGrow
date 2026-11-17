@@ -62,6 +62,11 @@ export interface FoodOutcome {
   /** What each hungry region was short of before any relief. */
   readonly shortfalls: readonly RegionShortfall[];
   readonly relief: ReliefDelivery;
+  /**
+   * The share of their needs each region's people ate, relief counted, in thousandths. One
+   * entry for each region.
+   */
+  readonly fedPermille: readonly number[];
   /** What the turn report says of the quarter's food. */
   readonly entries: readonly ReportEntry[];
 }
@@ -101,6 +106,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const contributions: Contribution[] = [];
   const entries: ReportEntry[] = [];
   const shortfalls: RegionShortfall[] = [];
+  const fedPermilles: number[] = [];
 
   const spoiled = Math.floor(
     (situation.foodReserve *
@@ -134,6 +140,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
     }
 
     const fedPermille = need === 0 ? 1000 : Math.floor(((ration + delivered) * 1000) / need);
+    fedPermilles.push(fedPermille);
     const foodStage = nextStage(region.foodStage, fedPermille);
     const famineQuarters = foodStage === 'famine' ? region.famineQuarters + 1 : 0;
     const deaths =
@@ -162,7 +169,16 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   });
 
   if (!isHarvestQuarter(quarter)) {
-    return { regions: fed, foodReserve, contributions, harvest: null, shortfalls, relief, entries };
+    return {
+      regions: fed,
+      foodReserve,
+      contributions,
+      harvest: null,
+      shortfalls,
+      relief,
+      fedPermille: fedPermilles,
+      entries,
+    };
   }
 
   const yieldPermille = agricultureYieldPermille(inputs.agricultureSpentThisYear);
@@ -207,6 +223,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
     harvest,
     shortfalls,
     relief,
+    fedPermille: fedPermilles,
     entries,
   };
 }

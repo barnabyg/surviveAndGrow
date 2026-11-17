@@ -999,6 +999,117 @@ p {
   color: var(--amber);
 }
 
+/* Risks ahead */
+
+.risks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.risks__list {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.risk {
+  width: 100%;
+  padding: 6px 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  align-items: start;
+  gap: 4px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.risk--place {
+  cursor: pointer;
+}
+
+.risk--place:hover {
+  background: var(--card);
+}
+
+.risk--place:focus-visible {
+  outline: 2px solid var(--blue);
+}
+
+.risk--place[aria-pressed='true'] {
+  border-color: var(--amber);
+  background: var(--card);
+}
+
+.risk__text,
+.risk__likelihood {
+  display: flex;
+  flex-direction: column;
+}
+
+.risk__headline {
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.risk__reason {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.risk__likelihood {
+  gap: 3px;
+  padding-top: 5px;
+}
+
+.risk__level {
+  font-family: var(--font-condensed);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.risk__level--remote {
+  color: var(--muted);
+}
+
+.risk__level--likely,
+.risk__level--almostCertain {
+  color: var(--danger);
+}
+
+/* A step not reached is hollow, so the meter reads without its colour. */
+.risk__step {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+}
+
+.risk__meter .risk__step--reached {
+  fill: var(--amber);
+  stroke: var(--amber);
+}
+
+.risk__meter--remote .risk__step--reached {
+  fill: var(--muted);
+  stroke: var(--muted);
+}
+
+.risk__meter--likely .risk__step--reached,
+.risk__meter--almostCertain .risk__step--reached {
+  fill: var(--danger);
+  stroke: var(--danger);
+}
+
 /* Budget */
 
 .budget {

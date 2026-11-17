@@ -3,6 +3,8 @@ import {
   decisions,
   endQuarters,
   foodReserve,
+  reports,
+  risks,
   situation,
   startGame,
   tavaraWithDroughtIn,
@@ -75,8 +77,12 @@ test('a drought left alone worsens by stages to famine and ends the game', async
 
   await endQuarters(page, 1);
   await expect(map(page).getByText('▲ Food: Famine')).toBeVisible();
-  await expect(situation(page).getByText('Famine in The Dry East')).toBeVisible();
+  // The report says what happened, and the risks ahead what comes next if nothing is done.
+  await expect(reports(page).getByText('Famine in The Dry East')).toBeVisible();
   await expect(situation(page).getByText(/18,000 people have died/)).toBeVisible();
+  await expect(risks(page).getByRole('button', { name: /Famine in The Dry East/ })).toContainText(
+    'Famine has hold of it. Another quarter of it and the state collapses.',
+  );
 
   await endQuarters(page, 1);
   const gameOver = page.getByRole('dialog', { name: 'The state has collapsed' });

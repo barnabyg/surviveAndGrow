@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   advanceQuarter,
   previewQuarter,
+  risksAhead,
   siteSchedule,
   type GameState,
   type TurnReport,
@@ -20,6 +21,7 @@ import { RegionCard } from './RegionCard';
 import { RegionList } from './RegionList';
 import { ReliefPanel } from './ReliefPanel';
 import { ReportList } from './ReportList';
+import { RisksPanel } from './RisksPanel';
 import { SiteCard } from './SiteCard';
 import { Timeline } from './Timeline';
 import { TopBar } from './TopBar';
@@ -49,6 +51,8 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
   // The report the player last selected, by its place in the list. It counts as selected
   // only while its region is still the one picked out on the map.
   const [reportPicked, setReportPicked] = useState<number | null>(null);
+  // The same for a risk the player selected, kept by its headline since the list changes.
+  const [riskPicked, setRiskPicked] = useState<string | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   // What the map shows. It is the player's choice and stays put from quarter to quarter.
   const [lens, setLens] = useState<Lens>('country');
@@ -56,6 +60,18 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
   const playing = game.outcome.status === 'playing';
   const decisions = { budget: committed, reliefRegionId, startProjects: plannedSiteIds };
   const preview = playing ? previewQuarter(game, decisions) : null;
+  // The risks answer to the decisions in force, not to sliders the player is still moving.
+  const risks = useMemo(
+    () =>
+      playing
+        ? risksAhead(game, { budget: committed, reliefRegionId, startProjects: plannedSiteIds })
+        : [],
+    [playing, game, committed, reliefRegionId, plannedSiteIds],
+  );
+  const pickedRisk = risks.findIndex(
+    (risk) => risk.headline === riskPicked && risk.regionId === selectedRegionId,
+  );
+  const selectedRisk = pickedRisk === -1 ? null : pickedRisk;
   // The timeline shows every project, and the site picked out on the map if it is still
   // empty and unplanned, as if building there began now.
   const schedule =
@@ -96,6 +112,14 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
     selectRegion(index === selectedEntry ? null : regionId);
   };
 
+  // A risk to one region picks that region out the same way.
+  const selectRisk = (index: number) => {
+    const risk = risks[index];
+    if (risk?.regionId === undefined) return;
+    setRiskPicked(index === selectedRisk ? null : risk.headline);
+    selectRegion(index === selectedRisk ? null : risk.regionId);
+  };
+
   const resolveQuarter = () => {
     const result = advanceQuarter(game, decisions);
     setGame(result.state);
@@ -119,6 +143,9 @@ export function GameScreen({ initialGame, onReplay, onNewGame }: GameScreenProps
       <div className="columns">
         <aside className="column column--situation" aria-label="Situation">
           <ReportList report={report} selectedEntry={selectedEntry} onSelectEntry={selectEntry} />
+          {playing && (
+            <RisksPanel risks={risks} selectedRisk={selectedRisk} onSelectRisk={selectRisk} />
+          )}
           <RegionList
             game={game}
             selectedRegionId={selectedRegionId}
