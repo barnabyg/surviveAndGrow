@@ -222,18 +222,16 @@ What is in the game:
   Rated A, the nation may owe no more than a year's revenue at the budget in force. The debt sits beside
   the treasury in the top bar with its debt burden, what is owed against a year's revenue; click
   it to see each loan, what is still owed and the quarters left. A repayment that the treasury
-  and the quarter's revenue cannot cover is a missed payment: it is reported, what went unpaid is
-  added to the debt, and the repayments still to come rise to clear it. Taking and repaying a loan
-  are reported, the treasury's breakdown lists each repayment, and the risks ahead warn of a
-  missed payment.
+  and the quarter's revenue cannot cover is a missed payment, which brings a bailout (below).
+  Taking and repaying a loan are reported, and the treasury's breakdown lists each repayment.
 - The nation has a credit rating, one of AA, A, BBB, BB and B, which sets the rate of a new loan
   (AA takes a point off every rate; BBB adds 1.5 points, BB 3 and B 5) and the most that
   may be owed (from 125% of a year's revenue at AA down to 25% at B). Loans already taken keep
   the rate they were taken at. The rating is reassessed as each quarter ends from a score: the
   payment record, less a share of the debt burden and of the quarter's deficit (spending beyond
   revenue, not counting repaid principal). A game starts with a record of 700, rated A. A missed
-  payment takes 400 points off the record; each quarter whose repayments are all made on time
-  puts 25 back, up to 1,000. The rating sits in the top bar; click it to see the score's parts
+  payment brings a bailout, which leaves the record at 0 and the rating at B; each quarter whose
+  repayments are all made on time puts 25 back, up to 1,000. The rating sits in the top bar; click it to see the score's parts
   and every step with its rates and limit. The finance panel shows the rates the rating gets and
   what a step up or down would mean, and says when the loans planned or the budget would cut or
   raise it; the budget's outlook shows the rating next quarter. A change of rating is reported
@@ -246,16 +244,29 @@ What is in the game:
   falls due and the interest in all before you plan it, and the plan can be taken back until
   the quarter ends. Only interest is paid each quarter, first like a loan's repayment; the whole
   sum falls due in one payment at maturity. A maturity the treasury and the quarter's revenue
-  cannot cover is a missed payment: what goes unpaid is added to the debt and repaid in level
-  repayments over the next four quarters, and the payment record loses 400 points as for any
-  missed payment. Bonds count in the debt, the debt burden, the most that may be owed and the
-  rating, so issuing a large one can cost the AA that allowed it. Below AA the finance panel
+  cannot cover is a missed payment, and brings a bailout like any other. Bonds count in the
+  debt, the debt burden, the most that may be owed and the rating, so issuing a large one can cost the AA that allowed it. Below AA the finance panel
   says what rating bonds need. The finance panel and the debt's breakdown list each bond with
   its maturity, the timeline marks every maturity (in the column beyond the vote for one that
   falls due after it), and the risks ahead warn of a maturity the treasury is not on course to
   cover: inside the four quarters played from the quarters themselves, and further off by
   carrying the treasury on at the pace those quarters set, less the principal other debts repay
   first.
+- A missed payment on any loan or bond does not end the game: it brings a bailout. Lenders
+  consolidate everything owed, with the interest that went unpaid, into one bailout loan at 7% a
+  year, repaid over 16 quarters from the next; anything to be borrowed that quarter is not lent.
+  The credit rating falls to B, and approval takes an 8-point blow in every region that fades
+  like any passing event. Austerity then holds for 8 quarters: the tax rate cannot go below 25%,
+  spending on agriculture is capped at what the game began with and on health, education and
+  security at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or
+  project can be started; projects under way carry on, and food relief and upkeep are not
+  capped. The bailout brings the budget in force within those limits. The budget's sliders stop
+  at the floor and the caps and say so, the finance and projects panels and a site's card say
+  why nothing can be started, and the top bar counts down the quarters left. Austerity ends on
+  schedule if the payments are made; a missed payment during it consolidates the debt again and
+  extends it by 4 quarters, and never ends the game. The report says what the bailout did, when
+  austerity is extended and when it ends, and the risks ahead warn of a bailout, or of austerity
+  extended, on the current course.
 - Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the
@@ -274,7 +285,7 @@ What is in the game:
   text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
   relief are drawn under all of them.
 - The left column lists the risks ahead: famine in a region, strikes, a treasury that runs out,
-  a missed payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
+  a bailout from a missed payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
   for each course the weather could take and each drought that could still begin, and lists each
   danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter

@@ -193,8 +193,11 @@ Phase 1 site types pay off within one term: an irrigation scheme, a farm road an
 These were proposed during design and not explicitly agreed. The turn length, the four tiers and
 their thresholds, the win condition's four-quarter hold and its debt test (the debt burden within
 a limit as the hold completes, which withholds the win without resetting the hold) are built and
-settled.
+settled. So is the bailout in place of instant loss on insolvency: a missed payment on any debt
+consolidates everything owed into one bailout loan, puts the credit rating at its lowest step,
+deals approval a blow and imposes austerity for a fixed number of quarters (a tax floor, spending
+caps, no borrowing and no new projects). A missed payment during austerity extends it, and
+neither ends the game.
 
-- A bailout in place of instant loss on insolvency.
 - Six to eight regions per country.
 - The visual direction: dark panels around a flat survey-style map.
