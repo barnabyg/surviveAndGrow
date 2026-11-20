@@ -430,6 +430,25 @@ export const balance = {
       ],
     },
     /**
+     * Debt a country file may start the game with (format 4): loans already owed, each with
+     * its own rate and the quarters left to repay it, repaid level from the first quarter.
+     * The limits keep a country from opening on debt it cannot carry.
+     */
+    startingDebt: {
+      /** The most loans a country may start with. */
+      mostLoans: 5,
+      /** The highest yearly rate a starting loan may carry, in percent. */
+      mostRatePercent: 25,
+      /** The most quarters a starting loan may have left to run. */
+      mostQuarters: 40,
+      /**
+       * The most that may be owed at the start, in thousandths of a year's output from all
+       * the regions: half of it. A country's first repayments must also be payable from its
+       * starting treasury and first quarter's revenue, so it cannot open on a missed payment.
+       */
+      mostOwedPermille: 500,
+    },
+    /**
      * A bailout: what a missed payment on any debt brings. Lenders consolidate everything
      * owed into one bailout loan on their terms, repaid level from the quarter after, and
      * austerity follows (`austerity` below).

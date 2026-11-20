@@ -11,15 +11,20 @@ import testlandFile from '../countries/testland.json';
 export const tavara = (): Country => loadCountry(withoutDilemmas(tavaraFile));
 
 /**
- * The crude second country, with its dilemmas left out and no growth. It exists to prove that
- * nothing is tied to the first.
+ * The crude second country, with its dilemmas left out, no growth and none of the debt it
+ * starts with. It exists to prove that nothing is tied to the first. Debt moves the treasury
+ * and the credit rating, so a test meets it only when it is about it.
  */
-export const testland = (): Country => loadCountry(withoutDilemmas(testlandFile));
+export const testland = (): Country =>
+  loadCountry(withoutStartingDebt(withoutDilemmas(testlandFile)));
+
+/** Testland with its dilemmas left out and no growth, but owing the loans it starts with. */
+export const testlandInDebt = (): Country => loadCountry(withoutDilemmas(testlandFile));
 
 /** The two countries with their dilemmas left out, but growing as they do when shipped. */
 export const tavaraGrowing = (): Country => loadCountry(withGrowth(withoutDilemmas(tavaraFile)));
 export const testlandGrowing = (): Country =>
-  loadCountry(withGrowth(withoutDilemmas(testlandFile)));
+  loadCountry(withoutStartingDebt(withGrowth(withoutDilemmas(testlandFile))));
 
 /** The two countries exactly as their files are written, dilemmas and all. */
 export const tavaraAsShipped = (): Country => loadCountry(tavaraFile);
@@ -36,7 +41,7 @@ export const bothCountries: [name: string, country: () => Country][] = [
  * port, since a mine must say what it depends on and that needs format 2.
  */
 export function testlandFormat1File(): unknown {
-  const file = structuredClone(testlandFile) as { formatVersion: number; sites: unknown[] };
+  const file = withoutStartingDebt(testlandFile) as { formatVersion: number; sites: unknown[] };
   file.formatVersion = 1;
   file.sites = file.sites.slice(0, 3);
   return file;
@@ -47,13 +52,27 @@ export function testlandFormat1File(): unknown {
  * since naming alternatives needs format 3.
  */
 export function testlandFormat2File(): unknown {
-  const file = structuredClone(testlandFile) as {
+  const file = testlandFormat3File() as {
     formatVersion: number;
     sites: { alternatives?: unknown }[];
   };
   file.formatVersion = 2;
   for (const site of file.sites) delete site.alternatives;
   return file;
+}
+
+/** Testland's file as format 3 could write it: it starts owing nothing. */
+export function testlandFormat3File(): unknown {
+  const file = withoutStartingDebt(testlandFile) as { formatVersion: number };
+  file.formatVersion = 3;
+  return file;
+}
+
+/** A copy of a country file that starts the game owing nothing. */
+function withoutStartingDebt(file: unknown): unknown {
+  const copy = structuredClone(file) as { start: { loans?: unknown } };
+  delete copy.start.loans;
+  return copy;
 }
 
 /**
@@ -123,7 +142,8 @@ export function withDroughtChance(
 /**
  * A country file with chance pinned down: the chance each quarter of each dilemma named,
  * and none of any other; the yearly chance of drought in each region named, and none
- * elsewhere; and, if given, the food reserve the country starts with.
+ * elsewhere; and, if given, the food reserve the country starts with. It starts owing
+ * nothing, so that what debt does to the treasury and the rating stays out of the way.
  */
 export function withChances(
   file: unknown,
@@ -135,7 +155,9 @@ export function withChances(
     readonly growing?: boolean;
   },
 ): Country {
-  const copy = (chances.growing === true ? structuredClone(file) : withoutGrowth(file)) as Chances;
+  const copy = (
+    chances.growing === true ? withoutStartingDebt(file) : withoutGrowth(withoutStartingDebt(file))
+  ) as Chances;
   for (const region of copy.regions) {
     region.eventLikelihood = { drought: chances.drought?.[region.id] ?? 0 };
   }

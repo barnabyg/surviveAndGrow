@@ -63,6 +63,19 @@ export interface Debt {
   readonly schedule: DebtSchedule;
 }
 
+/**
+ * A loan a country file says the game starts with: already owed, at its own rate, with the
+ * quarters left to repay it. It is repaid level from the first quarter.
+ */
+export interface StartingLoan {
+  /** What is owed when the game starts. */
+  readonly owed: Money;
+  /** In hundredths of a percent a year. */
+  readonly annualRateBasisPoints: number;
+  /** The repayments left, the first of them in the game's first quarter. */
+  readonly quarters: number;
+}
+
 /** A sum the player means to borrow this quarter. */
 export interface Borrowing {
   readonly kind: DebtKind;
@@ -542,6 +555,30 @@ function consolidate(debts: readonly Debt[], date: GameDate): Debt {
     quartersLeft: termQuarters,
     schedule: 'level',
   };
+}
+
+/**
+ * The debts a game starts with: the country's starting loans, numbered in the file's order,
+ * owed as the game begins and repaid level from its first quarter.
+ */
+export function startingDebts(loans: readonly StartingLoan[], date: GameDate): Debt[] {
+  return loans.map((loan, index) => ({
+    kind: 'loan',
+    number: index + 1,
+    taken: date,
+    borrowed: loan.owed,
+    annualRateBasisPoints: loan.annualRateBasisPoints,
+    termQuarters: loan.quarters,
+    owed: loan.owed,
+    repayment: levelRepaymentOf(loan),
+    quartersLeft: loan.quarters,
+    schedule: 'level',
+  }));
+}
+
+/** What a level loan asks each quarter: its repayment, as `startingDebts` sets it. */
+export function levelRepaymentOf(loan: StartingLoan): Money {
+  return levelRepayment(loan.owed, loan.annualRateBasisPoints, loan.quarters);
 }
 
 /** What the quarter's borrowing did. */

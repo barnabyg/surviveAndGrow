@@ -14,7 +14,15 @@ import {
   withFixedCosts,
   type BudgetOutcome,
 } from './budget';
-import { borrowFault, debtBurden, debtOf, serveDebts, takeDebts, type Borrowing } from './debt';
+import {
+  borrowFault,
+  debtBurden,
+  debtOf,
+  serveDebts,
+  startingDebts,
+  takeDebts,
+  type Borrowing,
+} from './debt';
 import { deficitOf, openingCredit, reassessCredit, recordAfter } from './credit';
 import { regionName, type Country } from './country';
 import {
@@ -73,12 +81,14 @@ import { resolveUpkeep } from './upkeep';
 export function createGame(country: Country, seed: number): GameState {
   const approval = startingApproval(country);
   const services = startingServices(country);
+  const date = { year: 1, quarter: 1 } as const;
   const opening = {
     country,
     projects: [],
-    debts: [],
+    // The rating the game opens at follows from the debt it starts with.
+    debts: startingDebts(country.start.loans, date),
     budget: country.start.budget,
-    date: { year: 1, quarter: 1 },
+    date,
     treasury: country.start.treasury,
     foodReserve: country.start.foodReserve,
     regions: country.regions.map((region): RegionState => ({

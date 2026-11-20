@@ -1,5 +1,5 @@
 {
-  "formatVersion": 3,
+  "formatVersion": 4,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -191,6 +191,10 @@
         "security": 1
       }
     },
-    "foodReserve": 30000
+    "foodReserve": 30000,
+    "loans": [
+      { "amount": 7, "rate": 7, "quarters": 8 },
+      { "amount": 4, "rate": 9.5, "quarters": 12 }
+    ]
   }
 }

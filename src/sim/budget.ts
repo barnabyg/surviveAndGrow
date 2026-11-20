@@ -293,6 +293,11 @@ export function budgetEntry(outcome: BudgetOutcome): ReportEntry {
 }
 
 /** A whole percentage of an amount, rounded to the nearest unit using whole-number sums. */
+/** The tax a quarter's output pays at a tax rate, before anything unrest costs. */
+export function taxOn(output: Money, taxRatePercent: number): Money {
+  return percentOf(output, taxRatePercent);
+}
+
 function percentOf(amount: Money, percent: number): Money {
   return Math.floor((amount * percent + 50) / 100);
 }

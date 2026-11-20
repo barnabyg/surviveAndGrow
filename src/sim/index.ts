@@ -75,6 +75,7 @@ export {
   type DebtStatus,
   type LoanOffer,
   type LoanTerms,
+  type StartingLoan,
 } from './debt';
 export { electionStatus, type ElectionStatus } from './election';
 export { type ActiveEvent } from './events';
