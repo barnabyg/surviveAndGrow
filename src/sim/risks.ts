@@ -358,17 +358,20 @@ function treasuryRisk(scope: Scope): Risk[] {
   if (finding === null || likelihood === null) return [];
 
   // What gives way first is read off the course with ordinary weather and no new event.
-  const typical = scope.courses[Math.floor(scope.courses.length / 2)]?.paths[0] ?? [];
-  const first = typical[emptied(typical) ?? finding.soonest];
+  const typical = typicalOf(scope.courses);
+  const quarter = emptied(typical) ?? finding.soonest;
+  const first = typical[quarter];
   const site =
     first === undefined || first.spendingCut
       ? undefined
       : state.country.sites.find((candidate) => candidate.id === first.pausedSites[0]);
-  // Repayments are paid before anything else, so they are what squeezes the rest.
-  const { repayments } = debtStatus(state);
+  // Repayments are paid before anything else, so they are what squeezes the rest: those due
+  // in the quarter the treasury runs out, as the course has it begin.
+  const begins = quarter === 0 ? state : (typical[quarter - 1]?.state ?? state);
+  const { repayments } = debtStatus(begins);
   const firstNote =
     repayments > 0
-      ? ` Repayments on debts come first: ${formatMoney(repayments)} this quarter.`
+      ? ` Repayments on debts come first: ${formatMoney(repayments)} ${when(quarter)}.`
       : '';
   return [
     {

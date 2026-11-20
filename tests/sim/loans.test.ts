@@ -239,6 +239,20 @@ describe('a missed payment', () => {
       'Repayments on debts come first: $2.6m this quarter.',
     );
   });
+
+  it('is foreseen by the empty-treasury risk with the repayments due when it empties', () => {
+    // A loan taken now is first repaid next quarter, when spending $10.0m more on health
+    // than the budget the game starts with runs the treasury out.
+    const game = createGame(testland(), 1);
+    const spending = { ...game.budget.spending, health: game.budget.spending.health + 100 };
+    const budget = { ...game.budget, spending };
+    const decisions = { ...steward(game, budget), borrow: [loan(100, 4)] };
+
+    const treasury = risksAhead(game, decisions).find((risk) => risk.kind === 'treasury');
+
+    expect(treasury).toMatchObject({ withinQuarters: 2 });
+    expect(treasury?.reason).toMatch('Repayments on debts come first: $2.6m next quarter.');
+  });
 });
 
 describe('the debt burden', () => {
