@@ -165,6 +165,21 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Restored site report',
     path: 'M2,17 H12 M3.5,17 V10 L7,6.5 L10.5,10 V17 M14,17 V9 M12,5 A2.5,2.5 0 1 0 16,5 M14,7.5 V9',
   },
+  // A banknote with an arrow coming in.
+  loanTaken: {
+    label: 'Loan report',
+    path: 'M2,6 H14 V14 H2 Z M8,8.5 A1.5,1.5 0 1 1 7.99,8.5 M18,10 H15 M16.5,8.5 L15,10 L16.5,11.5',
+  },
+  // A banknote, ticked.
+  loanRepaid: {
+    label: 'Repaid loan report',
+    path: 'M2,6 H18 V14 H2 Z M6.5,10 L9,12.5 L13.5,7.5',
+  },
+  // A banknote torn through.
+  missedPayment: {
+    label: 'Missed payment report',
+    path: 'M2,6 H18 V14 H2 Z M10,6 L8.5,8.5 L11,10.5 L9.5,14',
+  },
   // A road that forks.
   dilemma: {
     label: 'Decision report',

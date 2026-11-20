@@ -15,8 +15,10 @@ supposed chance. It lives the quarter through `liveQuarter`, which the preview
 (`previewQuarter`) shares, so turn and preview cannot come to differ:
 
 1. The answer to a dilemma (`dilemmas.ts`).
-2. Money (`resolveMoney`): the budget (`budget.ts`), then project instalments, oldest first
-   (`projects.ts`), then upkeep and decay (`upkeep.ts`).
+2. Money (`resolveMoney`): repayments on debts, oldest first, out of the treasury and the
+   quarter's revenue (`debt.ts`); then the budget (`budget.ts`) with what is left; then project
+   instalments, oldest first (`projects.ts`); then upkeep and decay (`upkeep.ts`). What is
+   borrowed arrives last, as the quarter ends (`debt.ts`).
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
    `power.ts`) and the events in force (`events.ts`).
 4. Health and education levels (`resolveServices` in `prosperity.ts`).

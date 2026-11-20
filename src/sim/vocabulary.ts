@@ -310,7 +310,15 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 };
 
 /** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
-export const RISK_KINDS = ['famine', 'treasury', 'upkeep', 'strikes', 'tier', 'election'] as const;
+export const RISK_KINDS = [
+  'famine',
+  'treasury',
+  'missedPayment',
+  'upkeep',
+  'strikes',
+  'tier',
+  'election',
+] as const;
 export type RiskKind = (typeof RISK_KINDS)[number];
 
 /** How likely a risk is, from the least to the most. A risk less likely than remote is not listed. */
@@ -342,6 +350,9 @@ export const REPORT_KINDS = [
   'projectCompleted',
   'siteDecaying',
   'siteRestored',
+  'loanTaken',
+  'loanRepaid',
+  'missedPayment',
   'dilemma',
   'tier',
   'election',
@@ -361,4 +372,15 @@ export const SERIOUSNESS_NAMES: Readonly<Record<Seriousness, string>> = {
   warning: 'Warning',
   serious: 'Serious',
   critical: 'Critical',
+};
+
+/**
+ * The kinds of debt the nation can owe. A loan is repaid in equal quarterly repayments of
+ * interest and principal over its term.
+ */
+export const DEBT_KINDS = ['loan'] as const;
+export type DebtKind = (typeof DEBT_KINDS)[number];
+
+export const DEBT_KIND_NAMES: Readonly<Record<DebtKind, string>> = {
+  loan: 'Loan',
 };

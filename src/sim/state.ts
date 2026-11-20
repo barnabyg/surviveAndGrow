@@ -1,6 +1,7 @@
 import type { ApprovalEffects, RegionUnrest } from './approval';
 import type { Budget } from './budget';
 import type { Country } from './country';
+import type { Borrowing, Debt } from './debt';
 import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
@@ -109,6 +110,8 @@ export interface GameState {
   readonly events: readonly ActiveEvent[];
   /** Every project started, in the order they were started: those being built and those in use. */
   readonly projects: readonly Project[];
+  /** Every debt still owed, in the order it was taken. */
+  readonly debts: readonly Debt[];
   /**
    * The vital signs as each quarter began, from the start of the game to the quarter now
    * being decided, in order. The last record is the position now.
@@ -152,6 +155,12 @@ export interface Decisions {
    */
   readonly startProjects?: readonly string[];
   /**
+   * What to borrow this quarter, each from the menu of loans. The money arrives as the
+   * quarter ends, and repayments begin the quarter after. Together with what is owed it must
+   * stay within the most that may be owed.
+   */
+  readonly borrow?: readonly Borrowing[];
+  /**
    * The answer to the dilemma put to the player this quarter: the id of one of its options.
    * A quarter with a dilemma pending cannot be resolved without one, though it can be
    * previewed, and the preview then shows the quarter as it stands with nothing chosen.
@@ -182,6 +191,12 @@ export interface TurnReport {
    * population grew has none.
    */
   readonly population: Figure | null;
+  /**
+   * What the nation owes after the quarter, with what borrowing and repayments did to it. A
+   * report carried over from a save written before format 5, when nothing could be
+   * borrowed, has none.
+   */
+  readonly debt: Figure | null;
   /** The harvest, in quarter 4, and null in every other quarter. */
   readonly harvest: Harvest | null;
   /**
@@ -224,6 +239,19 @@ export interface Preview {
   readonly spending: Range;
   /** The part of spending that goes on instalments for projects under way or starting. */
   readonly projectSpending: Range;
+  /**
+   * The part of spending that goes on repaying debts, interest and principal. It is paid
+   * before anything else.
+   */
+  readonly repayments: Range;
+  /** What falls due on debts and cannot be paid, which would be added to the debt. */
+  readonly missedPayment: Money;
+  /** What borrowing brings into the treasury as the quarter ends. */
+  readonly borrowed: Money;
+  /** What the nation will owe once the quarter is over. */
+  readonly debt: Range;
+  /** The debt burden once the quarter is over: debt against a year's revenue, in thousandths. */
+  readonly debtBurden: Range;
   /** The sites where building will pause this quarter because the treasury cannot pay. */
   readonly pausedSites: readonly string[];
   /**

@@ -368,6 +368,29 @@ export const balance = {
      */
     fallBackMarginPermille: 20,
   },
+  /**
+   * Borrowing. Money is in Money units ($100,000) and rates in hundredths of a percent a
+   * year: 600 is 6% a year. A loan is repaid in equal quarterly repayments of interest and
+   * principal over its term, starting the quarter after its money arrives. Interest each
+   * quarter is a quarter of the yearly rate on what is still owed.
+   */
+  finance: {
+    loans: {
+      /** The sums a loan may be taken out for. */
+      amounts: [100, 250, 500],
+      /** The terms a loan may be taken over, each with the rate it is lent at. */
+      terms: [
+        { quarters: 4, annualRateBasisPoints: 600 },
+        { quarters: 8, annualRateBasisPoints: 800 },
+        { quarters: 12, annualRateBasisPoints: 1000 },
+      ],
+    },
+    /**
+     * The most the nation may owe, counting what it means to borrow this quarter, in
+     * thousandths of a year's revenue at the budget in force.
+     */
+    debtLimitPermille: 1000,
+  },
   /** How the game is won. */
   victory: {
     /**

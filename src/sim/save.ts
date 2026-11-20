@@ -6,6 +6,7 @@ import {
   type DilemmaEffect,
   type PendingDilemma,
 } from './dilemmas';
+import type { Debt } from './debt';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
 import type { VitalSigns } from './history';
@@ -32,6 +33,7 @@ import { formatQuarters } from './text';
 import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVERS,
+  DEBT_KINDS,
   DILEMMA_EFFECT_KINDS,
   DILEMMA_TYPES,
   ENDING_CAUSES,
@@ -108,6 +110,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       regions: game.regions,
       events: game.events,
       projects: game.projects,
+      debts: game.debts,
       history: game.history,
       dilemma: game.dilemma,
       dilemmasAnswered: game.dilemmasAnswered,
@@ -162,6 +165,7 @@ export function loadSave(
       began: date(item.began, `${path}.began`),
     })),
     projects: readProjects(state.projects, 'state.projects', country),
+    debts: readDebts(state.debts, 'state.debts'),
     history: readHistory(state.history, 'state.history'),
     dilemma:
       state.dilemma === null
@@ -284,6 +288,35 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
   return projects;
 }
 
+/**
+ * The debts owed, each numbered apart from the others. A debt keeps the terms it was taken
+ * on, so they are read as saved, not looked up on the menu as it now stands.
+ */
+function readDebts(saved: unknown, path: string): Debt[] {
+  const debts = list(saved, path, (item, itemPath): Debt => {
+    const termQuarters = whole(item.termQuarters, `${itemPath}.termQuarters`, 1);
+    return {
+      kind: oneOf(item.kind, `${itemPath}.kind`, DEBT_KINDS, 'a kind of debt'),
+      number: whole(item.number, `${itemPath}.number`, 1),
+      taken: date(item.taken, `${itemPath}.taken`),
+      borrowed: whole(item.borrowed, `${itemPath}.borrowed`, 1),
+      annualRateBasisPoints: whole(
+        item.annualRateBasisPoints,
+        `${itemPath}.annualRateBasisPoints`,
+        0,
+      ),
+      termQuarters,
+      owed: whole(item.owed, `${itemPath}.owed`, 1),
+      repayment: whole(item.repayment, `${itemPath}.repayment`, 1),
+      quartersLeft: whole(item.quartersLeft, `${itemPath}.quartersLeft`, 1, termQuarters),
+    };
+  });
+  if (new Set(debts.map((debt) => debt.number)).size !== debts.length) {
+    fail(path, 'numbers two debts the same');
+  }
+  return debts;
+}
+
 function readHistory(saved: unknown, path: string): VitalSigns[] {
   const history = list(saved, path, (item, itemPath): VitalSigns => ({
     date: date(item.date, `${itemPath}.date`),
@@ -293,6 +326,8 @@ function readHistory(saved: unknown, path: string): VitalSigns[] {
     approval: whole(item.approval, `${itemPath}.approval`, 0, 1000),
     prosperity:
       item.prosperity === null ? null : whole(item.prosperity, `${itemPath}.prosperity`, 0, 1000),
+    debt: whole(item.debt, `${itemPath}.debt`, 0),
+    debtBurden: whole(item.debtBurden, `${itemPath}.debtBurden`, 0),
   }));
   if (history.length === 0) fail(path, 'must hold at least the opening position');
   return history;
@@ -439,6 +474,7 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
     treasury: figure(saved.treasury, 'report.treasury'),
     food: figure(saved.food, 'report.food'),
     approval: figure(saved.approval, 'report.approval'),
+    debt: saved.debt === null ? null : figure(saved.debt, 'report.debt'),
     prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),
     population: saved.population === null ? null : figure(saved.population, 'report.population'),
     harvest: saved.harvest === null ? null : harvest(saved.harvest, 'report.harvest'),

@@ -3,11 +3,11 @@ import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   createGame,
+  debtStatus,
   loadSave,
   SAVE_FORMAT_VERSION,
   SaveError,
   saveGame,
-  siteStatus,
   type Budget,
   type Country,
   type Decisions,
@@ -16,7 +16,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import format4Save from '../saves/format-4.json';
+import format5Save from '../saves/format-5.json';
 import {
   bothCountries,
   tavara,
@@ -99,7 +99,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(4);
+    expect(save.formatVersion).toBe(5);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -283,8 +283,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 5))).toBe(
-      'The saved game was written by a newer release of the game (save format 5; this release reads format 4). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 6))).toBe(
+      'The saved game was written by a newer release of the game (save format 6; this release reads format 5). Open it with that release.',
     );
   });
 
@@ -645,47 +645,39 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 4', () => {
-  it('still opens on the game it was written from, with the farm road decaying', () => {
-    const { game, report } = loadSave(format4Save);
+describe('the save kept from save format 5', () => {
+  it('still opens on the game it was written from, owing on two loans', () => {
+    const { game, report } = loadSave(format5Save);
 
     expect(game.date).toEqual({ year: 2, quarter: 1 });
-    expect(game.budget.spending.upkeep).toBe(10);
     expect(
-      ['lowmere-irrigation', 'dustwell-irrigation', 'lowmere-road'].map(
-        (siteId) => siteStatus(game, siteId).state,
-      ),
-    ).toEqual(['operating', 'operating', 'decaying']);
-    expect(report?.entries.filter((entry) => entry.kind === 'siteDecaying')).toEqual([
-      expect.objectContaining({ headline: 'Decaying: Farm road, Arden to Lowmere' }),
+      game.debts.map((debt) => [debt.number, debt.borrowed, debt.owed, debt.quartersLeft]),
+    ).toEqual([
+      [1, 250, 158, 5],
+      [2, 100, 51, 2],
     ]);
+    expect(debtStatus(game).debt).toBe(209);
+    expect(report?.debt).toMatchObject({ value: 209, change: -56 });
   });
 
-  it('restores the farm road once its upkeep is paid again', () => {
-    let { game } = loadSave(format4Save);
+  it('plays on to repay both loans on schedule', () => {
+    let { game } = loadSave(format5Save);
 
-    const result = advanceQuarter(
-      game,
-      answering(game, {
-        ...steward(game),
-        budget: { ...game.budget, spending: { ...game.budget.spending, upkeep: 20 } },
-      }),
-    );
-    game = result.state;
+    for (let quarter = 0; quarter < 5; quarter += 1) {
+      game = advanceQuarter(game, answering(game, steward(game))).state;
+    }
 
-    expect(siteStatus(game, 'lowmere-road').state).toBe('operating');
-    expect(result.report.entries.map((entry) => entry.headline)).toContain(
-      'Restored: Farm road, Arden to Lowmere',
-    );
+    expect(game.debts).toEqual([]);
+    expect(game.history.at(-1)?.debt).toBe(0);
   });
 
-  // This holds for as long as format 4 is the current format: saving must write exactly
+  // This holds for as long as format 5 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(4);
-    const { game, report } = loadSave(format4Save);
+    expect(SAVE_FORMAT_VERSION).toBe(5);
+    const { game, report } = loadSave(format5Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format4Save);
+    expect(stored(saveGame(game, report))).toEqual(format5Save);
   });
 });

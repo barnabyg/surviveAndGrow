@@ -3,12 +3,20 @@ import { sum } from './arithmetic';
 import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName } from './country';
+import { debtStatus } from './debt';
 import { defeatChancePermille, electionStatus } from './election';
 import { eventName, eventsThatMayBegin, type PossibleEvent } from './events';
 import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
 import type { Decisions, GameState, RegionState } from './state';
 import { prosperityStatus } from './prosperity';
-import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
+import {
+  articleFor,
+  formatIndex,
+  formatMoney,
+  formatPercent,
+  formatPoints,
+  formatQuarters,
+} from './text';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
 import { UPKEEP_ORDER_RULE } from './upkeep';
 import {
@@ -41,7 +49,7 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 
 /**
  * The dangers of the coming quarters: famine in a region, strikes, a treasury that runs
- * out, and a lost election. It plays the quarters ahead with the real rules, holding the decisions as they are,
+ * out, a missed payment on a debt, and a lost election. It plays the quarters ahead with the real rules, holding the decisions as they are,
  * once for each course the weather could take and each event that could still begin, and
  * weighs how many of those lead to each danger. The most likely comes first, and a danger
  * too unlikely to matter is left out, unless it would end the game. It changes nothing and draws nothing from the random
@@ -74,6 +82,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
     ...treasuryRisk(whole),
+    ...missedPaymentRisk(whole),
     ...upkeepRisk(whole),
     ...strikeRisk(whole),
     ...tierRisk(whole),
@@ -306,15 +315,51 @@ function treasuryRisk(scope: Scope): Risk[] {
     first === undefined || first.spendingCut
       ? undefined
       : state.country.sites.find((candidate) => candidate.id === first.pausedSites[0]);
+  // Repayments are paid before anything else, so they are what squeezes the rest.
+  const { repayments } = debtStatus(state);
+  const firstNote =
+    repayments > 0
+      ? ` Repayments on debts come first: ${formatMoney(repayments)} this quarter.`
+      : '';
   return [
     {
       kind: 'treasury',
       likelihood,
       headline: 'Empty treasury',
       reason:
-        site === undefined
+        (site === undefined
           ? `As things stand the treasury cannot cover the budget ${when(finding.soonest)}, and every area will be cut.`
-          : `As things stand the treasury cannot cover the instalment on ${site.name} ${when(finding.soonest)}, and building there will pause.`,
+          : `As things stand the treasury cannot cover the instalment on ${site.name} ${when(finding.soonest)}, and building there will pause.`) +
+        firstNote,
+      withinQuarters: finding.soonest + 1,
+    },
+  ];
+}
+
+/**
+ * A payment on a debt is missed when the treasury and the quarter's revenue together cannot
+ * cover it. What goes unpaid is added to the debt.
+ */
+function missedPaymentRisk(scope: Scope): Risk[] {
+  const { watched } = scope;
+  const misses = (path: Path) => {
+    const quarter = path.slice(0, watched).findIndex((resolved) => resolved.missedPayment > 0);
+    return quarter === -1 ? null : quarter;
+  };
+  const finding = weigh(scope, misses);
+  const likelihood = finding === null ? null : likelihoodOf(finding.chance);
+  if (finding === null || likelihood === null) return [];
+
+  // Which debt goes unpaid is read off the course with ordinary weather and no new event.
+  const typical = scope.courses[Math.floor(scope.courses.length / 2)]?.paths[0] ?? [];
+  const first = typical[misses(typical) ?? finding.soonest];
+  const which = first?.missedOn[0] ?? 'a debt';
+  return [
+    {
+      kind: 'missedPayment',
+      likelihood,
+      headline: 'Missed payment',
+      reason: `As things stand the treasury and revenue cannot cover the repayment on ${which} ${when(finding.soonest)}. What goes unpaid is added to the debt, and the repayments still to come rise.`,
       withinQuarters: finding.soonest + 1,
     },
   ];

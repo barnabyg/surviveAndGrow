@@ -118,6 +118,8 @@ export const decisions = (page: Page): Locator =>
   page.getByRole('complementary', { name: 'Decisions' });
 export const treasury = (page: Page): Locator =>
   page.getByRole('banner').getByRole('group', { name: 'Treasury' });
+export const debt = (page: Page): Locator =>
+  page.getByRole('banner').getByRole('group', { name: 'Debt' });
 export const foodReserve = (page: Page): Locator =>
   page.getByRole('banner').getByRole('group', { name: 'Food reserve' });
 export const approval = (page: Page): Locator =>

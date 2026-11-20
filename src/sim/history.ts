@@ -1,5 +1,7 @@
 import { nationalApproval } from './approval';
+import type { Budget } from './budget';
 import type { Country } from './country';
+import { debtBurden, debtOf, type Debt } from './debt';
 import { foodStatus } from './food';
 import type { Project } from './projects';
 import { prosperityStatus } from './prosperity';
@@ -26,6 +28,10 @@ export interface VitalSigns {
    * did not yet measure it.
    */
   readonly prosperity: number | null;
+  /** What the nation owed. */
+  readonly debt: Money;
+  /** The debt against a year's revenue at the budget in force, in thousandths. */
+  readonly debtBurden: number;
 }
 
 /** The vital signs of a country at one moment. */
@@ -36,6 +42,8 @@ export function vitalSigns(position: {
   readonly treasury: Money;
   readonly foodReserve: number;
   readonly regions: readonly RegionState[];
+  readonly budget: Budget;
+  readonly debts: readonly Debt[];
   /** National prosperity, when it has already been worked out for this position. */
   readonly prosperity?: number;
 }): VitalSigns {
@@ -46,5 +54,7 @@ export function vitalSigns(position: {
     quarterlyConsumption: foodStatus(position).quarterlyConsumption,
     approval: nationalApproval(position.regions),
     prosperity: position.prosperity ?? prosperityStatus(position).value,
+    debt: debtOf(position.debts),
+    debtBurden: debtBurden(position),
   };
 }

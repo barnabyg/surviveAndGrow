@@ -1,11 +1,14 @@
 import {
   approvalStatus,
+  debtStatus,
   electionStatus,
   foodStatus,
   formatIndex,
   formatMoney,
   formatPercent,
   formatPoints,
+  formatQuarters,
+  formatRate,
   formatSignedIndex,
   formatSignedPoints,
   monthsOfFood,
@@ -56,6 +59,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
+  const debt = debtStatus(game);
   const election = electionStatus(game);
   const prosperity = prosperityStatus(game);
   const tier = tierStatus({ ...game, prosperity: prosperity.value });
@@ -100,6 +104,68 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
             />
           }
         />
+        <VitalSign
+          label="Debt"
+          value={formatMoney(debt.debt)}
+          figure={report?.debt ?? null}
+          formatChange={formatSigned}
+          formatMovement={formatMoney}
+          goodWhen="falling"
+          note={`Burden ${formatPercent(debt.burden)}`}
+          breakdownTitle="What moved the debt"
+          trend={
+            <TrendLine
+              subject="Debt"
+              values={shown.map((record) => record.debt)}
+              format={formatMoney}
+            />
+          }
+        >
+          <h2 className="label">What is owed</h2>
+          {debt.debts.length === 0 ? (
+            <p className="breakdown__empty">
+              Nothing is owed. Loans are taken in the Finance panel.
+            </p>
+          ) : (
+            <table className="breakdown__table" aria-label="What is owed">
+              <thead>
+                <tr>
+                  <th scope="col">Debt</th>
+                  <th scope="col">Owed</th>
+                  <th scope="col">Repayment</th>
+                  <th scope="col">Left</th>
+                </tr>
+              </thead>
+              <tbody>
+                {debt.debts.map((owed) => (
+                  <tr key={owed.number}>
+                    <th scope="row">
+                      {owed.name} · {formatMoney(owed.borrowed)} at{' '}
+                      {formatRate(owed.annualRateBasisPoints)}
+                    </th>
+                    <td>{formatMoney(owed.owed)}</td>
+                    <td>{formatMoney(owed.repayment)}</td>
+                    <td>{formatQuarters(owed.quartersLeft)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row">Owed in all</th>
+                  <td>{formatMoney(debt.debt)}</td>
+                  <td>{formatMoney(debt.repayments)}</td>
+                  <td />
+                </tr>
+              </tfoot>
+            </table>
+          )}
+          <p className="breakdown__empty">
+            The debt burden is what is owed against a year’s revenue at the budget in force:{' '}
+            {formatMoney(debt.yearRevenue)}. Repayments are paid before anything else each quarter.
+            One the treasury and revenue cannot cover is missed, and what goes unpaid is added to
+            the debt.
+          </p>
+        </VitalSign>
         <VitalSign
           label="Food reserve"
           value={food.reserveMonths.toFixed(1)}

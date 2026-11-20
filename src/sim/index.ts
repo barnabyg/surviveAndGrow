@@ -37,6 +37,17 @@ export {
   type DilemmaView,
   type PendingDilemma,
 } from './dilemmas';
+export {
+  debtName,
+  debtStatus,
+  formatRate,
+  loanOffers,
+  type Borrowing,
+  type Debt,
+  type DebtStatus,
+  type LoanOffer,
+  type LoanTerms,
+} from './debt';
 export { electionStatus, type ElectionStatus } from './election';
 export { type ActiveEvent } from './events';
 export {
@@ -115,6 +126,8 @@ export {
 } from './types';
 export {
   CHAIN_ROLES,
+  DEBT_KIND_NAMES,
+  DEBT_KINDS,
   DILEMMA_TYPES,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
@@ -138,6 +151,7 @@ export {
   UNREST_NAMES,
   type ApprovalDriver,
   type ChainRole,
+  type DebtKind,
   type DecorationKind,
   type DilemmaType,
   type EventType,

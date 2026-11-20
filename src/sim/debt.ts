@@ -1,0 +1,419 @@
+import { sum } from './arithmetic';
+import { balance } from './balance';
+import { revenueOf, type Budget } from './budget';
+import type { Country } from './country';
+import type { Project } from './projects';
+import type { ReportEntry } from './report';
+import type { RegionState } from './state';
+import { formatMoney, formatPercent, formatQuarters } from './text';
+import type { Contribution, GameDate, Money } from './types';
+import { DEBT_KIND_NAMES, DEBT_KINDS, type DebtKind } from './vocabulary';
+
+/**
+ * Debt: what the nation has borrowed and still owes. Every kind of debt is a `Debt` in one
+ * list, paid in the order it was taken, before anything else each quarter. What falls due
+ * each quarter answers to the kind of debt; how heavy the debt is, the debt burden, answers
+ * to all of it together.
+ */
+
+/** One debt the nation owes. It is never changed in place. */
+export interface Debt {
+  readonly kind: DebtKind;
+  /** Names it while it is owed: "Loan 2". No two debts owed at once share a number. */
+  readonly number: number;
+  /** The quarter it was taken in. Its money arrived as that quarter ended. */
+  readonly taken: GameDate;
+  /** The sum borrowed. */
+  readonly borrowed: Money;
+  /** The rate it was taken at, in hundredths of a percent a year. It never changes. */
+  readonly annualRateBasisPoints: number;
+  /** The quarters it was taken over. */
+  readonly termQuarters: number;
+  /** The principal still owed. Interest that went unpaid has been added to it. */
+  readonly owed: Money;
+  /**
+   * What falls due each quarter, interest and principal together. The last quarter's is
+   * whatever then clears the debt, which may be a little less.
+   */
+  readonly repayment: Money;
+  /** How many repayments are still to come. */
+  readonly quartersLeft: number;
+}
+
+/** A sum the player means to borrow this quarter. */
+export interface Borrowing {
+  readonly kind: DebtKind;
+  readonly amount: Money;
+  /** The quarters it is to be repaid over. */
+  readonly quarters: number;
+}
+
+/** What a loan costs, as the player is shown before taking it. */
+export interface LoanTerms {
+  readonly amount: Money;
+  readonly quarters: number;
+  readonly annualRateBasisPoints: number;
+  /** What falls due each quarter from the quarter after the money arrives. */
+  readonly repayment: Money;
+  /** The interest paid over the whole term, if every repayment is made. */
+  readonly totalInterest: Money;
+}
+
+/** A loan on the menu, and why it cannot be taken now, or null when it can. */
+export interface LoanOffer extends LoanTerms {
+  readonly unavailable: string | null;
+}
+
+/** What the debt rules need of the game: what it owes, and what its revenue is. */
+interface Borrower {
+  readonly country: Country;
+  readonly regions: readonly RegionState[];
+  readonly projects: readonly Project[];
+  readonly budget: Budget;
+  readonly debts: readonly Debt[];
+}
+
+/** What a debt is called: "Loan 2". */
+export function debtName(debt: Pick<Debt, 'kind' | 'number'>): string {
+  return `${DEBT_KIND_NAMES[debt.kind]} ${debt.number}`;
+}
+
+/** A yearly rate as the player reads it: "6%", "7.5%". */
+export function formatRate(annualRateBasisPoints: number): string {
+  return `${annualRateBasisPoints / 100}%`;
+}
+
+/** Everything still owed. */
+export function debtOf(debts: readonly Debt[]): Money {
+  return sum(debts.map((debt) => debt.owed));
+}
+
+/** What a year's revenue comes to at the budget in force and the country as it stands. */
+export function yearRevenue(game: Omit<Borrower, 'debts'>): Money {
+  return 4 * revenueOf(game, game.budget);
+}
+
+/**
+ * The debt burden: what is owed against a year's revenue, in thousandths. A country with no
+ * revenue to speak of is judged as if it raised the smallest sum there is.
+ */
+export function debtBurden(game: Borrower): number {
+  return burdenOf(debtOf(game.debts), yearRevenue(game));
+}
+
+function burdenOf(debt: Money, revenue: Money): number {
+  return Math.floor((debt * 1000) / Math.max(1, revenue));
+}
+
+/** The most that may be owed, counting what is to be borrowed this quarter. */
+export function debtLimit(game: Omit<Borrower, 'debts'>): Money {
+  return Math.floor((yearRevenue(game) * balance.finance.debtLimitPermille) / 1000);
+}
+
+/** How the nation's debt stands, as the player is shown it. */
+export interface DebtStatus {
+  /** Everything still owed. */
+  readonly debt: Money;
+  /** A year's revenue at the budget in force. */
+  readonly yearRevenue: Money;
+  /** The debt against a year's revenue, in thousandths. */
+  readonly burden: number;
+  /** The most that may be owed. */
+  readonly limit: Money;
+  /** The most that each debt owed asks for this quarter, before any is missed. */
+  readonly repayments: Money;
+  /** Every debt owed, in the order it was taken. */
+  readonly debts: readonly (Debt & { readonly name: string })[];
+}
+
+export function debtStatus(game: Borrower): DebtStatus {
+  const debt = debtOf(game.debts);
+  const revenue = yearRevenue(game);
+  return {
+    debt,
+    yearRevenue: revenue,
+    burden: burdenOf(debt, revenue),
+    limit: debtLimit(game),
+    repayments: sum(game.debts.map((owed) => dueOn(owed).due)),
+    debts: game.debts.map((owed) => ({ ...owed, name: debtName(owed) })),
+  };
+}
+
+/** The terms of a loan on the menu, or null when the menu has no such loan. */
+export function loanTerms(amount: Money, quarters: number): LoanTerms | null {
+  const { amounts, terms } = balance.finance.loans;
+  const term = terms.find((candidate) => candidate.quarters === quarters);
+  if (term === undefined || !(amounts as readonly number[]).includes(amount)) return null;
+  const rate = term.annualRateBasisPoints;
+  const repayment = levelRepayment(amount, rate, quarters);
+  return {
+    amount,
+    quarters,
+    annualRateBasisPoints: rate,
+    repayment,
+    totalInterest: paidOver(amount, rate, quarters, repayment) - amount,
+  };
+}
+
+/**
+ * Every loan on the menu, each sum over each term. One that would take the debt, with what
+ * is already planned for this quarter, past the most that may be owed cannot be taken.
+ */
+export function loanOffers(game: Borrower, planned: readonly Borrowing[] = []): LoanOffer[] {
+  const { amounts, terms } = balance.finance.loans;
+  return amounts.flatMap((amount) =>
+    terms.flatMap(({ quarters }) => {
+      const offered = loanTerms(amount, quarters);
+      if (offered === null) return [];
+      return [
+        { ...offered, unavailable: limitFault(game, [...planned, loanOf(amount, quarters)]) },
+      ];
+    }),
+  );
+}
+
+function loanOf(amount: Money, quarters: number): Borrowing {
+  return { kind: 'loan', amount, quarters };
+}
+
+/**
+ * What is wrong with borrowing these sums this quarter, or null when the game allows it.
+ * Each must be on the menu, and together with what is owed they must stay within the most
+ * that may be owed.
+ */
+export function borrowFault(game: Borrower, borrowing: readonly Borrowing[]): string | null {
+  for (const each of borrowing) {
+    if (!(DEBT_KINDS as readonly string[]).includes(each.kind)) {
+      return `There is no kind of debt "${each.kind}" to take.`;
+    }
+    if (loanTerms(each.amount, each.quarters) === null) {
+      return `No loan of ${formatMoney(each.amount)} over ${formatQuarters(each.quarters)} is on offer.`;
+    }
+  }
+  return limitFault(game, borrowing);
+}
+
+function limitFault(game: Borrower, borrowing: readonly Borrowing[]): string | null {
+  // What is already owed may stand above the limit, if revenue has fallen since; it only
+  // keeps more from being borrowed.
+  if (borrowing.length === 0) return null;
+  const limit = debtLimit(game);
+  const after = debtOf(game.debts) + sum(borrowing.map((each) => each.amount));
+  if (after <= limit) return null;
+  return `It would take the debt to ${formatMoney(after)}, past the ${formatMoney(limit)} that may be owed: ${formatPercent(balance.finance.debtLimitPermille, 0)} of a year’s revenue.`;
+}
+
+/** A quarter of a yearly rate on a sum, to the nearest Money unit. */
+function interestOn(owed: Money, annualRateBasisPoints: number): Money {
+  return Math.floor((owed * annualRateBasisPoints + 20_000) / 40_000);
+}
+
+/** What one quarter asks of a debt: the interest on it and what falls due. */
+function dueOn(debt: Debt): { readonly interest: Money; readonly due: Money } {
+  const interest = interestOn(debt.owed, debt.annualRateBasisPoints);
+  const whole = debt.owed + interest;
+  return { interest, due: debt.quartersLeft <= 1 ? whole : Math.min(debt.repayment, whole) };
+}
+
+/**
+ * Everything a sum lent at a rate costs if repaid by a level repayment over some quarters,
+ * the last one clearing what is left.
+ */
+function paidOver(owed: Money, rate: number, quarters: number, repayment: Money): Money {
+  let left = owed;
+  let paid = 0;
+  for (let quarter = 1; quarter <= quarters && left > 0; quarter += 1) {
+    const whole = left + interestOn(left, rate);
+    const due = quarter === quarters ? whole : Math.min(repayment, whole);
+    paid += due;
+    left = whole - due;
+  }
+  return paid;
+}
+
+/**
+ * The smallest whole repayment that clears a sum over the quarters given, with the last
+ * repayment no larger than the others. It is found by halving, in whole numbers, so it
+ * comes out the same on every machine.
+ */
+function levelRepayment(owed: Money, rate: number, quarters: number): Money {
+  const clears = (repayment: Money) => {
+    let left = owed;
+    for (let quarter = 1; quarter < quarters && left > 0; quarter += 1) {
+      left = left + interestOn(left, rate) - repayment;
+    }
+    return left <= 0 || left + interestOn(left, rate) <= repayment;
+  };
+  let low = 0;
+  let high = owed + interestOn(owed, rate);
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (clears(middle)) high = middle;
+    else low = middle + 1;
+  }
+  return high;
+}
+
+/** What a quarter's repayments did. */
+export interface DebtService {
+  /** The debts as the quarter leaves them: those repaid in full are gone. */
+  readonly debts: readonly Debt[];
+  /** What fell due. */
+  readonly due: Money;
+  /** What was paid. */
+  readonly paid: Money;
+  /** What fell due and could not be paid, which has been added to the debt. */
+  readonly missed: Money;
+  /** The debts on which a payment was missed, by name. */
+  readonly missedOn: readonly string[];
+  /** What the payments took from the treasury, line by line. */
+  readonly contributions: readonly Contribution[];
+  /** What the payments did to the debt, line by line. */
+  readonly changes: readonly Contribution[];
+  readonly entries: readonly ReportEntry[];
+}
+
+/**
+ * One quarter of repayments, paid out of what is available in the order the debts were
+ * taken, before anything else. A repayment that cannot be covered in full takes what is
+ * left, and the rest is a missed payment: it is added to what is owed, and the repayments
+ * still to come rise to clear it. A debt whose term has run out with something still owed
+ * falls due in full the next quarter.
+ */
+export function serveDebts(debts: readonly Debt[], available: Money): DebtService {
+  const contributions: Contribution[] = [];
+  const changes: Contribution[] = [];
+  const entries: ReportEntry[] = [];
+  const missedOn: string[] = [];
+  let left = available;
+  let due = 0;
+  let missed = 0;
+  let paid = 0;
+
+  const after = debts.flatMap((debt): Debt[] => {
+    const name = debtName(debt);
+    const asked = dueOn(debt);
+    const pay = Math.min(asked.due, Math.max(0, left));
+    left -= pay;
+    paid += pay;
+    due += asked.due;
+    const interestPaid = Math.min(pay, asked.interest);
+    const principalPaid = pay - interestPaid;
+    const owed = debt.owed + asked.interest - pay;
+    if (interestPaid > 0)
+      contributions.push({ label: `Interest on ${name}`, amount: -interestPaid });
+    if (principalPaid > 0)
+      contributions.push({ label: `Repaying ${name}`, amount: -principalPaid });
+    if (principalPaid > 0) changes.push({ label: `Repaid on ${name}`, amount: -principalPaid });
+    if (asked.interest > interestPaid) {
+      changes.push({ label: `Interest unpaid on ${name}`, amount: asked.interest - interestPaid });
+    }
+
+    const unpaid = asked.due - pay;
+    if (unpaid > 0) {
+      missed += unpaid;
+      missedOn.push(name);
+      const quartersLeft = Math.max(1, debt.quartersLeft - 1);
+      const repayment = levelRepayment(owed, debt.annualRateBasisPoints, quartersLeft);
+      entries.push(missedEntry(name, asked.due, unpaid, repayment));
+      return [{ ...debt, owed, quartersLeft, repayment }];
+    }
+    if (owed === 0) {
+      entries.push(repaidEntry(debt, name));
+      return [];
+    }
+    return [{ ...debt, owed, quartersLeft: debt.quartersLeft - 1 }];
+  });
+
+  return {
+    debts: after,
+    due,
+    paid,
+    missed,
+    missedOn,
+    contributions,
+    changes,
+    entries,
+  };
+}
+
+/** What the quarter's borrowing did. */
+export interface DebtTaken {
+  /** The debts with the new ones after them, in the order they were taken. */
+  readonly debts: readonly Debt[];
+  readonly borrowed: Money;
+  /** What the borrowing brought into the treasury, line by line. */
+  readonly contributions: readonly Contribution[];
+  /** What it added to the debt, line by line. */
+  readonly changes: readonly Contribution[];
+  readonly entries: readonly ReportEntry[];
+}
+
+/**
+ * Takes on what the player chose to borrow this quarter. Its money arrives as the quarter
+ * ends and the first repayment falls due the quarter after. Each new debt is numbered on
+ * from the highest owed.
+ */
+export function takeDebts(
+  debts: readonly Debt[],
+  borrowing: readonly Borrowing[],
+  date: GameDate,
+): DebtTaken {
+  let number = Math.max(0, ...debts.map((debt) => debt.number));
+  const taken = borrowing.flatMap((each): Debt[] => {
+    const terms = loanTerms(each.amount, each.quarters);
+    if (terms === null) return [];
+    number += 1;
+    return [
+      {
+        kind: each.kind,
+        number,
+        taken: date,
+        borrowed: terms.amount,
+        annualRateBasisPoints: terms.annualRateBasisPoints,
+        termQuarters: terms.quarters,
+        owed: terms.amount,
+        repayment: terms.repayment,
+        quartersLeft: terms.quarters,
+      },
+    ];
+  });
+  return {
+    debts: [...debts, ...taken],
+    borrowed: sum(taken.map((debt) => debt.borrowed)),
+    contributions: taken.map((debt) => ({
+      label: `${debtName(debt)} received`,
+      amount: debt.borrowed,
+    })),
+    changes: taken.map((debt) => ({ label: `${debtName(debt)} taken`, amount: debt.borrowed })),
+    entries: taken.map(takenEntry),
+  };
+}
+
+function takenEntry(debt: Debt): ReportEntry {
+  const terms = loanTerms(debt.borrowed, debt.termQuarters);
+  return {
+    kind: 'loanTaken',
+    seriousness: 'notable',
+    headline: `Borrowed ${formatMoney(debt.borrowed)}: ${debtName(debt)}`,
+    cause: `It is repaid at ${formatMoney(debt.repayment)} a quarter over ${formatQuarters(debt.termQuarters)} from next quarter, at ${formatRate(debt.annualRateBasisPoints)} a year: ${formatMoney(terms?.totalInterest ?? 0)} in interest.`,
+  };
+}
+
+function repaidEntry(debt: Debt, name: string): ReportEntry {
+  return {
+    kind: 'loanRepaid',
+    seriousness: 'notable',
+    headline: `Repaid: ${name}`,
+    cause: `The ${formatMoney(debt.borrowed)} borrowed in Year ${debt.taken.year} · Quarter ${debt.taken.quarter} is paid off, and its repayments end.`,
+  };
+}
+
+function missedEntry(name: string, due: Money, unpaid: Money, repayment: Money): ReportEntry {
+  return {
+    kind: 'missedPayment',
+    seriousness: 'serious',
+    headline: `Missed payment: ${name}`,
+    cause: `The treasury and the quarter’s revenue could not cover its ${formatMoney(due)} repayment. The ${formatMoney(unpaid)} unpaid was added to the debt, and its repayment is now ${formatMoney(repayment)} a quarter.`,
+  };
+}
