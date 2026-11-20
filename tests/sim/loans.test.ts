@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   createGame,
+  formatMoney,
   debtStatus,
   loanOffers,
   previewQuarter,
@@ -184,7 +185,7 @@ describe('a missed payment', () => {
     return play(game, [{ borrow: [loan(100, 4)], budget: ruinous }, { budget: ruinous }]).state;
   }
 
-  it('is reported, and what went unpaid is added to the debt', () => {
+  it('is reported, and what went unpaid is still owed', () => {
     const game = overstretched();
     expect(game.treasury).toBeLessThan(26);
     const before = debtStatus(game).debt;
@@ -207,6 +208,12 @@ describe('a missed payment', () => {
     );
     // The repayments still to come rise to clear what went unpaid.
     expect(result.state.debts[0]?.repayment).toBeGreaterThan(26);
+    // Its interest was paid, so nothing was added to the debt: only principal went unpaid.
+    expect(paid).toBeGreaterThan(interest);
+    expect(missed?.cause).not.toMatch(/added to the debt/);
+    expect(missed?.cause).toContain(
+      `${formatMoney(26 - paid)} of principal went unpaid, and ${formatMoney(before + interest - paid)} is still owed`,
+    );
   });
 
   it('is foreseen among the risks ahead', () => {

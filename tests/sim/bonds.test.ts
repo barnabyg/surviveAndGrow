@@ -5,6 +5,7 @@ import {
   bondMaturities,
   bondsClosedBecause,
   createGame,
+  formatMoney,
   creditStatus,
   debtStatus,
   loanOffers,
@@ -198,7 +199,7 @@ describe('a bond’s maturity the treasury cannot cover', () => {
     };
   }
 
-  it('is a missed payment: what goes unpaid is added to the debt and repaid over a year', () => {
+  it('is a missed payment: what goes unpaid is still owed and repaid over a year', () => {
     const game = maturing();
 
     const result = advanceQuarter(game, { ...steward(game), budget: ruinous });
@@ -211,12 +212,40 @@ describe('a bond’s maturity the treasury cannot cover', () => {
       (line(result.report, 'Repaying Bond 1') ?? 0)
     );
     expect(paid).toBeLessThan(202);
+    // The interest was paid, so nothing was added to the debt: the principal unpaid was owed
+    // already.
+    expect(paid).toBeGreaterThan(2);
+    expect(missed?.cause).not.toMatch(/added to the debt/);
+    expect(missed?.cause).toContain(
+      `${formatMoney(200 - (paid - 2))} of principal went unpaid, and ${formatMoney(202 - paid)} is still owed`,
+    );
     const [left] = result.state.debts;
     expect(left).toMatchObject({ kind: 'bond', owed: 202 - paid, quartersLeft: 4 });
     // It is now repaid level, a quarter of it and interest each quarter.
     expect(left?.repayment).toBeGreaterThan((202 - paid) / 4);
     expect(result.state.credit.record).toBe(game.credit.record - 400);
     expect(debtStatus(result.state).debt).toBe(202 - paid);
+  });
+
+  it('before maturity adds only the interest it could not pay to the debt', () => {
+    // A bond so large that its interest, $20.0m a quarter, is more than everything there is.
+    const game = maturing();
+    const [due] = game.debts;
+    if (due === undefined) throw new Error('No bond.');
+    const owing = {
+      ...game,
+      debts: [{ ...due, borrowed: 20_000, owed: 20_000, repayment: 200, quartersLeft: 3 }],
+    };
+
+    const result = advanceQuarter(owing, { ...steward(owing), budget: ruinous });
+
+    const [missed] = entriesOf(result.report, 'missedPayment');
+    const paid = -(line(result.report, 'Interest on Bond 1') ?? 0);
+    expect(paid).toBeLessThan(200);
+    expect(result.state.debts[0]?.owed).toBe(20_000 + 200 - paid);
+    expect(missed?.cause).toContain(
+      `The ${formatMoney(200 - paid)} of interest it could not pay was added to the debt: ${formatMoney(20_200 - paid)} is now owed.`,
+    );
   });
 
   it('then falls to level repayments that clear it', () => {

@@ -621,12 +621,20 @@ function missedEntry(
 ): ReportEntry {
   const matured = paysAtMaturity(before) && before.quartersLeft <= 1;
   const owing = (debt: Debt) => (paysAtMaturity(debt) ? 'interest' : 'repayment');
+  // Only interest that went unpaid adds to the debt; principal unpaid was owed already.
+  const interestUnpaid = Math.max(0, after.owed - before.owed);
+  const principalUnpaid = unpaid - interestUnpaid;
+  const owed = formatMoney(after.owed);
+  const unpaidPart =
+    interestUnpaid === 0
+      ? `${formatMoney(principalUnpaid)} of principal went unpaid, and ${owed} is still owed.`
+      : `${principalUnpaid === 0 ? 'The' : `${formatMoney(principalUnpaid)} of principal went unpaid, and the`} ${formatMoney(interestUnpaid)} of interest it could not pay was added to the debt: ${owed} is now owed.`;
   return {
     kind: 'missedPayment',
     seriousness: 'serious',
     headline: `Missed payment: ${name}`,
     cause: matured
-      ? `The treasury and the quarter’s revenue could not cover the ${formatMoney(due)} due at its maturity. The ${formatMoney(unpaid)} unpaid was added to the debt, and is repaid at ${formatMoney(after.repayment)} a quarter over ${formatQuarters(after.quartersLeft)}.`
-      : `The treasury and the quarter’s revenue could not cover its ${formatMoney(due)} ${owing(before)}. The ${formatMoney(unpaid)} unpaid was added to the debt, and its ${owing(after)} is now ${formatMoney(after.repayment)} a quarter.`,
+      ? `The treasury and the quarter’s revenue could not cover the ${formatMoney(due)} due at its maturity. ${unpaidPart} It is repaid at ${formatMoney(after.repayment)} a quarter over ${formatQuarters(after.quartersLeft)}.`
+      : `The treasury and the quarter’s revenue could not cover its ${formatMoney(due)} ${owing(before)}. ${unpaidPart} Its ${owing(after)} is now ${formatMoney(after.repayment)} a quarter.`,
   };
 }
