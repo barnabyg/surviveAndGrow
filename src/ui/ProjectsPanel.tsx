@@ -13,6 +13,7 @@ import {
 import { opening } from './schedule';
 import { progressOf } from './SiteMark';
 import { DecisionPanel } from './DecisionPanel';
+import './ProjectsPanel.css';
 
 interface ProjectsPanelProps {
   readonly game: GameState;

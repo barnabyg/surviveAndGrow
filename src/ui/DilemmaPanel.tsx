@@ -1,6 +1,7 @@
 import type { DilemmaView } from '../sim';
 import { effectLines } from './DilemmaDialog';
 import { DecisionPanel } from './DecisionPanel';
+import './DilemmaPanel.css';
 
 interface DilemmaPanelProps {
   readonly dilemma: DilemmaView;

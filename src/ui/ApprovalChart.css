@@ -1,0 +1,14 @@
+.approval-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.approval-chart__chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font);
+}

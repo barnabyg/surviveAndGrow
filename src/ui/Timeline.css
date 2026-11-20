@@ -1,0 +1,166 @@
+/* The term timeline. Past quarters are hatched, the harvest is an underline, and "Now" and
+   "Vote" are written out, so no mark rests on its colour. */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.timeline__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+
+.timeline__table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 3px 4px;
+  margin: 0 -3px;
+  font-size: 13.5px;
+}
+
+.timeline__names {
+  width: 290px;
+}
+
+.timeline__after {
+  width: 190px;
+}
+
+.timeline__table th,
+.timeline__table td {
+  padding: 0;
+  font-weight: 400;
+}
+
+.timeline__table th[scope='row'] {
+  text-align: left;
+  color: var(--label);
+}
+
+.timeline__year span,
+.timeline__quarter span {
+  display: block;
+  height: 22px;
+  line-height: 22px;
+  border-radius: 3px;
+  text-align: center;
+}
+
+.timeline__year span {
+  background: #1d242c;
+  color: var(--muted);
+}
+
+.timeline__quarter span {
+  background: #232c35;
+  color: var(--label);
+}
+
+.timeline__quarter--past span {
+  background: repeating-linear-gradient(135deg, #232c35 0 3px, #14191e 3px 7px);
+}
+
+.timeline__quarter--now span {
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.timeline__quarter--vote span {
+  background: var(--text);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.timeline__quarter--after span {
+  background: none;
+  border: 1px dashed var(--line-strong);
+}
+
+.timeline__bar--after {
+  border: 1.5px dashed var(--line-strong);
+  line-height: 23px;
+  color: var(--text);
+}
+
+.timeline__quarter--harvest span {
+  box-shadow: 0 3px 0 var(--blue);
+}
+
+.timeline__site button {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.timeline__site button:hover {
+  text-decoration: underline;
+}
+
+.timeline__site button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.timeline__status {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.25;
+  color: var(--label);
+}
+
+.timeline__bar {
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 4px;
+  line-height: 26px;
+  font-family: var(--font-condensed);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.timeline__bar--building {
+  background: var(--amber);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.timeline__bar--paused {
+  background: repeating-linear-gradient(135deg, var(--amber) 0 6px, #c08a25 6px 12px);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.timeline__bar--planned {
+  border: 1.5px dashed var(--amber);
+  line-height: 23px;
+  color: var(--amber);
+}
+
+.timeline__bar--operating {
+  background: var(--line-strong);
+  color: var(--text);
+}
+
+.timeline__bar--in-use {
+  background: rgba(143, 208, 230, 0.16);
+  color: var(--blue);
+}
+
+.timeline__bar--tentative {
+  border: 1.5px dashed var(--blue);
+  line-height: 23px;
+  background: none;
+}

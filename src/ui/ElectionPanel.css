@@ -1,0 +1,52 @@
+.election {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.election__forecast {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.election__share {
+  margin-left: auto;
+  font-family: var(--font-figures);
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.election__needed {
+  font-size: 13px;
+  color: var(--label);
+}
+
+.election__bar {
+  display: block;
+  width: 100%;
+  height: 14px;
+}
+
+.election__track {
+  fill: var(--track);
+}
+
+.election__range {
+  fill: var(--text);
+}
+
+.election__line {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 1;
+}
+
+.election__verdict {
+  font-size: 14.5px;
+  color: var(--blue);
+}

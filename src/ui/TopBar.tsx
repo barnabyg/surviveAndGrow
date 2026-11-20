@@ -29,6 +29,7 @@ import { formatDate, formatSigned, formatSignedTonnes } from './format';
 import { recent, type Mark } from './trend';
 import { TrendLine } from './TrendLine';
 import { VitalSign } from './VitalSign';
+import './TopBar.css';
 
 interface TopBarProps {
   readonly game: GameState;

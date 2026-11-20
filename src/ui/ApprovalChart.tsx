@@ -6,6 +6,8 @@ import {
   formatQuarters,
 } from '../sim';
 import { describeTrend, hasTrend, recent, TREND_QUARTERS, verticalScale, type Mark } from './trend';
+import './chart.css';
+import './ApprovalChart.css';
 
 /** The level below which a region strikes, as charts mark it. */
 export function strikeMark(strikesBelow: number): Mark {

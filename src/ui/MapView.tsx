@@ -26,6 +26,7 @@ import {
 import { infrastructureOf, lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
 import { TIER_PALETTES, type MapPalette } from './mapPalette';
 import { SiteMark } from './SiteMark';
+import './MapView.css';
 
 interface MapViewProps {
   readonly game: GameState;

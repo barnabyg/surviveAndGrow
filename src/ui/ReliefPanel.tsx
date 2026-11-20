@@ -8,6 +8,7 @@ import {
   type ReliefDelivery,
 } from '../sim';
 import { DecisionPanel } from './DecisionPanel';
+import './ReliefPanel.css';
 
 interface ReliefPanelProps {
   readonly game: GameState;

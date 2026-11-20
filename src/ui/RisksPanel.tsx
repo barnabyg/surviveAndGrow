@@ -6,6 +6,7 @@ import {
   type Risk,
 } from '../sim';
 import { PlaceNote } from './PlaceNote';
+import './RisksPanel.css';
 
 interface RisksPanelProps {
   /** The dangers ahead under the decisions now in force, the most likely first. */
