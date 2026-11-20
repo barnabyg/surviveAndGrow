@@ -38,6 +38,16 @@ export {
   type PendingDilemma,
 } from './dilemmas';
 export {
+  creditRules,
+  creditStatus,
+  loanRateSpan,
+  ratedAtLeast,
+  ratingRank,
+  type Credit,
+  type CreditStatus,
+  type CreditStep,
+} from './credit';
+export {
   debtName,
   debtStatus,
   formatRate,
@@ -126,6 +136,8 @@ export {
 } from './types';
 export {
   CHAIN_ROLES,
+  CREDIT_RATING_NAMES,
+  CREDIT_RATINGS,
   DEBT_KIND_NAMES,
   DEBT_KINDS,
   DILEMMA_TYPES,
@@ -151,6 +163,7 @@ export {
   UNREST_NAMES,
   type ApprovalDriver,
   type ChainRole,
+  type CreditRating,
   type DebtKind,
   type DecorationKind,
   type DilemmaType,

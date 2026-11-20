@@ -1,6 +1,9 @@
 import {
   approvalStatus,
+  creditRules,
+  creditStatus,
   debtStatus,
+  loanRateSpan,
   electionStatus,
   foodStatus,
   formatIndex,
@@ -28,7 +31,7 @@ import {
 } from '../sim';
 import { strikeMark } from './ApprovalChart';
 import { Crest } from './Crest';
-import { formatDate, formatSigned, formatSignedTonnes } from './format';
+import { formatDate, formatSigned, formatSignedCount, formatSignedTonnes } from './format';
 import { recent, type Mark } from './trend';
 import { TrendLine } from './TrendLine';
 import { VitalSign } from './VitalSign';
@@ -60,6 +63,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
   const food = foodStatus(game);
   const approval = approvalStatus(game);
   const debt = debtStatus(game);
+  const credit = creditStatus(game);
   const election = electionStatus(game);
   const prosperity = prosperityStatus(game);
   const tier = tierStatus({ ...game, prosperity: prosperity.value });
@@ -164,6 +168,67 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
             {formatMoney(debt.yearRevenue)}. Repayments are paid before anything else each quarter.
             One the treasury and revenue cannot cover is missed, and what goes unpaid is added to
             the debt.
+          </p>
+        </VitalSign>
+        <VitalSign
+          label="Credit rating"
+          value={credit.name}
+          figure={report?.credit ?? null}
+          formatChange={formatSignedCount}
+          formatMovement={(points) => `${points} ${points === 1 ? 'point' : 'points'}`}
+          note={`Loans at ${loanRateSpan(credit.current)}`}
+          breakdownTitle="What moved the credit score"
+        >
+          <h2 className="label">What the rating is made of</h2>
+          <table className="breakdown__table" aria-label="What the rating is made of">
+            <tbody>
+              {credit.parts.map((part, index) => (
+                <tr key={part.label}>
+                  <th scope="row">{part.label}</th>
+                  <td>{index === 0 ? part.amount : formatSignedCount(part.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Score now</th>
+                <td>{credit.score}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <h2 className="label">Ratings</h2>
+          <table className="breakdown__table" aria-label="Credit ratings">
+            <thead>
+              <tr>
+                <th scope="col">Rating</th>
+                <th scope="col">From</th>
+                <th scope="col">Loans</th>
+                <th scope="col">May owe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {credit.steps.map((step) => (
+                <tr
+                  key={step.rating}
+                  aria-current={step.rating === credit.rating ? 'true' : undefined}
+                >
+                  <th scope="row">
+                    {step.rating === credit.rating ? '▶ ' : ''}
+                    {step.name}
+                  </th>
+                  <td>{step.from}</td>
+                  <td>{loanRateSpan(step)}</td>
+                  <td>{formatPercent(step.debtLimitPermille, 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="breakdown__empty">
+            The rating is reassessed as each quarter ends. Its score is the payment record, less a
+            share of the debt burden and of the quarter’s deficit. A missed payment takes{' '}
+            {creditRules.missedPaymentPoints} points off the payment record; each quarter whose
+            repayments are all made on time puts {creditRules.onTimePoints} back, up to{' '}
+            {creditRules.bestRecord}. Loans already taken keep the rate they were taken at.
           </p>
         </VitalSign>
         <VitalSign

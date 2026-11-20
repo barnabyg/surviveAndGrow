@@ -1,6 +1,7 @@
 import type { ApprovalEffects, RegionUnrest } from './approval';
 import type { Budget } from './budget';
 import type { Country } from './country';
+import type { Credit } from './credit';
 import type { Borrowing, Debt } from './debt';
 import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
 import type { ActiveEvent } from './events';
@@ -11,7 +12,7 @@ import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import type { SiteSchedule } from './timeline';
 import type { Figure, GameDate, Money, Range } from './types';
-import type { FoodStage, Tier, Unrest } from './vocabulary';
+import type { CreditRating, FoodStage, Tier, Unrest } from './vocabulary';
 
 /** What is true of one region at one moment. National figures are derived from the regions. */
 export interface RegionState {
@@ -112,6 +113,8 @@ export interface GameState {
   readonly projects: readonly Project[];
   /** Every debt still owed, in the order it was taken. */
   readonly debts: readonly Debt[];
+  /** The credit rating in force and what it is reassessed from as each quarter ends. */
+  readonly credit: Credit;
   /**
    * The vital signs as each quarter began, from the start of the game to the quarter now
    * being decided, in order. The last record is the position now.
@@ -197,6 +200,11 @@ export interface TurnReport {
    * borrowed, has none.
    */
   readonly debt: Figure | null;
+  /**
+   * The credit score after the quarter, in points, with what each of its parts did to it. A
+   * report carried over from a save written before format 5 has none.
+   */
+  readonly credit: Figure | null;
   /** The harvest, in quarter 4, and null in every other quarter. */
   readonly harvest: Harvest | null;
   /**
@@ -252,6 +260,10 @@ export interface Preview {
   readonly debt: Range;
   /** The debt burden once the quarter is over: debt against a year's revenue, in thousandths. */
   readonly debtBurden: Range;
+  /** The credit rating once the quarter is over, which sets the terms of the next loan. */
+  readonly creditRating: CreditRating;
+  /** The credit score once the quarter is over, in points. */
+  readonly creditScore: Range;
   /** The sites where building will pause this quarter because the treasury cannot pay. */
   readonly pausedSites: readonly string[];
   /**

@@ -292,4 +292,11 @@ describe('the save kept from save format 4', () => {
     expect(game.history.every((signs) => signs.debt === 0 && signs.debtBurden === 0)).toBe(true);
     expect(report?.debt).toBeNull();
   });
+
+  it('is lifted to format 5 with the payment record of a new game, rated A', () => {
+    const { game, report } = loadSave(format4Save);
+
+    expect(game.credit).toEqual({ rating: 'a', record: 700, deficit: 0 });
+    expect(report?.credit).toBeNull();
+  });
 });

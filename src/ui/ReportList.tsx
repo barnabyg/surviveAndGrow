@@ -180,6 +180,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Missed payment report',
     path: 'M2,6 H18 V14 H2 Z M10,6 L8.5,8.5 L11,10.5 L9.5,14',
   },
+  // Steps of a rating, rising.
+  creditRating: {
+    label: 'Credit rating report',
+    path: 'M2,17 H6 V13 H10 V9 H14 V5 H18 M2,17 H18',
+  },
   // A road that forks.
   dilemma: {
     label: 'Decision report',

@@ -1367,13 +1367,18 @@
           "quarter": 2
         },
         "borrowed": 100,
-        "annualRateBasisPoints": 600,
+        "annualRateBasisPoints": 750,
         "termQuarters": 4,
         "owed": 51,
         "repayment": 26,
         "quartersLeft": 2
       }
     ],
+    "credit": {
+      "rating": "a",
+      "record": 775,
+      "deficit": 190
+    },
     "history": [
       {
         "date": {
@@ -1612,6 +1617,24 @@
         {
           "label": "Repaid on Loan 2",
           "amount": -25
+        }
+      ]
+    },
+    "credit": {
+      "value": 651,
+      "change": 78,
+      "contributions": [
+        {
+          "label": "Payment record",
+          "amount": 25
+        },
+        {
+          "label": "Debt burden",
+          "amount": 18
+        },
+        {
+          "label": "Deficit",
+          "amount": 35
         }
       ]
     },

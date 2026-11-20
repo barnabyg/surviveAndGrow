@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import {
+  CREDIT_RATING_NAMES,
+  creditStatus,
   debtStatus,
+  loanRateSpan,
+  ratingRank,
   formatMoney,
   formatPercent,
   formatQuarters,
   formatRate,
   loanOffers,
   type Borrowing,
+  type CreditStep,
   type GameState,
   type Preview,
 } from '../sim';
@@ -30,6 +35,9 @@ interface FinancePanelProps {
  */
 export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelProps) {
   const status = debtStatus(game);
+  const credit = creditStatus(game);
+  const ratingAfter = preview.creditRating;
+  const movement = ratingRank(ratingAfter) - ratingRank(credit.rating);
   const offers = loanOffers(game, planned);
   const amounts = [...new Set(offers.map((offer) => offer.amount))];
   const terms = [...new Set(offers.map((offer) => offer.quarters))];
@@ -91,6 +99,36 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
           {formatMoney(preview.missedPayment)} will be missed and added to the debt.
         </p>
       )}
+
+      <div className="credit" role="group" aria-label="Credit rating">
+        <div className="fixed-costs__row">
+          <span>Credit rating {credit.name}</span>
+          <span className="fixed-costs__note">{stepTerms(credit.current)}</span>
+        </div>
+        {credit.above !== null && (
+          <div className="fixed-costs__row">
+            <span>One step up, {credit.above.name}</span>
+            <span className="fixed-costs__note">{stepTerms(credit.above)}</span>
+          </div>
+        )}
+        {credit.below !== null && (
+          <div className="fixed-costs__row">
+            <span>One step down, {credit.below.name}</span>
+            <span className="fixed-costs__note">{stepTerms(credit.below)}</span>
+          </div>
+        )}
+        {movement !== 0 && (
+          <p className={movement < 0 ? 'warning-note' : 'section-empty'}>
+            {movement < 0 ? '▲ ' : ''}As things stand, the rating is{' '}
+            {movement < 0 ? 'cut' : 'raised'} to {CREDIT_RATING_NAMES[ratingAfter]} when this
+            quarter ends, and loans taken after it cost{' '}
+            {loanRateSpan(
+              credit.steps.find((step) => step.rating === ratingAfter) ?? credit.current,
+            )}{' '}
+            a year. Loans already taken keep their rate.
+          </p>
+        )}
+      </div>
 
       <h3 className="label" id="loan-title">
         Take a loan
@@ -162,4 +200,9 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
       </p>
     </DecisionPanel>
   );
+}
+
+/** What a step of the rating means for borrowing, in a few words. */
+function stepTerms(step: CreditStep): string {
+  return `Loans at ${loanRateSpan(step)} a year · may owe ${formatPercent(step.debtLimitPermille, 0)} of a year’s revenue`;
 }

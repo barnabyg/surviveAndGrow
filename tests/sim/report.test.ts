@@ -185,8 +185,10 @@ describe('a forced spending cut', () => {
   it('is reported ahead of the deficit that caused it', () => {
     const report = reportOn(createGame(withDroughtChance(tavaraFile, {}), 1), everythingAtMost);
 
+    // A deficit that size also cuts the credit rating.
     expect(report.entries.map((entry) => [entry.kind, entry.seriousness])).toEqual([
       ['spendingCut', 'serious'],
+      ['creditRating', 'warning'],
       ['budget', 'warning'],
     ]);
   });

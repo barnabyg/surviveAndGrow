@@ -13,6 +13,7 @@ import {
   type BudgetOutcome,
 } from './budget';
 import { borrowFault, debtBurden, debtOf, serveDebts, takeDebts, type Borrowing } from './debt';
+import { deficitOf, openingCredit, reassessCredit, recordAfter } from './credit';
 import { regionName, type Country } from './country';
 import {
   answerDilemma,
@@ -103,6 +104,7 @@ export function createGame(country: Country, seed: number): GameState {
     history: [signs],
     dilemma: null,
     dilemmasAnswered: [],
+    credit: openingCredit(opening),
     tier,
     startingTier: tier,
     prosperousQuarters: 0,
@@ -181,7 +183,7 @@ export function resolveQuarter(
   const lived = liveQuarter(given, decisions, chance.weatherShocks);
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
-  const { serviced, taken } = lived;
+  const { serviced, taken, credit } = lived;
   const { prosperity, tier } = lived;
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
@@ -233,6 +235,7 @@ export function resolveQuarter(
     ...(election === null ? [] : [election.entry]),
     ...answer.entries,
     ...serviced.entries,
+    ...credit.entries,
     ...(budget.cut ? [cutEntry(budget)] : []),
     ...food.entries,
     ...approval.entries,
@@ -261,6 +264,7 @@ export function resolveQuarter(
       events,
       projects: upkept.projects,
       debts: taken.debts,
+      credit: credit.credit,
       history: [
         ...state.history,
         vitalSigns({
@@ -299,6 +303,7 @@ export function resolveQuarter(
         change: debtOf(taken.debts) - debtOf(given.debts),
         contributions: [...serviced.changes, ...taken.changes],
       },
+      credit: credit.figure,
       prosperity,
       population: {
         value: sum(food.regions.map((region) => region.population)),
@@ -359,6 +364,22 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     ...approvalInputs(decisions, finances, answer),
     expectations,
   });
+  // The rating is reassessed as the quarter ends, on the debt and revenue it leaves behind.
+  const credit = reassessCredit(
+    given,
+    {
+      record: recordAfter(given.credit.record, serviced),
+      burden: debtBurden({
+        country: state.country,
+        regions: approval.regions,
+        projects: upkept.projects,
+        budget: decisions.budget,
+        debts: taken.debts,
+      }),
+      deficit: deficitOf(finances.revenue, finances.balance, serviced.principal),
+    },
+    serviced.missedOn,
+  );
   return {
     answer,
     state,
@@ -374,6 +395,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     approval,
     prosperity,
     tier,
+    credit,
   };
 }
 
@@ -391,7 +413,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
   const calm = given.regions.map(() => 0);
   const lived = liveQuarter(given, decisions, calm);
   const { state, building, finances, sites, food: thisQuarter, approval, prosperity } = lived;
-  const { serviced, taken } = lived;
+  const { serviced, taken, credit } = lived;
   const owed = debtOf(taken.debts);
   const situation = foodSituation(state);
   const { quarter } = state.date;
@@ -428,6 +450,8 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     borrowed: taken.borrowed,
     debt: exactly(owed),
     debtBurden: exactly(debtBurden({ ...state, budget: decisions.budget, debts: taken.debts })),
+    creditRating: credit.credit.rating,
+    creditScore: exactly(credit.after.score),
     pausedSites: building.paused,
     upkeep: {
       needed: finances.upkeep.needed,
@@ -506,7 +530,10 @@ interface QuarterMoney {
  * ends, after all of it.
  */
 function resolveMoney(
-  state: Pick<GameState, 'country' | 'treasury' | 'regions' | 'projects' | 'date' | 'debts'>,
+  state: Pick<
+    GameState,
+    'country' | 'treasury' | 'regions' | 'projects' | 'date' | 'debts' | 'credit'
+  >,
   decisions: Decisions,
   starts: readonly string[] = decisions.startProjects ?? [],
   borrowing: readonly Borrowing[] = decisions.borrow ?? [],
@@ -514,7 +541,7 @@ function resolveMoney(
   const serviced = serveDebts(state.debts, state.treasury + revenueOf(state, decisions.budget));
   const budget = resolveBudget(state, decisions.budget, serviced);
   const building = resolveProjects(state, starts, state.date, budget.treasury);
-  const taken = takeDebts(serviced.debts, borrowing, state.date);
+  const taken = takeDebts(serviced.debts, borrowing, state.date, state.credit.rating);
   return {
     serviced,
     budget,

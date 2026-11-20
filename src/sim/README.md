@@ -24,6 +24,9 @@ supposed chance. It lives the quarter through `liveQuarter`, which the preview
 4. Health and education levels (`resolveServices` in `prosperity.ts`).
 5. Prosperity (`prosperity.ts`) and the tier it reaches (`tiers.ts`), which sets expectations.
 6. Approval (`approval.ts`), which decides who strikes next quarter.
+7. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the
+   debt burden the quarter leaves and its deficit. What was borrowed this quarter was taken at
+   the rating in force as it began.
 
 `resolveQuarter` then moves the calendar (`calendar.ts`, `terms.ts`), ends and begins events,
 checks for collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may

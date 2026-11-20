@@ -1,6 +1,8 @@
 import { useId } from 'react';
 import {
   budgetLimits,
+  CREDIT_RATING_NAMES,
+  CREDIT_RATINGS,
   exactly,
   foodStatus,
   formatMoney,
@@ -10,6 +12,7 @@ import {
   MONEY_PER_MILLION,
   monthsOfFood,
   previewQuarter,
+  ratingRank,
   regionName,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
@@ -216,6 +219,12 @@ export function BudgetPanel(props: BudgetPanelProps) {
           after={after.debtBurden}
           format={formatPercent}
           onlyIfMoved
+        />
+        <Projection
+          label="Credit rating next quarter"
+          before={exactly(ratingRank(before.creditRating))}
+          after={exactly(ratingRank(after.creditRating))}
+          format={(rank) => CREDIT_RATING_NAMES[CREDIT_RATINGS[rank] ?? 'b']}
         />
         <Projection
           label="Approval next quarter"

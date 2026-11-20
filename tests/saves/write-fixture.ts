@@ -27,6 +27,8 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   // its first quarter, to start an irrigation scheme in Lowmere, and $10.0m over four
   // quarters in its second. It is saved as Year 2 begins, owing on both loans, with three
   // repayments made on the first and two on the second, and the repayments in the report.
+  // The first loan and the scheme's instalments together cut the credit rating to BBB, so
+  // the second loan is taken at BBB's dearer rate; repaying on time has it back at A.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
@@ -58,6 +60,8 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     [2, 2],
   ]);
   expect(game.debts.every((debt) => debt.owed < debt.borrowed)).toBe(true);
+  expect(game.debts.map((debt) => debt.annualRateBasisPoints)).toEqual([800, 750]);
+  expect(game.credit.rating).toBe('a');
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

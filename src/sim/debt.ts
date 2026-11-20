@@ -7,7 +7,13 @@ import type { ReportEntry } from './report';
 import type { RegionState } from './state';
 import { formatMoney, formatPercent, formatQuarters } from './text';
 import type { Contribution, GameDate, Money } from './types';
-import { DEBT_KIND_NAMES, DEBT_KINDS, type DebtKind } from './vocabulary';
+import {
+  CREDIT_RATING_NAMES,
+  DEBT_KIND_NAMES,
+  DEBT_KINDS,
+  type CreditRating,
+  type DebtKind,
+} from './vocabulary';
 
 /**
  * Debt: what the nation has borrowed and still owes. Every kind of debt is a `Debt` in one
@@ -64,13 +70,18 @@ export interface LoanOffer extends LoanTerms {
   readonly unavailable: string | null;
 }
 
-/** What the debt rules need of the game: what it owes, and what its revenue is. */
-interface Borrower {
+/** What the debt burden needs of the game: what it owes, and what its revenue is. */
+export interface Owing {
   readonly country: Country;
   readonly regions: readonly RegionState[];
   readonly projects: readonly Project[];
   readonly budget: Budget;
   readonly debts: readonly Debt[];
+}
+
+/** What borrowing needs of the game: what it owes, its revenue, and its credit rating. */
+interface Borrower extends Owing {
+  readonly credit: { readonly rating: CreditRating };
 }
 
 /** What a debt is called: "Loan 2". */
@@ -89,7 +100,7 @@ export function debtOf(debts: readonly Debt[]): Money {
 }
 
 /** What a year's revenue comes to at the budget in force and the country as it stands. */
-export function yearRevenue(game: Omit<Borrower, 'debts'>): Money {
+export function yearRevenue(game: Omit<Owing, 'debts'>): Money {
   return 4 * revenueOf(game, game.budget);
 }
 
@@ -97,7 +108,7 @@ export function yearRevenue(game: Omit<Borrower, 'debts'>): Money {
  * The debt burden: what is owed against a year's revenue, in thousandths. A country with no
  * revenue to speak of is judged as if it raised the smallest sum there is.
  */
-export function debtBurden(game: Borrower): number {
+export function debtBurden(game: Owing): number {
   return burdenOf(debtOf(game.debts), yearRevenue(game));
 }
 
@@ -105,9 +116,38 @@ function burdenOf(debt: Money, revenue: Money): number {
   return Math.floor((debt * 1000) / Math.max(1, revenue));
 }
 
-/** The most that may be owed, counting what is to be borrowed this quarter. */
+/**
+ * The most that may be owed, counting what is to be borrowed this quarter: a share of a
+ * year's revenue that the credit rating sets.
+ */
 export function debtLimit(game: Omit<Borrower, 'debts'>): Money {
-  return Math.floor((yearRevenue(game) * balance.finance.debtLimitPermille) / 1000);
+  const { debtLimitPermille } = balance.finance.credit.ratings[game.credit.rating];
+  return Math.floor((yearRevenue(game) * debtLimitPermille) / 1000);
+}
+
+/** The rate a loan over a term is offered at, at a credit rating, or null off the menu. */
+function loanRate(quarters: number, rating: CreditRating): number | null {
+  const term = balance.finance.loans.terms.find((each) => each.quarters === quarters);
+  if (term === undefined) return null;
+  return term.annualRateBasisPoints + balance.finance.credit.ratings[rating].loanRateBasisPoints;
+}
+
+/** How each kind of debt is priced: its rate over a term at a credit rating. */
+const RATES: Readonly<Record<DebtKind, (quarters: number, rating: CreditRating) => number | null>> =
+  {
+    loan: loanRate,
+  };
+
+/**
+ * The yearly rate a kind of debt over a term is offered at to a nation with a credit rating,
+ * in hundredths of a percent, or null when no such debt is on offer.
+ */
+export function annualRateFor(
+  kind: DebtKind,
+  quarters: number,
+  rating: CreditRating,
+): number | null {
+  return RATES[kind](quarters, rating);
 }
 
 /** How the nation's debt stands, as the player is shown it. */
@@ -139,12 +179,15 @@ export function debtStatus(game: Borrower): DebtStatus {
   };
 }
 
-/** The terms of a loan on the menu, or null when the menu has no such loan. */
-export function loanTerms(amount: Money, quarters: number): LoanTerms | null {
-  const { amounts, terms } = balance.finance.loans;
-  const term = terms.find((candidate) => candidate.quarters === quarters);
-  if (term === undefined || !(amounts as readonly number[]).includes(amount)) return null;
-  const rate = term.annualRateBasisPoints;
+/**
+ * The terms of a loan on the menu to a nation with a credit rating, or null when the menu
+ * has no such loan.
+ */
+export function loanTerms(amount: Money, quarters: number, rating: CreditRating): LoanTerms | null {
+  const rate = annualRateFor('loan', quarters, rating);
+  if (rate === null || !(balance.finance.loans.amounts as readonly number[]).includes(amount)) {
+    return null;
+  }
   const repayment = levelRepayment(amount, rate, quarters);
   return {
     amount,
@@ -156,14 +199,15 @@ export function loanTerms(amount: Money, quarters: number): LoanTerms | null {
 }
 
 /**
- * Every loan on the menu, each sum over each term. One that would take the debt, with what
- * is already planned for this quarter, past the most that may be owed cannot be taken.
+ * Every loan on the menu, each sum over each term, at the rate the credit rating gets. One
+ * that would take the debt, with what is already planned for this quarter, past the most
+ * that may be owed cannot be taken.
  */
 export function loanOffers(game: Borrower, planned: readonly Borrowing[] = []): LoanOffer[] {
   const { amounts, terms } = balance.finance.loans;
   return amounts.flatMap((amount) =>
     terms.flatMap(({ quarters }) => {
-      const offered = loanTerms(amount, quarters);
+      const offered = loanTerms(amount, quarters, game.credit.rating);
       if (offered === null) return [];
       return [
         { ...offered, unavailable: limitFault(game, [...planned, loanOf(amount, quarters)]) },
@@ -186,7 +230,7 @@ export function borrowFault(game: Borrower, borrowing: readonly Borrowing[]): st
     if (!(DEBT_KINDS as readonly string[]).includes(each.kind)) {
       return `There is no kind of debt "${each.kind}" to take.`;
     }
-    if (loanTerms(each.amount, each.quarters) === null) {
+    if (loanTerms(each.amount, each.quarters, game.credit.rating) === null) {
       return `No loan of ${formatMoney(each.amount)} over ${formatQuarters(each.quarters)} is on offer.`;
     }
   }
@@ -200,7 +244,9 @@ function limitFault(game: Borrower, borrowing: readonly Borrowing[]): string | n
   const limit = debtLimit(game);
   const after = debtOf(game.debts) + sum(borrowing.map((each) => each.amount));
   if (after <= limit) return null;
-  return `It would take the debt to ${formatMoney(after)}, past the ${formatMoney(limit)} that may be owed: ${formatPercent(balance.finance.debtLimitPermille, 0)} of a year’s revenue.`;
+  const { rating } = game.credit;
+  const share = balance.finance.credit.ratings[rating].debtLimitPermille;
+  return `It would take the debt to ${formatMoney(after)}, past the ${formatMoney(limit)} that may be owed: ${formatPercent(share, 0)} of a year’s revenue at a credit rating of ${CREDIT_RATING_NAMES[rating]}.`;
 }
 
 /** A quarter of a yearly rate on a sum, to the nearest Money unit. */
@@ -262,6 +308,8 @@ export interface DebtService {
   readonly due: Money;
   /** What was paid. */
   readonly paid: Money;
+  /** The part of what was paid that went to the principal rather than interest. */
+  readonly principal: Money;
   /** What fell due and could not be paid, which has been added to the debt. */
   readonly missed: Money;
   /** The debts on which a payment was missed, by name. */
@@ -289,6 +337,7 @@ export function serveDebts(debts: readonly Debt[], available: Money): DebtServic
   let due = 0;
   let missed = 0;
   let paid = 0;
+  let principal = 0;
 
   const after = debts.flatMap((debt): Debt[] => {
     const name = debtName(debt);
@@ -299,6 +348,7 @@ export function serveDebts(debts: readonly Debt[], available: Money): DebtServic
     due += asked.due;
     const interestPaid = Math.min(pay, asked.interest);
     const principalPaid = pay - interestPaid;
+    principal += principalPaid;
     const owed = debt.owed + asked.interest - pay;
     if (interestPaid > 0)
       contributions.push({ label: `Interest on ${name}`, amount: -interestPaid });
@@ -329,6 +379,7 @@ export function serveDebts(debts: readonly Debt[], available: Money): DebtServic
     debts: after,
     due,
     paid,
+    principal,
     missed,
     missedOn,
     contributions,
@@ -350,18 +401,19 @@ export interface DebtTaken {
 }
 
 /**
- * Takes on what the player chose to borrow this quarter. Its money arrives as the quarter
- * ends and the first repayment falls due the quarter after. Each new debt is numbered on
- * from the highest owed.
+ * Takes on what the player chose to borrow this quarter, at the rate the credit rating in
+ * force as the quarter began gets. Its money arrives as the quarter ends and the first
+ * repayment falls due the quarter after. Each new debt is numbered on from the highest owed.
  */
 export function takeDebts(
   debts: readonly Debt[],
   borrowing: readonly Borrowing[],
   date: GameDate,
+  rating: CreditRating,
 ): DebtTaken {
   let number = Math.max(0, ...debts.map((debt) => debt.number));
   const taken = borrowing.flatMap((each): Debt[] => {
-    const terms = loanTerms(each.amount, each.quarters);
+    const terms = loanTerms(each.amount, each.quarters, rating);
     if (terms === null) return [];
     number += 1;
     return [
@@ -391,12 +443,13 @@ export function takeDebts(
 }
 
 function takenEntry(debt: Debt): ReportEntry {
-  const terms = loanTerms(debt.borrowed, debt.termQuarters);
+  const rate = debt.annualRateBasisPoints;
+  const interest = paidOver(debt.borrowed, rate, debt.termQuarters, debt.repayment) - debt.borrowed;
   return {
     kind: 'loanTaken',
     seriousness: 'notable',
     headline: `Borrowed ${formatMoney(debt.borrowed)}: ${debtName(debt)}`,
-    cause: `It is repaid at ${formatMoney(debt.repayment)} a quarter over ${formatQuarters(debt.termQuarters)} from next quarter, at ${formatRate(debt.annualRateBasisPoints)} a year: ${formatMoney(terms?.totalInterest ?? 0)} in interest.`,
+    cause: `It is repaid at ${formatMoney(debt.repayment)} a quarter over ${formatQuarters(debt.termQuarters)} from next quarter, at ${formatRate(debt.annualRateBasisPoints)} a year: ${formatMoney(interest)} in interest.`,
   };
 }
 

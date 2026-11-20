@@ -6,6 +6,7 @@ import {
   type DilemmaEffect,
   type PendingDilemma,
 } from './dilemmas';
+import type { Credit } from './credit';
 import type { Debt } from './debt';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
@@ -33,6 +34,7 @@ import { formatQuarters } from './text';
 import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVERS,
+  CREDIT_RATINGS,
   DEBT_KINDS,
   DILEMMA_EFFECT_KINDS,
   DILEMMA_TYPES,
@@ -111,6 +113,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       events: game.events,
       projects: game.projects,
       debts: game.debts,
+      credit: game.credit,
       history: game.history,
       dilemma: game.dilemma,
       dilemmasAnswered: game.dilemmasAnswered,
@@ -166,6 +169,7 @@ export function loadSave(
     })),
     projects: readProjects(state.projects, 'state.projects', country),
     debts: readDebts(state.debts, 'state.debts'),
+    credit: readCredit(record(state.credit, 'state.credit'), 'state.credit'),
     history: readHistory(state.history, 'state.history'),
     dilemma:
       state.dilemma === null
@@ -315,6 +319,15 @@ function readDebts(saved: unknown, path: string): Debt[] {
     fail(path, 'numbers two debts the same');
   }
   return debts;
+}
+
+/** The credit rating in force and what it is reassessed from. */
+function readCredit(saved: Json, path: string): Credit {
+  return {
+    rating: oneOf(saved.rating, `${path}.rating`, CREDIT_RATINGS, 'a credit rating'),
+    record: whole(saved.record, `${path}.record`, 0),
+    deficit: whole(saved.deficit, `${path}.deficit`, 0),
+  };
 }
 
 function readHistory(saved: unknown, path: string): VitalSigns[] {
@@ -475,6 +488,7 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
     food: figure(saved.food, 'report.food'),
     approval: figure(saved.approval, 'report.approval'),
     debt: saved.debt === null ? null : figure(saved.debt, 'report.debt'),
+    credit: saved.credit === null ? null : figure(saved.credit, 'report.credit'),
     prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),
     population: saved.population === null ? null : figure(saved.population, 'report.population'),
     harvest: saved.harvest === null ? null : harvest(saved.harvest, 'report.harvest'),

@@ -3,6 +3,7 @@ import { sum } from './arithmetic';
 import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName } from './country';
+import { creditStatus, loanRateSpan, ratingCause, ratingRank } from './credit';
 import { debtStatus } from './debt';
 import { defeatChancePermille, electionStatus } from './election';
 import { eventName, eventsThatMayBegin, type PossibleEvent } from './events';
@@ -83,6 +84,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
     ...treasuryRisk(whole),
     ...missedPaymentRisk(whole),
+    ...creditRisk(whole),
     ...upkeepRisk(whole),
     ...strikeRisk(whole),
     ...tierRisk(whole),
@@ -149,8 +151,11 @@ function play(
   for (let quarter = 0; quarter < quarters && state.outcome.status === 'playing'; quarter += 1) {
     const resolved = resolveQuarter(
       state,
-      // Projects are started, and a dilemma answered, in the quarter being decided alone.
-      quarter === 0 ? decisions : { ...decisions, startProjects: [], dilemmaChoice: null },
+      // Projects are started, money borrowed and a dilemma answered in the quarter being
+      // decided alone.
+      quarter === 0
+        ? decisions
+        : { ...decisions, startProjects: [], borrow: [], dilemmaChoice: null },
       {
         weatherShocks: state.regions.map(() => shock),
         struck: events.filter((event) => event.afterQuarters === quarter + 1),
@@ -446,6 +451,47 @@ function strikeRisk(scope: Scope): Risk[] {
       reason: `Approval in ${where} is on course to fall below ${formatPercent(mark.belowPermille, 0)} ${when(soonest)}. ${what} cut what a region produces.`,
       ...(threatened.length === 1 ? { regionId: first.region.id } : {}),
       withinQuarters: soonest + 1,
+    },
+  ];
+}
+
+/**
+ * The credit rating falls when the payment record, the debt burden or the deficit the
+ * quarters ahead leave takes its score below the step in force. Why is read off the course
+ * with ordinary weather and no new event, or the first that falls where that one does not.
+ */
+function creditRisk(scope: Scope): Risk[] {
+  const { state, watched, courses } = scope;
+  const falls = (path: Path) => {
+    const quarter = path
+      .slice(0, watched)
+      .findIndex(
+        (resolved) => ratingRank(resolved.state.credit.rating) < ratingRank(state.credit.rating),
+      );
+    return quarter === -1 ? null : quarter;
+  };
+  const finding = weigh(scope, falls);
+  const likelihood = finding === null ? null : likelihoodOf(finding.chance);
+  if (finding === null || likelihood === null) return [];
+
+  const typical = courses[Math.floor(courses.length / 2)]?.paths[0] ?? [];
+  const path =
+    falls(typical) === null
+      ? (courses.flatMap((course) => course.paths).find((each) => falls(each) !== null) ?? [])
+      : typical;
+  const quarter = falls(path) ?? finding.soonest;
+  const fallen = path[quarter]?.state;
+  if (fallen === undefined) return [];
+  const now = creditStatus(state);
+  const then = creditStatus(fallen);
+  const missedOn = path.slice(0, quarter + 1).flatMap((resolved) => resolved.missedOn);
+  return [
+    {
+      kind: 'creditRating',
+      likelihood,
+      headline: `Credit rating cut to ${then.name}`,
+      reason: `The credit rating, now ${now.name}, is on course to fall to ${then.name} ${when(quarter)}. ${ratingCause(now, then, missedOn)} New loans would cost ${loanRateSpan(then.current)} a year.`,
+      withinQuarters: quarter + 1,
     },
   ];
 }

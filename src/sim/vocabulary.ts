@@ -314,6 +314,7 @@ export const RISK_KINDS = [
   'famine',
   'treasury',
   'missedPayment',
+  'creditRating',
   'upkeep',
   'strikes',
   'tier',
@@ -353,6 +354,7 @@ export const REPORT_KINDS = [
   'loanTaken',
   'loanRepaid',
   'missedPayment',
+  'creditRating',
   'dilemma',
   'tier',
   'election',
@@ -383,4 +385,19 @@ export type DebtKind = (typeof DEBT_KINDS)[number];
 
 export const DEBT_KIND_NAMES: Readonly<Record<DebtKind, string>> = {
   loan: 'Loan',
+};
+
+/**
+ * The steps of the nation's credit rating, from the worst to the best. The rating sets the
+ * rate new debt is taken at and the most that may be owed.
+ */
+export const CREDIT_RATINGS = ['b', 'bb', 'bbb', 'a', 'aa'] as const;
+export type CreditRating = (typeof CREDIT_RATINGS)[number];
+
+export const CREDIT_RATING_NAMES: Readonly<Record<CreditRating, string>> = {
+  b: 'B',
+  bb: 'BB',
+  bbb: 'BBB',
+  a: 'A',
+  aa: 'AA',
 };

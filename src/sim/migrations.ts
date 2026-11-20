@@ -3,7 +3,9 @@
  * save format means raising `SAVE_FORMAT_VERSION` here and adding the migration from the
  * version before it to `MIGRATIONS`; `loadSave` passes an old save through them in turn.
  */
+import { balance } from './balance';
 import { loadCountry } from './country';
+import { ratingOfScore } from './credit';
 import type { Project } from './projects';
 import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { damaged, isRecord, SaveError, type Json } from './saveChecks';
@@ -149,9 +151,11 @@ function fromFormat3(older: Json): Json {
 
 /**
  * Format 5 added borrowing: the debts owed, the debt and debt burden in each quarter
- * recorded, and the debt in the last report. Nothing could be borrowed before it, so a game
- * written in format 4 owes nothing and never has. Its last report, written before debt was
- * reported, has none.
+ * recorded, the credit rating, and the debt and credit score in the last report. Nothing
+ * could be borrowed before it, so a game written in format 4 owes nothing and never has, and
+ * starts with the payment record a new game has. The deficit its rating counts is the next
+ * quarter's: until that ends it is taken as none. Its last report, written before debt and
+ * credit were reported, has neither.
  *
  * The later finance features of the same release (the credit rating, bonds) extend this
  * migration rather than adding another: format 5 is not released until they are in.
@@ -164,13 +168,18 @@ function fromFormat4(older: Json): Json {
     state: {
       ...state,
       debts: [],
+      credit: {
+        rating: ratingOfScore(balance.finance.credit.startingRecord),
+        record: balance.finance.credit.startingRecord,
+        deficit: 0,
+      },
       history: Array.isArray(state.history)
         ? (state.history as unknown[]).map((record) =>
             isRecord(record) ? { ...record, debt: 0, debtBurden: 0 } : record,
           )
         : state.history,
     },
-    report: isRecord(older.report) ? { ...older.report, debt: null } : older.report,
+    report: isRecord(older.report) ? { ...older.report, debt: null, credit: null } : older.report,
   };
 }
 

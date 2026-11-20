@@ -1,6 +1,7 @@
 import type { DilemmaDefinition } from './dilemmas';
 import type { EventDefinition } from './events';
 import type {
+  CreditRating,
   DilemmaType,
   EventType,
   FoodStage,
@@ -12,6 +13,16 @@ import type {
   SpendingArea,
   Tier,
 } from './vocabulary';
+
+/** The balance values of one step of the credit rating. */
+export interface CreditStepBalance {
+  /** The score, in points, the step begins at. */
+  readonly fromScore: number;
+  /** What it adds to the rate of a loan on the menu, in hundredths of a percent a year. */
+  readonly loanRateBasisPoints: number;
+  /** The most the nation may owe, in thousandths of a year's revenue. */
+  readonly debtLimitPermille: number;
+}
 
 /** The balance values of one type of site. */
 export interface SiteBalance {
@@ -378,7 +389,10 @@ export const balance = {
     loans: {
       /** The sums a loan may be taken out for. */
       amounts: [100, 250, 500],
-      /** The terms a loan may be taken over, each with the rate it is lent at. */
+      /**
+       * The terms a loan may be taken over, each with the rate it is lent at to a nation
+       * rated A. The credit rating moves it (`credit.ratings`).
+       */
       terms: [
         { quarters: 4, annualRateBasisPoints: 600 },
         { quarters: 8, annualRateBasisPoints: 800 },
@@ -386,10 +400,45 @@ export const balance = {
       ],
     },
     /**
-     * The most the nation may owe, counting what it means to borrow this quarter, in
-     * thousandths of a year's revenue at the budget in force.
+     * The credit rating, reassessed as each quarter ends. Its score is the payment record
+     * less a share of the debt burden and a share of the quarter's deficit, in points: the
+     * rating is the best step whose score it reaches (see `credit.ts`).
      */
-    debtLimitPermille: 1000,
+    credit: {
+      /** The payment record a nation starts with, in points. */
+      startingRecord: 700,
+      /** The best payment record there is. */
+      bestRecord: 1000,
+      /** What a quarter with a missed payment takes off the payment record. */
+      missedPaymentPoints: 400,
+      /** What a quarter whose repayments were all made on time adds to the payment record. */
+      onTimePoints: 25,
+      /**
+       * The points taken off the score for each thousandth of debt burden, in thousandths:
+       * owing a whole year's revenue costs 400 points.
+       */
+      burdenWeightPermille: 400,
+      /**
+       * The points taken off for each thousandth of the quarter's revenue spent beyond it, in
+       * thousandths. Repaying principal is not counted as a deficit; interest is.
+       */
+      deficitWeightPermille: 300,
+      /** A deficit is counted up to this many thousandths of the quarter's revenue. */
+      deficitCapPermille: 1000,
+      /**
+       * Each step of the rating: the score it begins at, what it does to the rate a loan is
+       * offered at, in hundredths of a percent a year, and the most the nation may owe,
+       * counting what it means to borrow this quarter, in thousandths of a year's revenue at
+       * the budget in force. The worst step begins at 0, where the score stops.
+       */
+      ratings: {
+        aa: { fromScore: 850, loanRateBasisPoints: -100, debtLimitPermille: 1250 },
+        a: { fromScore: 550, loanRateBasisPoints: 0, debtLimitPermille: 1000 },
+        bbb: { fromScore: 400, loanRateBasisPoints: 150, debtLimitPermille: 750 },
+        bb: { fromScore: 200, loanRateBasisPoints: 300, debtLimitPermille: 500 },
+        b: { fromScore: 0, loanRateBasisPoints: 500, debtLimitPermille: 250 },
+      } satisfies Record<CreditRating, CreditStepBalance>,
+    },
   },
   /** How the game is won. */
   victory: {
