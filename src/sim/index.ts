@@ -30,6 +30,15 @@ export {
   type RegionUnrest,
 } from './approval';
 export { type Budget } from './budget';
+export { missedPaymentMeans } from './bailout';
+export {
+  austerityStatus,
+  budgetBounds,
+  withinAusterity,
+  type Austerity,
+  type AusterityStatus,
+  type BudgetBounds,
+} from './austerity';
 export {
   pendingDilemma,
   type AnsweredDilemma,

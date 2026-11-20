@@ -20,7 +20,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 5;
+export const SAVE_FORMAT_VERSION = 6;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -34,6 +34,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   2: fromFormat2,
   3: fromFormat3,
   4: fromFormat4,
+  5: fromFormat5,
 };
 
 /**
@@ -183,6 +184,19 @@ function fromFormat4(older: Json): Json {
     },
     report: isRecord(older.report) ? { ...older.report, debt: null, credit: null } : older.report,
   };
+}
+
+/**
+ * Format 6 added the bailout: a missed payment no longer adds what went unpaid to the debt,
+ * but brings a bailout and austerity. A game written in format 5 is not in austerity. Its
+ * debts are carried as they were, even one that a missed payment re-spread under the old
+ * rule: they are still owed on those terms, and a payment missed from now on brings a
+ * bailout. Its last report may hold a missed payment of the old kind, which is still a kind
+ * the report knows.
+ */
+function fromFormat5(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return { ...older, formatVersion: 6, state: { ...state, austerity: null } };
 }
 
 /**

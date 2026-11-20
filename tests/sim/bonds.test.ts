@@ -17,6 +17,7 @@ import {
   type Decisions,
   type GameState,
   type TurnReport,
+  withinAusterity,
 } from '../../src/sim';
 import { bothCountries, tavara, testland } from './countries';
 import { steward } from './players';
@@ -121,7 +122,7 @@ describe.each(bothCountries)('a bond in %s', (_name, country) => {
     expect(entriesOf(held.reports.at(-1), 'loanRepaid')).toContainEqual(
       expect.objectContaining({ headline: 'Repaid: Bond 2' }),
     );
-    expect(held.reports.flatMap((report) => entriesOf(report, 'missedPayment'))).toEqual([]);
+    expect(held.reports.flatMap((report) => entriesOf(report, 'bailout'))).toEqual([]);
   });
 });
 
@@ -206,14 +207,13 @@ describe('a bond’s maturity the treasury cannot cover', () => {
     };
   }
 
-  it('is a missed payment: what goes unpaid is still owed and repaid over a year', () => {
+  it('is a missed payment, which brings a bailout: what goes unpaid is owed in the bailout loan', () => {
     const game = maturing();
 
     const result = advanceQuarter(game, { ...steward(game), budget: ruinous });
 
-    const [missed] = entriesOf(result.report, 'missedPayment');
-    expect(missed).toMatchObject({ seriousness: 'serious', headline: 'Missed payment: Bond 1' });
-    expect(missed?.cause).toMatch(/due at its maturity/);
+    const [bailout] = entriesOf(result.report, 'bailout');
+    expect(bailout).toMatchObject({ seriousness: 'serious' });
     const paid = -(
       (line(result.report, 'Interest on Bond 1') ?? 0) +
       (line(result.report, 'Repaying Bond 1') ?? 0)
@@ -222,15 +222,12 @@ describe('a bond’s maturity the treasury cannot cover', () => {
     // The interest was paid, so nothing was added to the debt: the principal unpaid was owed
     // already.
     expect(paid).toBeGreaterThan(2);
-    expect(missed?.cause).not.toMatch(/added to the debt/);
-    expect(missed?.cause).toContain(
-      `${formatMoney(200 - (paid - 2))} of principal went unpaid, and ${formatMoney(202 - paid)} is still owed`,
+    expect(bailout?.cause).toContain(
+      `could not cover ${formatMoney(202 - paid)} due on Bond 1. Lenders consolidated everything owed, ${formatMoney(202 - paid)}, into one bailout loan`,
     );
     const [left] = result.state.debts;
-    expect(left).toMatchObject({ kind: 'bond', owed: 202 - paid, quartersLeft: 4 });
-    // It is now repaid level, a quarter of it and interest each quarter.
-    expect(left?.repayment).toBeGreaterThan((202 - paid) / 4);
-    expect(result.state.credit.record).toBe(game.credit.record - 400);
+    expect(left).toMatchObject({ kind: 'bailout', owed: 202 - paid, quartersLeft: 16 });
+    expect(result.state.credit.record).toBe(0);
     expect(debtStatus(result.state).debt).toBe(202 - paid);
   });
 
@@ -246,13 +243,15 @@ describe('a bond’s maturity the treasury cannot cover', () => {
 
     const result = advanceQuarter(owing, { ...steward(owing), budget: ruinous });
 
-    const [missed] = entriesOf(result.report, 'missedPayment');
     const paid = -(line(result.report, 'Interest on Bond 1') ?? 0);
     expect(paid).toBeLessThan(200);
-    expect(result.state.debts[0]?.owed).toBe(20_000 + 200 - paid);
-    expect(missed?.cause).toContain(
-      `The ${formatMoney(200 - paid)} of interest it could not pay was added to the debt: ${formatMoney(20_200 - paid)} is now owed.`,
-    );
+    expect(result.state.debts).toEqual([
+      expect.objectContaining({ kind: 'bailout', owed: 20_000 + 200 - paid }),
+    ]);
+    expect(result.report.debt?.contributions).toContainEqual({
+      label: 'Interest unpaid on Bond 1',
+      amount: 200 - paid,
+    });
   });
 
   it('cuts a rating of AA, and the report says bonds can no longer be issued', () => {
@@ -265,19 +264,22 @@ describe('a bond’s maturity the treasury cannot cover', () => {
     expect(cut?.cause).toMatch(/ Bonds can no longer be issued\.$/);
   });
 
-  it('then falls to level repayments that clear it', () => {
+  it('then leaves the bailout loan to be repaid level', () => {
     const game = maturing();
     const missed = advanceQuarter(game, { ...steward(game), budget: ruinous }).state;
-    const generous = { ...missed, treasury: 1000, budget: game.budget };
+    const generous = { ...missed, treasury: 1000, budget: withinAusterity(missed, game.budget) };
 
     const repaid = play(generous, [{}, {}, {}, {}]);
 
     const paid = repaid.reports.map(
       (report) =>
-        (line(report, 'Interest on Bond 1') ?? 0) + (line(report, 'Repaying Bond 1') ?? 0),
+        (line(report, 'Interest on Bailout loan') ?? 0) +
+        (line(report, 'Repaying Bailout loan') ?? 0),
     );
-    expect(new Set(paid.slice(0, 3)).size).toBe(1);
-    expect(repaid.state.debts).toEqual([]);
+    expect(new Set(paid).size).toBe(1);
+    expect(repaid.state.debts).toEqual([
+      expect.objectContaining({ kind: 'bailout', quartersLeft: 12 }),
+    ]);
     expect(repaid.reports.flatMap((report) => entriesOf(report, 'missedPayment'))).toEqual([]);
   });
 });
@@ -420,12 +422,14 @@ describe('the risks ahead', () => {
     );
   });
 
-  it('say over how many quarters a missed maturity is repaid, never more than its term', () => {
+  it('say that a missed maturity brings a bailout', () => {
     const game = owingBond(2, 420, 3);
 
     const [risk] = maturityRisks(game);
 
-    expect(risk?.reason).toContain('repaid over 3 quarters');
+    expect(risk?.reason).toContain(
+      'A missed payment brings a bailout: everything owed becomes one bailout loan',
+    );
   });
 
   it('say nothing of a maturity the treasury is on course to cover', () => {
@@ -440,6 +444,6 @@ describe('the risks ahead', () => {
     expect(risks.filter((risk) => risk.kind === 'bondMaturity')).toEqual([
       expect.objectContaining({ headline: 'Bond 1 cannot be repaid', withinQuarters: 2 }),
     ]);
-    expect(risks.filter((risk) => risk.kind === 'missedPayment')).toEqual([]);
+    expect(risks.filter((risk) => risk.kind === 'bailout')).toEqual([]);
   });
 });

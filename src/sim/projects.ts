@@ -1,4 +1,5 @@
 import { sum } from './arithmetic';
+import { buildingBarred, type Austere } from './austerity';
 import { nextDate } from './calendar';
 import type { Country, Site } from './country';
 import type { ReportEntry } from './report';
@@ -84,12 +85,18 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
  * What is wrong with starting projects on these sites this quarter, or null when the game
  * allows it. A project is started on an empty site, not on one closed by building on one of
  * its alternatives nor together with one, and only when the treasury holds the whole cost of
- * everything started together, though it is then paid for as it is built.
+ * everything started together, though it is then paid for as it is built. None is started
+ * during austerity.
  */
 export function startFault(
-  { country, projects, treasury }: Building & { readonly treasury: Money },
+  game: Building & { readonly treasury: Money } & Pick<Austere, 'date' | 'austerity'>,
   siteIds: readonly string[],
 ): string | null {
+  const { country, projects, treasury } = game;
+  if (siteIds.length > 0) {
+    const barred = buildingBarred(game);
+    if (barred !== null) return barred;
+  }
   const nameOf = (id: string) => country.sites.find((candidate) => candidate.id === id)?.name ?? id;
   const sites: Site[] = [];
   for (const siteId of siteIds) {

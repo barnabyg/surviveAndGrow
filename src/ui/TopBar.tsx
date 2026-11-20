@@ -210,8 +210,8 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
           <p className="breakdown__empty">
             The debt burden is what is owed against a year’s revenue at the budget in force:{' '}
             {formatMoney(debt.yearRevenue)}. Repayments are paid before anything else each quarter.
-            One the treasury and revenue cannot cover is missed, and what goes unpaid is added to
-            the debt.
+            One the treasury and revenue cannot cover is missed, and a missed payment brings a
+            bailout: everything owed becomes one bailout loan, and austerity follows.
           </p>
         </VitalSign>
         <VitalSign
@@ -271,11 +271,11 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
           </table>
           <p className="breakdown__empty">
             The rating is reassessed as each quarter ends. Its score is the payment record, less a
-            share of the debt burden and of the quarter’s deficit. A missed payment takes{' '}
-            {creditRules.missedPaymentPoints} points off the payment record; each quarter whose
-            repayments are all made on time puts {creditRules.onTimePoints} back, up to{' '}
-            {creditRules.bestRecord}. Loans and bonds already taken keep the rate they were taken
-            at.
+            share of the debt burden and of the quarter’s deficit. A missed payment brings a
+            bailout, which leaves the payment record at {creditRules.missedPaymentRecord} and the
+            rating at its lowest step; each quarter whose repayments are all made on time puts{' '}
+            {creditRules.onTimePoints} back, up to {creditRules.bestRecord}. Loans and bonds already
+            taken keep the rate they were taken at.
           </p>
         </VitalSign>
         <VitalSign

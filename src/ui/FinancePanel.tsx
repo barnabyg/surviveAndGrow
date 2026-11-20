@@ -10,6 +10,7 @@ import {
   loanRateSpan,
   maturityOf,
   maturityOfTaking,
+  missedPaymentMeans,
   paysAtMaturity,
   ratingRank,
   formatMoney,
@@ -139,7 +140,7 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
       {preview.missedPayment > 0 && (
         <p className="warning-note">
           ▲ The treasury and revenue cannot cover this quarter’s repayments. A payment of{' '}
-          {formatMoney(preview.missedPayment)} will be missed and added to the debt.
+          {formatMoney(preview.missedPayment)} will be missed. {missedPaymentMeans(game)}
         </p>
       )}
 

@@ -1,4 +1,5 @@
 import type { ApprovalEffects, RegionUnrest } from './approval';
+import type { Austerity } from './austerity';
 import type { Budget } from './budget';
 import type { Country } from './country';
 import type { Credit } from './credit';
@@ -140,6 +141,11 @@ export interface GameState {
    * `balance.victory.quartersToHold`.
    */
   readonly prosperousQuarters: number;
+  /**
+   * The austerity a bailout imposed, while it holds, or null. Neither a bailout nor a missed
+   * payment during austerity ends the game.
+   */
+  readonly austerity: Austerity | null;
   readonly outcome: Outcome;
 }
 
@@ -154,13 +160,14 @@ export interface Decisions {
   readonly reliefRegionId?: string | null;
   /**
    * The sites to start building on this quarter. Each must be empty, and the treasury must
-   * hold the whole cost of them all. The first instalment is paid as the quarter ends.
+   * hold the whole cost of them all. The first instalment is paid as the quarter ends. None
+   * may be started during austerity.
    */
   readonly startProjects?: readonly string[];
   /**
    * What to borrow this quarter, each from the menu of loans. The money arrives as the
    * quarter ends, and repayments begin the quarter after. Together with what is owed it must
-   * stay within the most that may be owed.
+   * stay within the most that may be owed. Nothing may be borrowed during austerity.
    */
   readonly borrow?: readonly Borrowing[];
   /**
@@ -252,7 +259,10 @@ export interface Preview {
    * before anything else.
    */
   readonly repayments: Range;
-  /** What falls due on debts and cannot be paid, which would be added to the debt. */
+  /**
+   * What falls due on debts and cannot be paid. Any at all brings a bailout, or during
+   * austerity extends it.
+   */
   readonly missedPayment: Money;
   /** What borrowing brings into the treasury as the quarter ends. */
   readonly borrowed: Money;

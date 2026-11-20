@@ -9,6 +9,7 @@ import {
   formatIndex,
   formatPercent,
   formatTonnes,
+  missedPaymentMeans,
   MONEY_PER_MILLION,
   monthsOfFood,
   previewQuarter,
@@ -175,8 +176,8 @@ export function BudgetPanel(props: BudgetPanelProps) {
           )}
           {after.missedPayment > 0 && (
             <p className="warning-note">
-              ▲ A payment of {formatMoney(after.missedPayment)} will be missed and added to the
-              debt.
+              ▲ A payment of {formatMoney(after.missedPayment)} will be missed.{' '}
+              {missedPaymentMeans(game)}
             </p>
           )}
         </div>

@@ -17,17 +17,24 @@ supposed chance. It lives the quarter through `liveQuarter`, which the preview
 1. The answer to a dilemma (`dilemmas.ts`).
 2. Money (`resolveMoney`): repayments on debts, oldest first, out of the treasury and the
    quarter's revenue (`debt.ts`), a bond's interest each quarter and its whole sum at
-   maturity; then the budget (`budget.ts`) with what is left; then project
-   instalments, oldest first (`projects.ts`); then upkeep and decay (`upkeep.ts`). What is
-   borrowed arrives last, as the quarter ends (`debt.ts`).
+   maturity. A payment missed on any of them brings a bailout: everything owed is
+   consolidated into one bailout loan (`debt.ts`). Then the budget (`budget.ts`) with what is
+   left; then project instalments, oldest first (`projects.ts`); then upkeep and decay
+   (`upkeep.ts`). What is borrowed arrives last, as the quarter ends (`debt.ts`), unless a
+   bailout has stopped it.
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
    `power.ts`) and the events in force (`events.ts`).
 4. Health and education levels (`resolveServices` in `prosperity.ts`).
 5. Prosperity (`prosperity.ts`) and the tier it reaches (`tiers.ts`), which sets expectations.
-6. Approval (`approval.ts`), which decides who strikes next quarter.
+6. Approval (`approval.ts`), which decides who strikes next quarter. A bailout's blow lands
+   here (`bailout.ts`).
 7. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the
    debt burden the quarter leaves and its deficit. What was borrowed this quarter was taken at
-   the rating in force as it began.
+   the rating in force as it began. A missed payment puts it at the lowest step.
+8. Austerity (`bailout.ts`): a bailout imposes it and brings the budget in force within it, a
+   missed payment during it extends it, and otherwise a quarter of it is spent. What it
+   allows is in `austerity.ts`, which `checkDecisions` and the menus of loans and projects
+   consult.
 
 `resolveQuarter` then moves the calendar (`calendar.ts`, `terms.ts`), ends and begins events,
 checks for collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may

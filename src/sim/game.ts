@@ -1,5 +1,7 @@
 import { approvalStatus, resolveApproval, startingApproval, type ApprovalInputs } from './approval';
 import { sum } from './arithmetic';
+import { austerityBudgetFault } from './austerity';
+import { bailoutPushes, budgetAfter, resolveBailout } from './bailout';
 import { balance } from './balance';
 import { nextDate, quartersUntilHarvest } from './calendar';
 import {
@@ -108,6 +110,7 @@ export function createGame(country: Country, seed: number): GameState {
     tier,
     startingTier: tier,
     prosperousQuarters: 0,
+    austerity: null,
     outcome: { status: 'playing' },
   };
 }
@@ -166,6 +169,8 @@ export interface QuarterResolved extends TurnResult {
   readonly missedPayment: Money;
   /** The debts a payment was missed on, by name. */
   readonly missedOn: readonly string[];
+  /** True when a missed payment brought a bailout, outside austerity. */
+  readonly bailedOut: boolean;
   /** What the quarter's payments on debts took off the principal owed. */
   readonly principalRepaid: Money;
   /** What borrowing brought into the treasury as the quarter ended. */
@@ -187,7 +192,7 @@ export function resolveQuarter(
   const lived = liveQuarter(given, decisions, chance.weatherShocks);
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
-  const { serviced, taken, credit } = lived;
+  const { serviced, taken, credit, bailout } = lived;
   const { prosperity, tier } = lived;
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
@@ -236,6 +241,7 @@ export function resolveQuarter(
     ...(victory === null ? [] : [victory.entry]),
     ...(election === null ? [] : [election.entry]),
     ...answer.entries,
+    ...bailout.entries,
     ...serviced.entries,
     ...credit.entries,
     ...(budget.cut ? [cutEntry(budget)] : []),
@@ -257,7 +263,8 @@ export function resolveQuarter(
       ...state,
       date,
       treasury: finances.treasury,
-      budget: decisions.budget,
+      // A bailout brings the budget in force within the austerity it imposes.
+      budget: budgetAfter(state, decisions.budget, bailout),
       reliefRegionId: decisions.reliefRegionId ?? null,
       foodReserve: food.foodReserve,
       // The growing year ends with the harvest.
@@ -286,6 +293,7 @@ export function resolveQuarter(
       dilemmasAnswered,
       tier,
       prosperousQuarters,
+      austerity: bailout.austerity,
       outcome,
     },
     report: {
@@ -322,6 +330,7 @@ export function resolveQuarter(
     upkeepShort: finances.upkeep.short,
     missedPayment: serviced.missed,
     missedOn: serviced.missedOn,
+    bailedOut: bailout.bailedOut,
     principalRepaid: serviced.principal,
     borrowed: taken.borrowed,
     fedPermille: food.fedPermille,
@@ -367,6 +376,8 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   // quarter leaves behind decides who strikes in the next.
   const approval = resolveApproval(state.country, state.regions, served, {
     ...approvalInputs(decisions, finances, answer),
+    // A bailout's blow lands at once, beside any the answer to a dilemma dealt.
+    pushes: [...answer.pushes, ...bailoutPushes(serviced, state)],
     expectations,
   });
   // The debt burden the quarter leaves: its debt against the revenue the regions and sites it
@@ -388,6 +399,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     },
     serviced.missedOn,
   );
+  const bailout = resolveBailout(state, serviced, (decisions.borrow ?? []).length > 0);
   return {
     answer,
     state,
@@ -404,6 +416,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     prosperity,
     tier,
     credit,
+    bailout,
     debtBurden: burden,
   };
 }
@@ -506,6 +519,8 @@ export function checkDecisions(state: GameState, decisions: Decisions, mustAnswe
   const unanswered = choiceFault(state, decisions.dilemmaChoice ?? null, mustAnswer);
   if (unanswered !== null) throw new RangeError(unanswered);
   checkBudget(decisions.budget);
+  const austere = austerityBudgetFault(state, decisions.budget);
+  if (austere !== null) throw new RangeError(austere);
   const target = decisions.reliefRegionId ?? null;
   if (target !== null && !state.regions.some((region) => region.id === target)) {
     throw new RangeError(`There is no region "${target}" to send food relief to.`);
@@ -536,7 +551,7 @@ interface QuarterMoney {
  * quarter's revenue; then the budget's own spending, cut if what is left cannot cover it;
  * then the instalments on projects are paid out of what is left. The sites that upkeep did
  * not reach are decaying from the next quarter. What is borrowed arrives as the quarter
- * ends, after all of it.
+ * ends, after all of it, unless a missed payment has brought a bailout.
  */
 function resolveMoney(
   state: Pick<
@@ -547,10 +562,20 @@ function resolveMoney(
   starts: readonly string[] = decisions.startProjects ?? [],
   borrowing: readonly Borrowing[] = decisions.borrow ?? [],
 ): QuarterMoney {
-  const serviced = serveDebts(state.debts, state.treasury + revenueOf(state, decisions.budget));
+  const serviced = serveDebts(
+    state.debts,
+    state.treasury + revenueOf(state, decisions.budget),
+    state.date,
+  );
   const budget = resolveBudget(state, decisions.budget, serviced);
   const building = resolveProjects(state, starts, state.date, budget.treasury);
-  const taken = takeDebts(serviced.debts, borrowing, state.date, state.credit.rating);
+  // A missed payment puts everything owed in the bailout loan, and nothing more is lent.
+  const taken = takeDebts(
+    serviced.debts,
+    serviced.missed > 0 ? [] : borrowing,
+    state.date,
+    state.credit.rating,
+  );
   return {
     serviced,
     budget,

@@ -23,41 +23,38 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought, and the teachers asking for a rise
-  // now and then. Format 5 added borrowing. The game borrows $25.0m over eight quarters in
-  // its first quarter, to start an irrigation scheme in Lowmere, and $10.0m over four
-  // quarters in its second. The first loan and the scheme's instalments together cut the
-  // credit rating to BBB, so the second loan is taken at BBB's dearer rate. Repaying both on
-  // time raises it, quarter by quarter, to AA, the rating bonds need: in that quarter, the
-  // ninth, the first loan's last repayment is made, and the game borrows $10.0m over four
-  // quarters and issues a $20.0m bond maturing in eight, both at AA's rates. It is saved as
-  // the next quarter begins, owing on both, with the rating back at A for the debt it took on.
+  // now and then. Format 6 added the bailout. The game borrows $50.0m over four quarters in
+  // its first quarter on the lowest tax, and spends on everything at the most. In its second
+  // it starts an irrigation scheme in Lowmere with what is left of the loan. In its third the
+  // treasury and the low tax cannot cover the repayment: the bailout consolidates the debt
+  // into a bailout loan, cuts the rating to B and imposes austerity for eight quarters, which
+  // brings the budget within its floor and caps. It plays one quarter of austerity on that
+  // budget, the scheme still being built, and is saved as Year 2 · Quarter 1 begins.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
   });
+  const lavish = {
+    taxRatePercent: 5,
+    spending: {
+      agriculture: 200,
+      foodRelief: 0,
+      health: 200,
+      education: 200,
+      security: 200,
+      upkeep: 200,
+    },
+  };
   let game = createGame(country, 2026);
   let report: TurnReport | null = null;
-  let issued = false;
-  for (let quarter = 0; !issued; quarter += 1) {
-    if (quarter >= 16) throw new Error('The game never reached AA to issue its bond.');
+  for (let quarter = 0; quarter < 4; quarter += 1) {
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
-    issued = game.credit.rating === 'aa';
     const result = advanceQuarter(game, {
-      budget: game.budget,
-      startProjects: quarter === 0 ? ['lowmere-irrigation'] : [],
-      borrow:
-        quarter === 0
-          ? [{ kind: 'loan', amount: 250, quarters: 8 }]
-          : quarter === 1
-            ? [{ kind: 'loan', amount: 100, quarters: 4 }]
-            : issued
-              ? [
-                  { kind: 'loan', amount: 100, quarters: 4 },
-                  { kind: 'bond', amount: 200, quarters: 8 },
-                ]
-              : [],
+      budget: game.austerity === null ? lavish : game.budget,
+      startProjects: quarter === 1 ? ['lowmere-irrigation'] : [],
+      borrow: quarter === 0 ? [{ kind: 'loan', amount: 500, quarters: 4 }] : [],
       dilemmaChoice,
     });
     game = result.state;
@@ -65,14 +62,13 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.date).toEqual({ year: 3, quarter: 2 });
-  expect(
-    game.debts.map((debt) => [debt.kind, debt.number, debt.quartersLeft, debt.schedule]),
-  ).toEqual([
-    ['loan', 1, 4, 'level'],
-    ['bond', 2, 8, 'atMaturity'],
+  expect(game.date).toEqual({ year: 2, quarter: 1 });
+  expect(game.austerity).toEqual({ quartersLeft: 7 });
+  expect(game.credit.rating).toBe('b');
+  expect(game.debts.map((debt) => [debt.kind, debt.quartersLeft])).toEqual([['bailout', 15]]);
+  expect(game.projects.map((project) => [project.siteId, project.status])).toEqual([
+    ['lowmere-irrigation', 'building'],
   ]);
-  expect(game.debts.map((debt) => debt.annualRateBasisPoints)).toEqual([500, 350]);
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

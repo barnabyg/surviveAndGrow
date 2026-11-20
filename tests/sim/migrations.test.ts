@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   approvalStatus,
+  debtStatus,
   electionStatus,
   loadSave,
   pendingDilemma,
@@ -13,6 +14,7 @@ import format1Save from '../saves/format-1.json';
 import format2Save from '../saves/format-2.json';
 import format3Save from '../saves/format-3.json';
 import format4Save from '../saves/format-4.json';
+import format5Save from '../saves/format-5.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './players';
 
@@ -298,5 +300,51 @@ describe('the save kept from save format 4', () => {
 
     expect(game.credit).toEqual({ rating: 'a', record: 700, deficit: 0 });
     expect(report?.credit).toBeNull();
+  });
+});
+
+describe('the save kept from save format 5', () => {
+  it('still opens on the game it was written from, owing on a loan and a bond', () => {
+    const { game, report } = loadSave(format5Save);
+
+    expect(game.date).toEqual({ year: 3, quarter: 2 });
+    expect(
+      game.debts.map((debt) => [
+        debt.kind,
+        debt.number,
+        debt.borrowed,
+        debt.owed,
+        debt.quartersLeft,
+        debt.schedule,
+      ]),
+    ).toEqual([
+      ['loan', 1, 100, 100, 4, 'level'],
+      ['bond', 2, 200, 200, 8, 'atMaturity'],
+    ]);
+    expect(debtStatus(game).debt).toBe(300);
+    expect(report?.debt).toMatchObject({ value: 300, change: 273 });
+  });
+
+  it('plays on to repay the loan on schedule, and the bond at its maturity', () => {
+    let { game } = loadSave(format5Save);
+
+    for (let quarter = 0; quarter < 8; quarter += 1) {
+      game = advanceQuarter(game, answering(game, steward(game))).state;
+    }
+
+    expect(game.debts).toEqual([]);
+    expect(game.history.at(-1)?.debt).toBe(0);
+  });
+
+  it('refuses a debt repaid on a schedule there is not', () => {
+    const damaged = withValue(format5Save, ['state', 'debts', 1, 'schedule'], 'whenever');
+
+    expect(() => loadSave(damaged)).toThrow(/state\.debts\[1\]\.schedule/);
+  });
+
+  it('is lifted to format 6 not in austerity', () => {
+    const { game } = loadSave(format5Save);
+
+    expect(game.austerity).toBeNull();
   });
 });

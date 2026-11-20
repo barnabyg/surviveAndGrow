@@ -428,12 +428,48 @@ export const balance = {
         { quarters: 12, annualRateBasisPoints: 450 },
         { quarters: 16, annualRateBasisPoints: 500 },
       ],
+    },
+    /**
+     * A bailout: what a missed payment on any debt brings. Lenders consolidate everything
+     * owed into one bailout loan on their terms, repaid level from the quarter after, and
+     * austerity follows (`austerity` below).
+     */
+    bailout: {
+      /** The rate the bailout loan is lent at, in hundredths of a percent a year. */
+      annualRateBasisPoints: 700,
+      /** The quarters the bailout loan is repaid over, from the quarter after the bailout. */
+      termQuarters: 16,
       /**
-       * A maturity the treasury cannot cover is a missed payment: what goes unpaid is added
-       * to the debt and repaid in level repayments, at the bond's rate, over this many
-       * quarters.
+       * The push a bailout gives approval in every region as it lands, in thousandths. It
+       * fades like any passing event. A missed payment during austerity gives none.
        */
-      missedMaturityQuarters: 4,
+      approvalPermille: -80,
+    },
+    /**
+     * Austerity: the bailout's terms, in force for a fixed number of quarters after it. The
+     * tax rate may not go below a floor, spending on some areas may not go above a cap, and
+     * nothing may be borrowed nor any project started. Projects already under way carry on.
+     */
+    austerity: {
+      /** The quarters austerity lasts, counting from the quarter after the bailout. */
+      quarters: 8,
+      /** What a missed payment during austerity adds to the quarters it has left. */
+      extendQuarters: 4,
+      /** The lowest tax rate allowed, as a whole percentage. */
+      taxFloorPercent: 25,
+      /**
+       * The capped areas, each capped at this share, in thousandths, of what the country's
+       * starting budget spends on it, brought down onto a step of the slider but never below
+       * one step unless the starting budget spends nothing there. Areas left out are not
+       * capped: food relief and upkeep, so that austerity starves no one and lets nothing
+       * decay that the player keeps up.
+       */
+      spendingCapPermille: {
+        agriculture: 1000,
+        health: 800,
+        education: 800,
+        security: 800,
+      } satisfies Partial<Record<SpendingArea, number>> as Partial<Record<SpendingArea, number>>,
     },
     /**
      * The credit rating, reassessed as each quarter ends. Its score is the payment record
@@ -445,8 +481,11 @@ export const balance = {
       startingRecord: 700,
       /** The best payment record there is. */
       bestRecord: 1000,
-      /** What a quarter with a missed payment takes off the payment record. */
-      missedPaymentPoints: 400,
+      /**
+       * The payment record a quarter with a missed payment leaves: nothing. With nothing to
+       * its record the score can reach no step but the lowest, which a bailout brings.
+       */
+      missedPaymentRecord: 0,
       /** What a quarter whose repayments were all made on time adds to the payment record. */
       onTimePoints: 25,
       /**

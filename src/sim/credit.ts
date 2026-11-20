@@ -9,8 +9,8 @@ import { CREDIT_RATING_NAMES, CREDIT_RATINGS, type CreditRating } from './vocabu
  * The credit rating: how far lenders trust the nation, which sets the rate new debt is taken
  * at and the most that may be owed. It is reassessed as each quarter ends from a score: the
  * payment record, less a share of the debt burden and a share of the quarter's deficit. A
- * missed payment takes a great deal off the payment record; each quarter whose repayments
- * are all made on time puts a little back.
+ * missed payment brings a bailout, which wipes out the payment record and puts the rating at
+ * its lowest step; each quarter whose repayments are all made on time puts a little back.
  */
 
 /** The rules of the rating, as the player is told them. */
@@ -183,15 +183,16 @@ export function deficitOf(revenue: Money, balanceOfQuarter: Money, principal: Mo
 }
 
 /**
- * The payment record after a quarter's repayments: a missed payment takes a great deal off
- * it, and a quarter whose repayments were all made puts a little back, up to the best there is.
+ * The payment record after a quarter's repayments: a missed payment leaves it at what
+ * balance data sets for one, and a quarter whose repayments were all made puts a little
+ * back, up to the best there is.
  */
 export function recordAfter(
   record: number,
   service: { readonly due: Money; readonly missed: Money },
 ): number {
-  const { missedPaymentPoints, onTimePoints, bestRecord } = balance.finance.credit;
-  if (service.missed > 0) return Math.max(0, record - missedPaymentPoints);
+  const { missedPaymentRecord, onTimePoints, bestRecord } = balance.finance.credit;
+  if (service.missed > 0) return Math.min(record, missedPaymentRecord);
   if (service.due > 0) return Math.min(bestRecord, record + onTimePoints);
   return record;
 }
@@ -209,7 +210,8 @@ export interface CreditReassessed {
 
 /**
  * Reassesses the rating as a quarter ends, from the payment record and deficit the quarter
- * left and the debt burden as it now stands.
+ * left and the debt burden as it now stands. A quarter with a missed payment, which brings a
+ * bailout, puts the rating at its lowest step whatever the score.
  */
 export function reassessCredit(
   given: Rated,
@@ -217,7 +219,8 @@ export function reassessCredit(
   missedOn: readonly string[],
 ): CreditReassessed {
   const before = assessCredit(given.credit.record, debtBurden(given), given.credit.deficit);
-  const after = assessCredit(now.record, now.burden, now.deficit);
+  const assessed = assessCredit(now.record, now.burden, now.deficit);
+  const after = missedOn.length === 0 ? assessed : { ...assessed, rating: CREDIT_RATINGS[0] };
   const changes = scoreChanges(before, after);
   return {
     credit: { rating: after.rating, record: now.record, deficit: now.deficit },
@@ -260,7 +263,7 @@ export function ratingCause(
   const largest = Math.max(sign * (record ?? 0), sign * (burden ?? 0), sign * (deficit ?? 0));
   if (largest === sign * (record ?? 0)) {
     return falling
-      ? `A missed payment${missedOn.length === 0 ? '' : ` on ${missedOn.join(' and ')}`} cut the payment record by ${-(record ?? 0)} points.`
+      ? `A missed payment${missedOn.length === 0 ? '' : ` on ${missedOn.join(' and ')}`} brought a bailout and cut the payment record by ${-(record ?? 0)} points.`
       : `Repayments made on time raised the payment record to ${after.record} points.`;
   }
   if (largest === sign * (burden ?? 0)) {

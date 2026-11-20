@@ -313,7 +313,7 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 export const RISK_KINDS = [
   'famine',
   'treasury',
-  'missedPayment',
+  'bailout',
   'bondMaturity',
   'creditRating',
   'upkeep',
@@ -354,7 +354,9 @@ export const REPORT_KINDS = [
   'siteRestored',
   'loanTaken',
   'loanRepaid',
+  'bailout',
   'missedPayment',
+  'austerity',
   'creditRating',
   'dilemma',
   'tier',
@@ -380,9 +382,10 @@ export const SERIOUSNESS_NAMES: Readonly<Record<Seriousness, string>> = {
 /**
  * The kinds of debt the nation can owe. A loan is repaid in equal quarterly repayments of
  * interest and principal over its term. A bond pays only interest each quarter, and the
- * whole sum at maturity.
+ * whole sum at maturity. A bailout loan is never borrowed: it is what a missed payment turns
+ * everything owed into, repaid like a loan on the lenders' terms.
  */
-export const DEBT_KINDS = ['loan', 'bond'] as const;
+export const DEBT_KINDS = ['loan', 'bond', 'bailout'] as const;
 export type DebtKind = (typeof DEBT_KINDS)[number];
 
 /**
@@ -395,6 +398,7 @@ export type DebtSchedule = (typeof DEBT_SCHEDULES)[number];
 export const DEBT_KIND_NAMES: Readonly<Record<DebtKind, string>> = {
   loan: 'Loan',
   bond: 'Bond',
+  bailout: 'Bailout loan',
 };
 
 /**

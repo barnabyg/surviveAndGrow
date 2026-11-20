@@ -175,6 +175,16 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Repaid loan report',
     path: 'M2,6 H18 V14 H2 Z M6.5,10 L9,12.5 L13.5,7.5',
   },
+  // A lifebuoy.
+  bailout: {
+    label: 'Bailout report',
+    path: 'M10,2 A8,8 0 1 1 9.99,2 M10,6 A4,4 0 1 1 9.99,6 M10,2 V6 M10,14 V18 M2,10 H6 M14,10 H18',
+  },
+  // A belt and its buckle.
+  austerity: {
+    label: 'Austerity report',
+    path: 'M2,8 H18 M2,12 H18 M9,6.5 H13 V13.5 H9 Z M11,10 H15',
+  },
   // A banknote torn through.
   missedPayment: {
     label: 'Missed payment report',
