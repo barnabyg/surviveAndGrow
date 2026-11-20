@@ -12,6 +12,7 @@ import {
 } from '../sim';
 import { formatDate } from './format';
 import { TrendLine } from './TrendLine';
+import './GameSummary.css';
 
 interface GameSummaryProps {
   readonly game: GameState;

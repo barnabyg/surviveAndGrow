@@ -30,6 +30,7 @@ import { RisksPanel } from './RisksPanel';
 import { SiteCard } from './SiteCard';
 import { Timeline } from './Timeline';
 import { TopBar } from './TopBar';
+import './GameScreen.css';
 
 interface GameScreenProps {
   readonly initialGame: GameState;

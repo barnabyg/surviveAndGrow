@@ -8,6 +8,7 @@ import {
 } from '../sim';
 import { formatDate, formatRange } from './format';
 import { DecisionPanel } from './DecisionPanel';
+import './ElectionPanel.css';
 
 interface ElectionPanelProps {
   readonly game: GameState;

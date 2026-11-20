@@ -20,6 +20,7 @@ import {
 import { formatDate } from './format';
 import { opening } from './schedule';
 import { progressOf, siteStateName } from './SiteMark';
+import './map-card.css';
 
 interface SiteCardProps {
   readonly game: GameState;

@@ -19,13 +19,14 @@ it is a save the released game really writes. From that release on it is frozen 
 
 ## Adding one
 
-When a release raises `SAVE_FORMAT_VERSION` in `src/sim/save.ts`:
+When a release raises `SAVE_FORMAT_VERSION` in `src/sim/migrations.ts`:
 
 1. Add the migration from the old version to the new in the same file.
 2. Run the command below once. It writes `format-N.json` for the new version and refuses to
    write over a file that is already here.
 3. Commit the new file, and add tests in `tests/sim/save.test.ts` that it loads and plays on.
-   Keep the tests for every older file.
+   Move the tests for the previous format's file to `tests/sim/migrations.test.ts`, which
+   holds those for every older file, and keep them all.
 
 ```powershell
 npm run save:fixture

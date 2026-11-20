@@ -1,6 +1,7 @@
 import type { GameState } from '../sim';
 import { LENS_NAMES, LENSES, lensScale, type Lens } from './lens';
 import { TIER_PALETTES, type MapPalette } from './mapPalette';
+import './LensBar.css';
 
 interface LensBarProps {
   readonly game: GameState;

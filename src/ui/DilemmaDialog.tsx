@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { DilemmaOptionView, DilemmaView } from '../sim';
+import './DilemmaDialog.css';
 
 interface DilemmaDialogProps {
   readonly dilemma: DilemmaView;

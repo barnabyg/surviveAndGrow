@@ -65,15 +65,9 @@ export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus
 export { termRecords, type TermRecord } from './terms';
 export { victoryStatus, type VictoryStatus } from './victory';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
-export {
-  loadSave,
-  SAVE_FORMAT_VERSION,
-  SaveError,
-  saveGame,
-  type RestoredGame,
-  type SavedGame,
-  type SaveMigration,
-} from './save';
+export { SAVE_FORMAT_VERSION, type SaveMigration } from './migrations';
+export { loadSave, saveGame, type RestoredGame, type SavedGame } from './save';
+export { SaveError } from './saveChecks';
 export { siteTerms, type SiteTerms } from './sites';
 export { DECAYING_SHARE, isInUseState, UPKEEP_ORDER_RULE } from './upkeep';
 export {

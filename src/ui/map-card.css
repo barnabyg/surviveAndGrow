@@ -1,0 +1,95 @@
+/* The card for the region or the site picked out on the map */
+
+.map-card {
+  position: absolute;
+  left: 2.2%;
+  bottom: 3%;
+  width: 400px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+.map-card__name {
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.map-card__list {
+  margin: 0;
+  display: flex;
+  gap: 20px;
+  font-size: 15px;
+}
+
+.map-card__list dt,
+.map-card__term {
+  color: var(--label);
+}
+
+.map-card__list dd,
+.map-card__value {
+  margin: 0;
+  font-family: var(--font-figures);
+  font-weight: 500;
+}
+
+.map-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  font-size: 15px;
+}
+
+.map-card__value {
+  white-space: nowrap;
+}
+
+.map-card__note {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.map-card__parts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.map-card__parts caption {
+  text-align: left;
+  font-size: 15px;
+}
+
+.map-card__chain {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.map-card__links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-card__links li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+
+.map-card__link-state {
+  color: var(--label);
+  font-family: var(--font-figures);
+}

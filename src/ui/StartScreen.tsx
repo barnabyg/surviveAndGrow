@@ -4,6 +4,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { Crest } from './Crest';
 import { formatDate } from './format';
 import type { StoredGame } from './storage';
+import './StartScreen.css';
 
 interface StartScreenProps {
   readonly country: Country;
