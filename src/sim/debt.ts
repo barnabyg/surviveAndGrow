@@ -315,6 +315,19 @@ export function maturityOf(debt: Pick<Debt, 'quartersLeft'>, now: GameDate): Gam
   return dateOfQuarter(quarterNumber(now) + debt.quartersLeft - 1);
 }
 
+/** What a bond asks at its maturity: everything owed, and that quarter's interest on it. */
+export function dueAtMaturity(debt: Pick<Debt, 'owed' | 'annualRateBasisPoints'>): Money {
+  return debt.owed + interestOn(debt.owed, debt.annualRateBasisPoints);
+}
+
+/**
+ * The quarters over which what is left of a bond whose maturity was missed is repaid in
+ * level repayments: those balance data sets, but never more than the bond's own term.
+ */
+export function missedMaturityQuarters(debt: Pick<Debt, 'termQuarters'>): number {
+  return Math.min(balance.finance.bonds.missedMaturityQuarters, debt.termQuarters);
+}
+
 /**
  * Whether a debt pays only interest until its last quarter, when everything owed falls due:
  * a bond, unless a maturity it missed has turned what is left into level repayments.
@@ -512,7 +525,7 @@ function respreadAfterMissing(debt: Debt, owed: Money): Debt {
         repayment: interestOn(owed, rate),
       };
     }
-    const quartersLeft = Math.min(balance.finance.bonds.missedMaturityQuarters, debt.termQuarters);
+    const quartersLeft = missedMaturityQuarters(debt);
     return {
       ...debt,
       owed,

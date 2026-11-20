@@ -348,8 +348,11 @@ describe('the maturities on the term timeline', () => {
 });
 
 describe('the risks ahead', () => {
-  /** Tavara owing a $100.0m bond with the quarters given to run, and the treasury given. */
-  function owingBond(quartersLeft: number, treasury: number): GameState {
+  /**
+   * Tavara owing a $100.0m bond at 4.5% with the quarters given to run, and the treasury
+   * given. Its maturity asks $101.1m: the sum and the quarter's interest.
+   */
+  function owingBond(quartersLeft: number, treasury: number, termQuarters = 12): GameState {
     const game = createGame(tavara(), 1);
     return {
       ...game,
@@ -361,7 +364,7 @@ describe('the risks ahead', () => {
           taken: game.date,
           borrowed: 1000,
           annualRateBasisPoints: 450,
-          termQuarters: 12,
+          termQuarters,
           owed: 1000,
           repayment: 11,
           quartersLeft,
@@ -385,8 +388,27 @@ describe('the risks ahead', () => {
       }),
     ]);
     expect(maturityRisks(game)[0]?.reason).toMatch(
-      /^Bond 1’s \$100\.0m falls due in full in 9 quarters, in Year 3 · Quarter 2\./,
+      /^Bond 1’s \$101\.1m falls due in full in 9 quarters, in Year 3 · Quarter 2\./,
     );
+  });
+
+  it('count the maturity quarter’s interest in what falls due', () => {
+    // On its course the treasury holds about $100.5m by then: the sum, but not its interest.
+    const game = owingBond(10, 1615);
+
+    const [risk] = maturityRisks(game);
+
+    expect(risk?.reason).toMatch(
+      /^Bond 1’s \$101\.1m falls due in full in 9 quarters, in Year 3 · Quarter 2\. On the course it is on, the treasury will hold about \$100\.\dm by then\./,
+    );
+  });
+
+  it('say over how many quarters a missed maturity is repaid, never more than its term', () => {
+    const game = owingBond(2, 420, 3);
+
+    const [risk] = maturityRisks(game);
+
+    expect(risk?.reason).toContain('repaid over 3 quarters');
   });
 
   it('say nothing of a maturity the treasury is on course to cover', () => {

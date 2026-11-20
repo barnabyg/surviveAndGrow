@@ -4,7 +4,15 @@ import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName } from './country';
 import { creditStatus, loanRateSpan, ratingCause, ratingRank } from './credit';
-import { debtName, debtStatus, maturityOf, paysAtMaturity, type Debt } from './debt';
+import {
+  debtName,
+  debtStatus,
+  dueAtMaturity,
+  maturityOf,
+  missedMaturityQuarters,
+  paysAtMaturity,
+  type Debt,
+} from './debt';
 import { defeatChancePermille, electionStatus } from './election';
 import { eventName, eventsThatMayBegin, type PossibleEvent } from './events';
 import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
@@ -417,7 +425,7 @@ function missedPaymentRisk(scope: Scope): Risk[] {
 
 /**
  * A bond's maturity is missed when what the treasury holds and the quarter's revenue cannot
- * cover its whole sum. Inside the horizon that is read off the quarters played. Beyond it,
+ * cover its whole sum and that quarter's interest. Inside the horizon that is read off the quarters played. Beyond it,
  * where nothing is played, the treasury is supposed to go on as it went over the quarters
  * played: by what they raised beyond what they spent, before any principal was repaid or
  * anything borrowed. From that is taken the principal the other debts will repay before the
@@ -433,12 +441,11 @@ function maturityRisk(scope: Scope, bond: BondAhead): Risk[] {
   const likelihood = finding === null ? null : likelihoodOf(finding.chance);
   if (finding === null || likelihood === null) return [];
 
-  const owed =
-    [...state.debts, ...(typicalOf(courses)[0]?.state.debts ?? [])].find(
-      (debt) => debt.number === bond.number,
-    )?.owed ?? 0;
+  const debt = bondAsItMatures(scope, bond);
+  if (debt === undefined) return [];
+  const due = dueAtMaturity(debt);
   const date = maturityOf({ quartersLeft: bond.matures + 1 }, state.date);
-  const falls = `${bond.name}’s ${formatMoney(owed)} falls due in full ${when(bond.matures)}, in Year ${date.year} · Quarter ${date.quarter}.`;
+  const falls = `${bond.name}’s ${formatMoney(due)} falls due in full ${when(bond.matures)}, in Year ${date.year} · Quarter ${date.quarter}.`;
   const held =
     bond.matures < watched ? null : shortOf(typicalOf(courses), bond, watched, state.treasury);
   const course =
@@ -450,10 +457,23 @@ function maturityRisk(scope: Scope, bond: BondAhead): Risk[] {
       kind: 'bondMaturity',
       likelihood,
       headline: `${bond.name} cannot be repaid`,
-      reason: `${falls} ${course} What goes unpaid is a missed payment: it is added to the debt and repaid over ${formatQuarters(balance.finance.bonds.missedMaturityQuarters)}, and the payment record suffers.`,
+      reason: `${falls} ${course} What goes unpaid is a missed payment: it is added to the debt and repaid over ${formatQuarters(missedMaturityQuarters(debt))}, and the payment record suffers.`,
       withinQuarters: bond.matures + 1,
     },
   ];
+}
+
+/**
+ * A bond as its maturity quarter begins on the course with ordinary weather and no new event,
+ * or, beyond the quarters played, as the last of them leaves it.
+ */
+function bondAsItMatures(scope: Scope, bond: BondAhead): Debt | undefined {
+  const states = [scope.state, ...typicalOf(scope.courses).map((resolved) => resolved.state)];
+  return states
+    .slice(0, bond.matures + 1)
+    .reverse()
+    .map((each) => each.debts.find((debt) => debt.number === bond.number))
+    .find((debt) => debt !== undefined);
 }
 
 /**
@@ -497,7 +517,7 @@ function shortOf(
     }),
   );
   const available = end.treasury + trend * rest - repaidFirst;
-  return available < own.owed ? { available } : null;
+  return available < dueAtMaturity(own) ? { available } : null;
 }
 
 /**
