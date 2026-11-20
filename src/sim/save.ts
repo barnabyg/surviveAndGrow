@@ -36,6 +36,7 @@ import {
   APPROVAL_DRIVERS,
   CREDIT_RATINGS,
   DEBT_KINDS,
+  DEBT_SCHEDULES,
   DILEMMA_EFFECT_KINDS,
   DILEMMA_TYPES,
   ENDING_CAUSES,
@@ -313,6 +314,12 @@ function readDebts(saved: unknown, path: string): Debt[] {
       owed: whole(item.owed, `${itemPath}.owed`, 1),
       repayment: whole(item.repayment, `${itemPath}.repayment`, 1),
       quartersLeft: whole(item.quartersLeft, `${itemPath}.quartersLeft`, 1, termQuarters),
+      schedule: oneOf(
+        item.schedule,
+        `${itemPath}.schedule`,
+        DEBT_SCHEDULES,
+        'a repayment schedule',
+      ),
     };
   });
   if (new Set(debts.map((debt) => debt.number)).size !== debts.length) {

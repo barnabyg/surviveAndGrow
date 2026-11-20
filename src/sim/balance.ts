@@ -410,13 +410,18 @@ export const balance = {
      * enough may issue them.
      */
     bonds: {
-      /** The worst credit rating at which bonds may be issued. */
-      leastRating: 'a' as CreditRating,
+      /**
+       * The worst credit rating at which bonds may be issued: the best there is, so a nation
+       * that opens at A must earn it by repaying debt on time (25 points a quarter, about six
+       * to eight quarters with a small loan and no deficit).
+       */
+      leastRating: 'aa' as CreditRating,
       /** The sums a bond may be issued for. */
       amounts: [200, 500, 1000, 2000],
       /**
-       * The terms a bond may run for, each with its rate to a nation rated A, below every
-       * loan's. The credit rating moves it (`credit.ratings`).
+       * The terms a bond may run for, each with its base rate, the one a nation rated A would
+       * get. The credit rating moves it (`credit.ratings`): at AA, where bonds are issued, it
+       * is half a point lower, and still below every loan's rate there.
        */
       terms: [
         { quarters: 8, annualRateBasisPoints: 400 },

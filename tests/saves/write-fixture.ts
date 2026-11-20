@@ -25,11 +25,12 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   // Tavara as it ships, with chance pinned: no drought, and the teachers asking for a rise
   // now and then. Format 5 added borrowing. The game borrows $25.0m over eight quarters in
   // its first quarter, to start an irrigation scheme in Lowmere, and $10.0m over four
-  // quarters in its second. It is saved as Year 2 begins, owing on both loans, with three
-  // repayments made on the first and two on the second, and the repayments in the report.
-  // The first loan and the scheme's instalments together cut the credit rating to BBB, so
-  // the second loan is taken at BBB's dearer rate; repaying on time has it back at A, and in
-  // its fourth quarter it issues a $20.0m bond over eight quarters at A's 4%.
+  // quarters in its second. The first loan and the scheme's instalments together cut the
+  // credit rating to BBB, so the second loan is taken at BBB's dearer rate. Repaying both on
+  // time raises it, quarter by quarter, to AA, the rating bonds need: in that quarter, the
+  // ninth, the first loan's last repayment is made, and the game borrows $10.0m over four
+  // quarters and issues a $20.0m bond maturing in eight, both at AA's rates. It is saved as
+  // the next quarter begins, owing on both, with the rating back at A for the debt it took on.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
@@ -37,9 +38,12 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   });
   let game = createGame(country, 2026);
   let report: TurnReport | null = null;
-  for (let quarter = 0; quarter < 4; quarter += 1) {
+  let issued = false;
+  for (let quarter = 0; !issued; quarter += 1) {
+    if (quarter >= 16) throw new Error('The game never reached AA to issue its bond.');
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
+    issued = game.credit.rating === 'aa';
     const result = advanceQuarter(game, {
       budget: game.budget,
       startProjects: quarter === 0 ? ['lowmere-irrigation'] : [],
@@ -48,8 +52,11 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
           ? [{ kind: 'loan', amount: 250, quarters: 8 }]
           : quarter === 1
             ? [{ kind: 'loan', amount: 100, quarters: 4 }]
-            : quarter === 3
-              ? [{ kind: 'bond', amount: 200, quarters: 8 }]
+            : issued
+              ? [
+                  { kind: 'loan', amount: 100, quarters: 4 },
+                  { kind: 'bond', amount: 200, quarters: 8 },
+                ]
               : [],
       dilemmaChoice,
     });
@@ -58,14 +65,14 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.debts.map((debt) => [debt.kind, debt.number, debt.quartersLeft])).toEqual([
-    ['loan', 1, 5],
-    ['loan', 2, 2],
-    ['bond', 3, 8],
+  expect(game.date).toEqual({ year: 3, quarter: 2 });
+  expect(
+    game.debts.map((debt) => [debt.kind, debt.number, debt.quartersLeft, debt.schedule]),
+  ).toEqual([
+    ['loan', 1, 4, 'level'],
+    ['bond', 2, 8, 'atMaturity'],
   ]);
-  expect(game.debts.map((debt) => debt.owed < debt.borrowed)).toEqual([true, true, false]);
-  expect(game.debts.map((debt) => debt.annualRateBasisPoints)).toEqual([800, 750, 400]);
-  expect(game.credit.rating).toBe('a');
+  expect(game.debts.map((debt) => debt.annualRateBasisPoints)).toEqual([500, 350]);
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

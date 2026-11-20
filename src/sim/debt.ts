@@ -15,6 +15,7 @@ import {
   DEBT_KINDS,
   type CreditRating,
   type DebtKind,
+  type DebtSchedule,
 } from './vocabulary';
 
 /**
@@ -49,6 +50,12 @@ export interface Debt {
   readonly repayment: Money;
   /** How many repayments are still to come. */
   readonly quartersLeft: number;
+  /**
+   * How it is repaid: `level`, in equal repayments of interest and principal, as a loan is;
+   * or `atMaturity`, interest alone until the last quarter, when everything owed falls due,
+   * as a bond is until a maturity it missed turns what is left into level repayments.
+   */
+  readonly schedule: DebtSchedule;
 }
 
 /** A sum the player means to borrow this quarter. */
@@ -312,10 +319,8 @@ export function maturityOf(debt: Pick<Debt, 'quartersLeft'>, now: GameDate): Gam
  * Whether a debt pays only interest until its last quarter, when everything owed falls due:
  * a bond, unless a maturity it missed has turned what is left into level repayments.
  */
-export function paysAtMaturity(debt: Debt): boolean {
-  return (
-    debt.kind === 'bond' && debt.repayment <= interestOn(debt.owed, debt.annualRateBasisPoints)
-  );
+export function paysAtMaturity(debt: Pick<Debt, 'schedule'>): boolean {
+  return debt.schedule === 'atMaturity';
 }
 
 /**
@@ -508,7 +513,13 @@ function respreadAfterMissing(debt: Debt, owed: Money): Debt {
       };
     }
     const quartersLeft = Math.min(balance.finance.bonds.missedMaturityQuarters, debt.termQuarters);
-    return { ...debt, owed, quartersLeft, repayment: levelRepayment(owed, rate, quartersLeft) };
+    return {
+      ...debt,
+      owed,
+      quartersLeft,
+      repayment: levelRepayment(owed, rate, quartersLeft),
+      schedule: 'level',
+    };
   }
   const quartersLeft = Math.max(1, debt.quartersLeft - 1);
   return { ...debt, owed, quartersLeft, repayment: levelRepayment(owed, rate, quartersLeft) };
@@ -553,6 +564,7 @@ export function takeDebts(
         owed: terms.amount,
         repayment: terms.repayment,
         quartersLeft: terms.quarters,
+        schedule: each.kind === 'bond' ? 'atMaturity' : 'level',
       },
     ];
   });

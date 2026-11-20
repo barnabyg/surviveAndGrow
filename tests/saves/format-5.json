@@ -1179,13 +1179,13 @@
     }
   },
   "seed": 2026,
-  "rng": 3407368864,
+  "rng": 3023721682,
   "state": {
     "date": {
-      "year": 2,
-      "quarter": 1
+      "year": 3,
+      "quarter": 2
     },
-    "treasury": 489,
+    "treasury": 305,
     "budget": {
       "taxRatePercent": 18,
       "spending": {
@@ -1198,134 +1198,134 @@
       }
     },
     "reliefRegionId": null,
-    "foodReserve": 411114,
-    "agricultureSpentThisYear": 0,
+    "foodReserve": 490984,
+    "agricultureSpentThisYear": 86,
     "regions": [
       {
         "id": "korr-highlands",
-        "population": 506026,
+        "population": 513660,
         "output": 160,
-        "foodStock": 101204,
-        "weather": 0,
+        "foodStock": 76818,
+        "weather": -15,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 517,
+        "approval": 477,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
-          "health": 6,
-          "education": -2,
-          "security": -2,
-          "events": 0
+          "health": 1,
+          "education": -6,
+          "security": -6,
+          "events": -27
         },
         "unrest": "calm",
-        "health": 146,
-        "education": 125
+        "health": 140,
+        "education": 120
       },
       {
         "id": "salt-coast",
-        "population": 809642,
+        "population": 821857,
         "output": 280,
-        "foodStock": 161928,
-        "weather": 0,
+        "foodStock": 122907,
+        "weather": 21,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 517,
+        "approval": 477,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
-          "health": 6,
-          "education": -2,
-          "security": -2,
-          "events": 0
+          "health": 1,
+          "education": -6,
+          "security": -6,
+          "events": -27
         },
         "unrest": "calm",
-        "health": 146,
-        "education": 125
+        "health": 140,
+        "education": 120
       },
       {
         "id": "lowmere-plains",
-        "population": 1416874,
+        "population": 1438252,
         "output": 380,
-        "foodStock": 283372,
-        "weather": 0,
+        "foodStock": 215091,
+        "weather": -2,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 517,
+        "approval": 477,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
-          "health": 6,
-          "education": -2,
-          "security": -2,
-          "events": 0
+          "health": 1,
+          "education": -6,
+          "security": -6,
+          "events": -27
         },
         "unrest": "calm",
-        "health": 146,
-        "education": 125
+        "health": 140,
+        "education": 120
       },
       {
         "id": "dry-east",
-        "population": 607231,
+        "population": 616392,
         "output": 120,
-        "foodStock": 121444,
-        "weather": 0,
+        "foodStock": 92181,
+        "weather": 5,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 517,
+        "approval": 477,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
-          "health": 6,
-          "education": -2,
-          "security": -2,
-          "events": 0
+          "health": 1,
+          "education": -6,
+          "security": -6,
+          "events": -27
         },
         "unrest": "calm",
-        "health": 146,
-        "education": 125
+        "health": 140,
+        "education": 120
       },
       {
         "id": "south-delta",
-        "population": 1012054,
+        "population": 1027324,
         "output": 260,
-        "foodStock": 202408,
-        "weather": 0,
+        "foodStock": 153636,
+        "weather": -35,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 517,
+        "approval": 477,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
-          "health": 6,
-          "education": -2,
-          "security": -2,
-          "events": 0
+          "health": 1,
+          "education": -6,
+          "security": -6,
+          "events": -27
         },
         "unrest": "calm",
-        "health": 146,
-        "education": 125
+        "health": 140,
+        "education": 120
       },
       {
         "id": "arden-vale",
-        "population": 910848,
+        "population": 924590,
         "output": 520,
-        "foodStock": 182168,
-        "weather": 0,
+        "foodStock": 138273,
+        "weather": -13,
         "foodStage": "adequate",
         "famineQuarters": 0,
-        "approval": 517,
+        "approval": 477,
         "approvalEffects": {
           "food": 0,
           "tax": 0,
-          "health": 6,
-          "education": -2,
-          "security": -2,
-          "events": 0
+          "health": 1,
+          "education": -6,
+          "security": -6,
+          "events": -27
         },
         "unrest": "calm",
-        "health": 146,
-        "education": 125
+        "health": 140,
+        "education": 120
       }
     ],
     "events": [],
@@ -1337,7 +1337,7 @@
           "quarter": 1
         },
         "quartersPaid": 3,
-        "status": "operating",
+        "status": "decaying",
         "opened": {
           "year": 1,
           "quarter": 4
@@ -1349,49 +1349,37 @@
         "kind": "loan",
         "number": 1,
         "taken": {
-          "year": 1,
+          "year": 3,
           "quarter": 1
         },
-        "borrowed": 250,
-        "annualRateBasisPoints": 800,
-        "termQuarters": 8,
-        "owed": 158,
-        "repayment": 35,
-        "quartersLeft": 5
-      },
-      {
-        "kind": "loan",
-        "number": 2,
-        "taken": {
-          "year": 1,
-          "quarter": 2
-        },
         "borrowed": 100,
-        "annualRateBasisPoints": 750,
+        "annualRateBasisPoints": 500,
         "termQuarters": 4,
-        "owed": 51,
+        "owed": 100,
         "repayment": 26,
-        "quartersLeft": 2
+        "quartersLeft": 4,
+        "schedule": "level"
       },
       {
         "kind": "bond",
-        "number": 3,
+        "number": 2,
         "taken": {
-          "year": 1,
-          "quarter": 4
+          "year": 3,
+          "quarter": 1
         },
         "borrowed": 200,
-        "annualRateBasisPoints": 400,
+        "annualRateBasisPoints": 350,
         "termQuarters": 8,
         "owed": 200,
         "repayment": 2,
-        "quartersLeft": 8
+        "quartersLeft": 8,
+        "schedule": "atMaturity"
       }
     ],
     "credit": {
       "rating": "a",
-      "record": 775,
-      "deficit": 190
+      "record": 900,
+      "deficit": 0
     },
     "history": [
       {
@@ -1451,17 +1439,89 @@
           "year": 2,
           "quarter": 1
         },
-        "treasury": 489,
+        "treasury": 289,
         "foodReserve": 411114,
         "quarterlyConsumption": 263131,
         "approval": 517,
         "prosperity": 231,
-        "debt": 409,
-        "debtBurden": 329
+        "debt": 209,
+        "debtBurden": 168
+      },
+      {
+        "date": {
+          "year": 2,
+          "quarter": 2
+        },
+        "treasury": 174,
+        "foodReserve": 378225,
+        "quarterlyConsumption": 263921,
+        "approval": 515,
+        "prosperity": 231,
+        "debt": 152,
+        "debtBurden": 122
+      },
+      {
+        "date": {
+          "year": 2,
+          "quarter": 3
+        },
+        "treasury": 59,
+        "foodReserve": 347967,
+        "quarterlyConsumption": 264712,
+        "approval": 515,
+        "prosperity": 230,
+        "debt": 94,
+        "debtBurden": 75
+      },
+      {
+        "date": {
+          "year": 2,
+          "quarter": 4
+        },
+        "treasury": 6,
+        "foodReserve": 320130,
+        "quarterlyConsumption": 265506,
+        "approval": 512,
+        "prosperity": 219,
+        "debt": 61,
+        "debtBurden": 49
+      },
+      {
+        "date": {
+          "year": 3,
+          "quarter": 1
+        },
+        "treasury": 5,
+        "foodReserve": 533678,
+        "quarterlyConsumption": 266302,
+        "approval": 478,
+        "prosperity": 219,
+        "debt": 27,
+        "debtBurden": 21
+      },
+      {
+        "date": {
+          "year": 3,
+          "quarter": 2
+        },
+        "treasury": 305,
+        "foodReserve": 490984,
+        "quarterlyConsumption": 267101,
+        "approval": 477,
+        "prosperity": 218,
+        "debt": 300,
+        "debtBurden": 241
       }
     ],
     "dilemma": null,
-    "dilemmasAnswered": [],
+    "dilemmasAnswered": [
+      {
+        "type": "teachersPay",
+        "quarter": 8,
+        "regionId": null,
+        "optionId": "refuse"
+      }
+    ],
     "tier": "subsistence",
     "startingTier": "subsistence",
     "prosperousQuarters": 0,
@@ -1471,12 +1531,12 @@
   },
   "report": {
     "date": {
-      "year": 1,
-      "quarter": 4
+      "year": 3,
+      "quarter": 1
     },
     "treasury": {
-      "value": 489,
-      "change": 85,
+      "value": 305,
+      "change": 300,
       "contributions": [
         {
           "label": "Tax from Korr Highlands",
@@ -1510,97 +1570,59 @@
         },
         {
           "label": "Interest on Loan 1",
-          "amount": -4
-        },
-        {
-          "label": "Repaying Loan 1",
-          "amount": -31
-        },
-        {
-          "label": "Interest on Loan 2",
           "amount": -1
         },
         {
-          "label": "Repaying Loan 2",
-          "amount": -25
+          "label": "Repaying Loan 1",
+          "amount": -27
         },
         {
           "label": "Agriculture",
-          "amount": -110
+          "amount": -86
         },
         {
           "label": "Food relief",
-          "amount": -70
+          "amount": -55
         },
         {
           "label": "Health",
-          "amount": -70
+          "amount": -55
         },
         {
           "label": "Education",
-          "amount": -60
+          "amount": -47
         },
         {
           "label": "Security",
-          "amount": -50
+          "amount": -39
         },
         {
           "label": "Upkeep",
-          "amount": -4
+          "amount": 0
         },
         {
-          "label": "Bond 3 received",
+          "label": "Loan 1 received",
+          "amount": 100
+        },
+        {
+          "label": "Bond 2 received",
           "amount": 200
         }
       ]
     },
     "food": {
-      "value": 411114,
-      "change": 269392,
+      "value": 490984,
+      "change": -42694,
       "contributions": [
         {
           "label": "Spoiled in store",
-          "amount": -11337
-        },
-        {
-          "label": "Surplus from Korr Highlands",
-          "amount": 30898,
-          "regionId": "korr-highlands"
-        },
-        {
-          "label": "Surplus from Salt Coast",
-          "amount": 43404,
-          "regionId": "salt-coast"
-        },
-        {
-          "label": "Surplus from Lowmere Plains",
-          "amount": 136276,
-          "regionId": "lowmere-plains"
-        },
-        {
-          "label": "Surplus from The Dry East",
-          "amount": 25258,
-          "regionId": "dry-east"
-        },
-        {
-          "label": "Surplus from South Delta",
-          "amount": 81149,
-          "regionId": "south-delta"
-        },
-        {
-          "label": "Surplus from Arden Vale",
-          "amount": 13281,
-          "regionId": "arden-vale"
-        },
-        {
-          "label": "Lost in transport",
-          "amount": -49537
+          "amount": -42694
         }
       ]
     },
     "approval": {
-      "value": 517,
-      "change": 0,
+      "value": 477,
+      "change": -1,
       "contributions": [
         {
           "label": "Food",
@@ -1612,39 +1634,43 @@
         },
         {
           "label": "Health spending",
-          "amount": 0
+          "amount": -2
         },
         {
           "label": "Education spending",
-          "amount": 0
+          "amount": -1
         },
         {
           "label": "Security spending",
-          "amount": 0
+          "amount": -1
+        },
+        {
+          "label": "Earlier events fading",
+          "amount": 3
         }
       ]
     },
     "debt": {
-      "value": 409,
-      "change": 144,
+      "value": 300,
+      "change": 273,
       "contributions": [
         {
           "label": "Repaid on Loan 1",
-          "amount": -31
+          "amount": -27
         },
         {
-          "label": "Repaid on Loan 2",
-          "amount": -25
+          "label": "Loan 1 taken",
+          "amount": 100
         },
         {
-          "label": "Bond 3 taken",
+          "label": "Bond 2 taken",
           "amount": 200
         }
       ]
     },
     "credit": {
-      "value": 587,
-      "change": 14,
+      "value": 804,
+      "change": -63,
       "contributions": [
         {
           "label": "Payment record",
@@ -1652,17 +1678,13 @@
         },
         {
           "label": "Debt burden",
-          "amount": -46
-        },
-        {
-          "label": "Deficit",
-          "amount": 35
+          "amount": -88
         }
       ]
     },
     "prosperity": {
-      "value": 231,
-      "change": 0,
+      "value": 218,
+      "change": -1,
       "contributions": [
         {
           "label": "Food security",
@@ -1682,106 +1704,84 @@
         },
         {
           "label": "Infrastructure access",
-          "amount": 0
+          "amount": -1
         }
       ]
     },
     "population": {
-      "value": 5262675,
-      "change": 15738,
+      "value": 5342075,
+      "change": 15975,
       "contributions": [
         {
           "label": "Growth in Korr Highlands",
-          "amount": 1513,
+          "amount": 1536,
           "regionId": "korr-highlands"
         },
         {
           "label": "Growth in Salt Coast",
-          "amount": 2421,
+          "amount": 2458,
           "regionId": "salt-coast"
         },
         {
           "label": "Growth in Lowmere Plains",
-          "amount": 4237,
+          "amount": 4301,
           "regionId": "lowmere-plains"
         },
         {
           "label": "Growth in The Dry East",
-          "amount": 1816,
+          "amount": 1843,
           "regionId": "dry-east"
         },
         {
           "label": "Growth in South Delta",
-          "amount": 3027,
+          "amount": 3072,
           "regionId": "south-delta"
         },
         {
           "label": "Growth in Arden Vale",
-          "amount": 2724,
+          "amount": 2765,
           "regionId": "arden-vale"
         }
       ]
     },
-    "harvest": {
-      "total": 1382790,
-      "regions": [
-        {
-          "regionId": "korr-highlands",
-          "grown": 132102,
-          "surplus": 30898,
-          "lost": 4634
-        },
-        {
-          "regionId": "salt-coast",
-          "grown": 205332,
-          "surplus": 43404,
-          "lost": 6510
-        },
-        {
-          "regionId": "lowmere-plains",
-          "grown": 419648,
-          "surplus": 136276,
-          "lost": 20441
-        },
-        {
-          "regionId": "dry-east",
-          "grown": 146702,
-          "surplus": 25258,
-          "lost": 3788
-        },
-        {
-          "regionId": "south-delta",
-          "grown": 283557,
-          "surplus": 81149,
-          "lost": 12172
-        },
-        {
-          "regionId": "arden-vale",
-          "grown": 195449,
-          "surplus": 13281,
-          "lost": 1992
-        }
-      ]
-    },
+    "harvest": null,
     "election": null,
     "entries": [
       {
-        "kind": "budget",
-        "seriousness": "warning",
-        "headline": "The treasury is shrinking",
-        "cause": "Spending of $42.5m outran revenue of $31.0m. At this deficit the treasury lasts 4 more quarters."
+        "kind": "spendingCut",
+        "seriousness": "serious",
+        "headline": "Spending was cut",
+        "cause": "The treasury could not cover the $36.4m budget. Every area was cut to what could be afforded: $28.2m in all."
       },
       {
-        "kind": "harvest",
+        "kind": "creditRating",
+        "seriousness": "warning",
+        "headline": "Credit rating cut to A",
+        "cause": "The debt burden rose to 24.1% of a year’s revenue. New loans are offered at 6% to 10% a year, and the nation may owe up to 100% of a year’s revenue."
+      },
+      {
+        "kind": "loanRepaid",
         "seriousness": "notable",
-        "headline": "The harvest is in",
-        "cause": "The country grew 1,382,790 t. 280,729 t reached the national reserve, and 49,537 t was lost on the way."
+        "headline": "Repaid: Loan 1",
+        "cause": "The $25.0m borrowed in Year 1 · Quarter 1 is paid off, and its repayments end."
       },
       {
         "kind": "loanTaken",
         "seriousness": "notable",
-        "headline": "Issued $20.0m in bonds: Bond 3",
-        "cause": "It pays $0.2m a quarter in interest from next quarter, at 4% a year, and the whole $20.0m falls due at maturity in Year 3 · Quarter 4: $1.6m in interest."
+        "headline": "Borrowed $10.0m: Loan 1",
+        "cause": "It is repaid at $2.6m a quarter over 4 quarters from next quarter, at 5% a year: $0.3m in interest."
+      },
+      {
+        "kind": "loanTaken",
+        "seriousness": "notable",
+        "headline": "Issued $20.0m in bonds: Bond 2",
+        "cause": "It pays $0.2m a quarter in interest from next quarter, at 3.5% a year, and the whole $20.0m falls due at maturity in Year 5 · Quarter 1: $1.6m in interest."
+      },
+      {
+        "kind": "budget",
+        "seriousness": "routine",
+        "headline": "The budget balanced",
+        "cause": "Revenue and spending were both $31.0m."
       }
     ]
   }

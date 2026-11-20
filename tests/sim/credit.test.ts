@@ -152,6 +152,7 @@ describe('a missed payment', () => {
           owed: 60,
           repayment: 60,
           quartersLeft: 1,
+          schedule: 'level',
         },
       ],
     };

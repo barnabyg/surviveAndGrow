@@ -646,10 +646,10 @@ describe('a save written under other budget limits', () => {
 });
 
 describe('the save kept from save format 5', () => {
-  it('still opens on the game it was written from, owing on two loans and a bond', () => {
+  it('still opens on the game it was written from, owing on a loan and a bond', () => {
     const { game, report } = loadSave(format5Save);
 
-    expect(game.date).toEqual({ year: 2, quarter: 1 });
+    expect(game.date).toEqual({ year: 3, quarter: 2 });
     expect(
       game.debts.map((debt) => [
         debt.kind,
@@ -657,17 +657,17 @@ describe('the save kept from save format 5', () => {
         debt.borrowed,
         debt.owed,
         debt.quartersLeft,
+        debt.schedule,
       ]),
     ).toEqual([
-      ['loan', 1, 250, 158, 5],
-      ['loan', 2, 100, 51, 2],
-      ['bond', 3, 200, 200, 8],
+      ['loan', 1, 100, 100, 4, 'level'],
+      ['bond', 2, 200, 200, 8, 'atMaturity'],
     ]);
-    expect(debtStatus(game).debt).toBe(409);
-    expect(report?.debt).toMatchObject({ value: 409, change: 144 });
+    expect(debtStatus(game).debt).toBe(300);
+    expect(report?.debt).toMatchObject({ value: 300, change: 273 });
   });
 
-  it('plays on to repay both loans on schedule, and the bond at its maturity', () => {
+  it('plays on to repay the loan on schedule, and the bond at its maturity', () => {
     let { game } = loadSave(format5Save);
 
     for (let quarter = 0; quarter < 8; quarter += 1) {
@@ -676,6 +676,12 @@ describe('the save kept from save format 5', () => {
 
     expect(game.debts).toEqual([]);
     expect(game.history.at(-1)?.debt).toBe(0);
+  });
+
+  it('refuses a debt repaid on a schedule there is not', () => {
+    const damaged = withValue(format5Save, ['state', 'debts', 1, 'schedule'], 'whenever');
+
+    expect(() => loadSave(damaged)).toThrow(/state\.debts\[1\]\.schedule/);
   });
 
   // This holds for as long as format 5 is the current format: saving must write exactly

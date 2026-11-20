@@ -158,7 +158,9 @@ function fromFormat3(older: Json): Json {
  * credit were reported, has neither.
  *
  * The later finance features of the same release (the credit rating, bonds) extend this
- * migration rather than adding another: format 5 is not released until they are in.
+ * migration rather than adding another: format 5 is not released until they are in. Each
+ * debt says how it is repaid (`schedule`); a game from format 4 owes none, so there is
+ * nothing to fill in.
  */
 function fromFormat4(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};

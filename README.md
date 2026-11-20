@@ -238,21 +238,24 @@ What is in the game:
   what a step up or down would mean, and says when the loans planned or the budget would cut or
   raise it; the budget's outlook shows the rating next quarter. A change of rating is reported
   with its cause, and the risks ahead warn when it is on course to fall, and why.
-- Rated A or better, the nation can issue bonds. The finance panel offers a bond of $20.0m,
-  $50.0m, $100.0m or $200.0m maturing in 8, 12 or 16 quarters, at 4%, 4.5% or 5% a year to a
-  nation rated A (AA takes half a point off), below any loan's rate at the same rating. It shows
-  the quarterly interest, the date the whole sum falls due and the interest in all before you
-  plan it, and the plan can be taken back until the quarter ends. Only interest is paid each
-  quarter, first like a loan's repayment; the whole sum falls due in one payment at maturity.
-  A maturity the treasury and the quarter's revenue cannot cover is a missed payment: what goes
-  unpaid is added to the debt and repaid in level repayments over the next four quarters, and
-  the payment record loses 400 points as for any missed payment. Bonds count in the debt, the
-  debt burden, the most that may be owed and the rating. Below A the finance panel says what
-  rating bonds need. The finance panel and the debt's breakdown list each bond with its
-  maturity, the timeline marks every maturity (in the column beyond the vote for one that falls
-  due after it), and the risks ahead warn of a maturity the treasury is not on course to cover:
-  inside the four quarters played from the quarters themselves, and further off by carrying the
-  treasury on at the pace those quarters set, less the principal other debts repay first.
+- Rated AA, the best rating, the nation can issue bonds. A game opens at A, so bonds must be
+  earned: repaying debt on time adds 25 points a quarter to the payment record, and with a small
+  loan and no deficit AA comes in about nine quarters. The finance panel offers a bond of
+  $20.0m, $50.0m, $100.0m or $200.0m maturing in 8, 12 or 16 quarters, at 3.5%, 4% or 4.5% a
+  year, below any loan's rate at AA. It shows the quarterly interest, the date the whole sum
+  falls due and the interest in all before you plan it, and the plan can be taken back until
+  the quarter ends. Only interest is paid each quarter, first like a loan's repayment; the whole
+  sum falls due in one payment at maturity. A maturity the treasury and the quarter's revenue
+  cannot cover is a missed payment: what goes unpaid is added to the debt and repaid in level
+  repayments over the next four quarters, and the payment record loses 400 points as for any
+  missed payment. Bonds count in the debt, the debt burden, the most that may be owed and the
+  rating, so issuing a large one can cost the AA that allowed it. Below AA the finance panel
+  says what rating bonds need. The finance panel and the debt's breakdown list each bond with
+  its maturity, the timeline marks every maturity (in the column beyond the vote for one that
+  falls due after it), and the risks ahead warn of a maturity the treasury is not on course to
+  cover: inside the four quarters played from the quarters themselves, and further off by
+  carrying the treasury on at the pace those quarters set, less the principal other debts repay
+  first.
 - Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the

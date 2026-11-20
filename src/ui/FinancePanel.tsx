@@ -47,6 +47,7 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
   const credit = creditStatus(game);
   const ratingAfter = preview.creditRating;
   const movement = ratingRank(ratingAfter) - ratingRank(credit.rating);
+  const stepAfter = credit.steps.find((step) => step.rating === ratingAfter) ?? credit.current;
   const offers = loanOffers(game, planned);
   const amounts = [...new Set(offers.map((offer) => offer.amount))];
   const terms = [...new Set(offers.map((offer) => offer.quarters))];
@@ -163,11 +164,7 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
           <p className={movement < 0 ? 'warning-note' : 'section-empty'}>
             {movement < 0 ? '▲ ' : ''}As things stand, the rating is{' '}
             {movement < 0 ? 'cut' : 'raised'} to {CREDIT_RATING_NAMES[ratingAfter]} when this
-            quarter ends, and loans taken after it cost{' '}
-            {loanRateSpan(
-              credit.steps.find((step) => step.rating === ratingAfter) ?? credit.current,
-            )}{' '}
-            a year. Loans already taken keep their rate.
+            quarter ends. {afterTerms(stepAfter)} Loans and bonds already taken keep their rate.
           </p>
         )}
       </div>
@@ -329,6 +326,12 @@ function BondTerms(props: {
       </button>
     </div>
   );
+}
+
+/** What new loans and bonds cost once the rating has moved to a step, in a sentence. */
+function afterTerms(step: CreditStep): string {
+  const bonds = bondRateSpan(step);
+  return `Loans taken after it cost ${loanRateSpan(step)} a year, and ${bonds === null ? `bonds cannot be issued at ${step.name}` : `bonds ${bonds}`}.`;
 }
 
 /** What a step of the rating means for borrowing, in a few words. */

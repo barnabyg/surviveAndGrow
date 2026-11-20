@@ -385,6 +385,13 @@ export const SERIOUSNESS_NAMES: Readonly<Record<Seriousness, string>> = {
 export const DEBT_KINDS = ['loan', 'bond'] as const;
 export type DebtKind = (typeof DEBT_KINDS)[number];
 
+/**
+ * How a debt is repaid: level, in equal repayments of interest and principal, or interest
+ * alone until everything owed falls due at maturity.
+ */
+export const DEBT_SCHEDULES = ['level', 'atMaturity'] as const;
+export type DebtSchedule = (typeof DEBT_SCHEDULES)[number];
+
 export const DEBT_KIND_NAMES: Readonly<Record<DebtKind, string>> = {
   loan: 'Loan',
   bond: 'Bond',
