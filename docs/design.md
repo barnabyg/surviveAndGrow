@@ -52,7 +52,7 @@ Every system must feed this tension. A feature that does not is cut.
   until Phase 3 brings borrowing.
 - **Terms:** an election every 20 quarters. Winning it begins a new term, with no limit on how many;
   it does not by itself win the game.
-- **Lose:** election defeat, a coup, or state collapse from famine.
+- **Lose:** election defeat or state collapse from famine, and from Phase 6 a coup.
 - **Insolvency is not an instant loss.** It triggers a bailout with forced austerity, which then
   threatens approval.
 - **Cascades are the threat.** Drought leads to shortage, then falling approval, strikes, lost
@@ -107,7 +107,8 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
 - **Power reaches the country along lines.** A station powers the regions its lines reach, and a
   powered region produces more. A site can need power like any other link of its chain.
 - **Site states are visible:** empty, closed, under construction, operating, decaying.
-- **Sites are revealed over time.** Surveys uncover deposits, and research unlocks new site types.
+- **Sites are revealed over time** (Phase 5). Surveys uncover deposits, and research unlocks new
+  site types.
 - **Lenses:** the map switches between country, food, approval, living standards and infrastructure
   views.
 - **The infrastructure lens shows what is built and what is missing,** region by region, with every

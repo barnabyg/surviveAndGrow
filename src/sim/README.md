@@ -8,9 +8,10 @@ every file it needs.
 ## How a quarter is resolved
 
 `advanceQuarter` in `game.ts` draws everything chance decides, in this fixed order and nowhere
-else: the weather, the events that strike, the campaign swing in an election quarter, and the
-dilemma rolls. `resolveQuarter` takes those as given, so the risks look-ahead (`risks.ts`) runs
-it on supposed chance. It lives the quarter through `liveQuarter`, which the preview
+else: the weather, the events that strike and the campaign swing in an election quarter. The
+dilemma rolls come from the seed and the quarter alone, and leave the generator untouched.
+`resolveQuarter` takes all of these as given, so the risks look-ahead (`risks.ts`) runs it on
+supposed chance. It lives the quarter through `liveQuarter`, which the preview
 (`previewQuarter`) shares, so turn and preview cannot come to differ:
 
 1. The answer to a dilemma (`dilemmas.ts`).
