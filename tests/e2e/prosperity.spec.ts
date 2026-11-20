@@ -6,6 +6,7 @@ import {
   prosperity,
   situation,
   startGame,
+  tavaraProsperous,
   tavaraWith,
 } from './app';
 
@@ -61,4 +62,34 @@ test('the region list shows each region’s living standard in figures', async (
   const regions = situation(page).getByRole('region', { name: 'Regions' });
   await expect(regions.getByRole('button', { name: /Arden Vale/ })).toContainText('22.5');
   await expect(regions.getByRole('button', { name: /Dry East/ })).toContainText('20.3');
+});
+
+test('while Prosperous, the prosperity breakdown shows the win’s debt test', async ({ page }) => {
+  await startGame(page, { countryFile: tavaraProsperous() });
+
+  // Nothing owed: the debt test passes.
+  await expect(prosperity(page)).toContainText(
+    'Prosperous · held 0 of 4 quarters to win · debt test passed',
+  );
+
+  // $100.0m borrowed over three years: 80.6% of a year's revenue of $124.0m.
+  const finance = decisions(page).getByRole('region', { name: 'Finance' });
+  for (let loan = 0; loan < 2; loan += 1) {
+    await finance.getByLabel('Borrow', { exact: true }).selectOption({ label: '$50.0m' });
+    await finance.getByLabel('Over', { exact: true }).selectOption({ label: '12 quarters' });
+    await finance.getByRole('button', { name: 'Plan loan' }).click();
+  }
+  await endQuarters(page, 1);
+
+  await expect(prosperity(page)).toContainText(
+    'Prosperous · held 1 of 4 quarters to win · debt test failed',
+  );
+  await expect(prosperity(page)).toContainText('Debt burden 30.6 points over the win’s limit');
+  await prosperity(page).getByRole('button').click();
+  const debtTest = page.getByRole('table', { name: 'The debt test' });
+  await expect(debtTest.getByRole('row', { name: /Debt burden now/ })).toContainText('80.6%');
+  await expect(debtTest.getByRole('row', { name: /Most the win allows/ })).toContainText('50.0%');
+  await expect(debtTest.getByRole('row', { name: /Over the limit by/ })).toContainText(
+    '30.6 points',
+  );
 });

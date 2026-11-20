@@ -23,28 +23,41 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought, and the teachers asking for a rise
-  // now and then. Format 4 added upkeep and sites that decay without it. The game is taxed
-  // at 25% and starts three projects at once: two irrigation schemes and then a farm road,
-  // which are in use from Year 1 · Quarter 4. That quarter upkeep is cut to $1.0m, which keeps
-  // up the two schemes, started first, but not the road, which decays. The game is saved as
-  // Year 2 begins, with the road decaying and the decay in the report.
+  // now and then. Format 5 added borrowing. The game borrows $25.0m over eight quarters in
+  // its first quarter, to start an irrigation scheme in Lowmere, and $10.0m over four
+  // quarters in its second. The first loan and the scheme's instalments together cut the
+  // credit rating to BBB, so the second loan is taken at BBB's dearer rate. Repaying both on
+  // time raises it, quarter by quarter, to AA, the rating bonds need: in that quarter, the
+  // ninth, the first loan's last repayment is made, and the game borrows $10.0m over four
+  // quarters and issues a $20.0m bond maturing in eight, both at AA's rates. It is saved as
+  // the next quarter begins, owing on both, with the rating back at A for the debt it took on.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
   });
-  const starts = ['lowmere-irrigation', 'dustwell-irrigation', 'lowmere-road'];
   let game = createGame(country, 2026);
   let report: TurnReport | null = null;
-  for (let quarter = 0; quarter < 4; quarter += 1) {
+  let issued = false;
+  for (let quarter = 0; !issued; quarter += 1) {
+    if (quarter >= 16) throw new Error('The game never reached AA to issue its bond.');
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
+    issued = game.credit.rating === 'aa';
     const result = advanceQuarter(game, {
-      budget: {
-        taxRatePercent: 25,
-        spending: { ...game.budget.spending, upkeep: quarter === 3 ? 10 : 30 },
-      },
-      startProjects: quarter === 0 ? starts : [],
+      budget: game.budget,
+      startProjects: quarter === 0 ? ['lowmere-irrigation'] : [],
+      borrow:
+        quarter === 0
+          ? [{ kind: 'loan', amount: 250, quarters: 8 }]
+          : quarter === 1
+            ? [{ kind: 'loan', amount: 100, quarters: 4 }]
+            : issued
+              ? [
+                  { kind: 'loan', amount: 100, quarters: 4 },
+                  { kind: 'bond', amount: 200, quarters: 8 },
+                ]
+              : [],
       dilemmaChoice,
     });
     game = result.state;
@@ -52,11 +65,14 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.projects.map((project) => project.status)).toEqual([
-    'operating',
-    'operating',
-    'decaying',
+  expect(game.date).toEqual({ year: 3, quarter: 2 });
+  expect(
+    game.debts.map((debt) => [debt.kind, debt.number, debt.quartersLeft, debt.schedule]),
+  ).toEqual([
+    ['loan', 1, 4, 'level'],
+    ['bond', 2, 8, 'atMaturity'],
   ]);
+  expect(game.debts.map((debt) => debt.annualRateBasisPoints)).toEqual([500, 350]);
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

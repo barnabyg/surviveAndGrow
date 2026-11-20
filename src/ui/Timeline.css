@@ -164,3 +164,25 @@
   line-height: 23px;
   background: none;
 }
+
+/* A bond's maturity: one quarter marked, with its sum spelt out for a screen reader. */
+.timeline__debt {
+  display: block;
+  color: var(--text);
+}
+
+.timeline__bar--maturity {
+  padding: 0;
+  text-overflow: clip;
+  background: var(--danger);
+  color: var(--ink);
+  font-weight: 600;
+  text-align: center;
+}
+
+.timeline__bar--maturity-planned {
+  border: 1.5px dashed var(--danger);
+  line-height: 23px;
+  background: none;
+  color: var(--text);
+}

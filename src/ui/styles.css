@@ -170,6 +170,22 @@ p {
   text-align: right;
 }
 
+.breakdown__table thead th {
+  padding-bottom: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.breakdown__table thead th:first-child {
+  text-align: left;
+}
+
+.breakdown__table td + td,
+.breakdown__table thead th + th {
+  padding-left: 14px;
+}
+
 .breakdown__table tfoot th,
 .breakdown__table tfoot td {
   padding-top: 9px;

@@ -7,9 +7,13 @@ import {
   checkBudget,
   cutEntry,
   resolveBudget,
+  revenueOf,
+  withBorrowed,
   withFixedCosts,
   type BudgetOutcome,
 } from './budget';
+import { borrowFault, debtBurden, debtOf, serveDebts, takeDebts, type Borrowing } from './debt';
+import { deficitOf, openingCredit, reassessCredit, recordAfter } from './credit';
 import { regionName, type Country } from './country';
 import {
   answerDilemma,
@@ -60,7 +64,7 @@ import { heldAfter, victoryOf } from './victory';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { scheduleAhead } from './timeline';
-import { exactly } from './types';
+import { exactly, type Money } from './types';
 import { resolveUpkeep } from './upkeep';
 
 /** Starts a game. The same country and seed always start the same game. */
@@ -70,6 +74,8 @@ export function createGame(country: Country, seed: number): GameState {
   const opening = {
     country,
     projects: [],
+    debts: [],
+    budget: country.start.budget,
     date: { year: 1, quarter: 1 },
     treasury: country.start.treasury,
     foodReserve: country.start.foodReserve,
@@ -92,13 +98,13 @@ export function createGame(country: Country, seed: number): GameState {
     seed,
     rng: seedGenerator(seed),
     ...opening,
-    budget: country.start.budget,
     reliefRegionId: null,
     agricultureSpentThisYear: 0,
     events: [],
     history: [signs],
     dilemma: null,
     dilemmasAnswered: [],
+    credit: openingCredit(opening),
     tier,
     startingTier: tier,
     prosperousQuarters: 0,
@@ -156,6 +162,14 @@ export interface QuarterResolved extends TurnResult {
   readonly pausedSites: readonly string[];
   /** The sites in use that went without upkeep, and are decaying from the next quarter. */
   readonly upkeepShort: readonly string[];
+  /** What fell due on debts and could not be paid. */
+  readonly missedPayment: Money;
+  /** The debts a payment was missed on, by name. */
+  readonly missedOn: readonly string[];
+  /** What the quarter's payments on debts took off the principal owed. */
+  readonly principalRepaid: Money;
+  /** What borrowing brought into the treasury as the quarter ended. */
+  readonly borrowed: Money;
   /** The share of their needs each region's people ate, in thousandths, in the regions' order. */
   readonly fedPermille: readonly number[];
   readonly electionHeld: boolean;
@@ -173,6 +187,7 @@ export function resolveQuarter(
   const lived = liveQuarter(given, decisions, chance.weatherShocks);
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
+  const { serviced, taken, credit } = lived;
   const { prosperity, tier } = lived;
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
@@ -193,9 +208,7 @@ export function resolveQuarter(
   const defeat = election?.defeat ?? null;
   const prosperousQuarters = heldAfter(state.prosperousQuarters, tier);
   const victory =
-    collapse === null && defeat === null
-      ? victoryOf(prosperousQuarters, { treasury: finances.treasury })
-      : null;
+    collapse === null && defeat === null ? victoryOf(prosperousQuarters, lived.debtBurden) : null;
   const outcome: Outcome = collapse ?? defeat ?? victory?.outcome ?? { status: 'playing' };
 
   const events = [...remaining, ...begun];
@@ -223,11 +236,14 @@ export function resolveQuarter(
     ...(victory === null ? [] : [victory.entry]),
     ...(election === null ? [] : [election.entry]),
     ...answer.entries,
+    ...serviced.entries,
+    ...credit.entries,
     ...(budget.cut ? [cutEntry(budget)] : []),
     ...food.entries,
     ...approval.entries,
     ...building.entries,
     ...upkept.entries,
+    ...taken.entries,
     ...(passed === null ? [] : [passed]),
     ...ended.map((event) => endEntry(state.country, event)),
     ...begun.map((event) =>
@@ -249,16 +265,21 @@ export function resolveQuarter(
       regions: approval.regions,
       events,
       projects: upkept.projects,
+      debts: taken.debts,
+      credit: credit.credit,
       history: [
         ...state.history,
         vitalSigns({
           country: state.country,
           projects: upkept.projects,
+          budget: decisions.budget,
+          debts: taken.debts,
           date,
           treasury: finances.treasury,
           foodReserve: food.foodReserve,
           regions: approval.regions,
           prosperity: prosperity.value,
+          debtBurden: lived.debtBurden,
         }),
       ],
       dilemma,
@@ -280,6 +301,12 @@ export function resolveQuarter(
         contributions: [...answer.food, ...food.contributions],
       },
       approval: approval.approval,
+      debt: {
+        value: debtOf(taken.debts),
+        change: debtOf(taken.debts) - debtOf(given.debts),
+        contributions: [...serviced.changes, ...taken.changes],
+      },
+      credit: credit.figure,
       prosperity,
       population: {
         value: sum(food.regions.map((region) => region.population)),
@@ -293,6 +320,10 @@ export function resolveQuarter(
     spendingCut: budget.cut,
     pausedSites: building.paused,
     upkeepShort: finances.upkeep.short,
+    missedPayment: serviced.missed,
+    missedOn: serviced.missedOn,
+    principalRepaid: serviced.principal,
+    borrowed: taken.borrowed,
     fedPermille: food.fedPermille,
     electionHeld: election !== null,
   };
@@ -306,7 +337,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   // The answer to a dilemma takes effect first, so the rest of the quarter starts from it.
   const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
   const state = withAnswer(given, answer);
-  const { budget, building, upkept, finances } = resolveMoney(state, decisions);
+  const { budget, building, upkept, serviced, taken, finances } = resolveMoney(state, decisions);
 
   const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
   // The sites in use as the quarter begins are the ones that bear on it.
@@ -338,12 +369,33 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     ...approvalInputs(decisions, finances, answer),
     expectations,
   });
+  // The debt burden the quarter leaves: its debt against the revenue the regions and sites it
+  // leaves would raise. The rating, the win, the record and the preview all judge this one.
+  const burden = debtBurden({
+    country: state.country,
+    regions: approval.regions,
+    projects: upkept.projects,
+    budget: decisions.budget,
+    debts: taken.debts,
+  });
+  // The rating is reassessed as the quarter ends, on the debt and revenue it leaves behind.
+  const credit = reassessCredit(
+    given,
+    {
+      record: recordAfter(given.credit.record, serviced),
+      burden,
+      deficit: deficitOf(finances.revenue, finances.balance, serviced.principal),
+    },
+    serviced.missedOn,
+  );
   return {
     answer,
     state,
     budget,
     building,
     upkept,
+    serviced,
+    taken,
     finances,
     agricultureSpent,
     sites,
@@ -351,6 +403,8 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     approval,
     prosperity,
     tier,
+    credit,
+    debtBurden: burden,
   };
 }
 
@@ -368,6 +422,8 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
   const calm = given.regions.map(() => 0);
   const lived = liveQuarter(given, decisions, calm);
   const { state, building, finances, sites, food: thisQuarter, approval, prosperity } = lived;
+  const { serviced, taken, credit } = lived;
+  const owed = debtOf(taken.debts);
   const situation = foodSituation(state);
   const { quarter } = state.date;
 
@@ -398,6 +454,13 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     revenue: exactly(finances.revenue),
     spending: exactly(finances.spending),
     projectSpending: exactly(building.paid),
+    repayments: exactly(serviced.paid),
+    missedPayment: serviced.missed,
+    borrowed: taken.borrowed,
+    debt: exactly(owed),
+    debtBurden: exactly(lived.debtBurden),
+    creditRating: credit.credit.rating,
+    creditScore: exactly(credit.after.score),
     pausedSites: building.paused,
     upkeep: {
       needed: finances.upkeep.needed,
@@ -449,36 +512,56 @@ export function checkDecisions(state: GameState, decisions: Decisions, mustAnswe
   }
   const fault = startFault(state, decisions.startProjects ?? []);
   if (fault !== null) throw new RangeError(fault);
+  const borrowing = borrowFault(state, decisions.borrow ?? []);
+  if (borrowing !== null) throw new RangeError(borrowing);
 }
 
 interface QuarterMoney {
+  /** What repaying debts did, before anything else. */
+  readonly serviced: ReturnType<typeof serveDebts>;
   /** What the budget alone did: revenue, and spending on the areas it sets. */
   readonly budget: BudgetOutcome;
   /** What building did with the money the budget left. */
   readonly building: BuildingOutcome;
   /** The projects once upkeep has told on the sites in use, and what the report says of it. */
   readonly upkept: ReturnType<typeof resolveUpkeep>;
-  /** The two together: the quarter's whole effect on the treasury. */
+  /** What was borrowed, which arrives as the quarter ends. */
+  readonly taken: ReturnType<typeof takeDebts>;
+  /** All of it together: the quarter's whole effect on the treasury. */
   readonly finances: BudgetOutcome;
 }
 
 /**
- * One quarter of money. The budget's own spending comes first, cut if the treasury cannot
- * cover it; then the instalments on projects are paid out of what is left. The sites that
- * upkeep did not reach are decaying from the next quarter.
+ * One quarter of money. Repayments on debts come first, out of the treasury and the
+ * quarter's revenue; then the budget's own spending, cut if what is left cannot cover it;
+ * then the instalments on projects are paid out of what is left. The sites that upkeep did
+ * not reach are decaying from the next quarter. What is borrowed arrives as the quarter
+ * ends, after all of it.
  */
 function resolveMoney(
-  state: Pick<GameState, 'country' | 'treasury' | 'regions' | 'projects' | 'date'>,
+  state: Pick<
+    GameState,
+    'country' | 'treasury' | 'regions' | 'projects' | 'date' | 'debts' | 'credit'
+  >,
   decisions: Decisions,
   starts: readonly string[] = decisions.startProjects ?? [],
+  borrowing: readonly Borrowing[] = decisions.borrow ?? [],
 ): QuarterMoney {
-  const budget = resolveBudget(state, decisions.budget);
+  const serviced = serveDebts(state.debts, state.treasury + revenueOf(state, decisions.budget));
+  const budget = resolveBudget(state, decisions.budget, serviced);
   const building = resolveProjects(state, starts, state.date, budget.treasury);
+  const taken = takeDebts(serviced.debts, borrowing, state.date, state.credit.rating);
   return {
+    serviced,
     budget,
     building,
     upkept: resolveUpkeep({ country: state.country, projects: building.projects }, budget.upkeep),
-    finances: withFixedCosts(budget, building.paid, building.contributions),
+    taken,
+    finances: withBorrowed(
+      withFixedCosts(budget, building.paid, building.contributions),
+      taken.borrowed,
+      taken.contributions,
+    ),
   };
 }
 
@@ -542,13 +625,20 @@ function quartersToHarvest(state: GameState, decisions: Decisions): QuarterAhead
   const quarterly: QuarterAhead[] = [];
   let { treasury, date } = state;
   let projects: readonly Project[] = state.projects;
+  let { debts } = state;
   for (let ahead = quartersUntilHarvest(state.date.quarter); ahead > 0; ahead -= 1) {
-    // Projects are started in the quarter being decided, and in none after it.
-    const starts = quarterly.length === 0 ? undefined : [];
-    const money = resolveMoney({ ...state, treasury, projects, date }, decisions, starts);
+    // Projects are started, and money borrowed, in the quarter being decided and none after.
+    const later = quarterly.length === 0 ? undefined : [];
+    const money = resolveMoney(
+      { ...state, treasury, projects, date, debts },
+      decisions,
+      later,
+      later,
+    );
     quarterly.push({ finances: money.finances, sites: siteEffects({ ...state, projects }) });
     ({ treasury } = money.finances);
     ({ projects } = money.upkept);
+    ({ debts } = money.taken);
     date = nextDate(date);
   }
   return quarterly;

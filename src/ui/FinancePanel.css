@@ -1,0 +1,80 @@
+/* Borrowing: loans planned, and the menu of loans */
+
+.finance {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.loan {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  background: var(--card);
+  border-radius: 10px;
+}
+
+.loan__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 15.5px;
+}
+
+.loan__name {
+  font-weight: 600;
+}
+
+.loan__state {
+  font-family: var(--font-figures);
+  font-weight: 500;
+  color: var(--amber);
+  white-space: nowrap;
+}
+
+.loan__choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 15.5px;
+}
+
+.loan__choice select {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+}
+
+.loan__terms {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.finance .button {
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.credit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.finance__owed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

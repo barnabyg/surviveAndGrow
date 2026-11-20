@@ -1,6 +1,8 @@
 import { useId } from 'react';
 import {
   budgetLimits,
+  CREDIT_RATING_NAMES,
+  CREDIT_RATINGS,
   exactly,
   foodStatus,
   formatMoney,
@@ -10,9 +12,11 @@ import {
   MONEY_PER_MILLION,
   monthsOfFood,
   previewQuarter,
+  ratingRank,
   regionName,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
+  type Borrowing,
   type Budget,
   type GameState,
   type Range,
@@ -34,6 +38,8 @@ interface BudgetPanelProps {
   readonly reliefRegionId: string | null;
   /** The sites building is to start on this quarter, whose instalments are a fixed cost. */
   readonly startProjects: readonly string[];
+  /** The loans to be taken this quarter, whose money arrives as it ends. */
+  readonly borrow: readonly Borrowing[];
   /** The answer given to the quarter's dilemma, if there is one, which bears on them too. */
   readonly dilemmaChoice: string | null;
   readonly onChange: (pending: Budget) => void;
@@ -50,8 +56,8 @@ export function countChanges(pending: Budget, committed: Budget): number {
 }
 
 export function BudgetPanel(props: BudgetPanelProps) {
-  const { game, committed, pending, reliefRegionId, startProjects, dilemmaChoice } = props;
-  const held = { reliefRegionId, startProjects, dilemmaChoice };
+  const { game, committed, pending, reliefRegionId, startProjects, borrow, dilemmaChoice } = props;
+  const held = { reliefRegionId, startProjects, borrow, dilemmaChoice };
   const { onChange, onCommit, onReset } = props;
   const changes = countChanges(pending, committed);
   // The same projection twice: where the committed budget leads, and where the sliders would.
@@ -151,6 +157,31 @@ export function BudgetPanel(props: BudgetPanelProps) {
         )}
       </div>
 
+      {(after.repayments.max > 0 || after.borrowed > 0) && (
+        <div className="fixed-costs" role="group" aria-label="Loans">
+          {after.repayments.max > 0 && (
+            <div className="fixed-costs__row" role="group" aria-label="Loan repayments">
+              <span>Loan repayments</span>
+              <span className="fixed-costs__note">Fixed: paid before anything else</span>
+              <span className="slider__value">{formatRange(after.repayments, formatMoney)}</span>
+            </div>
+          )}
+          {after.borrowed > 0 && (
+            <div className="fixed-costs__row" role="group" aria-label="Loans received">
+              <span>Loans received</span>
+              <span className="fixed-costs__note">Arrive as the quarter ends</span>
+              <span className="slider__value">{formatSigned(after.borrowed)}</span>
+            </div>
+          )}
+          {after.missedPayment > 0 && (
+            <p className="warning-note">
+              ▲ A payment of {formatMoney(after.missedPayment)} will be missed and added to the
+              debt.
+            </p>
+          )}
+        </div>
+      )}
+
       {building && (
         <div className="fixed-costs" role="group" aria-label="Fixed costs">
           <div className="fixed-costs__row">
@@ -176,6 +207,25 @@ export function BudgetPanel(props: BudgetPanelProps) {
         <Projection label="Spending" before={before.spending} after={after.spending} onlyIfMoved />
         <Projection label="Balance" before={before.balance} after={after.balance} onlyIfMoved />
         <Projection label="Treasury next quarter" before={before.treasury} after={after.treasury} />
+        <Projection
+          label="Debt next quarter"
+          before={before.debt}
+          after={after.debt}
+          onlyIfMoved={after.debt.max === 0}
+        />
+        <Projection
+          label="Debt burden next quarter"
+          before={before.debtBurden}
+          after={after.debtBurden}
+          format={formatPercent}
+          onlyIfMoved
+        />
+        <Projection
+          label="Credit rating next quarter"
+          before={exactly(ratingRank(before.creditRating))}
+          after={exactly(ratingRank(after.creditRating))}
+          format={(rank) => CREDIT_RATING_NAMES[CREDIT_RATINGS[rank] ?? 'b']}
+        />
         <Projection
           label="Approval next quarter"
           before={before.approval}

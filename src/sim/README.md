@@ -15,13 +15,19 @@ supposed chance. It lives the quarter through `liveQuarter`, which the preview
 (`previewQuarter`) shares, so turn and preview cannot come to differ:
 
 1. The answer to a dilemma (`dilemmas.ts`).
-2. Money (`resolveMoney`): the budget (`budget.ts`), then project instalments, oldest first
-   (`projects.ts`), then upkeep and decay (`upkeep.ts`).
+2. Money (`resolveMoney`): repayments on debts, oldest first, out of the treasury and the
+   quarter's revenue (`debt.ts`), a bond's interest each quarter and its whole sum at
+   maturity; then the budget (`budget.ts`) with what is left; then project
+   instalments, oldest first (`projects.ts`); then upkeep and decay (`upkeep.ts`). What is
+   borrowed arrives last, as the quarter ends (`debt.ts`).
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
    `power.ts`) and the events in force (`events.ts`).
 4. Health and education levels (`resolveServices` in `prosperity.ts`).
 5. Prosperity (`prosperity.ts`) and the tier it reaches (`tiers.ts`), which sets expectations.
 6. Approval (`approval.ts`), which decides who strikes next quarter.
+7. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the
+   debt burden the quarter leaves and its deficit. What was borrowed this quarter was taken at
+   the rating in force as it began.
 
 `resolveQuarter` then moves the calendar (`calendar.ts`, `terms.ts`), ends and begins events,
 checks for collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may

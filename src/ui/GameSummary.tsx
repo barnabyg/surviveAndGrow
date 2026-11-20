@@ -32,6 +32,8 @@ interface GameFigure {
 
 const FIGURES: readonly GameFigure[] = [
   { label: 'Treasury', valueOf: (record) => record.treasury, format: formatMoney },
+  { label: 'Debt', valueOf: (record) => record.debt, format: formatMoney },
+  { label: 'Debt burden', valueOf: (record) => record.debtBurden, format: formatPercent },
   {
     label: 'Food reserve',
     valueOf: (record) => monthsOfFood(record.foodReserve, record.quarterlyConsumption),
@@ -64,7 +66,7 @@ function tenure(terms: readonly TermRecord[]): string {
 
 /**
  * The end of the game, whichever way it ended: the outcome and its cause, the terms served,
- * and the main figures over the whole game, prosperity among them, term by term. From here
+ * and the main figures over the whole game, debt and prosperity among them, term by term. From here
  * the player replays the same game or starts another.
  */
 export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {

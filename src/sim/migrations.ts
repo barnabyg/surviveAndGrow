@@ -3,7 +3,9 @@
  * save format means raising `SAVE_FORMAT_VERSION` here and adding the migration from the
  * version before it to `MIGRATIONS`; `loadSave` passes an old save through them in turn.
  */
+import { balance } from './balance';
 import { loadCountry } from './country';
+import { ratingOfScore } from './credit';
 import type { Project } from './projects';
 import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { damaged, isRecord, SaveError, type Json } from './saveChecks';
@@ -18,7 +20,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 4;
+export const SAVE_FORMAT_VERSION = 5;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -31,6 +33,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   1: fromFormat1,
   2: fromFormat2,
   3: fromFormat3,
+  4: fromFormat4,
 };
 
 /**
@@ -143,6 +146,42 @@ function fromFormat3(older: Json): Json {
       ...state,
       budget: { ...budget, spending: { ...spending, upkeep: upkeepForOldSave(older) } },
     },
+  };
+}
+
+/**
+ * Format 5 added borrowing: the debts owed, the debt and debt burden in each quarter
+ * recorded, the credit rating, and the debt and credit score in the last report. Nothing
+ * could be borrowed before it, so a game written in format 4 owes nothing and never has, and
+ * starts with the payment record a new game has. The deficit its rating counts is the next
+ * quarter's: until that ends it is taken as none. Its last report, written before debt and
+ * credit were reported, has neither.
+ *
+ * The later finance features of the same release (the credit rating, bonds) extend this
+ * migration rather than adding another: format 5 is not released until they are in. Each
+ * debt says how it is repaid (`schedule`); a game from format 4 owes none, so there is
+ * nothing to fill in.
+ */
+function fromFormat4(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return {
+    ...older,
+    formatVersion: 5,
+    state: {
+      ...state,
+      debts: [],
+      credit: {
+        rating: ratingOfScore(balance.finance.credit.startingRecord),
+        record: balance.finance.credit.startingRecord,
+        deficit: 0,
+      },
+      history: Array.isArray(state.history)
+        ? (state.history as unknown[]).map((record) =>
+            isRecord(record) ? { ...record, debt: 0, debtBurden: 0 } : record,
+          )
+        : state.history,
+    },
+    report: isRecord(older.report) ? { ...older.report, debt: null, credit: null } : older.report,
   };
 }
 

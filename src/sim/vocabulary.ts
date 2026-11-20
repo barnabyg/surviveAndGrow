@@ -310,7 +310,17 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 };
 
 /** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
-export const RISK_KINDS = ['famine', 'treasury', 'upkeep', 'strikes', 'tier', 'election'] as const;
+export const RISK_KINDS = [
+  'famine',
+  'treasury',
+  'missedPayment',
+  'bondMaturity',
+  'creditRating',
+  'upkeep',
+  'strikes',
+  'tier',
+  'election',
+] as const;
 export type RiskKind = (typeof RISK_KINDS)[number];
 
 /** How likely a risk is, from the least to the most. A risk less likely than remote is not listed. */
@@ -342,6 +352,10 @@ export const REPORT_KINDS = [
   'projectCompleted',
   'siteDecaying',
   'siteRestored',
+  'loanTaken',
+  'loanRepaid',
+  'missedPayment',
+  'creditRating',
   'dilemma',
   'tier',
   'election',
@@ -361,4 +375,39 @@ export const SERIOUSNESS_NAMES: Readonly<Record<Seriousness, string>> = {
   warning: 'Warning',
   serious: 'Serious',
   critical: 'Critical',
+};
+
+/**
+ * The kinds of debt the nation can owe. A loan is repaid in equal quarterly repayments of
+ * interest and principal over its term. A bond pays only interest each quarter, and the
+ * whole sum at maturity.
+ */
+export const DEBT_KINDS = ['loan', 'bond'] as const;
+export type DebtKind = (typeof DEBT_KINDS)[number];
+
+/**
+ * How a debt is repaid: level, in equal repayments of interest and principal, or interest
+ * alone until everything owed falls due at maturity.
+ */
+export const DEBT_SCHEDULES = ['level', 'atMaturity'] as const;
+export type DebtSchedule = (typeof DEBT_SCHEDULES)[number];
+
+export const DEBT_KIND_NAMES: Readonly<Record<DebtKind, string>> = {
+  loan: 'Loan',
+  bond: 'Bond',
+};
+
+/**
+ * The steps of the nation's credit rating, from the worst to the best. The rating sets the
+ * rate new debt is taken at and the most that may be owed.
+ */
+export const CREDIT_RATINGS = ['b', 'bb', 'bbb', 'a', 'aa'] as const;
+export type CreditRating = (typeof CREDIT_RATINGS)[number];
+
+export const CREDIT_RATING_NAMES: Readonly<Record<CreditRating, string>> = {
+  b: 'B',
+  bb: 'BB',
+  bbb: 'BBB',
+  a: 'A',
+  aa: 'AA',
 };

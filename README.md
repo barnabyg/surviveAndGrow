@@ -107,12 +107,17 @@ What is in the game:
   the game. The top bar counts down to the election that closes the current term, and the right
   column forecasts the vote as a range against the 50% needed.
 - You win the game by holding national prosperity in the top tier, Prosperous, for four quarters
-  running. Once there, the prosperity figure in the top bar shows how many of the four you have
-  held. (The design also asks for debt at a sustainable level; borrowing arrives in Phase 3.)
+  running, with the debt burden no more than 50% of a year's revenue as the fourth quarter ends:
+  the debt test, which keeps a win bought with a borrowing binge from counting. A burden over the
+  limit does not end the hold; it keeps counting, and the game is won as the first quarter ends
+  with the burden brought within the limit. Once there, the prosperity figure in the top bar shows
+  how many of the four you have held and whether the debt test is passed, and its breakdown shows
+  how far the debt burden is from the limit and says when the debt test is all that stands between
+  you and the win.
 - However the game ends, a summary gives the outcome and its cause, how long you were in office
-  over how many terms, the treasury, food reserve, approval and prosperity over the whole game,
-  and each term in turn with prosperity at its start and end. From it you can replay the same
-  game or start a new one.
+  over how many terms, the treasury, debt, debt burden, food reserve, approval and prosperity over
+  the whole game, and each term in turn with prosperity at its start and end. From it you can
+  replay the same game or start a new one.
 - Approval is the third vital sign. Each region has its own, and the national figure is their
   average by population. It answers to the region's food situation, the tax rate, and health,
   education and security spending per head, and it moves a tenth of the way each quarter towards
@@ -143,9 +148,10 @@ What is in the game:
 - Health and education are lasting levels in each region. Spending on them builds the levels up
   over many quarters, and they wear down without it; a game starts with them where the starting
   budget holds them. Their spending still moves approval at once, as before.
-- Click the treasury, the food reserve, approval or prosperity in the top bar to see what moved
-  it. Approval and prosperity also list what they are made of.
-- A short trend line beside the treasury, the food reserve, approval and prosperity shows the last
+- Click the treasury, the debt, the credit rating, the food reserve, approval or prosperity in the
+  top bar to see what moved it. Approval, prosperity and the credit rating also list what they
+  are made of.
+- A short trend line beside the treasury, the debt, the food reserve, approval and prosperity shows the last
   eight quarters, with the food reserve's safe level, the strike threshold and the prosperity
   target drawn as dashed lines. The
   left column has a larger approval chart with the strike threshold and the 50% line marked.
@@ -208,6 +214,48 @@ What is in the game:
   site's card names the regions it powers. Power lines are drawn as fine dashed lines in every
   state. A site can need power to produce: in the test country, the mine's chain runs through a
   power line and its station as well as a trunk road and a port.
+- The nation can borrow. The finance panel in the right column offers a loan of $10.0m, $25.0m
+  or $50.0m over 4, 8 or 12 quarters, at 6%, 8% or 10% a year to a nation rated A, and shows the quarterly repayment
+  and the interest in all before you plan it. Like a project, the money arrives when the quarter
+  ends, so until then the plan can be taken back. Repayments of interest and principal begin the
+  quarter after, and are paid before anything else: a heavy debt squeezes the budget and building.
+  Rated A, the nation may owe no more than a year's revenue at the budget in force. The debt sits beside
+  the treasury in the top bar with its debt burden, what is owed against a year's revenue; click
+  it to see each loan, what is still owed and the quarters left. A repayment that the treasury
+  and the quarter's revenue cannot cover is a missed payment: it is reported, what went unpaid is
+  added to the debt, and the repayments still to come rise to clear it. Taking and repaying a loan
+  are reported, the treasury's breakdown lists each repayment, and the risks ahead warn of a
+  missed payment.
+- The nation has a credit rating, one of AA, A, BBB, BB and B, which sets the rate of a new loan
+  (AA takes a point off every rate; BBB adds 1.5 points, BB 3 and B 5) and the most that
+  may be owed (from 125% of a year's revenue at AA down to 25% at B). Loans already taken keep
+  the rate they were taken at. The rating is reassessed as each quarter ends from a score: the
+  payment record, less a share of the debt burden and of the quarter's deficit (spending beyond
+  revenue, not counting repaid principal). A game starts with a record of 700, rated A. A missed
+  payment takes 400 points off the record; each quarter whose repayments are all made on time
+  puts 25 back, up to 1,000. The rating sits in the top bar; click it to see the score's parts
+  and every step with its rates and limit. The finance panel shows the rates the rating gets and
+  what a step up or down would mean, and says when the loans planned or the budget would cut or
+  raise it; the budget's outlook shows the rating next quarter. A change of rating is reported
+  with its cause, and the risks ahead warn when it is on course to fall, and why.
+- Rated AA, the best rating, the nation can issue bonds. A game opens at A, so bonds must be
+  earned: repaying debt on time adds 25 points a quarter to the payment record, and with a small
+  loan and no deficit AA comes in about nine quarters. The finance panel offers a bond of
+  $20.0m, $50.0m, $100.0m or $200.0m maturing in 8, 12 or 16 quarters, at 3.5%, 4% or 4.5% a
+  year, below any loan's rate at AA. It shows the quarterly interest, the date the whole sum
+  falls due and the interest in all before you plan it, and the plan can be taken back until
+  the quarter ends. Only interest is paid each quarter, first like a loan's repayment; the whole
+  sum falls due in one payment at maturity. A maturity the treasury and the quarter's revenue
+  cannot cover is a missed payment: what goes unpaid is added to the debt and repaid in level
+  repayments over the next four quarters, and the payment record loses 400 points as for any
+  missed payment. Bonds count in the debt, the debt burden, the most that may be owed and the
+  rating, so issuing a large one can cost the AA that allowed it. Below AA the finance panel
+  says what rating bonds need. The finance panel and the debt's breakdown list each bond with
+  its maturity, the timeline marks every maturity (in the column beyond the vote for one that
+  falls due after it), and the risks ahead warn of a maturity the treasury is not on course to
+  cover: inside the four quarters played from the quarters themselves, and further off by
+  carrying the treasury on at the pace those quarters set, less the principal other debts repay
+  first.
 - Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the
@@ -226,7 +274,7 @@ What is in the game:
   text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
   relief are drawn under all of them.
 - The left column lists the risks ahead: famine in a region, strikes, a treasury that runs out,
-  and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
+  a missed payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
   for each course the weather could take and each drought that could still begin, and lists each
   danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter

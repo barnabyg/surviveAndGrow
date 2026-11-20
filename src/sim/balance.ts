@@ -1,6 +1,7 @@
 import type { DilemmaDefinition } from './dilemmas';
 import type { EventDefinition } from './events';
 import type {
+  CreditRating,
   DilemmaType,
   EventType,
   FoodStage,
@@ -12,6 +13,21 @@ import type {
   SpendingArea,
   Tier,
 } from './vocabulary';
+
+/** The balance values of one step of the credit rating. */
+export interface CreditStepBalance {
+  /** The score, in points, the step begins at. */
+  readonly fromScore: number;
+  /** What it adds to the rate of a loan on the menu, in hundredths of a percent a year. */
+  readonly loanRateBasisPoints: number;
+  /**
+   * What it adds to the rate of a bond on the menu, in hundredths of a percent a year, where
+   * bonds may be issued at all (`finance.bonds.leastRating`).
+   */
+  readonly bondRateBasisPoints: number;
+  /** The most the nation may owe, in thousandths of a year's revenue. */
+  readonly debtLimitPermille: number;
+}
 
 /** The balance values of one type of site. */
 export interface SiteBalance {
@@ -368,6 +384,123 @@ export const balance = {
      */
     fallBackMarginPermille: 20,
   },
+  /**
+   * Borrowing. Money is in Money units ($100,000) and rates in hundredths of a percent a
+   * year: 600 is 6% a year. A loan is repaid in equal quarterly repayments of interest and
+   * principal over its term, starting the quarter after its money arrives. Interest each
+   * quarter is a quarter of the yearly rate on what is still owed.
+   */
+  finance: {
+    loans: {
+      /** The sums a loan may be taken out for. */
+      amounts: [100, 250, 500],
+      /**
+       * The terms a loan may be taken over, each with the rate it is lent at to a nation
+       * rated A. The credit rating moves it (`credit.ratings`).
+       */
+      terms: [
+        { quarters: 4, annualRateBasisPoints: 600 },
+        { quarters: 8, annualRateBasisPoints: 800 },
+        { quarters: 12, annualRateBasisPoints: 1000 },
+      ],
+    },
+    /**
+     * Bonds: only interest is paid each quarter, and the whole sum falls due in one payment
+     * at maturity. They raise more than a loan, at a lower rate, but only a nation rated well
+     * enough may issue them.
+     */
+    bonds: {
+      /**
+       * The worst credit rating at which bonds may be issued: the best there is, so a nation
+       * that opens at A must earn it by repaying debt on time (25 points a quarter, about nine
+       * quarters with a small loan and no deficit).
+       */
+      leastRating: 'aa' as CreditRating,
+      /** The sums a bond may be issued for. */
+      amounts: [200, 500, 1000, 2000],
+      /**
+       * The terms a bond may run for, each with its base rate, the one a nation rated A would
+       * get. The credit rating moves it (`credit.ratings`): at AA, where bonds are issued, it
+       * is half a point lower, and still below every loan's rate there.
+       */
+      terms: [
+        { quarters: 8, annualRateBasisPoints: 400 },
+        { quarters: 12, annualRateBasisPoints: 450 },
+        { quarters: 16, annualRateBasisPoints: 500 },
+      ],
+      /**
+       * A maturity the treasury cannot cover is a missed payment: what goes unpaid is added
+       * to the debt and repaid in level repayments, at the bond's rate, over this many
+       * quarters.
+       */
+      missedMaturityQuarters: 4,
+    },
+    /**
+     * The credit rating, reassessed as each quarter ends. Its score is the payment record
+     * less a share of the debt burden and a share of the quarter's deficit, in points: the
+     * rating is the best step whose score it reaches (see `credit.ts`).
+     */
+    credit: {
+      /** The payment record a nation starts with, in points. */
+      startingRecord: 700,
+      /** The best payment record there is. */
+      bestRecord: 1000,
+      /** What a quarter with a missed payment takes off the payment record. */
+      missedPaymentPoints: 400,
+      /** What a quarter whose repayments were all made on time adds to the payment record. */
+      onTimePoints: 25,
+      /**
+       * The points taken off the score for each thousandth of debt burden, in thousandths:
+       * owing a whole year's revenue costs 400 points.
+       */
+      burdenWeightPermille: 400,
+      /**
+       * The points taken off for each thousandth of the quarter's revenue spent beyond it, in
+       * thousandths. Repaying principal is not counted as a deficit; interest is.
+       */
+      deficitWeightPermille: 300,
+      /** A deficit is counted up to this many thousandths of the quarter's revenue. */
+      deficitCapPermille: 1000,
+      /**
+       * Each step of the rating: the score it begins at, what it does to the rate a loan or a
+       * bond is offered at, in hundredths of a percent a year, and the most the nation may owe,
+       * counting what it means to borrow this quarter, in thousandths of a year's revenue at
+       * the budget in force. The worst step begins at 0, where the score stops.
+       */
+      ratings: {
+        aa: {
+          fromScore: 850,
+          loanRateBasisPoints: -100,
+          bondRateBasisPoints: -50,
+          debtLimitPermille: 1250,
+        },
+        a: {
+          fromScore: 550,
+          loanRateBasisPoints: 0,
+          bondRateBasisPoints: 0,
+          debtLimitPermille: 1000,
+        },
+        bbb: {
+          fromScore: 400,
+          loanRateBasisPoints: 150,
+          bondRateBasisPoints: 100,
+          debtLimitPermille: 750,
+        },
+        bb: {
+          fromScore: 200,
+          loanRateBasisPoints: 300,
+          bondRateBasisPoints: 200,
+          debtLimitPermille: 500,
+        },
+        b: {
+          fromScore: 0,
+          loanRateBasisPoints: 500,
+          bondRateBasisPoints: 350,
+          debtLimitPermille: 250,
+        },
+      } satisfies Record<CreditRating, CreditStepBalance>,
+    },
+  },
   /** How the game is won. */
   victory: {
     /**
@@ -375,6 +508,14 @@ export const balance = {
      * top tier, with debt at a sustainable level (see `victory.ts`).
      */
     quartersToHold: 4,
+    /**
+     * The debt test: the most debt burden, owed against a year's revenue in thousandths,
+     * that the quarter completing the hold may end with. Above it the hold goes on counting
+     * but the win waits. Half a year's revenue: a nation rated A may owe twice that, so a
+     * win reached by borrowing up to what lenders allow does not count until much of it is
+     * repaid.
+     */
+    debtBurdenLimitPermille: 500,
   },
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */

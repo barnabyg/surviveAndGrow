@@ -3,6 +3,7 @@ import {
   advanceQuarter,
   approvalStatus,
   createGame,
+  debtStatus,
   foodStatus,
   previewQuarter,
   prosperityStatus,
@@ -37,6 +38,8 @@ describe('the history of the vital signs in Tavara', () => {
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        debt: 0,
+        debtBurden: 0,
       },
     ]);
   });
@@ -54,6 +57,8 @@ describe('the history of the vital signs in Tavara', () => {
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        debt: 0,
+        debtBurden: 0,
       },
       {
         date: { year: 1, quarter: 2 },
@@ -62,6 +67,8 @@ describe('the history of the vital signs in Tavara', () => {
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        debt: 0,
+        debtBurden: 0,
       },
       {
         date: { year: 1, quarter: 3 },
@@ -70,6 +77,8 @@ describe('the history of the vital signs in Tavara', () => {
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        debt: 0,
+        debtBurden: 0,
       },
       {
         date: { year: 1, quarter: 4 },
@@ -78,6 +87,8 @@ describe('the history of the vital signs in Tavara', () => {
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        debt: 0,
+        debtBurden: 0,
       },
     ]);
   });
@@ -110,6 +121,8 @@ describe.each(bothCountries)('the history of the vital signs in %s', (_name, cou
         quarterlyConsumption: foodStatus(state).quarterlyConsumption,
         approval: report.approval.value,
         prosperity: report.prosperity?.value,
+        debt: report.debt?.value,
+        debtBurden: debtStatus(state).burden,
       });
       expect(latest?.treasury).toBe(state.treasury);
       expect(latest?.approval).toBe(approvalStatus(state).approval);

@@ -12,6 +12,7 @@ import {
 import format1Save from '../saves/format-1.json';
 import format2Save from '../saves/format-2.json';
 import format3Save from '../saves/format-3.json';
+import format4Save from '../saves/format-4.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './players';
 
@@ -204,7 +205,7 @@ describe('the save kept from save format 3', () => {
     expect(game.date).toEqual({ year: 7, quarter: 4 });
     expect(electionStatus(game)).toMatchObject({ term: 2, quartersAway: 12 });
     expect(game.tier).toBe('prosperous');
-    expect(victoryStatus(game)).toEqual({ tier: 'prosperous', held: 2, needed: 4 });
+    expect(victoryStatus(game)).toMatchObject({ tier: 'prosperous', held: 2, needed: 4 });
     expect(game.outcome).toEqual({ status: 'playing' });
     expect(game.history.map((signs) => signs.prosperity).slice(-3)).toEqual([696, 701, 704]);
     expect(
@@ -247,5 +248,55 @@ describe('the save kept from save format 3', () => {
       game = advanceQuarter(game, answering(game, { budget: game.budget })).state;
     }
     expect(game.projects.map((project) => project.status)).toEqual(['operating', 'operating']);
+  });
+});
+
+describe('the save kept from save format 4', () => {
+  it('still opens on the game it was written from, with the farm road decaying', () => {
+    const { game, report } = loadSave(format4Save);
+
+    expect(game.date).toEqual({ year: 2, quarter: 1 });
+    expect(game.budget.spending.upkeep).toBe(10);
+    expect(
+      ['lowmere-irrigation', 'dustwell-irrigation', 'lowmere-road'].map(
+        (siteId) => siteStatus(game, siteId).state,
+      ),
+    ).toEqual(['operating', 'operating', 'decaying']);
+    expect(report?.entries.filter((entry) => entry.kind === 'siteDecaying')).toEqual([
+      expect.objectContaining({ headline: 'Decaying: Farm road, Arden to Lowmere' }),
+    ]);
+  });
+
+  it('restores the farm road once its upkeep is paid again', () => {
+    let { game } = loadSave(format4Save);
+
+    const result = advanceQuarter(
+      game,
+      answering(game, {
+        ...steward(game),
+        budget: { ...game.budget, spending: { ...game.budget.spending, upkeep: 20 } },
+      }),
+    );
+    game = result.state;
+
+    expect(siteStatus(game, 'lowmere-road').state).toBe('operating');
+    expect(result.report.entries.map((entry) => entry.headline)).toContain(
+      'Restored: Farm road, Arden to Lowmere',
+    );
+  });
+
+  it('is lifted to format 5 owing nothing, with nothing owed in the quarters recorded', () => {
+    const { game, report } = loadSave(format4Save);
+
+    expect(game.debts).toEqual([]);
+    expect(game.history.every((signs) => signs.debt === 0 && signs.debtBurden === 0)).toBe(true);
+    expect(report?.debt).toBeNull();
+  });
+
+  it('is lifted to format 5 with the payment record of a new game, rated A', () => {
+    const { game, report } = loadSave(format4Save);
+
+    expect(game.credit).toEqual({ rating: 'a', record: 700, deficit: 0 });
+    expect(report?.credit).toBeNull();
   });
 });

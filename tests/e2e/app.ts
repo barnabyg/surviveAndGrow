@@ -71,6 +71,23 @@ export function tavaraPoisedBelowDeveloping(): CountryFile {
 }
 
 /**
+ * Tavara with no drought, a tenth of its people, $2.0m a quarter on each of health and
+ * education, and a treasury of $200.0m: it starts in Prosperous, the tier the game is won
+ * in, and stays there. A year's revenue at its budget is $124.0m.
+ */
+export function tavaraProsperous(): CountryFile {
+  const country = tavaraWith({ drought: [] }) as CountryFile & {
+    regions: { population: number }[];
+    start: { treasury: number; budget: { spending: Record<string, number> } };
+  };
+  for (const region of country.regions) region.population = Math.round(region.population / 10);
+  country.start.treasury = 2000;
+  country.start.budget.spending.health = 20;
+  country.start.budget.spending.education = 20;
+  return country;
+}
+
+/**
  * Tavara as it ships, except that drought strikes the named regions every year and no
  * other region ever, and no dilemma arises.
  */
@@ -118,6 +135,8 @@ export const decisions = (page: Page): Locator =>
   page.getByRole('complementary', { name: 'Decisions' });
 export const treasury = (page: Page): Locator =>
   page.getByRole('banner').getByRole('group', { name: 'Treasury' });
+export const debt = (page: Page): Locator =>
+  page.getByRole('banner').getByRole('group', { name: 'Debt' });
 export const foodReserve = (page: Page): Locator =>
   page.getByRole('banner').getByRole('group', { name: 'Food reserve' });
 export const approval = (page: Page): Locator =>

@@ -37,6 +37,34 @@ export {
   type DilemmaView,
   type PendingDilemma,
 } from './dilemmas';
+export {
+  creditRules,
+  creditStatus,
+  bondRateSpan,
+  loanRateSpan,
+  ratedAtLeast,
+  ratingRank,
+  type Credit,
+  type CreditStatus,
+  type CreditStep,
+} from './credit';
+export {
+  bondOffers,
+  bondsClosedBecause,
+  bondsOpenTo,
+  debtName,
+  debtStatus,
+  formatRate,
+  loanOffers,
+  maturityOf,
+  maturityOfTaking,
+  paysAtMaturity,
+  type Borrowing,
+  type Debt,
+  type DebtStatus,
+  type LoanOffer,
+  type LoanTerms,
+} from './debt';
 export { electionStatus, type ElectionStatus } from './election';
 export { type ActiveEvent } from './events';
 export {
@@ -63,7 +91,7 @@ export {
 export { settlementLook, settlementLooks, type SettlementLook } from './settlements';
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
 export { termRecords, type TermRecord } from './terms';
-export { victoryStatus, type VictoryStatus } from './victory';
+export { victoryStatus, type DebtTest, type VictoryStatus } from './victory';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export { SAVE_FORMAT_VERSION, type SaveMigration } from './migrations';
 export { loadSave, saveGame, type RestoredGame, type SavedGame } from './save';
@@ -71,8 +99,10 @@ export { SaveError } from './saveChecks';
 export { siteTerms, type SiteTerms } from './sites';
 export { DECAYING_SHARE, isInUseState, UPKEEP_ORDER_RULE } from './upkeep';
 export {
+  bondMaturities,
   siteSchedule,
   termCalendar,
+  type Maturity,
   type SiteSchedule,
   type TermCalendar,
   type TermQuarter,
@@ -115,6 +145,11 @@ export {
 } from './types';
 export {
   CHAIN_ROLES,
+  CREDIT_RATING_NAMES,
+  CREDIT_RATINGS,
+  DEBT_KIND_NAMES,
+  DEBT_KINDS,
+  DEBT_SCHEDULES,
   DILEMMA_TYPES,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
@@ -138,6 +173,9 @@ export {
   UNREST_NAMES,
   type ApprovalDriver,
   type ChainRole,
+  type CreditRating,
+  type DebtKind,
+  type DebtSchedule,
   type DecorationKind,
   type DilemmaType,
   type EventType,
