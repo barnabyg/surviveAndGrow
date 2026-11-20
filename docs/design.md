@@ -1,6 +1,7 @@
 # Survive and Grow: game design
 
-Status: Phase 1 is built, and Phase 2 (build) is built and balanced. Last updated 2026-11-20.
+Status: Phase 1 is built, and Phase 2 (build) and Phase 3 (borrow) are built and balanced. Last
+updated 2026-11-20.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
 the README under "What is in the game", which is the one place they are stated in full.
@@ -81,11 +82,13 @@ is in the game.
   50% the game is lost. Factions (farmers, workers, business, army) arrive in Phase 6.
 - **Events.** Events and dilemmas began in Phase 1 with a handful, and gain content in every phase.
   Events are local to regions wherever possible.
+- **Finance.** Loans, and bonds once the credit rating is good enough, pull the mine's chain
+  forward at the price of repayments that squeeze the budget before it pays off. The credit
+  rating sets the rates and the most that may be owed. A missed payment brings a bailout with
+  forced austerity. Rules: README, What is in the game; balance: `docs/balance/phase-3.md`.
 
 ### Still to come
 
-- **Finance** (Phase 3): loans, bonds, a credit rating and debt service, once there is something
-  worth borrowing for.
 - **Technology** (Phase 5): a tree bought with money and time, using the project mechanism. It
   unlocks and improves what already exists.
 - **Military** (Phase 6): kept abstract. Defence spending buys deterrence against neighbours and
@@ -193,8 +196,11 @@ Phase 1 site types pay off within one term: an irrigation scheme, a farm road an
 These were proposed during design and not explicitly agreed. The turn length, the four tiers and
 their thresholds, the win condition's four-quarter hold and its debt test (the debt burden within
 a limit as the hold completes, which withholds the win without resetting the hold) are built and
-settled.
+settled. So is the bailout in place of instant loss on insolvency: a missed payment on any debt
+consolidates everything owed into one bailout loan, puts the credit rating at its lowest step,
+deals approval a blow and imposes austerity for a fixed number of quarters (a tax floor, spending
+caps, no borrowing and no new projects). A missed payment during austerity extends it, and
+neither ends the game.
 
-- A bailout in place of instant loss on insolvency.
 - Six to eight regions per country.
 - The visual direction: dark panels around a flat survey-style map.

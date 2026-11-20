@@ -2,13 +2,22 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   createGame,
+  creditStatus,
+  debtStatus,
   loadCountry,
   MAP_FRAME,
   siteTerms,
   type GameState,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { tavara, tavaraAsShipped, testland, testlandFormat1File } from './countries';
+import {
+  tavara,
+  tavaraAsShipped,
+  testland,
+  testlandFormat1File,
+  testlandFormat3File,
+  testlandInDebt,
+} from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
 
 describe('a valid country file', () => {
@@ -350,7 +359,7 @@ describe('a country file in format 3', () => {
   it('may mark sites as alternatives, each ruling out the other whichever side says so', () => {
     const country = testland();
 
-    expect(country.formatVersion).toBe(3);
+    expect(country.formatVersion).toBe(4);
     expect(valueAt(testlandFile, ['sites', 5, 'alternatives'])).toBeUndefined();
     expect(country.sites.map((site) => [site.id, site.alternatives])).toEqual([
       ['north-irrigation', []],
@@ -373,7 +382,7 @@ describe('a country file in format 3', () => {
 
   it('starts with upkeep enough for the costliest choice, not for every site', () => {
     const withoutQuay = withValue(
-      withValue(testlandFile, ['formatVersion'], 2),
+      withValue(testlandFormat3File(), ['formatVersion'], 2),
       ['sites'],
       (valueAt(testlandFile, ['sites']) as { id: string }[]).filter(
         (site) => site.id !== 'alpha-quay',
@@ -419,9 +428,142 @@ describe('a country file in format 3', () => {
   });
 
   it('cannot be given alternatives in a format 2 file', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 2);
+    const file = withValue(testlandFormat3File(), ['formatVersion'], 2);
 
     expect(faultsOf(file)).toEqual(['sites[6].alternatives needs country file format 3 or later.']);
+  });
+});
+
+describe('a country file in format 4', () => {
+  /** Testland starting with the loans given in place of its own. */
+  const owing = (loans: unknown) => withValue(testlandFile, ['start', 'loans'], loans);
+
+  it('may say the loans the game starts with, each with its own terms', () => {
+    const country = testlandInDebt();
+
+    expect(country.formatVersion).toBe(4);
+    expect(country.start.loans).toEqual([
+      { owed: 70, annualRateBasisPoints: 700, quarters: 8 },
+      { owed: 40, annualRateBasisPoints: 950, quarters: 12 },
+    ]);
+  });
+
+  it('starts the game owing them, repaid level from the first quarter', () => {
+    const game = createGame(testlandInDebt(), 1);
+
+    expect(
+      debtStatus(game).debts.map((debt) => [
+        debt.name,
+        debt.kind,
+        debt.owed,
+        debt.annualRateBasisPoints,
+        debt.quartersLeft,
+        debt.repayment,
+        debt.schedule,
+      ]),
+    ).toEqual([
+      ['Loan 1', 'loan', 70, 700, 8, 10, 'level'],
+      ['Loan 2', 'loan', 40, 950, 12, 4, 'level'],
+    ]);
+    expect(debtStatus(game).repayments).toBe(14);
+
+    const { state } = advanceQuarter(game, { budget: game.budget });
+    expect(state.debts.map((debt) => [debt.number, debt.quartersLeft])).toEqual([
+      [1, 7],
+      [2, 11],
+    ]);
+    expect(state.debts.map((debt) => debt.owed)).toEqual([61, 37]);
+  });
+
+  it('starts the game at the credit rating the debt implies', () => {
+    const owingNothing = createGame(testland(), 1);
+    const inDebt = createGame(testlandInDebt(), 1);
+
+    expect(owingNothing.credit.rating).toBe('a');
+    // Owing 55% of a year's revenue costs 220 points: 700 less 220 is BBB, which begins at 400.
+    expect(creditStatus(inDebt)).toMatchObject({ rating: 'bbb', record: 700, burden: 550 });
+    expect(creditStatus(inDebt).score).toBe(480);
+  });
+
+  it('may list no loans at all, and then starts owing nothing', () => {
+    const game = createGame(loadCountry(owing([])), 1);
+
+    expect(game.debts).toEqual([]);
+    expect(game.credit.rating).toBe('a');
+  });
+
+  it('is read by a format 3 file as it always was: the game starts owing nothing', () => {
+    const country = loadCountry(testlandFormat3File());
+
+    expect(country.start.loans).toEqual([]);
+    expect(createGame(country, 1).debts).toEqual([]);
+  });
+
+  it('cannot be given loans in a format 3 file', () => {
+    expect(faultsOf(withValue(testlandFile, ['formatVersion'], 3))).toEqual([
+      'start.loans needs country file format 4 or later.',
+    ]);
+  });
+
+  it('is rejected when a loan’s amount, rate or term is not one the game allows', () => {
+    expect(
+      faultsOf(
+        owing([
+          { amount: 0, rate: 7, quarters: 8 },
+          { amount: -2, rate: 26, quarters: 0 },
+          { amount: 2.25, rate: 7.125, quarters: 41 },
+          { rate: 'high', quarters: 2.5 },
+          'a loan',
+        ]),
+      ),
+    ).toEqual([
+      'start.loans[0].amount must be more than 0.',
+      'start.loans[1].amount must not be negative, but is -2.',
+      'start.loans[1].rate is 26, but must be a yearly percentage from 0 to 25, to at most two decimal places.',
+      'start.loans[1].quarters is 0, but must be a whole number from 1 to 40.',
+      'start.loans[2].amount must be in millions to one decimal place, but is 2.25.',
+      'start.loans[2].rate is 7.125, but must be a yearly percentage from 0 to 25, to at most two decimal places.',
+      'start.loans[2].quarters is 41, but must be a whole number from 1 to 40.',
+      'start.loans[3].amount is missing.',
+      'start.loans[3].rate must be a number, but is text.',
+      'start.loans[3].quarters is 2.5, but must be a whole number from 1 to 40.',
+      'start.loans[4] must be an object, but is text.',
+      'start.loans[4].amount is missing.',
+      'start.loans[4].rate is missing.',
+      'start.loans[4].quarters is missing.',
+    ]);
+    expect(faultsOf(owing('a lot'))).toEqual(['start.loans must be a list, but is text.']);
+  });
+
+  it('is rejected when it starts with more loans than the game allows', () => {
+    const loan = { amount: 1, rate: 5, quarters: 8 };
+
+    expect(faultsOf(owing(Array.from({ length: 6 }, () => loan)))).toEqual([
+      'start.loans lists 6 loans, but a country may start with at most 5.',
+    ]);
+  });
+
+  it('is rejected when it starts owing more than half a year’s output', () => {
+    // Testland's regions produce $25.0m a quarter.
+    expect(loadCountry(owing([{ amount: 50, rate: 0, quarters: 40 }])).start.loans).toHaveLength(1);
+    expect(faultsOf(owing([{ amount: 50.1, rate: 0, quarters: 40 }]))).toEqual([
+      'start.loans owe $50.1m between them, but a country may start owing at most $50.0m: 50% of a year’s output from its regions.',
+    ]);
+  });
+
+  it('is rejected when its first repayments could not be paid', () => {
+    // A treasury of $10.0m, and $5.0m in tax on the first quarter's output.
+    expect(loadCountry(owing([{ amount: 15, rate: 0, quarters: 1 }])).start.loans).toHaveLength(1);
+    expect(
+      faultsOf(
+        owing([
+          { amount: 10, rate: 0, quarters: 1 },
+          { amount: 5.1, rate: 0, quarters: 1 },
+        ]),
+      ),
+    ).toEqual([
+      'start.loans ask $15.1m in the first quarter, but the starting treasury and the first quarter’s revenue come to $15.0m: the game would open on a missed payment.',
+    ]);
   });
 });
 
@@ -443,9 +585,9 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it is written for another version of the format', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 4);
+    const file = withValue(testlandFile, ['formatVersion'], 5);
 
-    expect(faultsOf(file)).toEqual(['formatVersion is 4, but this game reads versions 1 to 3.']);
+    expect(faultsOf(file)).toEqual(['formatVersion is 5, but this game reads versions 1 to 4.']);
   });
 
   it('when its format version is not a number', () => {

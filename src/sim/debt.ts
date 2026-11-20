@@ -1,4 +1,5 @@
 import { sum } from './arithmetic';
+import { borrowingBarred, type Austere } from './austerity';
 import { balance } from './balance';
 import { revenueOf, type Budget } from './budget';
 import { dateOfQuarter, quarterNumber } from './calendar';
@@ -23,7 +24,8 @@ import {
  * list, paid in the order it was taken, before anything else each quarter. What falls due
  * each quarter answers to the kind of debt: a loan's level repayment, or a bond's interest
  * and, at maturity, its whole sum. How heavy the debt is, the debt burden, answers to all of
- * it together.
+ * it together. A payment missed on any of them brings a bailout: everything owed becomes one
+ * bailout loan (`bailout.ts` says what else it brings).
  */
 
 /** One debt the nation owes. It is never changed in place. */
@@ -33,13 +35,16 @@ export interface Debt {
   readonly number: number;
   /** The quarter it was taken in. Its money arrived as that quarter ended. */
   readonly taken: GameDate;
-  /** The sum borrowed. */
+  /** The sum borrowed, or for a bailout loan, everything it consolidated. */
   readonly borrowed: Money;
   /** The rate it was taken at, in hundredths of a percent a year. It never changes. */
   readonly annualRateBasisPoints: number;
   /** The quarters it was taken over. */
   readonly termQuarters: number;
-  /** The principal still owed. Interest that went unpaid has been added to it. */
+  /**
+   * The principal still owed. Interest that went unpaid before a bailout consolidated it has
+   * been added to it.
+   */
   readonly owed: Money;
   /**
    * What falls due each quarter, interest and principal together. The last quarter's is
@@ -51,11 +56,24 @@ export interface Debt {
   /** How many repayments are still to come. */
   readonly quartersLeft: number;
   /**
-   * How it is repaid: `level`, in equal repayments of interest and principal, as a loan is;
-   * or `atMaturity`, interest alone until the last quarter, when everything owed falls due,
-   * as a bond is until a maturity it missed turns what is left into level repayments.
+   * How it is repaid: `level`, in equal repayments of interest and principal, as a loan or
+   * a bailout loan is; or `atMaturity`, interest alone until the last quarter, when
+   * everything owed falls due, as a bond is.
    */
   readonly schedule: DebtSchedule;
+}
+
+/**
+ * A loan a country file says the game starts with: already owed, at its own rate, with the
+ * quarters left to repay it. It is repaid level from the first quarter.
+ */
+export interface StartingLoan {
+  /** What is owed when the game starts. */
+  readonly owed: Money;
+  /** In hundredths of a percent a year. */
+  readonly annualRateBasisPoints: number;
+  /** The repayments left, the first of them in the game's first quarter. */
+  readonly quarters: number;
 }
 
 /** A sum the player means to borrow this quarter. */
@@ -95,13 +113,20 @@ export interface Owing {
   readonly debts: readonly Debt[];
 }
 
-/** What borrowing needs of the game: what it owes, its revenue, and its credit rating. */
+/** What judging debt needs of the game: what it owes, its revenue, and its credit rating. */
 interface Borrower extends Owing {
   readonly credit: { readonly rating: CreditRating };
 }
 
-/** What a debt is called: "Loan 2". */
+/** What borrowing needs of the game: the debt and rating, and whether austerity bars it. */
+interface Lendee extends Borrower, Pick<Austere, 'date' | 'austerity'> {}
+
+/**
+ * What a debt is called: "Loan 2". There is never more than one bailout loan, so it goes by
+ * its kind alone.
+ */
 export function debtName(debt: Pick<Debt, 'kind' | 'number'>): string {
+  if (debt.kind === 'bailout') return DEBT_KIND_NAMES.bailout;
   return `${DEBT_KIND_NAMES[debt.kind]} ${debt.number}`;
 }
 
@@ -179,6 +204,8 @@ const RATES: Readonly<Record<DebtKind, (quarters: number, rating: CreditRating) 
   {
     loan: loanRate,
     bond: bondRate,
+    // A bailout loan is never on offer: it comes only from a bailout.
+    bailout: () => null,
   };
 
 /** The sums and terms each kind of debt is offered in. */
@@ -190,6 +217,7 @@ const MENUS: Readonly<
 > = {
   loan: balance.finance.loans,
   bond: balance.finance.bonds,
+  bailout: { amounts: [], terms: [] },
 };
 
 /**
@@ -269,9 +297,9 @@ export function debtTerms(
 /**
  * Every loan on the menu, each sum over each term, at the rate the credit rating gets. One
  * that would take the debt, with what is already planned for this quarter, past the most
- * that may be owed cannot be taken.
+ * that may be owed cannot be taken, and none can during austerity.
  */
-export function loanOffers(game: Borrower, planned: readonly Borrowing[] = []): LoanOffer[] {
+export function loanOffers(game: Lendee, planned: readonly Borrowing[] = []): LoanOffer[] {
   return offersOf('loan', game, planned);
 }
 
@@ -280,18 +308,22 @@ export function loanOffers(game: Borrower, planned: readonly Borrowing[] = []): 
  * none when the rating is too poor to issue bonds (`bondsClosedBecause` says why). One that
  * would take the debt past the most that may be owed cannot be taken.
  */
-export function bondOffers(game: Borrower, planned: readonly Borrowing[] = []): LoanOffer[] {
+export function bondOffers(game: Lendee, planned: readonly Borrowing[] = []): LoanOffer[] {
   return offersOf('bond', game, planned);
 }
 
-function offersOf(kind: DebtKind, game: Borrower, planned: readonly Borrowing[]): LoanOffer[] {
+function offersOf(kind: DebtKind, game: Lendee, planned: readonly Borrowing[]): LoanOffer[] {
   const { amounts, terms } = MENUS[kind];
+  const barred = borrowingBarred(game);
   return amounts.flatMap((amount) =>
     terms.flatMap(({ quarters }) => {
       const offered = debtTerms(kind, amount, quarters, game.credit.rating);
       if (offered === null) return [];
       return [
-        { ...offered, unavailable: limitFault(game, [...planned, { kind, amount, quarters }]) },
+        {
+          ...offered,
+          unavailable: barred ?? limitFault(game, [...planned, { kind, amount, quarters }]),
+        },
       ];
     }),
   );
@@ -318,28 +350,21 @@ export function dueAtMaturity(debt: Pick<Debt, 'owed' | 'annualRateBasisPoints'>
   return debt.owed + interestOn(debt.owed, debt.annualRateBasisPoints);
 }
 
-/**
- * The quarters over which what is left of a bond whose maturity was missed is repaid in
- * level repayments: those balance data sets, but never more than the bond's own term.
- */
-export function missedMaturityQuarters(debt: Pick<Debt, 'termQuarters'>): number {
-  return Math.min(balance.finance.bonds.missedMaturityQuarters, debt.termQuarters);
-}
-
-/**
- * Whether a debt pays only interest until its last quarter, when everything owed falls due:
- * a bond, unless a maturity it missed has turned what is left into level repayments.
- */
+/** Whether a debt pays only interest until its last quarter, when everything owed falls due. */
 export function paysAtMaturity(debt: Pick<Debt, 'schedule'>): boolean {
   return debt.schedule === 'atMaturity';
 }
 
 /**
  * What is wrong with borrowing these sums this quarter, or null when the game allows it.
- * Each must be on the menu, and together with what is owed they must stay within the most
- * that may be owed.
+ * Nothing may be borrowed during austerity. Each must be on the menu, and together with what
+ * is owed they must stay within the most that may be owed.
  */
-export function borrowFault(game: Borrower, borrowing: readonly Borrowing[]): string | null {
+export function borrowFault(game: Lendee, borrowing: readonly Borrowing[]): string | null {
+  if (borrowing.length > 0) {
+    const barred = borrowingBarred(game);
+    if (barred !== null) return barred;
+  }
   for (const each of borrowing) {
     if (!(DEBT_KINDS as readonly string[]).includes(each.kind)) {
       return `There is no kind of debt "${each.kind}" to take.`;
@@ -420,7 +445,10 @@ function levelRepayment(owed: Money, rate: number, quarters: number): Money {
 
 /** What a quarter's repayments did. */
 export interface DebtService {
-  /** The debts as the quarter leaves them: those repaid in full are gone. */
+  /**
+   * The debts as the quarter leaves them: those repaid in full are gone, and after a missed
+   * payment everything owed is the one bailout loan.
+   */
   readonly debts: readonly Debt[];
   /** What fell due. */
   readonly due: Money;
@@ -428,27 +456,29 @@ export interface DebtService {
   readonly paid: Money;
   /** The part of what was paid that went to the principal rather than interest. */
   readonly principal: Money;
-  /** What fell due and could not be paid, which has been added to the debt. */
+  /** What fell due and could not be paid. */
   readonly missed: Money;
   /** The debts on which a payment was missed, by name. */
   readonly missedOn: readonly string[];
+  /** The bailout loan a missed payment consolidated everything owed into, or null. */
+  readonly bailoutLoan: Debt | null;
   /** What the payments took from the treasury, line by line. */
   readonly contributions: readonly Contribution[];
   /** What the payments did to the debt, line by line. */
   readonly changes: readonly Contribution[];
+  /** What the report says of debts repaid in full. */
   readonly entries: readonly ReportEntry[];
 }
 
 /**
  * One quarter of repayments, paid out of what is available in the order the debts were
  * taken, before anything else. A repayment that cannot be covered in full takes what is
- * left, and the rest is a missed payment: it is added to what is owed, and the repayments
- * still to come rise to clear it. A debt whose term has run out with something still owed
- * falls due in full the next quarter. A bond whose interest is missed goes on paying only
- * interest, on the larger sum; one whose maturity is missed has what is left repaid in
- * level repayments over the quarters set in balance data.
+ * left, and the rest is a missed payment. A missed payment brings a bailout: everything
+ * still owed, with the interest that went unpaid, is consolidated into one bailout loan,
+ * taken in the quarter given on the terms balance data sets and repaid level from the
+ * quarter after.
  */
-export function serveDebts(debts: readonly Debt[], available: Money): DebtService {
+export function serveDebts(debts: readonly Debt[], available: Money, date: GameDate): DebtService {
   const contributions: Contribution[] = [];
   const changes: Contribution[] = [];
   const entries: ReportEntry[] = [];
@@ -483,24 +513,23 @@ export function serveDebts(debts: readonly Debt[], available: Money): DebtServic
     if (unpaid > 0) {
       missed += unpaid;
       missedOn.push(name);
-      const respread = respreadAfterMissing(debt, owed);
-      entries.push(missedEntry(debt, name, asked.due, unpaid, respread));
-      return [respread];
     }
     if (owed === 0) {
       entries.push(repaidEntry(debt, name));
       return [];
     }
-    return [{ ...debt, owed, quartersLeft: debt.quartersLeft - 1 }];
+    return [{ ...debt, owed, quartersLeft: Math.max(1, debt.quartersLeft - 1) }];
   });
 
+  const bailoutLoan = missed > 0 ? consolidate(after, date) : null;
   return {
-    debts: after,
+    debts: bailoutLoan === null ? after : [bailoutLoan],
     due,
     paid,
     principal,
     missed,
     missedOn,
+    bailoutLoan,
     contributions,
     changes,
     entries,
@@ -508,32 +537,48 @@ export function serveDebts(debts: readonly Debt[], available: Money): DebtServic
 }
 
 /**
- * A debt once a payment on it is missed, with what is now owed. A loan's repayments still to
- * come rise to clear it. A bond before its maturity pays interest on the larger sum; at its
- * maturity, what is left is repaid level over the quarters balance data sets.
+ * Everything owed, consolidated into one bailout loan taken in the quarter given: at the
+ * rate and over the term balance data sets, repaid level from the quarter after.
  */
-function respreadAfterMissing(debt: Debt, owed: Money): Debt {
-  const rate = debt.annualRateBasisPoints;
-  if (paysAtMaturity(debt)) {
-    if (debt.quartersLeft > 1) {
-      return {
-        ...debt,
-        owed,
-        quartersLeft: debt.quartersLeft - 1,
-        repayment: interestOn(owed, rate),
-      };
-    }
-    const quartersLeft = missedMaturityQuarters(debt);
-    return {
-      ...debt,
-      owed,
-      quartersLeft,
-      repayment: levelRepayment(owed, rate, quartersLeft),
-      schedule: 'level',
-    };
-  }
-  const quartersLeft = Math.max(1, debt.quartersLeft - 1);
-  return { ...debt, owed, quartersLeft, repayment: levelRepayment(owed, rate, quartersLeft) };
+function consolidate(debts: readonly Debt[], date: GameDate): Debt {
+  const { annualRateBasisPoints, termQuarters } = balance.finance.bailout;
+  const owed = debtOf(debts);
+  return {
+    kind: 'bailout',
+    number: 1,
+    taken: date,
+    borrowed: owed,
+    annualRateBasisPoints,
+    termQuarters,
+    owed,
+    repayment: levelRepayment(owed, annualRateBasisPoints, termQuarters),
+    quartersLeft: termQuarters,
+    schedule: 'level',
+  };
+}
+
+/**
+ * The debts a game starts with: the country's starting loans, numbered in the file's order,
+ * owed as the game begins and repaid level from its first quarter.
+ */
+export function startingDebts(loans: readonly StartingLoan[], date: GameDate): Debt[] {
+  return loans.map((loan, index) => ({
+    kind: 'loan',
+    number: index + 1,
+    taken: date,
+    borrowed: loan.owed,
+    annualRateBasisPoints: loan.annualRateBasisPoints,
+    termQuarters: loan.quarters,
+    owed: loan.owed,
+    repayment: levelRepaymentOf(loan),
+    quartersLeft: loan.quarters,
+    schedule: 'level',
+  }));
+}
+
+/** What a level loan asks each quarter: its repayment, as `startingDebts` sets it. */
+export function levelRepaymentOf(loan: StartingLoan): Money {
+  return levelRepayment(loan.owed, loan.annualRateBasisPoints, loan.quarters);
 }
 
 /** What the quarter's borrowing did. */
@@ -619,33 +664,8 @@ function repaidEntry(debt: Debt, name: string): ReportEntry {
     cause:
       debt.kind === 'bond'
         ? `The ${formatMoney(debt.borrowed)} raised in Year ${debt.taken.year} · Quarter ${debt.taken.quarter} is repaid, and its interest ends.`
-        : `The ${formatMoney(debt.borrowed)} borrowed in Year ${debt.taken.year} · Quarter ${debt.taken.quarter} is paid off, and its repayments end.`,
-  };
-}
-
-function missedEntry(
-  before: Debt,
-  name: string,
-  due: Money,
-  unpaid: Money,
-  after: Debt,
-): ReportEntry {
-  const matured = paysAtMaturity(before) && before.quartersLeft <= 1;
-  const owing = (debt: Debt) => (paysAtMaturity(debt) ? 'interest' : 'repayment');
-  // Only interest that went unpaid adds to the debt; principal unpaid was owed already.
-  const interestUnpaid = Math.max(0, after.owed - before.owed);
-  const principalUnpaid = unpaid - interestUnpaid;
-  const owed = formatMoney(after.owed);
-  const unpaidPart =
-    interestUnpaid === 0
-      ? `${formatMoney(principalUnpaid)} of principal went unpaid, and ${owed} is still owed.`
-      : `${principalUnpaid === 0 ? 'The' : `${formatMoney(principalUnpaid)} of principal went unpaid, and the`} ${formatMoney(interestUnpaid)} of interest it could not pay was added to the debt: ${owed} is now owed.`;
-  return {
-    kind: 'missedPayment',
-    seriousness: 'serious',
-    headline: `Missed payment: ${name}`,
-    cause: matured
-      ? `The treasury and the quarter’s revenue could not cover the ${formatMoney(due)} due at its maturity. ${unpaidPart} It is repaid at ${formatMoney(after.repayment)} a quarter over ${formatQuarters(after.quartersLeft)}.`
-      : `The treasury and the quarter’s revenue could not cover its ${formatMoney(due)} ${owing(before)}. ${unpaidPart} Its ${owing(after)} is now ${formatMoney(after.repayment)} a quarter.`,
+        : debt.kind === 'bailout'
+          ? `The ${formatMoney(debt.borrowed)} the bailout of Year ${debt.taken.year} · Quarter ${debt.taken.quarter} consolidated is paid off, and its repayments end.`
+          : `The ${formatMoney(debt.borrowed)} borrowed in Year ${debt.taken.year} · Quarter ${debt.taken.quarter} is paid off, and its repayments end.`,
   };
 }

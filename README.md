@@ -91,6 +91,43 @@ the prosperity breakdown is led by infrastructure access, and a win shows the en
 with each term served. Losing the second vote while the chain is still being built is common: it
 is the risk the game is about.
 
+### A Phase 3 play-through
+
+To play the finished Phase 3 game, with borrowing, from the start on a seed the balance run
+knows well:
+
+```powershell
+Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=6'
+```
+
+This starts the game at http://localhost:41730/?seed=6 and opens it in your browser. On seed 6
+the scripted chain builder, which saves up for each site, loses the vote at the end of its
+second term; the scripted sensible borrower wins in quarter 36, late in its second term; and the
+reckless borrower is bailed out and loses its first vote. Try to win the way the sensible
+borrower does:
+
+1. Borrow for the mine's chain rather than save for it. In the first year a loan of $10.0m with
+   the treasury's $42.0m pays for Saltmouth port, then a $50.0m loan over 12 quarters for the
+   trunk road; in the second year a $10.0m loan tops up the savings for the Korrgate mine. The
+   money arrives as the quarter ends: start the site the quarter after. Keep the repayments
+   within 15% of a quarter's revenue.
+2. Keep the budget balanced with the repayments in it. Expect the tax near 27% while the loans
+   run, approval to sag in the second and third years, and the credit rating to rise to AA as
+   the repayments are made on time.
+3. Once the mine earns, in the fourth year, the loans are soon repaid and the tax can come down.
+   Build the power station from savings, spend on approval in the last year before the vote, and
+   win it.
+4. In the second term build the power lines and the small sites. Each tier passed lowers
+   approval for a while. The game is won when prosperity has stood at 42 or more for four
+   quarters running with the debt burden no more than 30% of a year's revenue; the top bar
+   counts the quarters and says whether the debt test is passed.
+
+Expected: the finance panel offers loans at 6% to 10% while the nation is rated A; the debt and
+its burden sit beside the treasury in the top bar; the rating is raised to AA in the third year.
+To see the other side, borrow everything the finance panel allows and spend it: the treasury
+cannot cover a repayment, a bailout consolidates the debt, approval takes a 12-point blow and
+austerity holds for 8 quarters.
+
 What is in the game:
 
 - Set the tax rate and the spending for each area in the right column. The panel shows what a
@@ -107,7 +144,7 @@ What is in the game:
   the game. The top bar counts down to the election that closes the current term, and the right
   column forecasts the vote as a range against the 50% needed.
 - You win the game by holding national prosperity in the top tier, Prosperous, for four quarters
-  running, with the debt burden no more than 50% of a year's revenue as the fourth quarter ends:
+  running, with the debt burden no more than 30% of a year's revenue as the fourth quarter ends:
   the debt test, which keeps a win bought with a borrowing binge from counting. A burden over the
   limit does not end the hold; it keeps counting, and the game is won as the first quarter ends
   with the burden brought within the limit. Once there, the prosperity figure in the top bar shows
@@ -222,18 +259,17 @@ What is in the game:
   Rated A, the nation may owe no more than a year's revenue at the budget in force. The debt sits beside
   the treasury in the top bar with its debt burden, what is owed against a year's revenue; click
   it to see each loan, what is still owed and the quarters left. A repayment that the treasury
-  and the quarter's revenue cannot cover is a missed payment: it is reported, what went unpaid is
-  added to the debt, and the repayments still to come rise to clear it. Taking and repaying a loan
-  are reported, the treasury's breakdown lists each repayment, and the risks ahead warn of a
-  missed payment.
+  and the quarter's revenue cannot cover is a missed payment, which brings a bailout (below).
+  Taking and repaying a loan are reported, and the treasury's breakdown lists each repayment.
 - The nation has a credit rating, one of AA, A, BBB, BB and B, which sets the rate of a new loan
   (AA takes a point off every rate; BBB adds 1.5 points, BB 3 and B 5) and the most that
   may be owed (from 125% of a year's revenue at AA down to 25% at B). Loans already taken keep
   the rate they were taken at. The rating is reassessed as each quarter ends from a score: the
   payment record, less a share of the debt burden and of the quarter's deficit (spending beyond
-  revenue, not counting repaid principal). A game starts with a record of 700, rated A. A missed
-  payment takes 400 points off the record; each quarter whose repayments are all made on time
-  puts 25 back, up to 1,000. The rating sits in the top bar; click it to see the score's parts
+  revenue, not counting repaid principal). A game starts with a record of 700, rated A unless
+  the country starts in debt, when the debt burden sets its opening rating. A missed
+  payment brings a bailout, which leaves the record at 0 and the rating at B; each quarter whose
+  repayments are all made on time puts 25 back, up to 1,000. The rating sits in the top bar; click it to see the score's parts
   and every step with its rates and limit. The finance panel shows the rates the rating gets and
   what a step up or down would mean, and says when the loans planned or the budget would cut or
   raise it; the budget's outlook shows the rating next quarter. A change of rating is reported
@@ -246,16 +282,29 @@ What is in the game:
   falls due and the interest in all before you plan it, and the plan can be taken back until
   the quarter ends. Only interest is paid each quarter, first like a loan's repayment; the whole
   sum falls due in one payment at maturity. A maturity the treasury and the quarter's revenue
-  cannot cover is a missed payment: what goes unpaid is added to the debt and repaid in level
-  repayments over the next four quarters, and the payment record loses 400 points as for any
-  missed payment. Bonds count in the debt, the debt burden, the most that may be owed and the
-  rating, so issuing a large one can cost the AA that allowed it. Below AA the finance panel
+  cannot cover is a missed payment, and brings a bailout like any other. Bonds count in the
+  debt, the debt burden, the most that may be owed and the rating, so issuing a large one can cost the AA that allowed it. Below AA the finance panel
   says what rating bonds need. The finance panel and the debt's breakdown list each bond with
   its maturity, the timeline marks every maturity (in the column beyond the vote for one that
   falls due after it), and the risks ahead warn of a maturity the treasury is not on course to
   cover: inside the four quarters played from the quarters themselves, and further off by
   carrying the treasury on at the pace those quarters set, less the principal other debts repay
   first.
+- A missed payment on any loan or bond does not end the game: it brings a bailout. Lenders
+  consolidate everything owed, with the interest that went unpaid, into one bailout loan at 7% a
+  year, repaid over 16 quarters from the next; anything to be borrowed that quarter is not lent.
+  The credit rating falls to B, and approval takes a 12-point blow in every region that fades
+  like any passing event. Austerity then holds for 8 quarters: the tax rate cannot go below 25%,
+  spending on agriculture is capped at what the game began with and on health, education and
+  security at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or
+  project can be started; projects under way carry on, and food relief and upkeep are not
+  capped. The bailout brings the budget in force within those limits. The budget's sliders stop
+  at the floor and the caps and say so, the finance and projects panels and a site's card say
+  why nothing can be started, and the top bar counts down the quarters left. Austerity ends on
+  schedule if the payments are made; a missed payment during it consolidates the debt again and
+  extends it by 4 quarters, and never ends the game. The report says what the bailout did, when
+  austerity is extended and when it ends, and the risks ahead warn of a bailout, or of austerity
+  extended, on the current course.
 - Under the map a timeline shows the whole of the current term: every quarter to its election, with the past
   hatched, each harvest underlined and the vote marked. Each project is a bar over the quarters
   it is built in, followed by a bar that says how many quarters it will be in use before the
@@ -274,7 +323,7 @@ What is in the game:
   text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
   relief are drawn under all of them.
 - The left column lists the risks ahead: famine in a region, strikes, a treasury that runs out,
-  a missed payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
+  a bailout from a missed payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
   for each course the weather could take and each drought that could still begin, and lists each
   danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
@@ -335,6 +384,26 @@ costlier of alternatives, rounded up to the next $1.0m.
 In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
 year, from 0 to 10. A region that leaves it out grows at the game's own rate.
 
+In a file of `"formatVersion": 4`, a country can start in debt. `start.loans` lists the loans it
+owes as the game begins, each with its `amount` in millions, its yearly `rate` in percent (to at
+most two decimal places, from 0 to 25) and the `quarters` left to repay it (1 to 40):
+
+```json
+"loans": [
+  { "amount": 7, "rate": 7, "quarters": 8 },
+  { "amount": 4, "rate": 9.5, "quarters": 12 }
+]
+```
+
+They are owed as Loan 1, Loan 2 and so on, in the file's order, and repaid like any other loan,
+in level repayments of interest and principal, the first in the game's first quarter. The game
+opens at the credit rating its debt burden leads to under the usual rules; the file does not
+state it. A country may start with at most five loans, owing between them no more than half a
+year's output from its regions, and their first repayments must be payable from the starting
+treasury and the first quarter's tax, so that the game cannot open on a missed payment. Testland,
+the test country, starts owing $11.0m, which opens it at BBB. A file of an earlier format starts
+owing nothing, and still loads as it is.
+
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:
 `grainOffer` (the reserve is below its safe level), `merchantOffer` (the first quarter of a year,
@@ -388,19 +457,24 @@ This plays scripted players through whole games with no screen, on the countries
 for up to four terms each, and reports how often each wins on prosperity, how often it is still in
 office when its terms are up, and what the others lose to: the vote, by term, or famine, by
 region. It also gives the terms served, the quarter of each win, and the prosperity and tier each
-game reached. It prints the tables and writes them to `balance-results.md`. It is not one of the
+game reached, and what each player borrowed: how many games a bailout struck, how often the debt
+test held back a win and whether it was won later, and the debt burden. It prints the tables and writes them to `balance-results.md`. It is not one of the
 checks and gates nothing; a short run of the same players over a few seeds is part of the
 simulation tests. The games are shared out among worker processes, so a run uses most of the
 machine; 300 seeds of every player take a few minutes.
 
-Four players are what the balance is judged by: one that does nothing, one that spends
-everything on popularity, one that plays sensibly but builds no large site, and one that builds
-power and the mine's chain. They are in `tests/balance/players.ts`, with a handful of one-lever
-players that probe for a trick that wins on its own and two that build only part of the chain.
+Six players are what the balance is judged by: one that does nothing, one that spends
+everything on popularity, one that plays sensibly but builds no large site, one that builds
+power and the mine's chain and saves up for each site, one that builds the same sites but
+borrows for them within limits of its own, and one that borrows recklessly. They are in
+`tests/balance/players.ts`, with a handful of one-lever players that probe for a trick that wins
+on its own, two that build only part of the chain and one that borrows all it can to build
+everything at once.
 
 The runs the values were tuned to, with their seeds, the values changed and what they showed, are
-recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1 and
-[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2.
+recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1,
+[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2 and
+[docs/balance/phase-3.md](docs/balance/phase-3.md) for Phase 3.
 
 Set these before the command to change the run:
 
@@ -408,7 +482,7 @@ Set these before the command to change the run:
 | --- | --- | --- |
 | `BALANCE_SEEDS` | The seeds to play, as `from-to` | `1-300` |
 | `BALANCE_COUNTRY` | `tavara`, `testland` or `both` | `both` |
-| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players | the four |
+| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the six |
 | `BALANCE_TERMS` | The most terms each game is played for | `4` |
 | `BALANCE_WORKERS` | How many games are played at once | all but two processors |
 | `BALANCE_OUT` | Where the tables are written | `balance-results.md` |

@@ -1,18 +1,12 @@
 import { nationalApproval } from './approval';
 import { sum } from './arithmetic';
+import { withinAusterity } from './austerity';
+import { missedPaymentMeans } from './bailout';
 import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName } from './country';
 import { creditStatus, loanRateSpan, ratingCause, ratingRank } from './credit';
-import {
-  debtName,
-  debtStatus,
-  dueAtMaturity,
-  maturityOf,
-  missedMaturityQuarters,
-  paysAtMaturity,
-  type Debt,
-} from './debt';
+import { debtName, debtStatus, dueAtMaturity, maturityOf, paysAtMaturity, type Debt } from './debt';
 import { defeatChancePermille, electionStatus } from './election';
 import { eventName, eventsThatMayBegin, type PossibleEvent } from './events';
 import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
@@ -59,8 +53,8 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 
 /**
  * The dangers of the coming quarters: famine in a region, strikes, a treasury that runs
- * out, a missed payment on a debt, a bond's maturity that cannot be met, and a lost
- * election. It plays the quarters ahead with the real rules, holding the decisions as they are,
+ * out, a missed payment on a debt that brings a bailout, a bond's maturity that cannot be
+ * met, and a lost election. It plays the quarters ahead with the real rules, holding the decisions as they are,
  * once for each course the weather could take and each event that could still begin, and
  * weighs how many of those lead to each danger. The most likely comes first, and a danger
  * too unlikely to matter is left out, unless it would end the game. It changes nothing and draws nothing from the random
@@ -93,7 +87,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
     ...treasuryRisk(whole),
-    ...missedPaymentRisk(whole),
+    ...bailoutRisk(whole),
     ...whole.bonds.flatMap((bond) => maturityRisk(whole, bond)),
     ...creditRisk(whole),
     ...upkeepRisk(whole),
@@ -196,10 +190,16 @@ function play(
     const resolved = resolveQuarter(
       state,
       // Projects are started, money borrowed and a dilemma answered in the quarter being
-      // decided alone.
+      // decided alone. A bailout on the way holds the budget within the austerity it brings.
       quarter === 0
         ? decisions
-        : { ...decisions, startProjects: [], borrow: [], dilemmaChoice: null },
+        : {
+            ...decisions,
+            budget: withinAusterity(state, decisions.budget),
+            startProjects: [],
+            borrow: [],
+            dilemmaChoice: null,
+          },
       {
         weatherShocks: state.regions.map(() => shock),
         struck: events.filter((event) => event.afterQuarters === quarter + 1),
@@ -390,9 +390,9 @@ function treasuryRisk(scope: Scope): Risk[] {
 
 /**
  * A payment on a debt is missed when the treasury and the quarter's revenue together cannot
- * cover it. What goes unpaid is added to the debt.
+ * cover it. That brings a bailout, or during austerity extends it.
  */
-function missedPaymentRisk(scope: Scope): Risk[] {
+function bailoutRisk(scope: Scope): Risk[] {
   const { watched, bonds } = scope;
   // A maturity missed is warned of as such (`maturityRisk`), so it is not counted here.
   const maturing = (quarter: number) =>
@@ -411,16 +411,17 @@ function missedPaymentRisk(scope: Scope): Risk[] {
 
   // Which debt goes unpaid is read off the course with ordinary weather and no new event.
   const typical = typicalOf(scope.courses);
-  const first = typical[misses(typical) ?? finding.soonest];
-  const which =
-    first?.missedOn.find((name) => !maturing(misses(typical) ?? finding.soonest).includes(name)) ??
-    'a debt';
+  const quarter = misses(typical) ?? finding.soonest;
+  const first = typical[quarter];
+  const which = first?.missedOn.find((name) => !maturing(quarter).includes(name)) ?? 'a debt';
+  const austere = (quarter === 0 ? scope.state : typical[quarter - 1]?.state)?.austerity ?? null;
+  const cannot = `As things stand the treasury and revenue cannot cover the repayment on ${which} ${when(finding.soonest)}.`;
   return [
     {
-      kind: 'missedPayment',
+      kind: 'bailout',
       likelihood,
-      headline: 'Missed payment',
-      reason: `As things stand the treasury and revenue cannot cover the repayment on ${which} ${when(finding.soonest)}. What goes unpaid is added to the debt, and the repayments still to come rise.`,
+      headline: austere === null ? 'Bailout' : 'Austerity extended',
+      reason: `${cannot} ${missedPaymentMeans({ country: scope.state.country, austerity: austere })}`,
       withinQuarters: finding.soonest + 1,
     },
   ];
@@ -460,7 +461,7 @@ function maturityRisk(scope: Scope, bond: BondAhead): Risk[] {
       kind: 'bondMaturity',
       likelihood,
       headline: `${bond.name} cannot be repaid`,
-      reason: `${falls} ${course} What goes unpaid is a missed payment: it is added to the debt and repaid over ${formatQuarters(missedMaturityQuarters(debt))}, and the payment record suffers.`,
+      reason: `${falls} ${course} ${missedPaymentMeans(state)}`,
       withinQuarters: bond.matures + 1,
     },
   ];

@@ -75,11 +75,19 @@
 }
 
 /* The election, shown as one more vital sign in the top bar */
-.vital--election {
+.vital--election,
+.vital--austerity {
   flex: 0 1 220px;
 }
 
 .vital--election .label,
-.vital--election .vital__value {
+.vital--election .vital__value,
+.vital--austerity .label,
+.vital--austerity .vital__value {
   display: block;
+}
+
+.vital--austerity .label,
+.vital--austerity .vital__value {
+  color: var(--danger);
 }

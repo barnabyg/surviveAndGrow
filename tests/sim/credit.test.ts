@@ -176,18 +176,19 @@ describe('a missed payment', () => {
     };
   }
 
-  it('cuts the payment record sharply, and the rating with it', () => {
+  it('wipes out the payment record and puts the rating at its lowest step', () => {
     const game = overstretched();
-    const before = creditStatus(game);
 
     const result = advanceQuarter(game, steward(game));
 
     const after = creditStatus(result.state);
-    expect(after.record).toBe(before.record - 400);
+    expect(after.record).toBe(0);
     expect(ratingEntries(result.report)).toEqual([
       expect.objectContaining({
-        headline: 'Credit rating cut to BB',
-        cause: expect.stringMatching(/missed payment on Loan 1/) as string,
+        headline: 'Credit rating cut to B',
+        cause: expect.stringMatching(
+          /^A missed payment on Loan 1 brought a bailout and cut the payment record by 700 points\./,
+        ) as string,
       }),
     ]);
   });

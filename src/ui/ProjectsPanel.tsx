@@ -1,4 +1,5 @@
 import {
+  buildingBarred,
   formatMoney,
   siteStatus,
   siteTerms,
@@ -42,6 +43,8 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
   const inUse = sites.filter(
     ({ status }) => status.state === 'operating' || status.state === 'decaying',
   );
+  // Austerity forbids starting anything, whatever the treasury holds.
+  const barred = buildingBarred(game);
   const affordable = sites.filter(
     ({ site, status, planned }) =>
       status.state === 'empty' &&
@@ -95,7 +98,11 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
       <h3 className="label" id="affordable-title">
         Affordable now
       </h3>
-      {affordable.length === 0 ? (
+      {barred !== null ? (
+        <p className="warning-note" role="note" aria-label="Austerity">
+          ▲ {barred}
+        </p>
+      ) : affordable.length === 0 ? (
         <p className="section-empty">
           {sites.some(({ status, planned }) => status.state === 'empty' && !planned)
             ? 'The treasury does not hold the whole cost of any empty site.'

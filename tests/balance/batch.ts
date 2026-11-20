@@ -2,14 +2,17 @@ import {
   advanceQuarter,
   approvalStatus,
   createGame,
+  debtStatus,
   electionStatus,
   prosperityStatus,
   TIERS,
+  victoryStatus,
   type Country,
   type Decisions,
   type GameState,
   type Tier,
 } from '../../src/sim';
+import { withinRules } from './players';
 
 /** A scripted player: what it decides for the quarter, given the game as it stands. */
 export type Decide = (game: GameState) => Decisions;
@@ -48,6 +51,19 @@ export interface GameResult {
   readonly peakTier: Tier;
   /** The highest national prosperity any quarter of the game ended on, in thousandths. */
   readonly peakProsperity: number;
+  /** Everything the player borrowed over the game, in Money units. */
+  readonly borrowed: number;
+  /** How many bailouts a missed payment brought. One during austerity extends it instead. */
+  readonly bailouts: number;
+  /**
+   * How many quarters ended with prosperity held long enough to win but the win withheld by
+   * the debt test: the debt burden over its limit.
+   */
+  readonly heldByDebt: number;
+  /** The debt burden as the game ended, in thousandths of a year's revenue. */
+  readonly debtBurden: number;
+  /** The highest debt burden any quarter of the game ended on, in thousandths. */
+  readonly peakDebtBurden: number;
 }
 
 const rankOf = (tier: Tier) => TIERS.indexOf(tier);
@@ -69,13 +85,26 @@ export function playGame(
   let voteShare: number | null = null;
   let peakTier = game.tier;
   let peakProsperity = prosperityStatus(game).value;
+  let peakDebtBurden = debtStatus(game).burden;
+  let borrowed = 0;
+  let bailouts = 0;
+  let heldByDebt = 0;
   while (game.outcome.status === 'playing' && quarters < limit) {
-    const result = advanceQuarter(game, decide(game));
+    const decisions = withinRules(game, decide(game));
+    const result = advanceQuarter(game, decisions);
+    const kinds = result.report.entries.map((entry) => entry.kind);
     voteShare = result.report.election?.voteShare ?? voteShare;
+    // What was planned is lent unless a missed payment brought a bailout that quarter.
+    if (kinds.includes('loanTaken')) {
+      borrowed += (decisions.borrow ?? []).reduce((total, each) => total + each.amount, 0);
+    }
+    if (kinds.includes('bailout')) bailouts += 1;
     game = result.state;
     quarters += 1;
+    if (game.outcome.status === 'playing' && victoryStatus(game).waitingOnDebt) heldByDebt += 1;
     if (rankOf(game.tier) > rankOf(peakTier)) peakTier = game.tier;
     peakProsperity = Math.max(peakProsperity, prosperityStatus(game).value);
+    peakDebtBurden = Math.max(peakDebtBurden, debtStatus(game).burden);
   }
   const { outcome } = game;
   const figures = {
@@ -88,6 +117,11 @@ export function playGame(
     prosperity: prosperityStatus(game).value,
     peakTier,
     peakProsperity,
+    borrowed,
+    bailouts,
+    heldByDebt,
+    debtBurden: debtStatus(game).burden,
+    peakDebtBurden,
   };
   const ended = { regionId: null, winQuarter: null };
   if (outcome.status === 'playing') return { ...figures, ...ended, ending: 'inOffice' };
@@ -135,12 +169,29 @@ export interface Summary {
   readonly peakProsperity: Spread;
   /** The quarter in which the games lost to famine ended, or null when none was. */
   readonly famineQuarter: Spread | null;
+  /** How much each game borrowed. */
+  readonly borrowed: Spread;
+  /** The games in which a missed payment brought at least one bailout. */
+  readonly bailedOut: number;
+  /** How many bailouts each game that had one went through, or null when none did. */
+  readonly bailouts: Spread | null;
+  /** The games in which the debt test withheld a win for at least a quarter. */
+  readonly heldByDebt: number;
+  /** Of those, the games won once the debt test passed. */
+  readonly wonAfterHold: number;
+  /** How many quarters the debt test withheld the win, in the games it withheld one. */
+  readonly heldQuarters: Spread | null;
+  /** The debt burden each game ended on, in thousandths. */
+  readonly debtBurden: Spread;
+  /** The highest debt burden each game reached, in thousandths. */
+  readonly peakDebtBurden: Spread;
 }
 
 export function summarise(results: readonly GameResult[]): Summary {
   const count = (ending: GameResult['ending']) =>
     results.filter((result) => result.ending === ending).length;
   const famines = results.filter((result) => result.ending === 'famine');
+  const held = results.filter((result) => result.heldByDebt > 0);
   const byRegion = new Map<string, number>();
   for (const { regionId } of famines) {
     if (regionId !== null) byRegion.set(regionId, (byRegion.get(regionId) ?? 0) + 1);
@@ -174,6 +225,14 @@ export function summarise(results: readonly GameResult[]): Summary {
     prosperity: spreadOf(results.map((result) => result.prosperity)) ?? zero,
     peakProsperity: spreadOf(results.map((result) => result.peakProsperity)) ?? zero,
     famineQuarter: spreadOf(famines.map((result) => result.quarters)),
+    borrowed: spreadOf(results.map((result) => result.borrowed)) ?? zero,
+    bailedOut: results.filter((result) => result.bailouts > 0).length,
+    bailouts: spreadOf(results.flatMap((result) => (result.bailouts > 0 ? result.bailouts : []))),
+    heldByDebt: held.length,
+    wonAfterHold: held.filter((result) => result.ending === 'won').length,
+    heldQuarters: spreadOf(held.map((result) => result.heldByDebt)),
+    debtBurden: spreadOf(results.map((result) => result.debtBurden)) ?? zero,
+    peakDebtBurden: spreadOf(results.map((result) => result.peakDebtBurden)) ?? zero,
   };
 }
 

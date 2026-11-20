@@ -58,6 +58,14 @@
   accent-color: var(--amber);
 }
 
+/* What austerity holds the slider to, beneath it */
+.slider__limit {
+  grid-column: 2 / -1;
+  margin-top: -10px;
+  font-size: 13px;
+  color: var(--danger);
+}
+
 /* A cost the sliders do not set: instalments on projects */
 
 .fixed-costs {

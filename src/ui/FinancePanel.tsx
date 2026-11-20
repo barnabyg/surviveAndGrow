@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   bondOffers,
   bondRateSpan,
+  borrowingBarred,
   bondsClosedBecause,
   CREDIT_RATING_NAMES,
   creditStatus,
@@ -10,6 +11,7 @@ import {
   loanRateSpan,
   maturityOf,
   maturityOfTaking,
+  missedPaymentMeans,
   paysAtMaturity,
   ratingRank,
   formatMoney,
@@ -66,6 +68,8 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
     (offer) => offer.amount === bondAmount && offer.quarters === bondQuarters,
   );
   const closed = bondsClosedBecause(game.credit.rating);
+  // Austerity bars every loan and bond, whatever the rating.
+  const barred = borrowingBarred(game);
   const plan = (offer: LoanOffer) => {
     onPlan([...planned, { kind: offer.kind, amount: offer.amount, quarters: offer.quarters }]);
   };
@@ -139,7 +143,7 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
       {preview.missedPayment > 0 && (
         <p className="warning-note">
           ▲ The treasury and revenue cannot cover this quarter’s repayments. A payment of{' '}
-          {formatMoney(preview.missedPayment)} will be missed and added to the debt.
+          {formatMoney(preview.missedPayment)} will be missed. {missedPaymentMeans(game)}
         </p>
       )}
 
@@ -172,68 +176,82 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
       <h3 className="label" id="loan-title">
         Take a loan
       </h3>
-      <div className="loan__choice" role="group" aria-labelledby="loan-title">
-        <label htmlFor="loan-amount">Borrow</label>
-        <select
-          id="loan-amount"
-          value={amount}
-          onChange={(event) => {
-            setAmount(Number(event.target.value));
-          }}
-        >
-          {amounts.map((each) => (
-            <option key={each} value={each}>
-              {formatMoney(each)}
-            </option>
-          ))}
-        </select>
-        <label htmlFor="loan-term">Over</label>
-        <select
-          id="loan-term"
-          value={quarters}
-          onChange={(event) => {
-            setQuarters(Number(event.target.value));
-          }}
-        >
-          {terms.map((each) => (
-            <option key={each} value={each}>
-              {formatQuarters(each)}
-            </option>
-          ))}
-        </select>
-      </div>
-      {chosen !== undefined && (
-        <div className="loan__terms" role="group" aria-label="Loan terms">
-          <div className="fixed-costs__row">
-            <span>Repayment</span>
-            <span className="fixed-costs__note">Each quarter, from next quarter</span>
-            <span className="slider__value">{formatMoney(chosen.repayment)}</span>
+      {barred !== null ? (
+        <p className="warning-note" role="note" aria-label="Loans">
+          ▲ {barred}
+        </p>
+      ) : (
+        <>
+          <div className="loan__choice" role="group" aria-labelledby="loan-title">
+            <label htmlFor="loan-amount">Borrow</label>
+            <select
+              id="loan-amount"
+              value={amount}
+              onChange={(event) => {
+                setAmount(Number(event.target.value));
+              }}
+            >
+              {amounts.map((each) => (
+                <option key={each} value={each}>
+                  {formatMoney(each)}
+                </option>
+              ))}
+            </select>
+            <label htmlFor="loan-term">Over</label>
+            <select
+              id="loan-term"
+              value={quarters}
+              onChange={(event) => {
+                setQuarters(Number(event.target.value));
+              }}
+            >
+              {terms.map((each) => (
+                <option key={each} value={each}>
+                  {formatQuarters(each)}
+                </option>
+              ))}
+            </select>
           </div>
-          <div className="fixed-costs__row">
-            <span>Interest in all</span>
-            <span className="fixed-costs__note">
-              At {formatRate(chosen.annualRateBasisPoints)} a year
-            </span>
-            <span className="slider__value">{formatMoney(chosen.totalInterest)}</span>
-          </div>
-          {chosen.unavailable !== null && <p className="warning-note">▲ {chosen.unavailable}</p>}
-          <button
-            type="button"
-            className="button"
-            disabled={chosen.unavailable !== null}
-            onClick={() => {
-              plan(chosen);
-            }}
-          >
-            Plan loan
-          </button>
-        </div>
+          {chosen !== undefined && (
+            <div className="loan__terms" role="group" aria-label="Loan terms">
+              <div className="fixed-costs__row">
+                <span>Repayment</span>
+                <span className="fixed-costs__note">Each quarter, from next quarter</span>
+                <span className="slider__value">{formatMoney(chosen.repayment)}</span>
+              </div>
+              <div className="fixed-costs__row">
+                <span>Interest in all</span>
+                <span className="fixed-costs__note">
+                  At {formatRate(chosen.annualRateBasisPoints)} a year
+                </span>
+                <span className="slider__value">{formatMoney(chosen.totalInterest)}</span>
+              </div>
+              {chosen.unavailable !== null && (
+                <p className="warning-note">▲ {chosen.unavailable}</p>
+              )}
+              <button
+                type="button"
+                className="button"
+                disabled={chosen.unavailable !== null}
+                onClick={() => {
+                  plan(chosen);
+                }}
+              >
+                Plan loan
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <h3 className="label" id="bond-title">
         Issue a bond
       </h3>
-      {closed !== null ? (
+      {barred !== null ? (
+        <p className="warning-note" role="note" aria-label="Bonds">
+          ▲ {barred}
+        </p>
+      ) : closed !== null ? (
         <p className="section-empty" role="note" aria-label="Bonds">
           {closed} A bond pays only interest each quarter, and its whole sum at maturity.
         </p>

@@ -1,6 +1,10 @@
 import {
   approvalStatus,
+  bondOffers,
+  borrowingBarred,
   budgetLimits,
+  buildingBarred,
+  debtStatus,
   electionStatus,
   FOOD_STAGES,
   foodStatus,
@@ -8,16 +12,43 @@ import {
   previewQuarter,
   siteStatus,
   siteTerms,
+  startFault,
   SPENDING_AREAS,
+  loanOffers,
+  type Borrowing,
   type Budget,
   type Decisions,
   type GameState,
+  type LoanOffer,
   type Money,
   type PendingDilemma,
   type SiteType,
   type SpendingArea,
+  withinAusterity,
 } from '../../src/sim';
 import type { Decide } from './batch';
+
+/**
+ * The decisions brought within what austerity allows. The players plan as if there were none:
+ * during it their budget is brought within its limits and they start and borrow nothing,
+ * which is what a player who knew no better would be held to.
+ */
+export function withinRules(game: GameState, decisions: Decisions): Decisions {
+  const { startProjects, borrow, ...rest } = decisions;
+  const building = buildingBarred(game) === null && startProjects !== undefined;
+  const borrowing = borrowingBarred(game) === null && borrow !== undefined;
+  return {
+    ...rest,
+    budget: withinAusterity(game, decisions.budget),
+    ...(building ? { startProjects } : {}),
+    ...(borrowing ? { borrow } : {}),
+  };
+}
+
+/** What a quarter would bring with these decisions, brought within austerity. */
+function previewAllowed(game: GameState, decisions: Decisions) {
+  return previewQuarter(game, withinRules(game, decisions));
+}
 
 /**
  * The scripted players the balance is judged by. Each is a plain function from the game to
@@ -104,7 +135,7 @@ const popularity: Decide = (game) => {
     spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
   };
   // Everything in the treasury once this quarter's tax is in, shared between the three.
-  const available = previewQuarter(game, { budget: lowTax }).treasury.min;
+  const available = previewAllowed(game, { budget: lowTax }).treasury.min;
   const share = Math.min(spending.max, stepped(Math.floor(available / 3)));
   return {
     budget: {
@@ -145,6 +176,9 @@ const SMALL_SITES: readonly SiteType[] = ['irrigation', 'grainStore', 'farmRoad'
  */
 const sensible: Decide = builder(SMALL_SITES);
 
+/** The large sites in the order the chain builder builds them: power, then the mine's chain. */
+const CHAIN: readonly SiteType[] = ['powerStation', 'powerLine', 'port', 'trunkRoad', 'mine'];
+
 /**
  * Plays as the sensible player does, but builds the large sites first: power, which lifts
  * the output of every region a line reaches, and then the mine's chain, outlet first. The
@@ -152,30 +186,117 @@ const sensible: Decide = builder(SMALL_SITES);
  * turn. It builds through every term and stops only for the campaign, so what it starts
  * late pays off after the vote. Then it builds the small sites.
  */
-const chainBuilder: Decide = builder([
-  'powerStation',
-  'powerLine',
-  'port',
-  'trunkRoad',
-  'mine',
-  ...SMALL_SITES,
-]);
+const chainBuilder: Decide = builder([...CHAIN, ...SMALL_SITES]);
 
 /** A sensible player who builds every site of the types given, in that order. */
-function builder(order: readonly SiteType[]): Decide {
-  return (game) => steward(game, order);
+function builder(order: readonly SiteType[], lending: Lending = savesUp): Decide {
+  return (game) => steward(game, order, lending);
 }
+
+/**
+ * How a sensible player pays for the next site when the treasury cannot: what it borrows
+ * this quarter towards a site whose cost the money free to spend falls `short` of.
+ */
+type Lending = (game: GameState, short: Money) => Borrowing[];
+
+/** Borrows nothing: it saves until the treasury holds the site's cost. */
+function savesUp(): Borrowing[] {
+  return [];
+}
+
+/** How the sensible borrower borrows. These are its habits, not the game's rules. */
+const borrowerHabits = {
+  /**
+   * It borrows no further once what is owed would pass this share of a year's revenue: half
+   * of what lenders allow a nation rated A.
+   */
+  mostBurdenPermille: 500,
+  /**
+   * It borrows no further once the quarter's repayments would pass this share of a
+   * quarter's revenue.
+   */
+  mostRepaymentsPermille: 150,
+  /** It borrows for a site only when it lacks more than this, and otherwise saves. */
+  leastShortfall: 2 * habits.savingPerQuarter,
+} as const;
+
+/**
+ * Borrows what the next site lacks, with a margin to stay clear of the lenders' limit and of
+ * repayments it could not meet: bonds once the rating allows them, which pay only interest
+ * until they mature and cost less, and loans over the longest term until then, which ask the
+ * least each quarter. It takes the smallest sum that covers the shortfall, or failing that the
+ * largest it allows itself.
+ */
+const borrowsSensibly: Lending = (game, short) => {
+  if (short <= borrowerHabits.leastShortfall) return [];
+  const status = debtStatus(game);
+  const quarterRevenue = Math.floor(status.yearRevenue / 4);
+  const mostOwed = Math.floor((status.yearRevenue * borrowerHabits.mostBurdenPermille) / 1000);
+  const mostRepaid = Math.floor((quarterRevenue * borrowerHabits.mostRepaymentsPermille) / 1000);
+  const planned: Borrowing[] = [];
+  let owed = status.debt;
+  let repayments = status.repayments;
+  let lacking = short;
+  while (lacking > 0 && planned.length < 3) {
+    const bonds = bondOffers(game, planned).filter((offer) => offer.unavailable === null);
+    const offers = bonds.length > 0 ? bonds : loanOffers(game, planned);
+    const longest = Math.max(...offers.map((offer) => offer.quarters));
+    const fitting = offers.filter(
+      (offer) =>
+        offer.unavailable === null &&
+        offer.quarters === longest &&
+        owed + offer.amount <= mostOwed &&
+        repayments + quarterlyCost(offer) <= mostRepaid,
+    );
+    const choice =
+      fitting.filter((offer) => offer.amount >= lacking).sort(byAmount)[0] ??
+      fitting.sort(byAmount).at(-1);
+    if (choice === undefined) break;
+    planned.push({ kind: choice.kind, amount: choice.amount, quarters: choice.quarters });
+    owed += choice.amount;
+    repayments += quarterlyCost(choice);
+    lacking -= choice.amount;
+  }
+  return planned;
+};
+
+const byAmount = (a: LoanOffer, b: LoanOffer) => a.amount - b.amount;
+
+/**
+ * What a debt on offer will cost each quarter, as the sensible borrower budgets for it: a
+ * loan's repayment, or a bond's interest and what it puts by towards its maturity.
+ */
+function quarterlyCost(offer: LoanOffer): Money {
+  return offer.kind === 'bond'
+    ? offer.repayment + Math.ceil(offer.amount / offer.quarters)
+    : offer.repayment;
+}
+
+/**
+ * Plays as the chain builder does and builds the same sites, but the mine's chain first, so
+ * that what the mine earns comes in to pay what was borrowed, and power after it. It borrows
+ * for each site the treasury cannot yet pay for instead of saving up for it, within limits of
+ * its own: loans while the credit rating allows nothing better, bonds once it allows them. It
+ * puts money by for each bond's maturity as the bond runs.
+ */
+const sensibleBorrower: Decide = builder(
+  ['port', 'trunkRoad', 'mine', 'powerStation', 'powerLine', ...SMALL_SITES],
+  borrowsSensibly,
+);
 
 /**
  * The sensible way of running the country, building the sites of the types given in turn: a
  * balanced budget that puts a little by while something is left to build, relief for the
  * hungry, the farms helped while the reserve is low, and the savings spent on approval as
- * the vote nears. The instalments on what is being built come out of savings.
+ * the vote nears. The instalments on what is being built come out of savings. A player that
+ * borrows puts money by for each bond's maturity, and does not count it as savings.
  */
-function steward(game: GameState, order: readonly SiteType[]): Decisions {
+function steward(game: GameState, order: readonly SiteType[], lending: Lending): Decisions {
   const { quartersAway } = electionStatus(game);
   const quartersLeft = quartersAway + 1;
   const campaigning = quartersLeft <= habits.campaignQuarters;
+  const putBy = maturityFund(game);
+  const savings = Math.max(0, game.treasury - putBy.held);
 
   // Relief goes to the hungry region furthest gone, and is paid for only when one is.
   const reliefRegionId = hungriest(game);
@@ -187,23 +308,124 @@ function steward(game: GameState, order: readonly SiteType[]): Decisions {
 
   if (campaigning) {
     // What is saved is spent evenly over the quarters left, on what wins approval.
-    const allowance = Math.floor(game.treasury / quartersLeft);
-    budget = campaign(game, budget, choices, -allowance);
+    const allowance = Math.floor(savings / quartersLeft);
+    budget = campaign(game, budget, choices, putBy.thisQuarter - allowance);
     return { budget, ...choices };
   }
 
   const next = nextSite(game, order);
-  const saving = next === null ? 0 : habits.savingPerQuarter;
-  const floor = saving - Math.min(instalmentsDue(game), game.treasury);
+  // What is already promised to the sites being built is not there to spend.
+  const free = savings - remainingCost(game);
+  const startProjects = next !== null && next.cost <= free ? [next.siteId] : [];
+  const borrow = next !== null && startProjects.length === 0 ? lending(game, next.cost - free) : [];
+  // It saves for the next site only when it is not borrowing for it.
+  const saving = next === null || borrow.length > 0 ? 0 : habits.savingPerQuarter;
+  const floor = saving + putBy.thisQuarter - Math.min(instalmentsDue(game), savings);
   budget = balanced(game, budget, choices, floor);
   if (next === null) budget = invested(game, budget, choices, floor);
-  // What is already promised to the sites being built is not there to spend.
-  const free = game.treasury - remainingCost(game);
-  const startProjects = next !== null && next.cost <= free ? [next.siteId] : [];
-  if (startProjects.length > 0) {
-    budget = balanced(game, budget, { ...choices, startProjects }, floor);
+  if (next !== null && startProjects.length > 0) {
+    // A player that borrows has the site's cost in hand, and pays its first instalment from it.
+    const first = lending === savesUp ? 0 : siteStatus(game, next.siteId).instalment;
+    budget = balanced(game, budget, { ...choices, startProjects }, floor - first);
   }
-  return { budget, ...choices, startProjects };
+  return { budget, ...choices, startProjects, ...(borrow.length > 0 ? { borrow } : {}) };
+}
+
+/**
+ * What a player that pays each bond off at maturity has put by for it: a like share of the
+ * sum each quarter the bond runs, held in the treasury until it falls due. `thisQuarter` is
+ * what the quarter adds to it, less what it pays out at a maturity.
+ */
+function maturityFund(game: GameState): { readonly held: Money; readonly thisQuarter: Money } {
+  let held = 0;
+  let thisQuarter = 0;
+  for (const debt of game.debts) {
+    if (debt.schedule !== 'atMaturity') continue;
+    const share = Math.ceil(debt.owed / debt.termQuarters);
+    const runs = debt.termQuarters - debt.quartersLeft;
+    const already = Math.min(debt.owed, share * runs);
+    held += already;
+    thisQuarter += debt.quartersLeft <= 1 ? -already : share;
+  }
+  return { held, thisQuarter };
+}
+
+/**
+ * Borrows recklessly: every quarter it can, it borrows as much as the lenders allow, taking
+ * the largest sums at the lowest rate on offer, which is the shortest term. It treats what it
+ * borrows as money to spend: it starts every site it can pay for, in the chain builder's
+ * order, and spends the rest over the year on whatever the preview says wins most approval.
+ * It sets the tax to balance the budget as if nothing were owed, so the repayments come out
+ * of the treasury, and when it runs dry a payment is missed. Relief, the farms and dilemmas
+ * it handles as the sensible player does, with an eye on approval.
+ */
+const recklessBorrower: Decide = (game) => borrowAndBuild(game, false);
+
+/**
+ * Borrows as much as the lenders allow and builds everything it can at once, as the reckless
+ * borrower does, or, when `paysAsItGoes`, with the tax set to pay the repayments and the
+ * building out of each quarter's revenue.
+ */
+function borrowAndBuild(game: GameState, paysAsItGoes: boolean): Decisions {
+  const quartersLeft = electionStatus(game).quartersAway + 1;
+  const reliefRegionId = hungriest(game);
+  const start = withGrowingFarms(game, withRelief(game, usualServices(game), reliefRegionId));
+  const dilemmaChoice = answer(game, (option) => approvalOf(option) + moneyOf(option) / 4);
+  const startProjects = affordable(game, [...CHAIN, ...SMALL_SITES]);
+  const choices = { reliefRegionId, dilemmaChoice, startProjects };
+  const cost = startProjects.reduce((total, id) => total + costOf(game, id), 0);
+  const left = Math.max(0, game.treasury - remainingCost(game) - cost);
+  // What is left is spent within the year, or before the vote if that comes sooner.
+  const allowance = Math.floor(left / Math.min(4, quartersLeft));
+  // The reckless borrower budgets as if the repayments and what is being built cost nothing.
+  const owing = paysAsItGoes
+    ? 0
+    : debtStatus(game).repayments +
+      instalmentsDue(game) +
+      startProjects.reduce((total, id) => total + siteStatus(game, id).instalment, 0);
+  const budget = campaign(game, start, choices, -owing - allowance, -owing);
+  const borrow = mostOnOffer(game);
+  return { budget, ...choices, ...(borrow.length > 0 ? { borrow } : {}) };
+}
+
+/** Every empty site of the types given that the treasury can pay for, taken in that order. */
+function affordable(game: GameState, order: readonly SiteType[]): string[] {
+  let free = game.treasury - remainingCost(game);
+  const chosen: string[] = [];
+  for (const type of order) {
+    for (const site of game.country.sites) {
+      if (site.type !== type || siteStatus(game, site.id).state !== 'empty') continue;
+      const { cost } = siteTerms(type);
+      // A site is passed over when an alternative to it is already chosen.
+      if (cost > free || startFault(game, [...chosen, site.id]) !== null) continue;
+      chosen.push(site.id);
+      free -= cost;
+    }
+  }
+  return chosen;
+}
+
+function costOf(game: GameState, siteId: string): Money {
+  const site = game.country.sites.find((candidate) => candidate.id === siteId);
+  return site === undefined ? 0 : siteTerms(site.type).cost;
+}
+
+/**
+ * As much as the lenders allow this quarter: the largest sum on offer at the lowest rate,
+ * again and again until no more can be taken, loans and bonds alike.
+ */
+function mostOnOffer(game: GameState): Borrowing[] {
+  const planned: Borrowing[] = [];
+  for (;;) {
+    const offers = [...loanOffers(game, planned), ...bondOffers(game, planned)].filter(
+      (offer) => offer.unavailable === null,
+    );
+    const choice = offers.sort(
+      (a, b) => b.amount - a.amount || a.annualRateBasisPoints - b.annualRateBasisPoints,
+    )[0];
+    if (choice === undefined) return planned;
+    planned.push({ kind: choice.kind, amount: choice.amount, quarters: choice.quarters });
+  }
 }
 
 /** What the sites being built cost this quarter. */
@@ -222,7 +444,7 @@ function hungriest(game: GameState): string | null {
     FOOD_STAGES.indexOf(
       game.regions.find((region) => region.id === regionId)?.foodStage ?? 'adequate',
     );
-  const { shortfalls } = previewQuarter(game, { budget: game.budget });
+  const { shortfalls } = previewAllowed(game, { budget: game.budget });
   const worst = [...shortfalls].sort(
     (a, b) => stageOf(b.regionId) - stageOf(a.regionId) || b.shortfall - a.shortfall,
   )[0];
@@ -233,10 +455,10 @@ function hungriest(game: GameState): string | null {
 function withRelief(game: GameState, budget: Budget, reliefRegionId: string | null): Budget {
   const none = spend(budget, 'foodRelief', 0);
   if (reliefRegionId === null) return none;
-  const { relief } = previewQuarter(game, { budget: none, reliefRegionId });
+  const { relief } = previewAllowed(game, { budget: none, reliefRegionId });
   for (let amount = 0; amount <= budgetLimits.spending.max; amount += budgetLimits.spending.step) {
     const tried = spend(budget, 'foodRelief', amount);
-    const moved = previewQuarter(game, { budget: tried, reliefRegionId }).relief;
+    const moved = previewAllowed(game, { budget: tried, reliefRegionId }).relief;
     if (moved.capacity >= relief.shortfall) return tried;
   }
   return spend(budget, 'foodRelief', budgetLimits.spending.max);
@@ -286,7 +508,7 @@ function balanced(game: GameState, budget: Budget, choices: Choices, floor: Mone
   const { min, max }: { min: number; max: number } = budgetLimits.taxRatePercent;
   for (let rate = min; rate <= max; rate += 1) {
     const tried = { ...budget, taxRatePercent: rate };
-    const preview = previewQuarter(game, { budget: tried, ...choices });
+    const preview = previewAllowed(game, { budget: tried, ...choices });
     if (preview.balance.min >= floor && !preview.spendingCut) return tried;
   }
   return { ...budget, taxRatePercent: max };
@@ -304,20 +526,26 @@ function invested(game: GameState, budget: Budget, choices: Choices, floor: Mone
     const area = best.spending.health <= best.spending.education ? 'health' : 'education';
     if (best.spending[area] + step > max) return best;
     const tried = spend(best, area, best.spending[area] + step);
-    const preview = previewQuarter(game, { budget: tried, ...choices });
+    const preview = previewAllowed(game, { budget: tried, ...choices });
     if (preview.balance.min < floor || preview.spendingCut) return best;
     best = tried;
   }
 }
 
 /**
- * The campaign budget: starting from a balanced one, it takes whichever single step the
+ * The campaign budget: starting from one balanced to leave `from` over, it takes whichever single step the
  * preview says does most for approval for the money (a point off tax, or a step more on
  * health, education or security) until the quarter's allowance is spent.
  */
-function campaign(game: GameState, start: Budget, choices: Choices, floor: Money): Budget {
-  const heading = (budget: Budget) => previewQuarter(game, { budget, ...choices });
-  let budget = balanced(game, start, choices);
+function campaign(
+  game: GameState,
+  start: Budget,
+  choices: Choices,
+  floor: Money,
+  from: Money = 0,
+): Budget {
+  const heading = (budget: Budget) => previewAllowed(game, { budget, ...choices });
+  let budget = balanced(game, start, choices, from);
   let now = heading(budget);
   for (;;) {
     let best: { budget: Budget; gain: number; preview: typeof now } | null = null;
@@ -428,6 +656,18 @@ export const SCRIPTED_PLAYERS: readonly ScriptedPlayer[] = [
       'Plays as the sensible player does, and goes on to build power and the mine with its road and port.',
     decide: chainBuilder,
   },
+  {
+    name: 'Sensible borrower',
+    manner:
+      'Plays as the chain builder does, but borrows for each site it cannot yet pay for, loans and then bonds, within limits of its own.',
+    decide: sensibleBorrower,
+  },
+  {
+    name: 'Reckless borrower',
+    manner:
+      'Borrows all the lenders allow, builds whatever that pays for, spends the rest on approval and leaves the repayments to the treasury.',
+    decide: recklessBorrower,
+  },
 ];
 
 /** The hungriest region relieved, at whatever relief costs, on top of a budget. */
@@ -506,6 +746,12 @@ export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
     ]),
   },
   {
+    name: 'Borrow and build at once',
+    manner:
+      'Borrows all the lenders allow and builds everything at once, as the reckless borrower does, but taxes enough to pay the repayments and the building as it goes.',
+    decide: (game) => borrowAndBuild(game, true),
+  },
+  {
     name: 'Hover then spend',
     manner:
       'Tax as high as keeps approval just clear of strikes until the campaign, then everything saved on approval.',
@@ -529,7 +775,7 @@ export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
         rate += 1
       ) {
         const tried = { ...budget, taxRatePercent: rate };
-        const preview = previewQuarter(game, { budget: tried, ...choices });
+        const preview = previewAllowed(game, { budget: tried, ...choices });
         if (preview.approvalHeading.min < line || preview.unrest.length > 0) break;
         budget = tried;
       }

@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import {
-  budgetLimits,
+  austerityStatus,
+  budgetBounds,
   CREDIT_RATING_NAMES,
   CREDIT_RATINGS,
   exactly,
@@ -9,6 +10,7 @@ import {
   formatIndex,
   formatPercent,
   formatTonnes,
+  missedPaymentMeans,
   MONEY_PER_MILLION,
   monthsOfFood,
   previewQuarter,
@@ -64,7 +66,9 @@ export function BudgetPanel(props: BudgetPanelProps) {
   const before = previewQuarter(game, { ...held, budget: committed });
   const after = previewQuarter(game, { ...held, budget: pending });
   const building = after.projectSpending.max > 0 || after.pausedSites.length > 0;
-  const { taxRatePercent, spending } = budgetLimits;
+  // Austerity narrows the ranges: a floor on the tax rate and caps on some areas.
+  const { taxRatePercent, spending } = budgetBounds(game);
+  const austerity = austerityStatus(game);
   const food = foodStatus(game);
 
   return (
@@ -94,12 +98,21 @@ export function BudgetPanel(props: BudgetPanelProps) {
         </p>
       )}
 
+      {austerity !== null && (
+        <p className="warning-note" role="note" aria-label="Austerity">
+          ▲ Austerity: {austerity.reason} The tax rate cannot go below {austerity.taxFloorPercent}%,
+          and spending is capped where marked.
+        </p>
+      )}
       <div className="sliders">
         <Slider
           label="Tax rate"
           min={taxRatePercent.min}
           max={taxRatePercent.max}
           step={1}
+          limit={
+            austerity === null ? null : `Austerity: no lower than ${austerity.taxFloorPercent}%`
+          }
           value={pending.taxRatePercent}
           committedValue={committed.taxRatePercent}
           format={(rate) => `${rate}%`}
@@ -108,25 +121,29 @@ export function BudgetPanel(props: BudgetPanelProps) {
             onChange({ ...pending, taxRatePercent: rate });
           }}
         />
-        {SPENDING_AREAS.map((area) => (
-          <Slider
-            key={area}
-            label={SPENDING_AREA_NAMES[area]}
-            min={spending.min / MONEY_PER_MILLION}
-            max={spending.max / MONEY_PER_MILLION}
-            step={spending.step / MONEY_PER_MILLION}
-            value={pending.spending[area] / MONEY_PER_MILLION}
-            committedValue={committed.spending[area] / MONEY_PER_MILLION}
-            format={(millions) => formatMoney(millions * MONEY_PER_MILLION)}
-            formatChange={(millions) => formatSigned(millions * MONEY_PER_MILLION)}
-            onChange={(millions) => {
-              onChange({
-                ...pending,
-                spending: { ...pending.spending, [area]: millions * MONEY_PER_MILLION },
-              });
-            }}
-          />
-        ))}
+        {SPENDING_AREAS.map((area) => {
+          const cap = austerity?.caps[area] ?? null;
+          return (
+            <Slider
+              key={area}
+              label={SPENDING_AREA_NAMES[area]}
+              min={spending[area].min / MONEY_PER_MILLION}
+              max={spending[area].max / MONEY_PER_MILLION}
+              step={spending[area].step / MONEY_PER_MILLION}
+              limit={cap === null ? null : `Austerity: no more than ${formatMoney(cap)}`}
+              value={pending.spending[area] / MONEY_PER_MILLION}
+              committedValue={committed.spending[area] / MONEY_PER_MILLION}
+              format={(millions) => formatMoney(millions * MONEY_PER_MILLION)}
+              formatChange={(millions) => formatSigned(millions * MONEY_PER_MILLION)}
+              onChange={(millions) => {
+                onChange({
+                  ...pending,
+                  spending: { ...pending.spending, [area]: millions * MONEY_PER_MILLION },
+                });
+              }}
+            />
+          );
+        })}
       </div>
 
       <div className="fixed-costs" role="group" aria-label="Upkeep needed">
@@ -175,8 +192,8 @@ export function BudgetPanel(props: BudgetPanelProps) {
           )}
           {after.missedPayment > 0 && (
             <p className="warning-note">
-              ▲ A payment of {formatMoney(after.missedPayment)} will be missed and added to the
-              debt.
+              ▲ A payment of {formatMoney(after.missedPayment)} will be missed.{' '}
+              {missedPaymentMeans(game)}
             </p>
           )}
         </div>
@@ -373,12 +390,19 @@ interface SliderProps {
   readonly format: (value: number) => string;
   readonly formatChange: (change: number) => string;
   readonly onChange: (value: number) => void;
+  /** What holds the slider inside a narrower range than the game's own, or null. */
+  readonly limit?: string | null;
 }
 
-/** One budget slider. A value that differs from the committed one is marked as pending. */
+/**
+ * One budget slider. A value that differs from the committed one is marked as pending, and
+ * a range that austerity narrows says so beneath it.
+ */
 function Slider(props: SliderProps) {
   const { label, min, max, step, value, committedValue, format, formatChange, onChange } = props;
+  const { limit = null } = props;
   const id = useId();
+  const limitId = useId();
   const change = value - committedValue;
   return (
     <div className={change === 0 ? 'slider' : 'slider slider--pending'}>
@@ -390,6 +414,7 @@ function Slider(props: SliderProps) {
         max={max}
         step={step}
         value={value}
+        aria-describedby={limit === null ? undefined : limitId}
         aria-valuetext={format(value)}
         onChange={(event) => {
           onChange(event.target.valueAsNumber);
@@ -399,6 +424,11 @@ function Slider(props: SliderProps) {
         {format(value)}
         {change !== 0 && <span className="slider__change"> ({formatChange(change)})</span>}
       </span>
+      {limit !== null && (
+        <span className="slider__limit" id={limitId}>
+          ▲ {limit}
+        </span>
+      )}
     </div>
   );
 }

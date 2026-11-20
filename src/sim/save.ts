@@ -1,3 +1,4 @@
+import { withinAusterity, type Austerity } from './austerity';
 import { fitBudget, type Budget } from './budget';
 import { CountryFileError, loadCountry, type Country } from './country';
 import {
@@ -121,6 +122,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       tier: game.tier,
       startingTier: game.startingTier,
       prosperousQuarters: game.prosperousQuarters,
+      austerity: game.austerity,
       outcome: game.outcome,
     },
     report,
@@ -192,11 +194,21 @@ export function loadSave(
     tier: oneOf(state.tier, 'state.tier', TIERS, 'a tier of prosperity'),
     startingTier: oneOf(state.startingTier, 'state.startingTier', TIERS, 'a tier of prosperity'),
     prosperousQuarters: whole(state.prosperousQuarters, 'state.prosperousQuarters', 0),
+    austerity:
+      state.austerity === null
+        ? null
+        : readAusterity(record(state.austerity, 'state.austerity'), 'state.austerity'),
     outcome: readOutcome(record(state.outcome, 'state.outcome'), 'state.outcome', region),
   };
   const report =
     current.report === null ? null : readReport(record(current.report, 'report'), region);
-  return { game, report };
+  // Austerity's limits are this release's, so the budget in force is brought within them too.
+  return { game: { ...game, budget: withinAusterity(game, game.budget) }, report };
+}
+
+/** Austerity in force: at least the quarter being decided is left of it. */
+function readAusterity(saved: Json, path: string): Austerity {
+  return { quartersLeft: whole(saved.quartersLeft, `${path}.quartersLeft`, 1) };
 }
 
 /** The country a save carries, read from its file by the same check as any country file. */

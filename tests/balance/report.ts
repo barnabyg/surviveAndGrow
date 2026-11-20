@@ -66,7 +66,25 @@ export function writeUp(
       ].join(' | ')} |`;
     }),
     '',
-    'Spreads are least / middle / most. Won is the win on prosperity: Prosperous held for four quarters running. Still in office counts the games that had neither won nor lost when their terms were up. Vote share counts only the games that reached a vote.',
+    '| Player | Borrowed | Bailed out | Bailouts in a game | Win held back by the debt test | Debt burden at the end | Highest debt burden |',
+    '| --- | --- | ---: | --- | --- | --- | --- |',
+    ...rows.map(({ player, summary }) => {
+      const held =
+        summary.heldByDebt === 0
+          ? 'never'
+          : `${share(summary.heldByDebt, summary.games)}, ${summary.wonAfterHold} of ${summary.heldByDebt} won later, waiting ${spread(summary.heldQuarters, String)} quarters`;
+      return `| ${[
+        player,
+        spread(summary.borrowed, formatMoney),
+        share(summary.bailedOut, summary.games),
+        spread(summary.bailouts, String),
+        held,
+        spread(summary.debtBurden, (permille) => formatPercent(permille, 0)),
+        spread(summary.peakDebtBurden, (permille) => formatPercent(permille, 0)),
+      ].join(' | ')} |`;
+    }),
+    '',
+    'Spreads are least / middle / most. Won is the win on prosperity: Prosperous held for four quarters running, with the debt burden within the debt test as the hold completes. Still in office counts the games that had neither won nor lost when their terms were up. Vote share counts only the games that reached a vote. Bailed out counts the games in which a missed payment brought a bailout, and bailouts in a game counts them in those games. The win held back by the debt test counts the games in which prosperity was held long enough to win but the debt burden was over the limit, with how many of them were won once it passed and the quarters the win waited. The debt burden is what is owed against a year’s revenue.',
     '',
     ...rows.map(({ player, summary }) => {
       const votes = summary.lostElectionByTerm
