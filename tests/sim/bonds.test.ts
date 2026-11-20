@@ -74,14 +74,21 @@ describe.each(bothCountries)('a bond in %s', (_name, country) => {
 
     // A small loan repaid on time puts 25 points a quarter on the payment record, until the
     // nation is rated AA.
-    let game = play(start, [{ budget: earning, borrow: [loan(100, 12)] }]).state;
+    let played = play(start, [{ budget: earning, borrow: [loan(100, 12)] }]);
     let quarters = 1;
-    while (game.credit.rating !== 'aa' && quarters < 12) {
-      game = play(game, [{ budget: earning }]).state;
+    while (played.state.credit.rating !== 'aa' && quarters < 12) {
+      played = play(played.state, [{ budget: earning }]);
       quarters += 1;
     }
+    const game = played.state;
     expect(game.credit.rating).toBe('aa');
     expect(bondOffers(game).length).toBeGreaterThan(0);
+    // The report of the rise says that bonds can now be issued.
+    const [raised] = entriesOf(played.reports.at(-1), 'creditRating');
+    expect(raised?.headline).toBe('Credit rating raised to AA');
+    expect(raised?.cause).toMatch(
+      / Bonds can now be issued, at \d+(\.\d+)?% to \d+(\.\d+)?% a year\.$/,
+    );
 
     const issued = play(game, [{ budget: earning, borrow: [bond(200, 8)] }]);
     const [first] = issued.reports;
@@ -246,6 +253,16 @@ describe('a bond’s maturity the treasury cannot cover', () => {
     expect(missed?.cause).toContain(
       `The ${formatMoney(200 - paid)} of interest it could not pay was added to the debt: ${formatMoney(20_200 - paid)} is now owed.`,
     );
+  });
+
+  it('cuts a rating of AA, and the report says bonds can no longer be issued', () => {
+    const game = rated(maturing(), 'aa');
+
+    const result = advanceQuarter(game, { ...steward(game), budget: ruinous });
+
+    const [cut] = entriesOf(result.report, 'creditRating');
+    expect(cut?.headline).toMatch(/^Credit rating cut to /);
+    expect(cut?.cause).toMatch(/ Bonds can no longer be issued\.$/);
   });
 
   it('then falls to level repayments that clear it', () => {

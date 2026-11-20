@@ -296,6 +296,17 @@ function ratingEntry(was: CreditRating, after: CreditAssessment, cause: string):
     kind: 'creditRating',
     seriousness: fell ? 'warning' : 'notable',
     headline: `Credit rating ${fell ? 'cut' : 'raised'} to ${step.name}`,
-    cause: `${cause} New loans are offered at ${loanRateSpan(step)} a year, and the nation may owe up to ${formatPercent(step.debtLimitPermille, 0)} of a year’s revenue.`,
+    cause: `${cause} New loans are offered at ${loanRateSpan(step)} a year, and the nation may owe up to ${formatPercent(step.debtLimitPermille, 0)} of a year’s revenue.${bondsNote(was, step)}`,
   };
+}
+
+/** What a change of rating did to issuing bonds, when it crossed the least rating they need. */
+function bondsNote(was: CreditRating, now: CreditStep): string {
+  const { leastRating } = balance.finance.bonds;
+  const could = ratedAtLeast(was, leastRating);
+  const can = ratedAtLeast(now.rating, leastRating);
+  if (could === can) return '';
+  if (!can) return ' Bonds can no longer be issued.';
+  const rates = bondRateSpan(now);
+  return ` Bonds can now be issued${rates === null ? '' : `, at ${rates} a year`}.`;
 }
