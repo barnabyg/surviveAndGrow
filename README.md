@@ -374,7 +374,8 @@ $env:BALANCE_SEEDS = '1001-2200'; $env:BALANCE_PLAYERS = 'all'; npm run balance
 - `src/sim/` is the simulation. It is a pure function of the game state, the player's decisions
   and a seeded random generator, and it knows nothing about the interface, the clock or storage.
   The lint rules and `tsconfig.sim.json` enforce this. Everything else reaches it through
-  `src/sim/index.ts`.
+  `src/sim/index.ts`. [src/sim/README.md](src/sim/README.md) gives the order a quarter is
+  resolved in and the files a new mechanic touches.
 - `src/countries/` holds the countries that ship, as data files. The engine contains no
   country-specific code.
 - `src/ui/` is the interface.
