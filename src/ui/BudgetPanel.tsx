@@ -22,6 +22,7 @@ import {
 } from '../sim';
 import { formatRange, formatSigned } from './format';
 import { DecisionPanel } from './DecisionPanel';
+import './BudgetPanel.css';
 
 interface BudgetPanelProps {
   readonly game: GameState;

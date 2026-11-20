@@ -1,0 +1,39 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px 40px;
+  padding: 12px 28px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar__identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topbar__country {
+  font-family: var(--font-condensed);
+  font-weight: 600;
+  font-size: 21px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar__date {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.vitals {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 12px 36px;
+}

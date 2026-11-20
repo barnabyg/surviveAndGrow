@@ -6,6 +6,7 @@ import {
   type TurnReport,
 } from '../sim';
 import { PlaceNote } from './PlaceNote';
+import './ReportList.css';
 
 interface ReportListProps {
   /** The report on the quarter just ended, or null before any quarter has ended. */

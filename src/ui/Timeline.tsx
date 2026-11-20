@@ -11,6 +11,7 @@ import {
 } from '../sim';
 import { formatDate } from './format';
 import { opening } from './schedule';
+import './Timeline.css';
 
 interface TimelineProps {
   readonly game: GameState;

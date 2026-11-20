@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { readClosedPanels, storePanelClosed } from './storage';
+import './DecisionPanel.css';
 
 interface DecisionPanelProps {
   /**

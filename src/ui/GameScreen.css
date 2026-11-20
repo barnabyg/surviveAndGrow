@@ -1,0 +1,77 @@
+/* Main screen */
+
+.game {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.columns {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 440px minmax(0, 1fr) 500px;
+  align-items: stretch;
+}
+
+/* Each column scrolls on its own when it runs long, so the page itself never scrolls. */
+.column {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.column > * {
+  flex-shrink: 0;
+}
+
+.column--situation,
+.column--decisions {
+  gap: 18px;
+  padding: 20px 24px;
+  background: var(--panel);
+}
+
+.column--situation {
+  border-right: 1px solid var(--line);
+}
+
+.column--decisions {
+  border-left: 1px solid var(--line);
+}
+
+.column--country {
+  background: var(--panel-deep);
+}
+
+/* The map takes whatever height the strip beneath it leaves and keeps its 3:2 shape, so
+   the timeline stays on screen however many projects it lists. Below a readable size it
+   stops shrinking, and the column scrolls. */
+.column > .map-frame {
+  flex: 1 1 0;
+  min-height: 600px;
+  container-type: size;
+  display: flex;
+  justify-content: center;
+}
+
+.map-stage {
+  position: relative;
+  width: min(100cqw, 150cqh);
+  height: min(100cqh, 66.667cqw);
+}
+
+/* Beneath the map: the term timeline and the legend */
+
+.map-footer {
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

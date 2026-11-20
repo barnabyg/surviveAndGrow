@@ -1,5 +1,6 @@
 import { useId, useState, type ReactNode } from 'react';
 import type { Figure } from '../sim';
+import './VitalSign.css';
 
 interface VitalSignProps {
   readonly label: string;

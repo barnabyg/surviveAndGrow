@@ -6,8 +6,9 @@ import '@fontsource/ibm-plex-sans/500.css';
 import '@fontsource/ibm-plex-sans/600.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { App } from './ui/App';
+// The shared look loads before the components, whose own stylesheets build on it.
 import './ui/styles.css';
+import { App } from './ui/App';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('The page has no root element');

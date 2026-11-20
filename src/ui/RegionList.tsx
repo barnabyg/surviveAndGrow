@@ -1,4 +1,5 @@
 import { FOOD_STAGE_NAMES, formatIndex, livingStandards, regionName, type GameState } from '../sim';
+import './RegionList.css';
 
 interface RegionListProps {
   readonly game: GameState;

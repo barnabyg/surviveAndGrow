@@ -16,6 +16,7 @@ import {
   type TurnReport,
 } from '../sim';
 import { formatSignedCount } from './format';
+import './map-card.css';
 
 interface RegionCardProps {
   readonly game: GameState;

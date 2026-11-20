@@ -1,4 +1,5 @@
 import { describeTrend, hasTrend, verticalScale, type Mark } from './trend';
+import './chart.css';
 
 interface TrendLineProps {
   /** What the line charts, as its description names it: "Treasury". */

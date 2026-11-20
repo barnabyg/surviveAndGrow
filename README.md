@@ -377,7 +377,11 @@ $env:BALANCE_SEEDS = '1001-2200'; $env:BALANCE_PLAYERS = 'all'; npm run balance
   `src/sim/index.ts`.
 - `src/countries/` holds the countries that ship, as data files. The engine contains no
   country-specific code.
-- `src/ui/` is the interface.
+- `src/ui/` is the interface. Each component imports its own stylesheet, named after it
+  (`MapView.css` beside `MapView.tsx`). `styles.css` holds the colours, the base elements and
+  the rules several components share, and `chart.css` and `map-card.css` are shared by the
+  two components that draw charts and the two map cards. `main.tsx` imports `styles.css`
+  before the components, so their rules come after it.
 - `tests/sim/` tests the game rules through the simulation's public interface.
 - `tests/e2e/` drives the real app in a browser at 2560 x 1440.
 - `tests/countries/` holds a crude second country, used to prove that nothing is tied to the first.

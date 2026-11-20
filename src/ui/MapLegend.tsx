@@ -1,3 +1,5 @@
+import './MapLegend.css';
+
 /**
  * What the marks for sites and routes mean. Each state has its own shape of line, so the
  * legend can be read without telling the colours apart.

@@ -1,0 +1,85 @@
+.vital {
+  position: relative;
+  flex: 0 1 380px;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.vital__figures {
+  min-width: 0;
+}
+
+.vital__button {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vital__button:hover .vital__value {
+  text-decoration: underline dotted;
+  text-underline-offset: 5px;
+}
+
+.vital__button:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 4px;
+}
+
+.vital__button .label,
+.vital__button .vital__value {
+  display: block;
+}
+
+.vital__change,
+.vital__remark {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.vital__note {
+  font-size: 14px;
+  color: var(--label);
+}
+
+.vital__change--good {
+  color: var(--blue);
+}
+
+.vital__change--bad,
+.vital__remark--danger {
+  color: var(--danger);
+}
+
+.vital__remark--warning {
+  color: var(--amber);
+}
+
+.vital__value {
+  font-family: var(--font-figures);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.15;
+}
+
+.vital__unit {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+/* The election, shown as one more vital sign in the top bar */
+.vital--election {
+  flex: 0 1 220px;
+}
+
+.vital--election .label,
+.vital--election .vital__value {
+  display: block;
+}
