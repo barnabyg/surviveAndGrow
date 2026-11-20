@@ -14,7 +14,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import { bothCountries, testland } from './countries';
-import { steward } from './players';
+import { answering, inFirstTerm, steward } from './players';
 
 /** A loan of a sum over a term, in Money units ($100,000) and quarters. */
 function loan(amount: number, quarters: number): Borrowing {
@@ -75,7 +75,7 @@ describe('the loans on offer', () => {
 });
 
 describe.each(bothCountries)('a loan in %s', (_name, country) => {
-  it('arrives as the quarter ends, is repaid from the next, and leaves the nation debt-free', () => {
+  it('arrives as the quarter ends, is repaid from the next, and leaves the nation debt-free to the vote', () => {
     const game = createGame(country(), 7);
 
     const taken = play(game, [{ borrow: [loan(100, 4)] }]);
@@ -102,6 +102,30 @@ describe.each(bothCountries)('a loan in %s', (_name, country) => {
       expect.objectContaining({ headline: 'Repaid: Loan 1' }),
     ]);
     expect(repaid.state.history.at(-1)).toMatchObject({ debt: 0, debtBurden: 0 });
+
+    // Played on to the vote that closes the term, the nation stays debt-free, and no payment
+    // is ever missed. Enough is spent on agriculture that the harvests feed every region.
+    let state = repaid.state;
+    const reports = [...taken.reports, ...repaid.reports];
+    const fed: Budget = {
+      ...game.budget,
+      spending: {
+        ...game.budget.spending,
+        agriculture: Math.max(30, game.budget.spending.agriculture),
+      },
+    };
+    while (inFirstTerm(state)) {
+      const result = advanceQuarter(state, answering(state, steward(state, fed)));
+      reports.push(result.report);
+      state = result.state;
+    }
+    expect(reports).toHaveLength(20);
+    expect(reports.at(-1)?.election).not.toBeNull();
+    expect(reports.flatMap((report) => entriesOf(report, 'missedPayment'))).toEqual([]);
+    expect(state.debts).toEqual([]);
+    expect(state.history.slice(6).map((signs) => signs.debt)).toEqual(
+      Array.from({ length: 15 }, () => 0),
+    );
   });
 
   it('is paid before the budget, so a heavy repayment cuts spending', () => {

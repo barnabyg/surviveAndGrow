@@ -14,7 +14,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import { bothCountries, testland } from './countries';
-import { steward } from './players';
+import { answering, inFirstTerm, steward } from './players';
 
 /** A loan of a sum over a term, in Money units ($100,000) and quarters. */
 function loan(amount: number, quarters: number): Borrowing {
@@ -119,6 +119,24 @@ describe.each(bothCountries)('the credit rating in %s', (_name, country) => {
     );
     expect(fourQuarterRate(repaid.state)).toBe(rateBefore);
     expect(creditStatus(repaid.state).record).toBe(800);
+
+    // Played on to the vote with nothing more borrowed, the rating never falls back below A.
+    // Enough is spent on agriculture that the harvests feed every region.
+    const fed: Budget = {
+      ...game.budget,
+      spending: {
+        ...game.budget.spending,
+        agriculture: Math.max(30, game.budget.spending.agriculture),
+      },
+    };
+    let state = repaid.state;
+    const ratings = [];
+    while (inFirstTerm(state)) {
+      state = advanceQuarter(state, answering(state, steward(state, fed))).state;
+      ratings.push(state.credit.rating);
+    }
+    expect(state.history).toHaveLength(21);
+    expect(ratings.filter((rating) => rating !== 'a' && rating !== 'aa')).toEqual([]);
   });
 
   it('reports the score and what moved it each quarter', () => {
