@@ -229,7 +229,8 @@ What is in the game:
   may be owed (from 125% of a year's revenue at AA down to 25% at B). Loans already taken keep
   the rate they were taken at. The rating is reassessed as each quarter ends from a score: the
   payment record, less a share of the debt burden and of the quarter's deficit (spending beyond
-  revenue, not counting repaid principal). A game starts with a record of 700, rated A. A missed
+  revenue, not counting repaid principal). A game starts with a record of 700, rated A unless
+  the country starts in debt, when the debt burden sets its opening rating. A missed
   payment brings a bailout, which leaves the record at 0 and the rating at B; each quarter whose
   repayments are all made on time puts 25 back, up to 1,000. The rating sits in the top bar; click it to see the score's parts
   and every step with its rates and limit. The finance panel shows the rates the rating gets and
@@ -345,6 +346,26 @@ costlier of alternatives, rounded up to the next $1.0m.
 
 In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
 year, from 0 to 10. A region that leaves it out grows at the game's own rate.
+
+In a file of `"formatVersion": 4`, a country can start in debt. `start.loans` lists the loans it
+owes as the game begins, each with its `amount` in millions, its yearly `rate` in percent (to at
+most two decimal places, from 0 to 25) and the `quarters` left to repay it (1 to 40):
+
+```json
+"loans": [
+  { "amount": 7, "rate": 7, "quarters": 8 },
+  { "amount": 4, "rate": 9.5, "quarters": 12 }
+]
+```
+
+They are owed as Loan 1, Loan 2 and so on, in the file's order, and repaid like any other loan,
+in level repayments of interest and principal, the first in the game's first quarter. The game
+opens at the credit rating its debt burden leads to under the usual rules; the file does not
+state it. A country may start with at most five loans, owing between them no more than half a
+year's output from its regions, and their first repayments must be payable from the starting
+treasury and the first quarter's tax, so that the game cannot open on a missed payment. Testland,
+the test country, starts owing $11.0m, which opens it at BBB. A file of an earlier format starts
+owing nothing, and still loads as it is.
 
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:
