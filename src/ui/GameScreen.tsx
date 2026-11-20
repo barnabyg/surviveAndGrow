@@ -8,6 +8,7 @@ import {
   risksAhead,
   siteSchedule,
   siteStatus,
+  withinAusterity,
   type Borrowing,
   type GameState,
   type TurnReport,
@@ -175,6 +176,9 @@ export function GameScreen(props: GameScreenProps) {
     const result = advanceQuarter(game, decisions);
     setGame(result.state);
     setReport(result.report);
+    // A bailout brings the budget in force within austerity, and the sliders with it.
+    setCommitted(result.state.budget);
+    setPending(withinAusterity(result.state, pending));
     setReportPicked(null);
     setPlannedSiteIds([]);
     setPlannedLoans([]);

@@ -1,5 +1,6 @@
 import {
   approvalStatus,
+  austerityStatus,
   creditRules,
   creditStatus,
   bondRateSpan,
@@ -107,6 +108,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
   const prosperity = prosperityStatus(game);
   const tier = tierStatus({ ...game, prosperity: prosperity.value });
   const victory = victoryStatus(game);
+  const austerity = game.outcome.status === 'playing' ? austerityStatus(game) : null;
   const targetName = TIER_NAMES[victory.tier];
   const atTarget = tier.tier === victory.tier;
   const target: Mark = {
@@ -458,6 +460,19 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
             </div>
           </div>
         </div>
+        {/* Austerity counts down to its end, while a bailout's terms hold. */}
+        {austerity !== null && (
+          <div className="vital vital--austerity" role="group" aria-label="Austerity">
+            <div className="vital__figures">
+              <span className="label">Austerity</span>
+              <span className="vital__value">
+                {austerity.quartersLeft}
+                <span className="vital__unit"> {quartersWord(austerity.quartersLeft)} left</span>
+              </span>
+              <div className="vital__note">Ends after {formatDate(austerity.lastQuarter)}</div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="topbar__actions">

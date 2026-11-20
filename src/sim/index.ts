@@ -33,7 +33,9 @@ export { type Budget } from './budget';
 export { missedPaymentMeans } from './bailout';
 export {
   austerityStatus,
+  borrowingBarred,
   budgetBounds,
+  buildingBarred,
   withinAusterity,
   type Austerity,
   type AusterityStatus,
