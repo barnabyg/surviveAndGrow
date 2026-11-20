@@ -48,9 +48,6 @@ import {
   type SpendingArea,
 } from './vocabulary';
 
-export { SAVE_FORMAT_VERSION, type SaveMigration } from './migrations';
-export { SaveError } from './saveChecks';
-
 /** Everything about a game except what a save records beside it. */
 export type SavedState = Omit<GameState, 'country' | 'seed' | 'rng'>;
 
