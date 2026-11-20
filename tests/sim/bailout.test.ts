@@ -16,7 +16,7 @@ import {
   type TurnReport,
   withinAusterity,
 } from '../../src/sim';
-import { bothCountries, tavara, testland } from './countries';
+import { bothCountries, tavara, testland, testlandInDebt } from './countries';
 import { answering, inFirstTerm, steward } from './players';
 
 /** A loan of a sum over a term, in Money units ($100,000) and quarters. */
@@ -386,59 +386,67 @@ describe('the risks ahead', () => {
   });
 });
 
-describe.each(bothCountries)('a whole game in %s', (_name, country) => {
-  it('over-borrows into a bailout, lives through austerity and comes out of it', () => {
-    let state = createGame(country(), 2026);
-    const reports: TurnReport[] = [];
-    const advance = (decisions: Decisions) => {
-      const result = advanceQuarter(state, answering(state, decisions));
-      reports.push(result.report);
-      state = result.state;
-    };
-    // Read through a function, since the quarters played change the state under the loops.
-    const inAusterity = () => state.austerity !== null;
+describe.each([...bothCountries, ['Testland, starting in debt', testlandInDebt] as const])(
+  'a whole game in %s',
+  (_name, country) => {
+    it('over-borrows into a bailout, lives through austerity and comes out of it', () => {
+      let state = createGame(country(), 2026);
+      const reports: TurnReport[] = [];
+      const advance = (decisions: Decisions) => {
+        const result = advanceQuarter(state, answering(state, decisions));
+        reports.push(result.report);
+        state = result.state;
+      };
+      // Read through a function, since the quarters played change the state under the loops.
+      const inAusterity = () => state.austerity !== null;
 
-    // The largest loan lenders allow, over a year, and then every area at its most on the
-    // lowest tax until a repayment cannot be met.
-    const [largest] = loanOffers(state)
-      .filter((offer) => offer.unavailable === null && offer.quarters === 4)
-      .sort((a, b) => b.amount - a.amount);
-    if (largest === undefined) throw new Error('No loan is on offer.');
-    advance({ ...steward(state, ruinous), borrow: [loan(largest.amount, 4)] });
-    while (!inAusterity()) {
-      if (reports.length > 6) throw new Error('No bailout came.');
-      advance(steward(state, ruinous));
-    }
-    const bailedAt = reports.length;
-    expect(entriesOf(reports.at(-1), 'bailout')).toHaveLength(1);
-    expect(state.debts.map((debt) => debt.kind)).toEqual(['bailout']);
-    expect(state.credit.rating).toBe('b');
-
-    // Through austerity on the budget the game began with, brought within it, and with
-    // enough food relief, which austerity does not cap, to carry a region through a drought.
-    const sensible = (game: GameState) => {
-      const { start } = game.country;
-      const foodRelief = Math.max(50, start.budget.spending.foodRelief);
-      return withinAusterity(game, {
-        ...start.budget,
-        spending: { ...start.budget.spending, foodRelief },
+      // The largest loan lenders allow, over a year, if they allow one beside the debt the
+      // country starts with, and then every area at its most on the lowest tax until a
+      // repayment cannot be met.
+      const [largest] = loanOffers(state)
+        .filter((offer) => offer.unavailable === null && offer.quarters === 4)
+        .sort((a, b) => b.amount - a.amount);
+      const owing = state.debts.length;
+      if (largest === undefined && owing === 0) throw new Error('No loan is on offer.');
+      advance({
+        ...steward(state, ruinous),
+        borrow: largest === undefined ? [] : [loan(largest.amount, 4)],
       });
-    };
-    while (inAusterity()) {
-      expect(state.outcome).toEqual({ status: 'playing' });
-      advance(steward(state, sensible(state)));
-    }
-    expect(reports.length - bailedAt).toBe(8);
-    expect(entriesOf(reports.at(-1), 'austerity')[0]?.headline).toBe('Austerity ends');
+      while (!inAusterity()) {
+        if (reports.length > 6) throw new Error('No bailout came.');
+        advance(steward(state, ruinous));
+      }
+      const bailedAt = reports.length;
+      expect(entriesOf(reports.at(-1), 'bailout')).toHaveLength(1);
+      expect(state.debts.map((debt) => debt.kind)).toEqual(['bailout']);
+      expect(state.credit.rating).toBe('b');
 
-    // And on to the vote that closes the term, every repayment made.
-    while (inFirstTerm(state)) advance(steward(state, sensible(state)));
-    expect(reports).toHaveLength(20);
-    expect(reports.slice(bailedAt).flatMap((report) => entriesOf(report, 'missedPayment'))).toEqual(
-      [],
-    );
-    expect(state.austerity).toBeNull();
-    // What is still owed, if anything, is the bailout loan, repaid on schedule.
-    expect(state.debts.every((debt) => debt.kind === 'bailout')).toBe(true);
-  });
-});
+      // Through austerity on the budget the game began with, brought within it, and with
+      // enough food relief, which austerity does not cap, to carry a region through a drought.
+      const sensible = (game: GameState) => {
+        const { start } = game.country;
+        const foodRelief = Math.max(50, start.budget.spending.foodRelief);
+        return withinAusterity(game, {
+          ...start.budget,
+          spending: { ...start.budget.spending, foodRelief },
+        });
+      };
+      while (inAusterity()) {
+        expect(state.outcome).toEqual({ status: 'playing' });
+        advance(steward(state, sensible(state)));
+      }
+      expect(reports.length - bailedAt).toBe(8);
+      expect(entriesOf(reports.at(-1), 'austerity')[0]?.headline).toBe('Austerity ends');
+
+      // And on to the vote that closes the term, every repayment made.
+      while (inFirstTerm(state)) advance(steward(state, sensible(state)));
+      expect(reports).toHaveLength(20);
+      expect(
+        reports.slice(bailedAt).flatMap((report) => entriesOf(report, 'missedPayment')),
+      ).toEqual([]);
+      expect(state.austerity).toBeNull();
+      // What is still owed, if anything, is the bailout loan, repaid on schedule.
+      expect(state.debts.every((debt) => debt.kind === 'bailout')).toBe(true);
+    });
+  },
+);
