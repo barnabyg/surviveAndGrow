@@ -4,6 +4,7 @@ import {
   siteTerms,
   termCalendar,
   type GameState,
+  type Maturity,
   type SiteSchedule,
   type TermCalendar,
   type TermQuarter,
@@ -24,17 +25,20 @@ interface TimelineProps {
   readonly considered: SiteSchedule | null;
   /** The sites whose instalment the treasury will not cover this quarter. */
   readonly pausedSites: readonly string[];
+  /** When each bond owed or planned falls due, those after the vote among them. */
+  readonly maturities: readonly Maturity[];
   readonly onSelectSite: (siteId: string) => void;
 }
 
 /**
  * The whole of the current term under the map: every quarter to the election that closes it,
  * with the harvests and the vote marked, and each project as a bar followed by the quarters
- * it will be in use before the vote. A government that is re-elected moves on to the next
- * term's timeline. It is a table, so every mark is also read out in words.
+ * it will be in use before the vote, and each bond's maturity, when its whole sum falls due.
+ * A government that is re-elected moves on to the next term's timeline. It is a table, so
+ * every mark is also read out in words.
  */
 export function Timeline(props: TimelineProps) {
-  const { game, schedule, considered, pausedSites, onSelectSite } = props;
+  const { game, schedule, considered, pausedSites, maturities, onSelectSite } = props;
   const calendar = termCalendar(game);
   const years = [...new Set(calendar.quarters.map((quarter) => quarter.date.year))];
   const rows = [
@@ -101,6 +105,9 @@ export function Timeline(props: TimelineProps) {
               unpaid={pausedSites.includes(entry.siteId)}
               onSelectSite={onSelectSite}
             />
+          ))}
+          {maturities.map((maturity) => (
+            <MaturityRow key={maturity.name} calendar={calendar} maturity={maturity} />
           ))}
         </tbody>
       </table>
@@ -228,6 +235,52 @@ function ProjectRow(props: ProjectRowProps) {
           </div>
         )}
       </td>
+    </tr>
+  );
+}
+
+/**
+ * A bond: a mark in the quarter it falls due, or, when that is after the vote, in the column
+ * beyond it. A bond only planned is drawn dashed.
+ */
+function MaturityRow(props: { readonly calendar: TermCalendar; readonly maturity: Maturity }) {
+  const { calendar, maturity } = props;
+  const { first, last } = calendar;
+  const due = `${formatMoney(maturity.due)} due ${formatDate(maturity.date)}`;
+  const classes = `timeline__bar timeline__bar--maturity${maturity.planned ? ' timeline__bar--maturity-planned' : ''}`;
+  // A maturity in an earlier term has been paid or missed, and has no mark left to make.
+  if (maturity.quarter < first) return null;
+  return (
+    <tr>
+      <th scope="row" className="timeline__site">
+        <span className="timeline__debt">{maturity.name}</span>
+        <span className="timeline__status">
+          {maturity.planned ? 'If issued now · ' : ''}Matures {formatDate(maturity.date)}
+          {maturity.afterVote ? ', after the vote' : ''}
+        </span>
+      </th>
+      {maturity.afterVote ? (
+        <>
+          <td colSpan={last - first + 1} />
+          <td>
+            <div className="timeline__bar timeline__bar--after" title={due}>
+              ▶ {due}
+            </div>
+          </td>
+        </>
+      ) : (
+        <>
+          {maturity.quarter > first && <td colSpan={maturity.quarter - first} />}
+          <td>
+            <div className={classes} title={due}>
+              <span className="visually-hidden">{due}</span>
+              <span aria-hidden="true">◆</span>
+            </div>
+          </td>
+          {maturity.quarter < last && <td colSpan={last - maturity.quarter} />}
+          <td />
+        </>
+      )}
     </tr>
   );
 }

@@ -4,11 +4,12 @@ import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName } from './country';
 import { creditStatus, loanRateSpan, ratingCause, ratingRank } from './credit';
-import { debtStatus } from './debt';
+import { debtName, debtStatus, maturityOf, paysAtMaturity, type Debt } from './debt';
 import { defeatChancePermille, electionStatus } from './election';
 import { eventName, eventsThatMayBegin, type PossibleEvent } from './events';
 import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
 import type { Decisions, GameState, RegionState } from './state';
+import type { Money } from './types';
 import { prosperityStatus } from './prosperity';
 import {
   articleFor,
@@ -50,7 +51,8 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 
 /**
  * The dangers of the coming quarters: famine in a region, strikes, a treasury that runs
- * out, a missed payment on a debt, and a lost election. It plays the quarters ahead with the real rules, holding the decisions as they are,
+ * out, a missed payment on a debt, a bond's maturity that cannot be met, and a lost
+ * election. It plays the quarters ahead with the real rules, holding the decisions as they are,
  * once for each course the weather could take and each event that could still begin, and
  * weighs how many of those lead to each danger. The most likely comes first, and a danger
  * too unlikely to matter is left out, unless it would end the game. It changes nothing and draws nothing from the random
@@ -78,12 +80,13 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
       play(state, decisions, played, outlook.swingSharePermille, events),
     ),
   }));
-  const whole: Scope = { state, watched, possible, courses };
+  const whole: Scope = { state, watched, possible, courses, bonds: bondsAhead(state, courses) };
 
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
     ...treasuryRisk(whole),
     ...missedPaymentRisk(whole),
+    ...whole.bonds.flatMap((bond) => maturityRisk(whole, bond)),
     ...creditRisk(whole),
     ...upkeepRisk(whole),
     ...strikeRisk(whole),
@@ -117,6 +120,39 @@ interface Scope {
    * `possible`, then all together when there is more than one.
    */
   readonly courses: readonly { readonly weight: number; readonly paths: readonly Path[] }[];
+  /** Every bond owed or about to be issued that is still to fall due in one payment. */
+  readonly bonds: readonly BondAhead[];
+}
+
+/** A bond whose whole sum is still to fall due. */
+interface BondAhead {
+  readonly name: string;
+  readonly number: number;
+  /** How many quarters are played before the one it falls due in: 0 is the one being decided. */
+  readonly matures: number;
+}
+
+/**
+ * The bonds owed, and those to be issued as the quarter being decided ends, each with how
+ * far off its maturity is. A bond whose missed maturity turned it into level repayments
+ * has no maturity left to fall due.
+ */
+function bondsAhead(state: GameState, courses: Scope['courses']): BondAhead[] {
+  const owed = state.debts.filter(paysAtMaturity);
+  const issued = (typicalOf(courses)[0]?.state.debts ?? []).filter(
+    (debt) => paysAtMaturity(debt) && !state.debts.some((other) => other.number === debt.number),
+  );
+  const ahead = (debt: Debt, from: number): BondAhead => ({
+    name: debtName(debt),
+    number: debt.number,
+    matures: from + debt.quartersLeft - 1,
+  });
+  return [...owed.map((debt) => ahead(debt, 0)), ...issued.map((debt) => ahead(debt, 1))];
+}
+
+/** The course with ordinary weather and no new event. */
+function typicalOf(courses: Scope['courses']): Path {
+  return courses[Math.floor(courses.length / 2)]?.paths[0] ?? [];
 }
 
 /**
@@ -346,9 +382,16 @@ function treasuryRisk(scope: Scope): Risk[] {
  * cover it. What goes unpaid is added to the debt.
  */
 function missedPaymentRisk(scope: Scope): Risk[] {
-  const { watched } = scope;
+  const { watched, bonds } = scope;
+  // A maturity missed is warned of as such (`maturityRisk`), so it is not counted here.
+  const maturing = (quarter: number) =>
+    bonds.filter((bond) => bond.matures === quarter).map((bond) => bond.name);
   const misses = (path: Path) => {
-    const quarter = path.slice(0, watched).findIndex((resolved) => resolved.missedPayment > 0);
+    const quarter = path
+      .slice(0, watched)
+      .findIndex((resolved, index) =>
+        resolved.missedOn.some((name) => !maturing(index).includes(name)),
+      );
     return quarter === -1 ? null : quarter;
   };
   const finding = weigh(scope, misses);
@@ -358,7 +401,9 @@ function missedPaymentRisk(scope: Scope): Risk[] {
   // Which debt goes unpaid is read off the course with ordinary weather and no new event.
   const typical = scope.courses[Math.floor(scope.courses.length / 2)]?.paths[0] ?? [];
   const first = typical[misses(typical) ?? finding.soonest];
-  const which = first?.missedOn[0] ?? 'a debt';
+  const which =
+    first?.missedOn.find((name) => !maturing(misses(typical) ?? finding.soonest).includes(name)) ??
+    'a debt';
   return [
     {
       kind: 'missedPayment',
@@ -368,6 +413,91 @@ function missedPaymentRisk(scope: Scope): Risk[] {
       withinQuarters: finding.soonest + 1,
     },
   ];
+}
+
+/**
+ * A bond's maturity is missed when what the treasury holds and the quarter's revenue cannot
+ * cover its whole sum. Inside the horizon that is read off the quarters played. Beyond it,
+ * where nothing is played, the treasury is supposed to go on as it went over the quarters
+ * played: by what they raised beyond what they spent, before any principal was repaid or
+ * anything borrowed. From that is taken the principal the other debts will repay before the
+ * bond falls due: bonds that mature first, all of it, and a loan the share of what it owes
+ * that its quarters left by then make up. The maturity is warned of if what is left would not
+ * cover the bond.
+ */
+function maturityRisk(scope: Scope, bond: BondAhead): Risk[] {
+  const { state, watched, courses } = scope;
+  const misses = (path: Path) =>
+    shortOf(path, bond, watched, state.treasury) === null ? null : bond.matures;
+  const finding = weigh(scope, misses);
+  const likelihood = finding === null ? null : likelihoodOf(finding.chance);
+  if (finding === null || likelihood === null) return [];
+
+  const owed =
+    [...state.debts, ...(typicalOf(courses)[0]?.state.debts ?? [])].find(
+      (debt) => debt.number === bond.number,
+    )?.owed ?? 0;
+  const date = maturityOf({ quartersLeft: bond.matures + 1 }, state.date);
+  const falls = `${bond.name}’s ${formatMoney(owed)} falls due in full ${when(bond.matures)}, in Year ${date.year} · Quarter ${date.quarter}.`;
+  const held =
+    bond.matures < watched ? null : shortOf(typicalOf(courses), bond, watched, state.treasury);
+  const course =
+    held === null
+      ? 'As things stand the treasury and revenue cannot cover it.'
+      : `On the course it is on, the treasury will hold about ${formatMoney(Math.max(0, held.available))} by then.`;
+  return [
+    {
+      kind: 'bondMaturity',
+      likelihood,
+      headline: `${bond.name} cannot be repaid`,
+      reason: `${falls} ${course} What goes unpaid is a missed payment: it is added to the debt and repaid over ${formatQuarters(balance.finance.bonds.missedMaturityQuarters)}, and the payment record suffers.`,
+      withinQuarters: bond.matures + 1,
+    },
+  ];
+}
+
+/**
+ * Whether a path leaves a bond's maturity uncovered, and if it lies beyond the quarters
+ * played, what the treasury is supposed to hold for it then: null when it is covered, or a
+ * path the game ends on before the bond falls due.
+ */
+function shortOf(
+  path: Path,
+  bond: BondAhead,
+  watched: number,
+  start: Money,
+): { readonly available: Money } | null {
+  if (bond.matures < watched) {
+    const resolved = path[bond.matures];
+    return resolved?.missedOn.includes(bond.name) === true ? { available: 0 } : null;
+  }
+  const played = path.slice(0, watched);
+  const end = played.at(-1)?.state;
+  if (end?.outcome.status !== 'playing') return null;
+  const own = end.debts.find((debt) => debt.number === bond.number);
+  if (own === undefined || !paysAtMaturity(own)) return null;
+
+  let underlying = 0;
+  played.forEach((resolved, index) => {
+    const from = index === 0 ? start : (played[index - 1]?.state.treasury ?? start);
+    underlying += resolved.state.treasury - from + resolved.principalRepaid - resolved.borrowed;
+  });
+  // Played quarters run from the one being decided; the rest are the ones up to maturity.
+  const rest = bond.matures - played.length + 1;
+  const trend = Math.floor(underlying / played.length);
+  const others = end.debts.filter((debt) => debt.number !== bond.number);
+  const repaidFirst = sum(
+    others.map((debt) => {
+      if (paysAtMaturity(debt)) {
+        return debt.quartersLeft < rest || (debt.quartersLeft === rest && debt.number < bond.number)
+          ? debt.owed
+          : 0;
+      }
+      return Math.floor((debt.owed * Math.min(rest, debt.quartersLeft)) / debt.quartersLeft);
+    }),
+  );
+  const available = end.treasury + trend * rest - repaidFirst;
+  return available < own.owed ? { available } : null;
 }
 
 /**

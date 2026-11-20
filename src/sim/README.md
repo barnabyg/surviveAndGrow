@@ -16,7 +16,8 @@ supposed chance. It lives the quarter through `liveQuarter`, which the preview
 
 1. The answer to a dilemma (`dilemmas.ts`).
 2. Money (`resolveMoney`): repayments on debts, oldest first, out of the treasury and the
-   quarter's revenue (`debt.ts`); then the budget (`budget.ts`) with what is left; then project
+   quarter's revenue (`debt.ts`), a bond's interest each quarter and its whole sum at
+   maturity; then the budget (`budget.ts`) with what is left; then project
    instalments, oldest first (`projects.ts`); then upkeep and decay (`upkeep.ts`). What is
    borrowed arrives last, as the quarter ends (`debt.ts`).
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,

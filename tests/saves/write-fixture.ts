@@ -28,7 +28,8 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   // quarters in its second. It is saved as Year 2 begins, owing on both loans, with three
   // repayments made on the first and two on the second, and the repayments in the report.
   // The first loan and the scheme's instalments together cut the credit rating to BBB, so
-  // the second loan is taken at BBB's dearer rate; repaying on time has it back at A.
+  // the second loan is taken at BBB's dearer rate; repaying on time has it back at A, and in
+  // its fourth quarter it issues a $20.0m bond over eight quarters at A's 4%.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
@@ -47,7 +48,9 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
           ? [{ kind: 'loan', amount: 250, quarters: 8 }]
           : quarter === 1
             ? [{ kind: 'loan', amount: 100, quarters: 4 }]
-            : [],
+            : quarter === 3
+              ? [{ kind: 'bond', amount: 200, quarters: 8 }]
+              : [],
       dilemmaChoice,
     });
     game = result.state;
@@ -55,12 +58,13 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.debts.map((debt) => [debt.number, debt.quartersLeft])).toEqual([
-    [1, 5],
-    [2, 2],
+  expect(game.debts.map((debt) => [debt.kind, debt.number, debt.quartersLeft])).toEqual([
+    ['loan', 1, 5],
+    ['loan', 2, 2],
+    ['bond', 3, 8],
   ]);
-  expect(game.debts.every((debt) => debt.owed < debt.borrowed)).toBe(true);
-  expect(game.debts.map((debt) => debt.annualRateBasisPoints)).toEqual([800, 750]);
+  expect(game.debts.map((debt) => debt.owed < debt.borrowed)).toEqual([true, true, false]);
+  expect(game.debts.map((debt) => debt.annualRateBasisPoints)).toEqual([800, 750, 400]);
   expect(game.credit.rating).toBe('a');
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);

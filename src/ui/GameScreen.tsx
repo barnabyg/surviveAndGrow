@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   advanceQuarter,
+  bondMaturities,
   pendingDilemma,
   previewQuarter,
   regionName,
@@ -270,6 +271,7 @@ export function GameScreen(props: GameScreenProps) {
               schedule={schedule}
               considered={considered}
               pausedSites={preview?.pausedSites ?? []}
+              maturities={bondMaturities(game, plannedLoans)}
               onSelectSite={selectSite}
             />
             <MapLegend />

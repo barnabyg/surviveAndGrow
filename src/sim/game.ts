@@ -166,6 +166,10 @@ export interface QuarterResolved extends TurnResult {
   readonly missedPayment: Money;
   /** The debts a payment was missed on, by name. */
   readonly missedOn: readonly string[];
+  /** What the quarter's payments on debts took off the principal owed. */
+  readonly principalRepaid: Money;
+  /** What borrowing brought into the treasury as the quarter ended. */
+  readonly borrowed: Money;
   /** The share of their needs each region's people ate, in thousandths, in the regions' order. */
   readonly fedPermille: readonly number[];
   readonly electionHeld: boolean;
@@ -325,6 +329,8 @@ export function resolveQuarter(
     upkeepShort: finances.upkeep.short,
     missedPayment: serviced.missed,
     missedOn: serviced.missedOn,
+    principalRepaid: serviced.principal,
+    borrowed: taken.borrowed,
     fedPermille: food.fedPermille,
     electionHeld: election !== null,
   };

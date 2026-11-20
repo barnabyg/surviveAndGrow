@@ -1,11 +1,12 @@
 import { balance } from './balance';
 import { dateOfQuarter, isHarvestQuarter, quarterNumber } from './calendar';
 import type { Country } from './country';
+import { debtName, maturityOf, paysAtMaturity, type Borrowing, type Debt } from './debt';
 import type { Project } from './projects';
 import { siteTerms } from './sites';
 import type { Outcome } from './state';
 import { termBounds, termOf } from './terms';
-import type { GameDate } from './types';
+import type { GameDate, Money } from './types';
 import type { ProjectStatus } from './vocabulary';
 
 /** One quarter of the term, as the timeline shows it. */
@@ -137,4 +138,50 @@ function scheduleOf(game: Building, siteId: string, delay: number): SiteSchedule
     opens,
     inUseBeforeVote: Math.max(0, last - Math.max(opens, first) + 1),
   };
+}
+
+/** A bond's maturity, when its whole sum falls due, as the timeline marks it. */
+export interface Maturity {
+  /** The bond: "Bond 2", or "Planned bond" for one to be issued as this quarter ends. */
+  readonly name: string;
+  /** The quarter it falls due in, counted like a quarter's number. */
+  readonly quarter: number;
+  readonly date: GameDate;
+  /** The principal that falls due, besides the quarter's interest. */
+  readonly due: Money;
+  /** True for a bond still only planned this quarter. */
+  readonly planned: boolean;
+  /** True when it falls due after the vote that closes the current term. */
+  readonly afterVote: boolean;
+}
+
+/**
+ * The maturity of every bond owed and of every one planned for this quarter, in the order
+ * they were issued, the planned last. A bond whose missed maturity has turned it into level
+ * repayments has no maturity left to mark.
+ */
+export function bondMaturities(
+  game: { readonly date: GameDate; readonly debts: readonly Debt[]; readonly outcome?: Outcome },
+  planned: readonly Borrowing[],
+): Maturity[] {
+  const { last } = termBounds(termOf(game));
+  const now = quarterNumber(game.date);
+  const mark = (name: string, quarter: number, due: Money, isPlanned: boolean): Maturity => ({
+    name,
+    quarter,
+    date: dateOfQuarter(quarter),
+    due,
+    planned: isPlanned,
+    afterVote: quarter > last,
+  });
+  return [
+    ...game.debts
+      .filter(paysAtMaturity)
+      .map((debt) =>
+        mark(debtName(debt), quarterNumber(maturityOf(debt, game.date)), debt.owed, false),
+      ),
+    ...planned
+      .filter((each) => each.kind === 'bond')
+      .map((each) => mark('Planned bond', now + each.quarters, each.amount, true)),
+  ];
 }

@@ -1185,7 +1185,7 @@
       "year": 2,
       "quarter": 1
     },
-    "treasury": 289,
+    "treasury": 489,
     "budget": {
       "taxRatePercent": 18,
       "spending": {
@@ -1372,6 +1372,20 @@
         "owed": 51,
         "repayment": 26,
         "quartersLeft": 2
+      },
+      {
+        "kind": "bond",
+        "number": 3,
+        "taken": {
+          "year": 1,
+          "quarter": 4
+        },
+        "borrowed": 200,
+        "annualRateBasisPoints": 400,
+        "termQuarters": 8,
+        "owed": 200,
+        "repayment": 2,
+        "quartersLeft": 8
       }
     ],
     "credit": {
@@ -1437,13 +1451,13 @@
           "year": 2,
           "quarter": 1
         },
-        "treasury": 289,
+        "treasury": 489,
         "foodReserve": 411114,
         "quarterlyConsumption": 263131,
         "approval": 517,
         "prosperity": 231,
-        "debt": 209,
-        "debtBurden": 168
+        "debt": 409,
+        "debtBurden": 329
       }
     ],
     "dilemma": null,
@@ -1461,8 +1475,8 @@
       "quarter": 4
     },
     "treasury": {
-      "value": 289,
-      "change": -115,
+      "value": 489,
+      "change": 85,
       "contributions": [
         {
           "label": "Tax from Korr Highlands",
@@ -1533,6 +1547,10 @@
         {
           "label": "Upkeep",
           "amount": -4
+        },
+        {
+          "label": "Bond 3 received",
+          "amount": 200
         }
       ]
     },
@@ -1607,8 +1625,8 @@
       ]
     },
     "debt": {
-      "value": 209,
-      "change": -56,
+      "value": 409,
+      "change": 144,
       "contributions": [
         {
           "label": "Repaid on Loan 1",
@@ -1617,12 +1635,16 @@
         {
           "label": "Repaid on Loan 2",
           "amount": -25
+        },
+        {
+          "label": "Bond 3 taken",
+          "amount": 200
         }
       ]
     },
     "credit": {
-      "value": 651,
-      "change": 78,
+      "value": 587,
+      "change": 14,
       "contributions": [
         {
           "label": "Payment record",
@@ -1630,7 +1652,7 @@
         },
         {
           "label": "Debt burden",
-          "amount": 18
+          "amount": -46
         },
         {
           "label": "Deficit",
@@ -1747,13 +1769,19 @@
         "kind": "budget",
         "seriousness": "warning",
         "headline": "The treasury is shrinking",
-        "cause": "Spending of $42.5m outran revenue of $31.0m. At this deficit the treasury lasts 2 more quarters."
+        "cause": "Spending of $42.5m outran revenue of $31.0m. At this deficit the treasury lasts 4 more quarters."
       },
       {
         "kind": "harvest",
         "seriousness": "notable",
         "headline": "The harvest is in",
         "cause": "The country grew 1,382,790 t. 280,729 t reached the national reserve, and 49,537 t was lost on the way."
+      },
+      {
+        "kind": "loanTaken",
+        "seriousness": "notable",
+        "headline": "Issued $20.0m in bonds: Bond 3",
+        "cause": "It pays $0.2m a quarter in interest from next quarter, at 4% a year, and the whole $20.0m falls due at maturity in Year 3 · Quarter 4: $1.6m in interest."
       }
     ]
   }

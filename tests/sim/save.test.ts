@@ -646,24 +646,31 @@ describe('a save written under other budget limits', () => {
 });
 
 describe('the save kept from save format 5', () => {
-  it('still opens on the game it was written from, owing on two loans', () => {
+  it('still opens on the game it was written from, owing on two loans and a bond', () => {
     const { game, report } = loadSave(format5Save);
 
     expect(game.date).toEqual({ year: 2, quarter: 1 });
     expect(
-      game.debts.map((debt) => [debt.number, debt.borrowed, debt.owed, debt.quartersLeft]),
+      game.debts.map((debt) => [
+        debt.kind,
+        debt.number,
+        debt.borrowed,
+        debt.owed,
+        debt.quartersLeft,
+      ]),
     ).toEqual([
-      [1, 250, 158, 5],
-      [2, 100, 51, 2],
+      ['loan', 1, 250, 158, 5],
+      ['loan', 2, 100, 51, 2],
+      ['bond', 3, 200, 200, 8],
     ]);
-    expect(debtStatus(game).debt).toBe(209);
-    expect(report?.debt).toMatchObject({ value: 209, change: -56 });
+    expect(debtStatus(game).debt).toBe(409);
+    expect(report?.debt).toMatchObject({ value: 409, change: 144 });
   });
 
-  it('plays on to repay both loans on schedule', () => {
+  it('plays on to repay both loans on schedule, and the bond at its maturity', () => {
     let { game } = loadSave(format5Save);
 
-    for (let quarter = 0; quarter < 5; quarter += 1) {
+    for (let quarter = 0; quarter < 8; quarter += 1) {
       game = advanceQuarter(game, answering(game, steward(game))).state;
     }
 

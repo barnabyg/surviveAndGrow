@@ -2,8 +2,11 @@ import {
   approvalStatus,
   creditRules,
   creditStatus,
+  bondRateSpan,
   debtStatus,
   loanRateSpan,
+  maturityOf,
+  paysAtMaturity,
   electionStatus,
   foodStatus,
   formatIndex,
@@ -165,7 +168,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
           <h2 className="label">What is owed</h2>
           {debt.debts.length === 0 ? (
             <p className="breakdown__empty">
-              Nothing is owed. Loans are taken in the Finance panel.
+              Nothing is owed. Loans are taken, and bonds issued, in the Finance panel.
             </p>
           ) : (
             <table className="breakdown__table" aria-label="What is owed">
@@ -186,7 +189,11 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
                     </th>
                     <td>{formatMoney(owed.owed)}</td>
                     <td>{formatMoney(owed.repayment)}</td>
-                    <td>{formatQuarters(owed.quartersLeft)}</td>
+                    <td>
+                      {paysAtMaturity(owed)
+                        ? `Matures ${formatDate(maturityOf(owed, game.date))}`
+                        : formatQuarters(owed.quartersLeft)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -240,6 +247,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
                 <th scope="col">Rating</th>
                 <th scope="col">From</th>
                 <th scope="col">Loans</th>
+                <th scope="col">Bonds</th>
                 <th scope="col">May owe</th>
               </tr>
             </thead>
@@ -255,6 +263,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
                   </th>
                   <td>{step.from}</td>
                   <td>{loanRateSpan(step)}</td>
+                  <td>{bondRateSpan(step) ?? 'None'}</td>
                   <td>{formatPercent(step.debtLimitPermille, 0)}</td>
                 </tr>
               ))}
@@ -265,7 +274,8 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
             share of the debt burden and of the quarter’s deficit. A missed payment takes{' '}
             {creditRules.missedPaymentPoints} points off the payment record; each quarter whose
             repayments are all made on time puts {creditRules.onTimePoints} back, up to{' '}
-            {creditRules.bestRecord}. Loans already taken keep the rate they were taken at.
+            {creditRules.bestRecord}. Loans and bonds already taken keep the rate they were taken
+            at.
           </p>
         </VitalSign>
         <VitalSign

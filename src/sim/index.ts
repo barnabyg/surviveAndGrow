@@ -40,6 +40,7 @@ export {
 export {
   creditRules,
   creditStatus,
+  bondRateSpan,
   loanRateSpan,
   ratedAtLeast,
   ratingRank,
@@ -48,10 +49,16 @@ export {
   type CreditStep,
 } from './credit';
 export {
+  bondOffers,
+  bondsClosedBecause,
+  bondsOpenTo,
   debtName,
   debtStatus,
   formatRate,
   loanOffers,
+  maturityOf,
+  maturityOfTaking,
+  paysAtMaturity,
   type Borrowing,
   type Debt,
   type DebtStatus,
@@ -92,8 +99,10 @@ export { SaveError } from './saveChecks';
 export { siteTerms, type SiteTerms } from './sites';
 export { DECAYING_SHARE, isInUseState, UPKEEP_ORDER_RULE } from './upkeep';
 export {
+  bondMaturities,
   siteSchedule,
   termCalendar,
+  type Maturity,
   type SiteSchedule,
   type TermCalendar,
   type TermQuarter,

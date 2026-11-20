@@ -314,6 +314,7 @@ export const RISK_KINDS = [
   'famine',
   'treasury',
   'missedPayment',
+  'bondMaturity',
   'creditRating',
   'upkeep',
   'strikes',
@@ -378,13 +379,15 @@ export const SERIOUSNESS_NAMES: Readonly<Record<Seriousness, string>> = {
 
 /**
  * The kinds of debt the nation can owe. A loan is repaid in equal quarterly repayments of
- * interest and principal over its term.
+ * interest and principal over its term. A bond pays only interest each quarter, and the
+ * whole sum at maturity.
  */
-export const DEBT_KINDS = ['loan'] as const;
+export const DEBT_KINDS = ['loan', 'bond'] as const;
 export type DebtKind = (typeof DEBT_KINDS)[number];
 
 export const DEBT_KIND_NAMES: Readonly<Record<DebtKind, string>> = {
   loan: 'Loan',
+  bond: 'Bond',
 };
 
 /**

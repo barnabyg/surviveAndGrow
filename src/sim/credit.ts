@@ -55,6 +55,14 @@ export interface CreditStep {
     readonly quarters: number;
     readonly annualRateBasisPoints: number;
   }[];
+  /**
+   * The rate a bond over each term on the menu is offered at, at this step: none where the
+   * rating is too poor to issue bonds.
+   */
+  readonly bondRates: readonly {
+    readonly quarters: number;
+    readonly annualRateBasisPoints: number;
+  }[];
   /** The most the nation may owe at this step, in thousandths of a year's revenue. */
   readonly debtLimitPermille: number;
 }
@@ -103,6 +111,10 @@ export function creditStep(rating: CreditRating): CreditStep {
       quarters,
       annualRateBasisPoints: annualRateFor('loan', quarters, rating) ?? 0,
     })),
+    bondRates: balance.finance.bonds.terms.flatMap(({ quarters }) => {
+      const rate = annualRateFor('bond', quarters, rating);
+      return rate === null ? [] : [{ quarters, annualRateBasisPoints: rate }];
+    }),
     debtLimitPermille: step.debtLimitPermille,
   };
 }
@@ -262,7 +274,16 @@ export function ratingCause(
 
 /** The loan rates at a step, from the shortest term to the longest: "7.5% to 11.5%". */
 export function loanRateSpan(step: CreditStep): string {
-  const rates = step.loanRates.map((each) => each.annualRateBasisPoints / 100);
+  return rateSpan(step.loanRates);
+}
+
+/** The bond rates at a step, "4% to 5%", or null where bonds cannot be issued. */
+export function bondRateSpan(step: CreditStep): string | null {
+  return step.bondRates.length === 0 ? null : rateSpan(step.bondRates);
+}
+
+function rateSpan(terms: readonly { readonly annualRateBasisPoints: number }[]): string {
+  const rates = terms.map((each) => each.annualRateBasisPoints / 100);
   const low = Math.min(...rates);
   const high = Math.max(...rates);
   return low === high ? `${low}%` : `${low}% to ${high}%`;

@@ -20,6 +20,11 @@ export interface CreditStepBalance {
   readonly fromScore: number;
   /** What it adds to the rate of a loan on the menu, in hundredths of a percent a year. */
   readonly loanRateBasisPoints: number;
+  /**
+   * What it adds to the rate of a bond on the menu, in hundredths of a percent a year, where
+   * bonds may be issued at all (`finance.bonds.leastRating`).
+   */
+  readonly bondRateBasisPoints: number;
   /** The most the nation may owe, in thousandths of a year's revenue. */
   readonly debtLimitPermille: number;
 }
@@ -400,6 +405,32 @@ export const balance = {
       ],
     },
     /**
+     * Bonds: only interest is paid each quarter, and the whole sum falls due in one payment
+     * at maturity. They raise more than a loan, at a lower rate, but only a nation rated well
+     * enough may issue them.
+     */
+    bonds: {
+      /** The worst credit rating at which bonds may be issued. */
+      leastRating: 'a' as CreditRating,
+      /** The sums a bond may be issued for. */
+      amounts: [200, 500, 1000, 2000],
+      /**
+       * The terms a bond may run for, each with its rate to a nation rated A, below every
+       * loan's. The credit rating moves it (`credit.ratings`).
+       */
+      terms: [
+        { quarters: 8, annualRateBasisPoints: 400 },
+        { quarters: 12, annualRateBasisPoints: 450 },
+        { quarters: 16, annualRateBasisPoints: 500 },
+      ],
+      /**
+       * A maturity the treasury cannot cover is a missed payment: what goes unpaid is added
+       * to the debt and repaid in level repayments, at the bond's rate, over this many
+       * quarters.
+       */
+      missedMaturityQuarters: 4,
+    },
+    /**
      * The credit rating, reassessed as each quarter ends. Its score is the payment record
      * less a share of the debt burden and a share of the quarter's deficit, in points: the
      * rating is the best step whose score it reaches (see `credit.ts`).
@@ -426,17 +457,42 @@ export const balance = {
       /** A deficit is counted up to this many thousandths of the quarter's revenue. */
       deficitCapPermille: 1000,
       /**
-       * Each step of the rating: the score it begins at, what it does to the rate a loan is
-       * offered at, in hundredths of a percent a year, and the most the nation may owe,
+       * Each step of the rating: the score it begins at, what it does to the rate a loan or a
+       * bond is offered at, in hundredths of a percent a year, and the most the nation may owe,
        * counting what it means to borrow this quarter, in thousandths of a year's revenue at
        * the budget in force. The worst step begins at 0, where the score stops.
        */
       ratings: {
-        aa: { fromScore: 850, loanRateBasisPoints: -100, debtLimitPermille: 1250 },
-        a: { fromScore: 550, loanRateBasisPoints: 0, debtLimitPermille: 1000 },
-        bbb: { fromScore: 400, loanRateBasisPoints: 150, debtLimitPermille: 750 },
-        bb: { fromScore: 200, loanRateBasisPoints: 300, debtLimitPermille: 500 },
-        b: { fromScore: 0, loanRateBasisPoints: 500, debtLimitPermille: 250 },
+        aa: {
+          fromScore: 850,
+          loanRateBasisPoints: -100,
+          bondRateBasisPoints: -50,
+          debtLimitPermille: 1250,
+        },
+        a: {
+          fromScore: 550,
+          loanRateBasisPoints: 0,
+          bondRateBasisPoints: 0,
+          debtLimitPermille: 1000,
+        },
+        bbb: {
+          fromScore: 400,
+          loanRateBasisPoints: 150,
+          bondRateBasisPoints: 100,
+          debtLimitPermille: 750,
+        },
+        bb: {
+          fromScore: 200,
+          loanRateBasisPoints: 300,
+          bondRateBasisPoints: 200,
+          debtLimitPermille: 500,
+        },
+        b: {
+          fromScore: 0,
+          loanRateBasisPoints: 500,
+          bondRateBasisPoints: 350,
+          debtLimitPermille: 250,
+        },
       } satisfies Record<CreditRating, CreditStepBalance>,
     },
   },
