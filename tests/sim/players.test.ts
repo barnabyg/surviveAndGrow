@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { advanceQuarter, createGame, electionStatus, TIERS, type GameState } from '../../src/sim';
+import {
+  advanceQuarter,
+  bondOffers,
+  createGame,
+  electionStatus,
+  loanOffers,
+  TIERS,
+  type Borrowing,
+  type GameState,
+} from '../../src/sim';
 import { DEFAULT_TERMS, playGame, summarise, type GameResult } from '../balance/batch';
-import { SCRIPTED_PLAYERS, type ScriptedPlayer } from '../balance/players';
+import { SCRIPTED_PLAYERS, withinRules, type ScriptedPlayer } from '../balance/players';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
 
 /**
@@ -22,22 +31,27 @@ const shipped = [
   ['Testland', testlandAsShipped],
 ] as const;
 
-/** The chain builder, the player that builds most. */
-function chainBuilder(): ScriptedPlayer {
-  const player = SCRIPTED_PLAYERS.find((candidate) => candidate.name === 'Chain builder');
-  if (player === undefined) throw new Error('There is no chain builder among the players.');
+/** The scripted player of a name. */
+function playerNamed(name: string): ScriptedPlayer {
+  const player = SCRIPTED_PLAYERS.find((candidate) => candidate.name === name);
+  if (player === undefined) throw new Error(`There is no player "${name}".`);
   return player;
 }
+
+/** The chain builder, the player that builds most without borrowing. */
+const chainBuilder = () => playerNamed('Chain builder');
 
 const ENDINGS: readonly GameResult['ending'][] = ['won', 'inOffice', 'lostElection', 'famine'];
 
 describe('the scripted players', () => {
-  it('are the four the balance is judged by', () => {
+  it('are the six the balance is judged by', () => {
     expect(SCRIPTED_PLAYERS.map((player) => player.name)).toEqual([
       'Does nothing',
       'Popularity',
       'Sensible',
       'Chain builder',
+      'Sensible borrower',
+      'Reckless borrower',
     ]);
   });
 
@@ -53,6 +67,44 @@ describe('the scripted players', () => {
 
     expect(types).toContain('powerStation');
     expect(types).toContain('powerLine');
+  });
+
+  it('include a sensible borrower that borrows to start the mine’s chain in Tavara', () => {
+    let game: GameState = createGame(tavaraAsShipped(), 1);
+    const started: string[] = [];
+    const borrowed: Borrowing[] = [];
+    for (let quarter = 0; quarter < 12 && game.outcome.status === 'playing'; quarter += 1) {
+      const decisions = playerNamed('Sensible borrower').decide(game);
+      started.push(...(decisions.startProjects ?? []));
+      borrowed.push(...(decisions.borrow ?? []));
+      game = advanceQuarter(game, decisions).state;
+    }
+    const types = started.map((id) => game.country.sites.find((site) => site.id === id)?.type);
+
+    expect(types.slice(0, 3)).toEqual(['port', 'trunkRoad', 'mine']);
+    expect(borrowed.length).toBeGreaterThan(0);
+    expect(borrowed.every((each) => each.kind === 'loan' && each.quarters === 12)).toBe(true);
+  });
+
+  it('include a reckless borrower that borrows all the lenders allow', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    const borrow = playerNamed('Reckless borrower').decide(game).borrow ?? [];
+    const open = (offers: { unavailable: string | null }[]) =>
+      offers.filter((offer) => offer.unavailable === null);
+
+    expect(borrow.length).toBeGreaterThan(0);
+    expect(open(loanOffers(game, borrow))).toEqual([]);
+    expect(open(bondOffers(game, borrow))).toEqual([]);
+  });
+
+  it('borrow nothing and start nothing during austerity', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    const decisions = playerNamed('Reckless borrower').decide(game);
+    const austere = { ...game, austerity: { quartersLeft: 4 } };
+
+    expect(decisions.borrow?.length).toBeGreaterThan(0);
+    expect(withinRules(austere, decisions).borrow).toBeUndefined();
+    expect(withinRules(austere, decisions).startProjects).toBeUndefined();
   });
 });
 
