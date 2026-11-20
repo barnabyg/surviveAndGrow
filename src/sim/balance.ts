@@ -444,7 +444,8 @@ export const balance = {
       /**
        * The most that may be owed at the start, in thousandths of a year's output from all
        * the regions: half of it. A country's first repayments must also be payable from its
-       * starting treasury and first quarter's revenue, so it cannot open on a missed payment.
+       * starting treasury and the first quarter's tax on that output. The check counts tax
+       * before unrest, so a country that opens in unrest may still miss its first payment.
        */
       mostOwedPermille: 500,
     },

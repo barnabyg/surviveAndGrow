@@ -61,7 +61,7 @@ One probe player joins the one-lever players (`BALANCE_PLAYERS=all`):
 | --- | --- |
 | Borrow and build at once | The reckless borrower, but with the tax set to pay the repayments and the building out of each quarter's revenue: a binge that pays as it goes. It is the earlier draft of the reckless borrower, kept because it probes whether a borrowing binge wins on its own. |
 
-During austerity every player is held to its terms, as in issue #56: the budget is brought
+During austerity every player is held to its terms, as in issue #55: the budget is brought
 within the tax floor and the spending caps, and nothing is started or borrowed.
 
 The sensible borrower issues bonds in about two games in five (114 of the 300 tuning games). It
