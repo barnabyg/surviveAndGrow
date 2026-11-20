@@ -10,6 +10,7 @@ import {
   type GameState,
   type Tier,
 } from '../../src/sim';
+import { withinRules } from './players';
 
 /** A scripted player: what it decides for the quarter, given the game as it stands. */
 export type Decide = (game: GameState) => Decisions;
@@ -70,7 +71,7 @@ export function playGame(
   let peakTier = game.tier;
   let peakProsperity = prosperityStatus(game).value;
   while (game.outcome.status === 'playing' && quarters < limit) {
-    const result = advanceQuarter(game, decide(game));
+    const result = advanceQuarter(game, withinRules(game, decide(game)));
     voteShare = result.report.election?.voteShare ?? voteShare;
     game = result.state;
     quarters += 1;

@@ -1,6 +1,7 @@
 import {
   approvalStatus,
   budgetLimits,
+  buildingBarred,
   electionStatus,
   FOOD_STAGES,
   foodStatus,
@@ -16,8 +17,29 @@ import {
   type PendingDilemma,
   type SiteType,
   type SpendingArea,
+  withinAusterity,
 } from '../../src/sim';
 import type { Decide } from './batch';
+
+/**
+ * The decisions brought within what austerity allows. The players plan as if there were none:
+ * during it their budget is brought within its limits and they start nothing, which is what
+ * a player who knew no better would be held to.
+ */
+export function withinRules(game: GameState, decisions: Decisions): Decisions {
+  const { startProjects, ...rest } = decisions;
+  const building = buildingBarred(game) === null && startProjects !== undefined;
+  return {
+    ...rest,
+    budget: withinAusterity(game, decisions.budget),
+    ...(building ? { startProjects } : {}),
+  };
+}
+
+/** What a quarter would bring with these decisions, brought within austerity. */
+function previewAllowed(game: GameState, decisions: Decisions) {
+  return previewQuarter(game, withinRules(game, decisions));
+}
 
 /**
  * The scripted players the balance is judged by. Each is a plain function from the game to
@@ -104,7 +126,7 @@ const popularity: Decide = (game) => {
     spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
   };
   // Everything in the treasury once this quarter's tax is in, shared between the three.
-  const available = previewQuarter(game, { budget: lowTax }).treasury.min;
+  const available = previewAllowed(game, { budget: lowTax }).treasury.min;
   const share = Math.min(spending.max, stepped(Math.floor(available / 3)));
   return {
     budget: {
@@ -222,7 +244,7 @@ function hungriest(game: GameState): string | null {
     FOOD_STAGES.indexOf(
       game.regions.find((region) => region.id === regionId)?.foodStage ?? 'adequate',
     );
-  const { shortfalls } = previewQuarter(game, { budget: game.budget });
+  const { shortfalls } = previewAllowed(game, { budget: game.budget });
   const worst = [...shortfalls].sort(
     (a, b) => stageOf(b.regionId) - stageOf(a.regionId) || b.shortfall - a.shortfall,
   )[0];
@@ -233,10 +255,10 @@ function hungriest(game: GameState): string | null {
 function withRelief(game: GameState, budget: Budget, reliefRegionId: string | null): Budget {
   const none = spend(budget, 'foodRelief', 0);
   if (reliefRegionId === null) return none;
-  const { relief } = previewQuarter(game, { budget: none, reliefRegionId });
+  const { relief } = previewAllowed(game, { budget: none, reliefRegionId });
   for (let amount = 0; amount <= budgetLimits.spending.max; amount += budgetLimits.spending.step) {
     const tried = spend(budget, 'foodRelief', amount);
-    const moved = previewQuarter(game, { budget: tried, reliefRegionId }).relief;
+    const moved = previewAllowed(game, { budget: tried, reliefRegionId }).relief;
     if (moved.capacity >= relief.shortfall) return tried;
   }
   return spend(budget, 'foodRelief', budgetLimits.spending.max);
@@ -286,7 +308,7 @@ function balanced(game: GameState, budget: Budget, choices: Choices, floor: Mone
   const { min, max }: { min: number; max: number } = budgetLimits.taxRatePercent;
   for (let rate = min; rate <= max; rate += 1) {
     const tried = { ...budget, taxRatePercent: rate };
-    const preview = previewQuarter(game, { budget: tried, ...choices });
+    const preview = previewAllowed(game, { budget: tried, ...choices });
     if (preview.balance.min >= floor && !preview.spendingCut) return tried;
   }
   return { ...budget, taxRatePercent: max };
@@ -304,7 +326,7 @@ function invested(game: GameState, budget: Budget, choices: Choices, floor: Mone
     const area = best.spending.health <= best.spending.education ? 'health' : 'education';
     if (best.spending[area] + step > max) return best;
     const tried = spend(best, area, best.spending[area] + step);
-    const preview = previewQuarter(game, { budget: tried, ...choices });
+    const preview = previewAllowed(game, { budget: tried, ...choices });
     if (preview.balance.min < floor || preview.spendingCut) return best;
     best = tried;
   }
@@ -316,7 +338,7 @@ function invested(game: GameState, budget: Budget, choices: Choices, floor: Mone
  * health, education or security) until the quarter's allowance is spent.
  */
 function campaign(game: GameState, start: Budget, choices: Choices, floor: Money): Budget {
-  const heading = (budget: Budget) => previewQuarter(game, { budget, ...choices });
+  const heading = (budget: Budget) => previewAllowed(game, { budget, ...choices });
   let budget = balanced(game, start, choices);
   let now = heading(budget);
   for (;;) {
@@ -529,7 +551,7 @@ export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
         rate += 1
       ) {
         const tried = { ...budget, taxRatePercent: rate };
-        const preview = previewQuarter(game, { budget: tried, ...choices });
+        const preview = previewAllowed(game, { budget: tried, ...choices });
         if (preview.approvalHeading.min < line || preview.unrest.length > 0) break;
         budget = tried;
       }
