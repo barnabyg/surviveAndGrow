@@ -1,6 +1,7 @@
 # Survive and Grow: game design
 
-Status: Phase 1 is built, and Phase 2 (build) is built and balanced. Last updated 2026-11-20.
+Status: Phase 1 is built, and Phase 2 (build) and Phase 3 (borrow) are built and balanced. Last
+updated 2026-11-20.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
 the README under "What is in the game", which is the one place they are stated in full.
@@ -81,11 +82,13 @@ is in the game.
   50% the game is lost. Factions (farmers, workers, business, army) arrive in Phase 6.
 - **Events.** Events and dilemmas began in Phase 1 with a handful, and gain content in every phase.
   Events are local to regions wherever possible.
+- **Finance.** Loans, and bonds once the credit rating is good enough, pull the mine's chain
+  forward at the price of repayments that squeeze the budget before it pays off. The credit
+  rating sets the rates and the most that may be owed. A missed payment brings a bailout with
+  forced austerity. Rules: README, What is in the game; balance: `docs/balance/phase-3.md`.
 
 ### Still to come
 
-- **Finance** (Phase 3): loans, bonds, a credit rating and debt service, once there is something
-  worth borrowing for.
 - **Technology** (Phase 5): a tree bought with money and time, using the project mechanism. It
   unlocks and improves what already exists.
 - **Military** (Phase 6): kept abstract. Defence spending buys deterrence against neighbours and

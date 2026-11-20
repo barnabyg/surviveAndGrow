@@ -91,6 +91,43 @@ the prosperity breakdown is led by infrastructure access, and a win shows the en
 with each term served. Losing the second vote while the chain is still being built is common: it
 is the risk the game is about.
 
+### A Phase 3 play-through
+
+To play the finished Phase 3 game, with borrowing, from the start on a seed the balance run
+knows well:
+
+```powershell
+Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=6'
+```
+
+This starts the game at http://localhost:41730/?seed=6 and opens it in your browser. On seed 6
+the scripted chain builder, which saves up for each site, loses the vote at the end of its
+second term; the scripted sensible borrower wins in quarter 36, late in its second term; and the
+reckless borrower is bailed out and loses its first vote. Try to win the way the sensible
+borrower does:
+
+1. Borrow for the mine's chain rather than save for it. In the first year a loan of $10.0m with
+   the treasury's $42.0m pays for Saltmouth port, then a $50.0m loan over 12 quarters for the
+   trunk road; in the second year a $10.0m loan tops up the savings for the Korrgate mine. The
+   money arrives as the quarter ends: start the site the quarter after. Keep the repayments
+   within 15% of a quarter's revenue.
+2. Keep the budget balanced with the repayments in it. Expect the tax near 27% while the loans
+   run, approval to sag in the second and third years, and the credit rating to rise to AA as
+   the repayments are made on time.
+3. Once the mine earns, in the fourth year, the loans are soon repaid and the tax can come down.
+   Build the power station from savings, spend on approval in the last year before the vote, and
+   win it.
+4. In the second term build the power lines and the small sites. Each tier passed lowers
+   approval for a while. The game is won when prosperity has stood at 42 or more for four
+   quarters running with the debt burden no more than 30% of a year's revenue; the top bar
+   counts the quarters and says whether the debt test is passed.
+
+Expected: the finance panel offers loans at 6% to 10% while the nation is rated A; the debt and
+its burden sit beside the treasury in the top bar; the rating is raised to AA in the third year.
+To see the other side, borrow everything the finance panel allows and spend it: the treasury
+cannot cover a repayment, a bailout consolidates the debt, approval takes a 12-point blow and
+austerity holds for 8 quarters.
+
 What is in the game:
 
 - Set the tax rate and the spending for each area in the right column. The panel shows what a
@@ -420,19 +457,24 @@ This plays scripted players through whole games with no screen, on the countries
 for up to four terms each, and reports how often each wins on prosperity, how often it is still in
 office when its terms are up, and what the others lose to: the vote, by term, or famine, by
 region. It also gives the terms served, the quarter of each win, and the prosperity and tier each
-game reached. It prints the tables and writes them to `balance-results.md`. It is not one of the
+game reached, and what each player borrowed: how many games a bailout struck, how often the debt
+test held back a win and whether it was won later, and the debt burden. It prints the tables and writes them to `balance-results.md`. It is not one of the
 checks and gates nothing; a short run of the same players over a few seeds is part of the
 simulation tests. The games are shared out among worker processes, so a run uses most of the
 machine; 300 seeds of every player take a few minutes.
 
-Four players are what the balance is judged by: one that does nothing, one that spends
-everything on popularity, one that plays sensibly but builds no large site, and one that builds
-power and the mine's chain. They are in `tests/balance/players.ts`, with a handful of one-lever
-players that probe for a trick that wins on its own and two that build only part of the chain.
+Six players are what the balance is judged by: one that does nothing, one that spends
+everything on popularity, one that plays sensibly but builds no large site, one that builds
+power and the mine's chain and saves up for each site, one that builds the same sites but
+borrows for them within limits of its own, and one that borrows recklessly. They are in
+`tests/balance/players.ts`, with a handful of one-lever players that probe for a trick that wins
+on its own, two that build only part of the chain and one that borrows all it can to build
+everything at once.
 
 The runs the values were tuned to, with their seeds, the values changed and what they showed, are
-recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1 and
-[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2.
+recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1,
+[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2 and
+[docs/balance/phase-3.md](docs/balance/phase-3.md) for Phase 3.
 
 Set these before the command to change the run:
 
@@ -440,7 +482,7 @@ Set these before the command to change the run:
 | --- | --- | --- |
 | `BALANCE_SEEDS` | The seeds to play, as `from-to` | `1-300` |
 | `BALANCE_COUNTRY` | `tavara`, `testland` or `both` | `both` |
-| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players | the four |
+| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the six |
 | `BALANCE_TERMS` | The most terms each game is played for | `4` |
 | `BALANCE_WORKERS` | How many games are played at once | all but two processors |
 | `BALANCE_OUT` | Where the tables are written | `balance-results.md` |
