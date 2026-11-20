@@ -6,21 +6,13 @@ import {
   LIKELIHOODS,
   risksAhead,
   type Budget,
-  type Country,
   type Decisions,
   type GameState,
   type Risk,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import {
-  bothCountries,
-  startingAt,
-  tavara,
-  tavaraAsShipped,
-  testlandAsShipped,
-  withDroughtChance,
-} from './countries';
-import { answering, inFirstTerm } from './players';
+import { bothCountries, startingAt, tavara, withDroughtChance } from './countries';
+import { inFirstTerm } from './players';
 
 /**
  * Each country with the one region that drought is made to strike in these tests, and how
@@ -510,72 +502,9 @@ describe('the risk of losing the vote in Tavara', () => {
 });
 
 /**
- * The fairness rule: nothing that ends the game may come unannounced. A player who does
- * nothing is played over many seeds. Every game that famine ended must have listed famine in
- * that region while the player could still act: in the quarter before the last one at the
- * latest, and in the quarters leading up to it. Every game lost at the vote must have listed
- * defeat in the election quarter and in the quarter before it.
- */
-describe.each([
-  ['Tavara as it ships', tavaraAsShipped],
-  [
-    'Tavara with drought likely everywhere',
-    () =>
-      withDroughtChance(
-        tavaraFile,
-        Object.fromEntries(tavaraFile.regions.map((region) => [region.id, 0.4])),
-      ),
-  ],
-  ['Testland as it ships', testlandAsShipped],
-  [
-    'Testland with drought likely everywhere',
-    () => withDroughtChance(testlandFile, { northfield: 0.5, sandreach: 0.5 }),
-  ],
-] satisfies [string, () => Country][])('a player who does nothing in %s', (_name, country) => {
-  // A dilemma must be answered, so this player takes the option that costs nothing.
-  const doNothing = (game: GameState) => answering(game, idle(game));
-
-  it('is warned of famine in the region, or of defeat, before either can end the game', () => {
-    const seeds = 300;
-    let famines = 0;
-    for (let seed = 1; seed <= seeds; seed += 1) {
-      const states = [createGame(country(), seed)];
-      for (let game = states[0]; game !== undefined && inFirstTerm(game); game = states.at(-1)) {
-        states.push(advanceQuarter(game, doNothing(game)).state);
-      }
-      const { outcome } = states.at(-1) ?? {};
-      if (outcome?.status !== 'lost') continue;
-
-      if (outcome.cause === 'election') {
-        // The last state is the result. The two before it are the election quarter and the
-        // quarter before, in both of which the player could still have acted.
-        for (const game of states.slice(-3, -1)) {
-          const warned = ofKind(risksAhead(game, doNothing(game)), 'election');
-          expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
-        }
-        continue;
-      }
-      famines += 1;
-
-      // The last state is the collapse and the one before it the fatal quarter. The three
-      // before that are the quarters in which the player could still have acted.
-      const inTime = states.slice(-5, -2);
-      expect(inTime.length).toBeGreaterThan(0);
-      for (const game of inTime) {
-        const warned = famineIn(risksAhead(game, doNothing(game)), outcome.regionId);
-        expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
-      }
-    }
-    // The check means nothing unless famine really does end a good share of these games.
-    expect(famines).toBeGreaterThan(seeds / 5);
-    // Three hundred whole games, each looked ahead from every quarter, take seconds; the
-    // default limit of five is too close when the other test files run alongside.
-  }, 30_000);
-});
-
-/**
- * The same rule for the vote, where it is close enough for the campaign to decide it. Few
- * of the games above reach polling day, so these countries are started where approval holds
+ * The fairness rule of `forewarning.ts` for the vote, where it is close enough for the
+ * campaign to decide it. Few of the games a player who does nothing plays there reach
+ * polling day, so these countries are started where approval holds
  * within a point of the 50% needed, and the seed's swing settles each game.
  */
 describe.each(polls)('a government on a knife edge in $name', (poll) => {
