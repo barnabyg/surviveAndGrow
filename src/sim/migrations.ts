@@ -1,0 +1,187 @@
+/**
+ * The migrations that lift a save written in an older format to the current one. Raising the
+ * save format means raising `SAVE_FORMAT_VERSION` here and adding the migration from the
+ * version before it to `MIGRATIONS`; `loadSave` passes an old save through them in turn.
+ */
+import { loadCountry } from './country';
+import type { Project } from './projects';
+import { prosperityStatus, settledServiceLevel } from './prosperity';
+import { damaged, isRecord, SaveError, type Json } from './saveChecks';
+import type { RegionState } from './state';
+import { tierAt } from './tiers';
+import type { Money } from './types';
+import { upkeepForEvery } from './upkeep';
+import { TIERS, type LastingService, type Tier } from './vocabulary';
+
+/**
+ * The version of the save format this game writes. The format is a compatibility contract:
+ * a later release must still load a save written in any earlier version. Changing what a
+ * save holds means raising this number and adding a migration below, never editing in place.
+ */
+export const SAVE_FORMAT_VERSION = 4;
+
+/** Lifts a save written in one format version to the version after it. */
+export type SaveMigration = (older: Json) => Json;
+
+/**
+ * The migrations this release knows, each under the version it lifts a save from. A save
+ * older than the current format is passed through them in turn until it is current.
+ */
+export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
+  1: fromFormat1,
+  2: fromFormat2,
+  3: fromFormat3,
+};
+
+/**
+ * Format 2 added prosperity, its tiers and a growing population. Each region gains levels of
+ * health and education, set where the budget in force would hold them, as a new game's are
+ * set by its starting budget. The game is put in the tier its prosperity then reaches, and
+ * counts as having begun there, so the public expects no more of it than before. The
+ * quarters already recorded, and the last report, measured neither prosperity nor growth,
+ * so they say so.
+ */
+function fromFormat1(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
+  const budget = isRecord(state.budget) ? state.budget : {};
+  const spending = isRecord(budget.spending) ? budget.spending : {};
+  const people = regions.reduce<number>(
+    (total, region) =>
+      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
+    0,
+  );
+  const level = (service: LastingService) => {
+    const spent = spending[service];
+    return typeof spent === 'number' ? settledServiceLevel(service, spent, people) : 0;
+  };
+  const lifted = regions.map((region) =>
+    isRecord(region)
+      ? { ...region, health: level('health'), education: level('education') }
+      : region,
+  );
+  const tier = tierOfOldSave(older, lifted, state.projects);
+  return {
+    ...older,
+    formatVersion: 2,
+    state: {
+      ...state,
+      regions: lifted,
+      tier,
+      startingTier: tier,
+      history: Array.isArray(state.history)
+        ? (state.history as unknown[]).map((record) =>
+            isRecord(record) ? { ...record, prosperity: null } : record,
+          )
+        : state.history,
+    },
+    report: isRecord(older.report)
+      ? { ...older.report, prosperity: null, population: null }
+      : older.report,
+  };
+}
+
+/**
+ * The tier an old save's game has reached, judged by the same rules as a game in play. A save
+ * too damaged to judge is put in the lowest tier, and checking the rest of it will refuse it.
+ */
+function tierOfOldSave(older: Json, regions: readonly unknown[], projects: unknown): Tier {
+  try {
+    const carried = isRecord(older.country) ? older.country.file : undefined;
+    const { value } = prosperityStatus({
+      country: loadCountry(carried),
+      regions: regions as RegionState[],
+      projects: Array.isArray(projects) ? (projects as Project[]) : [],
+    });
+    return Number.isFinite(value) ? tierAt(value) : TIERS[0];
+  } catch {
+    return TIERS[0];
+  }
+}
+
+/**
+ * Format 3 added terms of office and the win on prosperity. A won election no longer ends
+ * the game: a game that format 2 ended that way plays on into its second term. The game also
+ * counts the quarters it has held prosperity in the top tier. Format 2 kept no such count,
+ * so it starts from nothing. The last report gains the election held in its quarter, which
+ * format 2 kept only in a game that the election ended, and which is otherwise none.
+ */
+function fromFormat2(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const { outcome } = state;
+  const voted = isRecord(outcome) && outcome.cause === 'election';
+  const reelected = voted && outcome.status === 'won';
+  const election = voted
+    ? { voteShare: outcome.voteShare, needed: outcome.needed, won: reelected }
+    : null;
+  return {
+    ...older,
+    formatVersion: 3,
+    state: {
+      ...state,
+      prosperousQuarters: 0,
+      outcome: reelected ? { status: 'playing' } : outcome,
+    },
+    report: isRecord(older.report) ? { ...older.report, election } : older.report,
+  };
+}
+
+/**
+ * Format 4 added upkeep: a spending area of its own, and sites that decay when it falls
+ * short. A game written before it gains upkeep enough to keep every one of its country's
+ * sites in good repair, the same as a new game on that country starts with, so that nothing
+ * in it decays unless the player cuts it. Its sites are all in good repair.
+ */
+function fromFormat3(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const budget = isRecord(state.budget) ? state.budget : {};
+  const spending = isRecord(budget.spending) ? budget.spending : {};
+  return {
+    ...older,
+    formatVersion: 4,
+    state: {
+      ...state,
+      budget: { ...budget, spending: { ...spending, upkeep: upkeepForOldSave(older) } },
+    },
+  };
+}
+
+/**
+ * Upkeep for every site of the country an old save carries. A save whose country will not
+ * load is given none, and checking the rest of it will refuse it.
+ */
+function upkeepForOldSave(older: Json): Money {
+  try {
+    const carried = isRecord(older.country) ? older.country.file : undefined;
+    return upkeepForEvery(loadCountry(carried).sites.map((site) => site.type));
+  } catch {
+    return 0;
+  }
+}
+
+/** The save in the current format, lifted there one version at a time if it is older. */
+export function toCurrentFormat(
+  saved: Json,
+  migrations: Readonly<Record<number, SaveMigration>>,
+): Json {
+  const written = saved.formatVersion;
+  if (typeof written !== 'number' || !Number.isInteger(written)) {
+    throw new SaveError(damaged('it does not say which save format it was written in'));
+  }
+  if (written > SAVE_FORMAT_VERSION) {
+    throw new SaveError(
+      `The saved game was written by a newer release of the game (save format ${written}; this release reads format ${SAVE_FORMAT_VERSION}). Open it with that release.`,
+    );
+  }
+  let current = saved;
+  for (let version = written; version < SAVE_FORMAT_VERSION; version += 1) {
+    const lift = migrations[version];
+    if (lift === undefined) {
+      throw new SaveError(
+        `The saved game was written in save format ${written}, which this release cannot read.`,
+      );
+    }
+    current = lift(current);
+  }
+  return current;
+}

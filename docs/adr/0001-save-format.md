@@ -34,11 +34,12 @@ A loaded `Country` keeps the file it came from (`source`) for this purpose.
 and against the country the save carries, builds the game afresh from what it has checked, and
 refuses anything else with a message written for the player.
 
-**Old formats are lifted, never read in place.** `save.ts` holds a table of migrations, each
-under the version it lifts a save from. A save older than the current format passes through
-them in turn. Changing what a save holds means raising `SAVE_FORMAT_VERSION`, adding a
-migration, and keeping a save from the old format under `tests/saves/` with tests that it still
-opens. A kept save is never regenerated.
+**Old formats are lifted, never read in place.** `migrations.ts` holds `SAVE_FORMAT_VERSION`
+and a table of migrations, each under the version it lifts a save from. A save older than the
+current format passes through them in turn before `save.ts` checks it. Changing what a save
+holds means raising `SAVE_FORMAT_VERSION`, adding a migration, both in `migrations.ts`, and
+keeping a save from the old format under `tests/saves/` with tests that it still opens. A kept
+save is never regenerated.
 
 **A save that cannot be opened is never written over.** A save from a newer release, or a
 damaged one, is refused and left as it is. While it is there the game does not save, even a new
