@@ -3,6 +3,7 @@ import { balance } from './balance';
 import { revenueOf, type Budget } from './budget';
 import { dateOfQuarter, quarterNumber } from './calendar';
 import type { Country } from './country';
+import { ratedAtLeast } from './credit';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RegionState } from './state';
@@ -10,7 +11,6 @@ import { formatMoney, formatPercent, formatQuarters } from './text';
 import type { Contribution, GameDate, Money } from './types';
 import {
   CREDIT_RATING_NAMES,
-  CREDIT_RATINGS,
   DEBT_KIND_NAMES,
   DEBT_KINDS,
   type CreditRating,
@@ -161,9 +161,7 @@ function bondRate(quarters: number, rating: CreditRating): number | null {
 
 /** Whether a nation with a credit rating may issue bonds. */
 export function bondsOpenTo(rating: CreditRating): boolean {
-  return (
-    CREDIT_RATINGS.indexOf(rating) >= CREDIT_RATINGS.indexOf(balance.finance.bonds.leastRating)
-  );
+  return ratedAtLeast(rating, balance.finance.bonds.leastRating);
 }
 
 /**

@@ -410,7 +410,7 @@ function missedPaymentRisk(scope: Scope): Risk[] {
   if (finding === null || likelihood === null) return [];
 
   // Which debt goes unpaid is read off the course with ordinary weather and no new event.
-  const typical = scope.courses[Math.floor(scope.courses.length / 2)]?.paths[0] ?? [];
+  const typical = typicalOf(scope.courses);
   const first = typical[misses(typical) ?? finding.soonest];
   const which =
     first?.missedOn.find((name) => !maturing(misses(typical) ?? finding.soonest).includes(name)) ??
@@ -538,7 +538,7 @@ function upkeepRisk(scope: Scope): Risk[] {
   if (finding === null || likelihood === null) return [];
 
   // Which sites go without is read off the course with ordinary weather and no new event.
-  const typical = scope.courses[Math.floor(scope.courses.length / 2)]?.paths[0] ?? [];
+  const typical = typicalOf(scope.courses);
   const first = typical[falls(typical) ?? finding.soonest];
   const names = (first?.upkeepShort ?? []).map(
     (siteId) => state.country.sites.find((site) => site.id === siteId)?.name ?? siteId,
@@ -627,7 +627,7 @@ function creditRisk(scope: Scope): Risk[] {
   const likelihood = finding === null ? null : likelihoodOf(finding.chance);
   if (finding === null || likelihood === null) return [];
 
-  const typical = courses[Math.floor(courses.length / 2)]?.paths[0] ?? [];
+  const typical = typicalOf(courses);
   const path =
     falls(typical) === null
       ? (courses.flatMap((course) => course.paths).find((each) => falls(each) !== null) ?? [])
@@ -712,7 +712,7 @@ function electionRisk(scope: Scope): Risk[] {
   );
   // The figure given is the one ordinary weather and no new event lead to, where that
   // course reaches the vote.
-  const typical = courses[Math.floor(courses.length / 2)]?.paths[0] ?? [];
+  const typical = typicalOf(courses);
   const approval =
     pollingDay(typical) ??
     courses.flatMap((course) => course.paths.flatMap((path) => pollingDay(path) ?? [])).at(0);

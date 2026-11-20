@@ -412,8 +412,8 @@ export const balance = {
     bonds: {
       /**
        * The worst credit rating at which bonds may be issued: the best there is, so a nation
-       * that opens at A must earn it by repaying debt on time (25 points a quarter, about six
-       * to eight quarters with a small loan and no deficit).
+       * that opens at A must earn it by repaying debt on time (25 points a quarter, about nine
+       * quarters with a small loan and no deficit).
        */
       leastRating: 'aa' as CreditRating,
       /** The sums a bond may be issued for. */

@@ -97,7 +97,9 @@ export function ratedAtLeast(rating: CreditRating, least: CreditRating): boolean
 /** The best step a score reaches. */
 export function ratingOfScore(score: number): CreditRating {
   const { ratings } = balance.finance.credit;
-  return CREDIT_RATINGS.findLast((rating) => score >= ratings[rating].fromScore) ?? 'b';
+  return (
+    CREDIT_RATINGS.findLast((rating) => score >= ratings[rating].fromScore) ?? CREDIT_RATINGS[0]
+  );
 }
 
 /** One step of the rating, with the rates a loan on the menu is offered at there. */
