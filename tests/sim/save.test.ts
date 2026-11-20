@@ -4,6 +4,7 @@ import {
   advanceQuarter,
   austerityStatus,
   createGame,
+  loadCountry,
   loadSave,
   SAVE_FORMAT_VERSION,
   SaveError,
@@ -23,6 +24,7 @@ import {
   tavara,
   tavaraAsShipped,
   testlandAsShipped,
+  testlandInDebt,
   withChances,
 } from './countries';
 import { valueAt, withValue, without, type Path } from './files';
@@ -224,6 +226,35 @@ describe.each(countries)(
     });
   },
 );
+
+describe('a game on a country that starts in debt', () => {
+  it('is the same game as one never saved, its starting loans repaid', () => {
+    const passed = playThroughSaves(createGame(testlandInDebt(), 5), 13, (game) => steward(game));
+
+    expect(passed[0]?.debts.map((debt) => debt.number)).toEqual([1, 2]);
+    expect(passed.at(-1)?.debts).toEqual([]);
+  });
+
+  it('resumes on the debt it began with after its country file changes', () => {
+    const file = structuredClone(testlandFile) as { start: { loans: unknown[] } };
+    const start = createGame(loadCountry(file), 2026);
+    const { state, report } = advanceQuarter(start, steward(start));
+    const save = stored(saveGame(state, report));
+
+    // The author edits the file the game was started on: the country now starts owing more.
+    file.start.loans = [...file.start.loans, { amount: 5, rate: 12, quarters: 4 }];
+    expect(loadCountry(file).start.loans).toHaveLength(3);
+
+    const resumed = loadSave(save);
+    expect(resumed).toEqual({ game: state, report });
+    expect(resumed.game.country.formatVersion).toBe(4);
+    expect(resumed.game.country.start.loans).toEqual(start.country.start.loans);
+    expect(resumed.game.debts.map((debt) => debt.number)).toEqual([1, 2]);
+    expect(advanceQuarter(resumed.game, steward(resumed.game))).toEqual(
+      advanceQuarter(state, steward(state)),
+    );
+  });
+});
 
 describe.each(bothCountries)('where food relief stands directed in %s', (_name, country) => {
   it('is nowhere when a game starts', () => {
