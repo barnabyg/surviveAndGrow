@@ -142,7 +142,10 @@ function scheduleOf(game: Building, siteId: string, delay: number): SiteSchedule
 
 /** A bond's maturity, when its whole sum falls due, as the timeline marks it. */
 export interface Maturity {
-  /** The bond: "Bond 2", or "Planned bond" for one to be issued as this quarter ends. */
+  /**
+   * The bond: "Bond 2", or "Planned bond" for one to be issued as this quarter ends, numbered
+   * "Planned bond 1", "Planned bond 2" when several are planned. No two marks share a name.
+   */
   readonly name: string;
   /** The quarter it falls due in, counted like a quarter's number. */
   readonly quarter: number;
@@ -174,14 +177,15 @@ export function bondMaturities(
     planned: isPlanned,
     afterVote: quarter > last,
   });
+  const bonds = planned.filter((each) => each.kind === 'bond');
+  const plannedName = (index: number) =>
+    bonds.length === 1 ? 'Planned bond' : `Planned bond ${index + 1}`;
   return [
     ...game.debts
       .filter(paysAtMaturity)
       .map((debt) =>
         mark(debtName(debt), quarterNumber(maturityOf(debt, game.date)), debt.owed, false),
       ),
-    ...planned
-      .filter((each) => each.kind === 'bond')
-      .map((each) => mark('Planned bond', now + each.quarters, each.amount, true)),
+    ...bonds.map((each, index) => mark(plannedName(index), now + each.quarters, each.amount, true)),
   ];
 }

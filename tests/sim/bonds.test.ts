@@ -308,6 +308,14 @@ describe('the maturities on the term timeline', () => {
       },
     ]);
   });
+
+  it('give each of several planned bonds a name of its own', () => {
+    const game = rated(createGame(tavara(), 1), 'aa');
+
+    const marks = bondMaturities(game, [bond(200, 8), bond(200, 8)]);
+
+    expect(marks.map((mark) => mark.name)).toEqual(['Planned bond 1', 'Planned bond 2']);
+  });
 });
 
 describe('the risks ahead', () => {
