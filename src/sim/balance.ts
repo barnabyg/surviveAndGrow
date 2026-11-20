@@ -460,9 +460,10 @@ export const balance = {
       termQuarters: 16,
       /**
        * The push a bailout gives approval in every region as it lands, in thousandths. It
-       * fades like any passing event. A missed payment during austerity gives none.
+       * fades like any passing event. A missed payment during austerity gives none. It is
+       * heavy enough that a government bailed out in the run-up to a vote is likely to lose it.
        */
-      approvalPermille: -80,
+      approvalPermille: -120,
     },
     /**
      * Austerity: the bailout's terms, in force for a fixed number of quarters after it. The
@@ -569,11 +570,11 @@ export const balance = {
     /**
      * The debt test: the most debt burden, owed against a year's revenue in thousandths,
      * that the quarter completing the hold may end with. Above it the hold goes on counting
-     * but the win waits. Half a year's revenue: a nation rated A may owe twice that, so a
-     * win reached by borrowing up to what lenders allow does not count until much of it is
-     * repaid.
+     * but the win waits. Three tenths of a year's revenue: a nation rated A may owe more than
+     * three times that, so a win reached by borrowing up to what lenders allow does not count
+     * until most of it is repaid.
      */
-    debtBurdenLimitPermille: 500,
+    debtBurdenLimitPermille: 300,
   },
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */

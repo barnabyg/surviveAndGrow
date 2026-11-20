@@ -107,7 +107,7 @@ What is in the game:
   the game. The top bar counts down to the election that closes the current term, and the right
   column forecasts the vote as a range against the 50% needed.
 - You win the game by holding national prosperity in the top tier, Prosperous, for four quarters
-  running, with the debt burden no more than 50% of a year's revenue as the fourth quarter ends:
+  running, with the debt burden no more than 30% of a year's revenue as the fourth quarter ends:
   the debt test, which keeps a win bought with a borrowing binge from counting. A burden over the
   limit does not end the hold; it keeps counting, and the game is won as the first quarter ends
   with the burden brought within the limit. Once there, the prosperity figure in the top bar shows
@@ -256,7 +256,7 @@ What is in the game:
 - A missed payment on any loan or bond does not end the game: it brings a bailout. Lenders
   consolidate everything owed, with the interest that went unpaid, into one bailout loan at 7% a
   year, repaid over 16 quarters from the next; anything to be borrowed that quarter is not lent.
-  The credit rating falls to B, and approval takes an 8-point blow in every region that fades
+  The credit rating falls to B, and approval takes a 12-point blow in every region that fades
   like any passing event. Austerity then holds for 8 quarters: the tax rate cannot go below 25%,
   spending on agriculture is capped at what the game began with and on health, education and
   security at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or

@@ -55,7 +55,7 @@ describe('the win’s debt test', () => {
     expect(states.at(-1)?.outcome).toMatchObject({ status: 'won', cause: 'prosperity' });
     expect(victoryStatus(quarter(states, 0)).debt).toEqual({
       burden: 0,
-      limit: 500,
+      limit: 300,
       holds: true,
     });
   });
@@ -74,7 +74,7 @@ describe('the win’s debt test', () => {
     expect(victoryStatus(fourth)).toMatchObject({
       held: 4,
       needed: 4,
-      debt: { limit: 500, holds: false },
+      debt: { limit: 300, holds: false },
       waitingOnDebt: true,
     });
     expect(fourth.outcome.status).toBe('playing');
@@ -90,14 +90,14 @@ describe('the win’s debt test', () => {
     // It was won as the quarter that brought the burden within the limit ended.
     const winning = quarter(states, won);
     expect(victoryStatus(winning).debt.holds).toBe(true);
-    expect(victoryStatus(winning).debt.burden).toBeLessThanOrEqual(500);
+    expect(victoryStatus(winning).debt.burden).toBeLessThanOrEqual(300);
     expect(winning.outcome).toMatchObject({
       status: 'won',
       cause: 'prosperity',
       headline: 'The nation is prosperous',
     });
     expect(winning.outcome.status === 'won' && winning.outcome.summary).toContain(
-      'within the 50.0% the win allows',
+      'within the 30.0% the win allows',
     );
   });
 });

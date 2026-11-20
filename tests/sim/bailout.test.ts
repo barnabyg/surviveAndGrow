@@ -187,7 +187,7 @@ describe('a missed payment', () => {
   it('deals approval a blow as it lands', () => {
     const { after } = bailedOut();
 
-    expect(after.approval.contributions).toContainEqual({ label: 'Bailout', amount: -80 });
+    expect(after.approval.contributions).toContainEqual({ label: 'Bailout', amount: -120 });
   });
 
   it('stops what was to be borrowed that quarter', () => {
@@ -365,7 +365,7 @@ describe('the risks ahead', () => {
     const bailout = risks.find((risk) => risk.kind === 'bailout');
     expect(bailout).toMatchObject({ headline: 'Bailout', withinQuarters: 1 });
     expect(bailout?.reason).toMatch(
-      /^As things stand the treasury and revenue cannot cover the repayment on Loan 1 this quarter\. A missed payment brings a bailout: everything owed becomes one bailout loan, the credit rating falls to B, approval takes a blow of 8\.0 points, and austerity holds for 8 quarters: the tax rate no lower than 25%/,
+      /^As things stand the treasury and revenue cannot cover the repayment on Loan 1 this quarter\. A missed payment brings a bailout: everything owed becomes one bailout loan, the credit rating falls to B, approval takes a blow of 12.0 points, and austerity holds for 8 quarters: the tax rate no lower than 25%/,
     );
   });
 
