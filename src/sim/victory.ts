@@ -66,7 +66,11 @@ export function heldAfter(held: number, tier: Tier): number {
  * burden within the limit in balance data. It blocks a win bought with a borrowing binge.
  */
 export function debtTest(position: Owing): DebtTest {
-  const burden = debtBurden(position);
+  return debtTestOf(debtBurden(position));
+}
+
+/** The win's debt test of a debt burden already worked out, in thousandths. */
+function debtTestOf(burden: number): DebtTest {
   const limit = balance.victory.debtBurdenLimitPermille;
   return { burden, limit, holds: burden <= limit };
 }
@@ -76,15 +80,15 @@ export type Victory = Extract<Outcome, { readonly cause: 'prosperity' }>;
 
 /**
  * The win, once a quarter has ended with prosperity held long enough in the top tier and the
- * debt burden, in the position the quarter leaves, within the limit; or null. A burden over
+ * debt burden the quarter leaves, in thousandths, within the limit; or null. A burden over
  * the limit does not end the hold: the win waits until a quarter ends with it passed.
  */
 export function victoryOf(
   held: number,
-  position: Owing,
+  burden: number,
 ): { readonly outcome: Victory; readonly entry: ReportEntry } | null {
   const { quartersToHold } = balance.victory;
-  const debt = debtTest(position);
+  const debt = debtTestOf(burden);
   if (held < quartersToHold || !debt.holds) return null;
   const name = TIER_NAMES[TARGET_TIER];
   const stood = `National prosperity has stood in ${name}, from ${formatIndex(tierFrom(TARGET_TIER), 0)} up, for ${held} quarters running`;

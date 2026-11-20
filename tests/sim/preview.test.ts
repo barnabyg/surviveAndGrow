@@ -112,6 +112,34 @@ describe.each(bothCountries)('previewing a quarter in %s', (_name, country) => {
     }
   });
 
+  it('gives the debt burden the quarter then records, though strikes it brings cut revenue', () => {
+    // So harsh a budget turns regions to unrest, which cuts the revenue the burden is
+    // judged against from the next quarter.
+    const harsh: Budget = {
+      taxRatePercent: 40,
+      spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
+    };
+    let game = createGame(country(), 11);
+    let unrestBegan = false;
+
+    for (let quarter = 0; quarter < 8 && game.outcome.status === 'playing'; quarter += 1) {
+      const decisions: Decisions = {
+        budget: harsh,
+        borrow: quarter === 0 ? [{ kind: 'loan', amount: 100, quarters: 8 }] : [],
+      };
+      const preview = previewQuarter(game, decisions);
+      const { state } = advanceQuarter(game, decisions);
+      const recorded = state.history.at(-1)?.debtBurden;
+      unrestBegan ||= state.regions.some(
+        (region, index) => region.unrest !== game.regions[index]?.unrest,
+      );
+
+      expect(preview.debtBurden).toEqual({ min: recorded, max: recorded });
+      game = state;
+    }
+    expect(unrestBegan).toBe(true);
+  });
+
   it('refuses decisions the game would refuse', () => {
     const game = createGame(country(), 11);
 

@@ -46,6 +46,8 @@ export function vitalSigns(position: {
   readonly debts: readonly Debt[];
   /** National prosperity, when it has already been worked out for this position. */
   readonly prosperity?: number;
+  /** The debt burden, when it has already been worked out for this position. */
+  readonly debtBurden?: number;
 }): VitalSigns {
   return {
     date: position.date,
@@ -55,6 +57,6 @@ export function vitalSigns(position: {
     approval: nationalApproval(position.regions),
     prosperity: position.prosperity ?? prosperityStatus(position).value,
     debt: debtOf(position.debts),
-    debtBurden: debtBurden(position),
+    debtBurden: position.debtBurden ?? debtBurden(position),
   };
 }

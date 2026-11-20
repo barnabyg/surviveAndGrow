@@ -208,15 +208,7 @@ export function resolveQuarter(
   const defeat = election?.defeat ?? null;
   const prosperousQuarters = heldAfter(state.prosperousQuarters, tier);
   const victory =
-    collapse === null && defeat === null
-      ? victoryOf(prosperousQuarters, {
-          country: state.country,
-          regions: approval.regions,
-          projects: upkept.projects,
-          budget: decisions.budget,
-          debts: taken.debts,
-        })
-      : null;
+    collapse === null && defeat === null ? victoryOf(prosperousQuarters, lived.debtBurden) : null;
   const outcome: Outcome = collapse ?? defeat ?? victory?.outcome ?? { status: 'playing' };
 
   const events = [...remaining, ...begun];
@@ -287,6 +279,7 @@ export function resolveQuarter(
           foodReserve: food.foodReserve,
           regions: approval.regions,
           prosperity: prosperity.value,
+          debtBurden: lived.debtBurden,
         }),
       ],
       dilemma,
@@ -376,18 +369,21 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     ...approvalInputs(decisions, finances, answer),
     expectations,
   });
+  // The debt burden the quarter leaves: its debt against the revenue the regions and sites it
+  // leaves would raise. The rating, the win, the record and the preview all judge this one.
+  const burden = debtBurden({
+    country: state.country,
+    regions: approval.regions,
+    projects: upkept.projects,
+    budget: decisions.budget,
+    debts: taken.debts,
+  });
   // The rating is reassessed as the quarter ends, on the debt and revenue it leaves behind.
   const credit = reassessCredit(
     given,
     {
       record: recordAfter(given.credit.record, serviced),
-      burden: debtBurden({
-        country: state.country,
-        regions: approval.regions,
-        projects: upkept.projects,
-        budget: decisions.budget,
-        debts: taken.debts,
-      }),
+      burden,
       deficit: deficitOf(finances.revenue, finances.balance, serviced.principal),
     },
     serviced.missedOn,
@@ -408,6 +404,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     prosperity,
     tier,
     credit,
+    debtBurden: burden,
   };
 }
 
@@ -461,7 +458,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     missedPayment: serviced.missed,
     borrowed: taken.borrowed,
     debt: exactly(owed),
-    debtBurden: exactly(debtBurden({ ...state, budget: decisions.budget, debts: taken.debts })),
+    debtBurden: exactly(lived.debtBurden),
     creditRating: credit.credit.rating,
     creditScore: exactly(credit.after.score),
     pausedSites: building.paused,
