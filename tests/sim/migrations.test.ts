@@ -205,7 +205,7 @@ describe('the save kept from save format 3', () => {
     expect(game.date).toEqual({ year: 7, quarter: 4 });
     expect(electionStatus(game)).toMatchObject({ term: 2, quartersAway: 12 });
     expect(game.tier).toBe('prosperous');
-    expect(victoryStatus(game)).toEqual({ tier: 'prosperous', held: 2, needed: 4 });
+    expect(victoryStatus(game)).toMatchObject({ tier: 'prosperous', held: 2, needed: 4 });
     expect(game.outcome).toEqual({ status: 'playing' });
     expect(game.history.map((signs) => signs.prosperity).slice(-3)).toEqual([696, 701, 704]);
     expect(

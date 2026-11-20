@@ -48,8 +48,9 @@ Every system must feed this tension. A feature that does not is cut.
 ## 3. Winning and losing
 
 - **Win:** hold the prosperity target for four consecutive quarters with debt at a sustainable
-  level. The debt condition blocks a win bought with a one-off borrowing binge; it always passes
-  until Phase 3 brings borrowing.
+  level. The debt condition blocks a win bought with a one-off borrowing binge: the debt burden must
+  be within a limit in balance data as the hold completes. A burden over it does not reset the
+  hold; it only withholds the win until the debt test passes.
 - **Terms:** an election every 20 quarters. Winning it begins a new term, with no limit on how many;
   it does not by itself win the game.
 - **Lose:** election defeat or state collapse from famine, and from Phase 6 a coup.
@@ -190,9 +191,10 @@ Phase 1 site types pay off within one term: an irrigation scheme, a farm road an
 ## 11. Assumptions still to confirm
 
 These were proposed during design and not explicitly agreed. The turn length, the four tiers and
-their thresholds, and the win condition's four-quarter hold are built and settled.
+their thresholds, the win condition's four-quarter hold and its debt test (the debt burden within
+a limit as the hold completes, which withholds the win without resetting the hold) are built and
+settled.
 
-- The win condition's debt test, until Phase 3 brings borrowing.
 - A bailout in place of instant loss on insolvency.
 - Six to eight regions per country.
 - The visual direction: dark panels around a flat survey-style map.

@@ -157,6 +157,8 @@ test('holding Prosperous for four quarters wins the game, and the summary tells 
   await expect(terms.getByRole('row', { name: /^Term 2/ })).toContainText('★ Won on prosperity');
   const figures = summary.getByRole('table', { name: 'The game in figures' });
   await expect(figures.getByRole('row', { name: /^Prosperity/ })).toBeVisible();
+  await expect(figures.getByRole('row', { name: /^Debt burden/ })).toContainText('0.0%');
+  await expect(figures.getByRole('row', { name: /^Debt \$/ })).toContainText('$0.0m');
   await expect(
     page.getByRole('banner').getByRole('button', { name: 'End quarter' }),
   ).toBeDisabled();

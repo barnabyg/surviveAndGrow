@@ -27,6 +27,7 @@ import {
   type ApprovalStatus,
   type GameState,
   type TurnReport,
+  type VictoryStatus,
   quartersWord,
 } from '../sim';
 import { strikeMark } from './ApprovalChart';
@@ -44,6 +45,41 @@ interface TopBarProps {
   readonly onEndQuarter: () => void;
   /** Asks to give up this game for a fresh one. */
   readonly onRestart: () => void;
+}
+
+/** How the debt stands against the win's debt test, shown while the nation is in the top tier. */
+function DebtTestBreakdown({ victory }: { readonly victory: VictoryStatus }) {
+  const { burden, limit, holds } = victory.debt;
+  return (
+    <>
+      <h2 className="label">The debt test</h2>
+      <table className="breakdown__table" aria-label="The debt test">
+        <tbody>
+          <tr>
+            <th scope="row">Debt burden now</th>
+            <td>{formatPercent(burden)}</td>
+          </tr>
+          <tr>
+            <th scope="row">Most the win allows</th>
+            <td>{formatPercent(limit)}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th scope="row">{holds ? 'Room below the limit' : 'Over the limit by'}</th>
+            <td>{formatPoints(Math.abs(limit - burden))}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <p className="breakdown__empty">
+        {holds
+          ? 'The debt test is passed: the win comes when the hold completes, if the debt burden is still within the limit then.'
+          : victory.waitingOnDebt
+            ? `${TIER_NAMES[victory.tier]} has been held long enough, and the debt test is all that stands between you and the win. The hold goes on counting: the game is won as the first quarter ends with the debt burden brought down by ${formatPoints(burden - limit)} or more.`
+            : 'The debt test is failed. The hold goes on counting, but the win waits until a quarter ends with the debt burden within the limit.'}
+      </p>
+    </>
+  );
 }
 
 /** What the approval figure says while regions are striking or protesting. */
@@ -69,6 +105,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
   const tier = tierStatus({ ...game, prosperity: prosperity.value });
   const victory = victoryStatus(game);
   const targetName = TIER_NAMES[victory.tier];
+  const atTarget = tier.tier === victory.tier;
   const target: Mark = {
     value: prosperity.target,
     label: `Target: ${formatIndex(prosperity.target, 0)}`,
@@ -315,11 +352,18 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
                   text: `${TIER_NAMES[tier.tier]} is lost below ${formatIndex(tier.lostBelow)}`,
                   tone: 'warning',
                 }
-              : undefined
+              : atTarget && !victory.debt.holds
+                ? {
+                    text: victory.waitingOnDebt
+                      ? 'Only the debt test stands between you and the win'
+                      : `Debt burden ${formatPoints(victory.debt.burden - victory.debt.limit)} over the win’s limit`,
+                    tone: 'warning',
+                  }
+                : undefined
           }
           note={
             tier.next === null
-              ? `${TIER_NAMES[tier.tier]} · held ${victory.held} of ${victory.needed} quarters to win`
+              ? `${TIER_NAMES[tier.tier]} · held ${victory.held} of ${victory.needed} quarters to win · debt test ${victory.debt.holds ? 'passed' : 'failed'}`
               : `${TIER_NAMES[tier.tier]} · ${formatIndex(tier.next.distance)} to ${TIER_NAMES[tier.next.tier]}`
           }
           breakdownTitle="What moved prosperity"
@@ -374,8 +418,10 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
           <p className="breakdown__empty">
             The target of {formatIndex(prosperity.target, 0)} is where {targetName} begins. Hold{' '}
             {targetName} for {victory.needed} quarters running to win the game: {victory.held} of{' '}
-            {victory.needed} held so far.
+            {victory.needed} held so far. The win also asks that the debt burden be no more than{' '}
+            {formatPercent(victory.debt.limit, 0)} of a year’s revenue as the hold completes.
           </p>
+          {atTarget && <DebtTestBreakdown victory={victory} />}
         </VitalSign>
         {/* The election is a date, not a figure that moves, so it opens to nothing. */}
         <div className="vital vital--election" role="group" aria-label="Next election">

@@ -84,7 +84,7 @@ export {
 export { settlementLook, settlementLooks, type SettlementLook } from './settlements';
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
 export { termRecords, type TermRecord } from './terms';
-export { victoryStatus, type VictoryStatus } from './victory';
+export { victoryStatus, type DebtTest, type VictoryStatus } from './victory';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export { SAVE_FORMAT_VERSION, type SaveMigration } from './migrations';
 export { loadSave, saveGame, type RestoredGame, type SavedGame } from './save';

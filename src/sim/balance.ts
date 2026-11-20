@@ -447,6 +447,14 @@ export const balance = {
      * top tier, with debt at a sustainable level (see `victory.ts`).
      */
     quartersToHold: 4,
+    /**
+     * The debt test: the most debt burden, owed against a year's revenue in thousandths,
+     * that the quarter completing the hold may end with. Above it the hold goes on counting
+     * but the win waits. Half a year's revenue: a nation rated A may owe twice that, so a
+     * win reached by borrowing up to what lenders allow does not count until much of it is
+     * repaid.
+     */
+    debtBurdenLimitPermille: 500,
   },
   dilemmaRules: {
     /** No dilemma arises before this quarter of the game, counting the first as 1. */

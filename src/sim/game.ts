@@ -205,7 +205,13 @@ export function resolveQuarter(
   const prosperousQuarters = heldAfter(state.prosperousQuarters, tier);
   const victory =
     collapse === null && defeat === null
-      ? victoryOf(prosperousQuarters, { treasury: finances.treasury })
+      ? victoryOf(prosperousQuarters, {
+          country: state.country,
+          regions: approval.regions,
+          projects: upkept.projects,
+          budget: decisions.budget,
+          debts: taken.debts,
+        })
       : null;
   const outcome: Outcome = collapse ?? defeat ?? victory?.outcome ?? { status: 'playing' };
 

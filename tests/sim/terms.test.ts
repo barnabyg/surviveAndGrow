@@ -195,9 +195,9 @@ describe.each(lands)('the win on prosperity in $name', (land) => {
     const game = createGame(wealthy(land.name === 'Tavara' ? tavaraFile : testlandFile, 20), 3);
 
     expect(game.tier).toBe('prosperous');
-    expect(victoryStatus(game)).toEqual({ tier: 'prosperous', held: 0, needed: 4 });
+    expect(victoryStatus(game)).toMatchObject({ tier: 'prosperous', held: 0, needed: 4 });
     const next = advanceQuarter(game, { budget: game.budget }).state;
-    expect(victoryStatus(next)).toEqual({ tier: 'prosperous', held: 1, needed: 4 });
+    expect(victoryStatus(next)).toMatchObject({ tier: 'prosperous', held: 1, needed: 4 });
   });
 });
 

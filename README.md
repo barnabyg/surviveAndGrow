@@ -107,12 +107,17 @@ What is in the game:
   the game. The top bar counts down to the election that closes the current term, and the right
   column forecasts the vote as a range against the 50% needed.
 - You win the game by holding national prosperity in the top tier, Prosperous, for four quarters
-  running. Once there, the prosperity figure in the top bar shows how many of the four you have
-  held. (The design also asks for debt at a sustainable level; borrowing arrives in Phase 3.)
+  running, with the debt burden no more than 50% of a year's revenue as the fourth quarter ends:
+  the debt test, which keeps a win bought with a borrowing binge from counting. A burden over the
+  limit does not end the hold; it keeps counting, and the game is won as the first quarter ends
+  with the burden brought within the limit. Once there, the prosperity figure in the top bar shows
+  how many of the four you have held and whether the debt test is passed, and its breakdown shows
+  how far the debt burden is from the limit and says when the debt test is all that stands between
+  you and the win.
 - However the game ends, a summary gives the outcome and its cause, how long you were in office
-  over how many terms, the treasury, food reserve, approval and prosperity over the whole game,
-  and each term in turn with prosperity at its start and end. From it you can replay the same
-  game or start a new one.
+  over how many terms, the treasury, debt, debt burden, food reserve, approval and prosperity over
+  the whole game, and each term in turn with prosperity at its start and end. From it you can
+  replay the same game or start a new one.
 - Approval is the third vital sign. Each region has its own, and the national figure is their
   average by population. It answers to the region's food situation, the tax rate, and health,
   education and security spending per head, and it moves a tenth of the way each quarter towards
