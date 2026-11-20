@@ -126,12 +126,17 @@ describe('a batch of games', () => {
     prosperity: 400,
     peakTier: 'industrialising',
     peakProsperity: 410,
+    borrowed: 0,
+    bailouts: 0,
+    heldByDebt: 0,
+    debtBurden: 0,
+    peakDebtBurden: 0,
     ...figures,
   });
 
   it('is summed up by how each ended', () => {
     const summary = summarise([
-      game(1, {}),
+      game(1, { heldByDebt: 2, borrowed: 400, debtBurden: 600, peakDebtBurden: 700 }),
       game(2, {
         ending: 'lostElection',
         quarters: 40,
@@ -142,6 +147,10 @@ describe('a batch of games', () => {
         prosperity: 350,
         peakTier: 'developing',
         peakProsperity: 360,
+        borrowed: 900,
+        bailouts: 2,
+        debtBurden: 800,
+        peakDebtBurden: 1200,
       }),
       game(3, {
         ending: 'famine',
@@ -166,6 +175,11 @@ describe('a batch of games', () => {
         prosperity: 440,
         peakTier: 'prosperous',
         peakProsperity: 450,
+        borrowed: 300,
+        bailouts: 1,
+        heldByDebt: 3,
+        debtBurden: 200,
+        peakDebtBurden: 500,
       }),
     ]);
 
@@ -191,5 +205,14 @@ describe('a batch of games', () => {
     expect(summary.prosperity).toEqual({ min: 200, median: 375, max: 440 });
     expect(summary.peakProsperity).toEqual({ min: 300, median: 385, max: 450 });
     expect(summary.famineQuarter).toEqual({ min: 9, median: 9, max: 9 });
+    // Borrowing, bailouts and the debt test.
+    expect(summary.borrowed).toEqual({ min: 0, median: 350, max: 900 });
+    expect(summary.bailedOut).toBe(2);
+    expect(summary.bailouts).toEqual({ min: 1, median: 2, max: 2 });
+    expect(summary.heldByDebt).toBe(2);
+    expect(summary.wonAfterHold).toBe(1);
+    expect(summary.heldQuarters).toEqual({ min: 2, median: 3, max: 3 });
+    expect(summary.debtBurden).toEqual({ min: 0, median: 400, max: 800 });
+    expect(summary.peakDebtBurden).toEqual({ min: 0, median: 600, max: 1200 });
   });
 });

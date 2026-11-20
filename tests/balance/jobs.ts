@@ -18,14 +18,19 @@ export function countryNamed(name: string): Country {
   return load();
 }
 
-/** The players a run plays: the scripted ones, and with `all` the one-lever ones too. */
+/**
+ * The players a run plays: the scripted ones, with `all` the one-lever ones too, or the
+ * players named, separated by commas.
+ */
 export function playersFor(which: string | undefined): readonly ScriptedPlayer[] {
-  return which === 'all' ? [...SCRIPTED_PLAYERS, ...DEGENERATE_PLAYERS] : SCRIPTED_PLAYERS;
+  if (which === undefined || which === '') return SCRIPTED_PLAYERS;
+  if (which === 'all') return [...SCRIPTED_PLAYERS, ...DEGENERATE_PLAYERS];
+  return playersNamed(which.split(',').map((name) => name.trim()));
 }
 
 /** The players of the names given, in that order. */
 export function playersNamed(names: readonly string[]): ScriptedPlayer[] {
-  const all = playersFor('all');
+  const all = [...SCRIPTED_PLAYERS, ...DEGENERATE_PLAYERS];
   return names.map((name) => {
     const player = all.find((candidate) => candidate.name === name);
     if (player === undefined) throw new Error(`There is no scripted player "${name}".`);

@@ -15,7 +15,8 @@ import { writeUp, type Row } from './report';
  *   BALANCE_SEEDS    the seeds to play, as `from-to` (default `1-300`)
  *   BALANCE_COUNTRY  `tavara`, `testland` or `both` (default `both`)
  *   BALANCE_OUT      where the results are written (default `balance-results.md`)
- *   BALANCE_PLAYERS  `all` adds the one-lever players that probe for a winning trick
+ *   BALANCE_PLAYERS  `all` adds the one-lever players that probe for a winning trick; or the
+ *                    names of the players to play, separated by commas
  *   BALANCE_TERMS    the most terms each game is played for (default 4; 1 is Phase 1's single term)
  *   BALANCE_WORKERS  how many workers play games at once (default: all but two processors)
  *
