@@ -55,12 +55,12 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 
 /**
  * The dangers of the coming quarters: famine in a region, grain sold below the reserve's safe
- * level, strikes, a treasury that runs out, a missed payment on a debt that brings a bailout, a bond's maturity that cannot be
- * met, and a lost election. It plays the quarters ahead with the real rules, holding the decisions as they are,
- * once for each course the weather could take and each event that could still begin, and
- * weighs how many of those lead to each danger. The most likely comes first, and a danger
- * too unlikely to matter is left out, unless it would end the game. It changes nothing and draws nothing from the random
- * generator.
+ * level, strikes, a treasury that runs out, a missed payment on a debt that brings a bailout, a
+ * bond's maturity that cannot be met, and a lost election. It plays the quarters ahead with the
+ * real rules, holding the decisions as they are, once for each course the weather could take and
+ * each event that could still begin, and weighs how many of those lead to each danger. The most
+ * likely comes first, and a danger too unlikely to matter is left out, unless it would end the
+ * game. It changes nothing and draws nothing from the random generator.
  * @throws RangeError when a decision is outside what the game allows.
  * @throws Error when the game is already over.
  */
@@ -161,7 +161,8 @@ function play(
     const resolved = resolveQuarter(
       state,
       // Projects are started, money borrowed, goods bought and a dilemma answered in the
-      // quarter being decided alone. A bailout on the way holds the budget within the austerity it brings.
+      // quarter being decided alone. A bailout on the way holds the budget within the
+      // austerity it brings.
       quarter === 0
         ? decisions
         : {

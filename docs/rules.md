@@ -112,20 +112,20 @@ figure there must change it here in the same commit.
 
 - Some sites form a chain. A mine ships 600,000 tonnes of ore a quarter abroad, but only while a
   trunk road links it to a port and both are in use. What it ships is sold at the world ore price
-  (see Trade) and added to its region's output, which is taxed and raises its people's income:
-  at the usual $100 a tonne that is $60.0m a quarter, at $80 it is $48.0m. Capacities are given
-  as what their ore is worth at the usual price. Each link carries only so much: a trunk road
-  $72.0m a quarter (720,000 tonnes) and a port $90.0m (900,000 tonnes), and a decaying link half
-  as much, so the chain ships no more than its weakest link. These are large
-  projects ($40.0m, $30.0m and $50.0m; 6, 5 and 8 quarters to build; $0.6m, $0.5m and $0.8m
-  upkeep), and one started late in a term opens after the vote. A mine's card lists every site
-  of its chain with how it stands, marks the missing links and the bottleneck, and says what the
-  mine earns at the world ore price, with that price, its trend, its forecast range and what the
-  mine would earn at the low and high ends of it. Picking out a mine, or any site of its chain, draws the missing links on the map:
-  a dotted route or a crossed marker, each tagged "✕ Missing link". A mine in use that earns
-  nothing is tagged "▲ Earning nothing", and what a mine earns is taxed as a line of its own.
-  While the ore price is away from its usual level, the region's output and the treasury's
-  breakdowns show its effect as a line beside the mine's: "Korrgate mine: ore at $85 a tonne".
+  (see Trade) and added to its region's output, which is taxed and raises its people's income: at
+  the usual $100 a tonne that is $60.0m a quarter, at $80 it is $48.0m. Capacities are given as
+  what their ore is worth at the usual price. Each link carries only so much: a trunk road $72.0m
+  a quarter (720,000 tonnes) and a port $90.0m (900,000 tonnes), and a decaying link half as much,
+  so the chain ships no more than its weakest link. These are large projects ($40.0m, $30.0m and
+  $50.0m; 6, 5 and 8 quarters to build; $0.6m, $0.5m and $0.8m upkeep), and one started late in a
+  term opens after the vote. A mine's card lists every site of its chain with how it stands, marks
+  the missing links and the bottleneck, and says what the mine earns at the world ore price, with
+  that price, its trend, its forecast range and what the mine would earn at the low and high ends
+  of it. Picking out a mine, or any site of its chain, draws the missing links on the map: a
+  dotted route or a crossed marker, each tagged "✕ Missing link". A mine in use that earns nothing
+  is tagged "▲ Earning nothing", and what a mine earns is taxed as a line of its own. While the
+  ore price is away from its usual level, the region's output and the treasury's breakdowns show
+  its effect as a line beside the mine's: "Korrgate mine: ore at $85 a tonne".
 - Some sites are alternatives: one game cannot build everything. Next to Saltmouth port, Tavara's
   deep-water port, is Saltmouth quay, a shallow port at half the cost ($25.0m, 5 quarters to
   build, $0.4m upkeep) that ships only $36.0m a quarter, less than the mine produces. Either
