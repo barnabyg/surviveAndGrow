@@ -2,7 +2,7 @@
 
 `src/sim/` is a pure function of the game state, the player's decisions and a seeded random
 generator. The README's "How the code is laid out" says what it may and may not depend on, and
-"What is in the game" states the rules. This page says where things live, so a change finds
+[docs/rules.md](../../docs/rules.md) states the rules. This page says where things live, so a change finds
 every file it needs.
 
 ## How a quarter is resolved
@@ -66,5 +66,5 @@ A new mechanic usually touches most of these:
   save of the old format under `tests/saves/`.
 
 On the interface side, `src/ui/TopBar.tsx`, `ReportList.tsx`, `RisksPanel.tsx`, `MapView.tsx`
-and `LensBar.tsx` are the usual places it shows. The README's "What is in the game" gains a
-bullet for it.
+and `LensBar.tsx` are the usual places it shows. `docs/rules.md` gains a
+bullet for it, under its own heading if it is a new mechanic.
