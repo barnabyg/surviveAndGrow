@@ -37,7 +37,9 @@ import { Timeline } from './Timeline';
 import { TradePanel } from './TradePanel';
 import { TradeRouteCard } from './TradeRouteCard';
 import { TopBar } from './TopBar';
+import { Lessons } from './Lessons';
 import { Tour } from './Tour';
+import { useLessons } from './lessonProgress';
 import { TOUR_STEPS, TourTarget } from './tourSteps';
 import './GameScreen.css';
 
@@ -47,8 +49,10 @@ interface GameScreenProps {
   readonly initialReport: TurnReport | null;
   /** Why the game is not being saved, in words for the player, or null when it is. */
   readonly saveNotice: string | null;
-  /** Whether the game opens with the guided tour of the screen. */
-  readonly startTour: boolean;
+  /** The tutorial lesson the game opens on, by its place in LESSONS, or null outside the tutorial. */
+  readonly initialLesson: number | null;
+  /** Called as the tutorial moves to another lesson, or with null as it ends. */
+  readonly onLessonChange: (lesson: number | null) => void;
   /** Called with the game and its report as each quarter ends, which is when it is saved. */
   readonly onQuarterEnded: (game: GameState, report: TurnReport) => void;
   /** Starts the same game again from its first quarter. */
@@ -67,7 +71,8 @@ export function GameScreen(props: GameScreenProps) {
     initialGame,
     initialReport,
     saveNotice,
-    startTour,
+    initialLesson,
+    onLessonChange,
     onQuarterEnded,
     onReplay,
     onNewGame,
@@ -112,11 +117,18 @@ export function GameScreen(props: GameScreenProps) {
   // What the map shows. It is the player's choice and stays put from quarter to quarter.
   const [lens, setLens] = useState<Lens>('country');
   // The step of the guided tour on screen, or null when the tour is not open.
-  const [tourStep, setTourStep] = useState<number | null>(startTour ? 0 : null);
+  const [tourStep, setTourStep] = useState<number | null>(null);
+  const tutorial = useLessons(initialLesson, onLessonChange);
+  const { did } = tutorial;
 
   const playing = game.outcome.status === 'playing';
   const touring = playing && tourStep !== null;
-  const tourTarget = touring ? (TOUR_STEPS[tourStep]?.target ?? null) : null;
+  const learning = playing && tutorial.lesson !== null;
+  const tourTarget = touring
+    ? (TOUR_STEPS[tourStep]?.target ?? null)
+    : learning
+      ? tutorial.target
+      : null;
   const decisions = {
     budget: committed,
     reliefRegionId,
@@ -172,6 +184,7 @@ export function GameScreen(props: GameScreenProps) {
       : null;
 
   const selectRegion = (regionId: string | null) => {
+    if (regionId !== null) did('select-region');
     setSelectedRegionId(regionId);
     setSelectedSiteId(null);
     setSelectedRouteId(null);
@@ -194,7 +207,10 @@ export function GameScreen(props: GameScreenProps) {
         ? [...plannedSiteIds.filter((id) => id !== siteId), siteId]
         : plannedSiteIds.filter((id) => id !== siteId),
     );
-    if (planned) selectSite(siteId);
+    if (planned) {
+      selectSite(siteId);
+      did('plan-project');
+    }
   };
 
   // Selecting a report picks its region out on the map; selecting it again lets go.
@@ -228,6 +244,7 @@ export function GameScreen(props: GameScreenProps) {
     setDilemmaChoice(null);
     setDilemmaShown(result.state.dilemma === null ? 'no' : 'yes');
     onQuarterEnded(result.state, result.report);
+    did(result.state.date.quarter === 1 ? 'end-year' : 'end-quarter');
   };
 
   const endQuarter = () => {
@@ -273,7 +290,14 @@ export function GameScreen(props: GameScreenProps) {
             <ApprovalChart game={game} />
           </aside>
           <main className="column column--country" aria-label="Country">
-            <LensBar game={game} lens={lens} onChange={setLens} />
+            <LensBar
+              game={game}
+              lens={lens}
+              onChange={(chosen) => {
+                setLens(chosen);
+                if (chosen === 'food') did('lens-food');
+              }}
+            />
             <div className="map-frame" data-tour="map">
               <div className="map-stage">
                 <MapView
@@ -364,6 +388,7 @@ export function GameScreen(props: GameScreenProps) {
                   onChange={setPending}
                   onCommit={() => {
                     setCommitted(pending);
+                    did('commit-budget');
                   }}
                   onReset={() => {
                     setPending(committed);
@@ -448,6 +473,7 @@ export function GameScreen(props: GameScreenProps) {
             onChoose={(optionId) => {
               setDilemmaChoice(optionId);
               setDilemmaShown('no');
+              did('answer-dilemma');
             }}
             onLater={() => {
               setDilemmaShown('no');
@@ -455,6 +481,7 @@ export function GameScreen(props: GameScreenProps) {
           />
         )}
         {!playing && <GameSummary game={game} onReplay={onReplay} onNewGame={onNewGame} />}
+        {learning && <Lessons progress={tutorial} />}
         {touring && (
           <Tour
             step={tourStep}

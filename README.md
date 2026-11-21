@@ -23,8 +23,10 @@ Or double-click `run.bat`, which also installs the dependencies if they are miss
 This starts the game at http://localhost:41730 and opens it in your browser. It is designed for a
 2560 x 1440 display.
 
-New to the game? Choose **Tutorial** on the start screen: it starts a new game with a guided tour
-of the screen, which the **Tutorial** button in the top bar reopens at any time.
+New to the game? Choose **Tutorial** on the start screen. It plays your first year with you, a
+lesson at a time, each asking you to do one thing: set the budget, change the map's lens, plan a
+project, end a quarter, answer a dilemma. The **Tour** button in the top bar shows what every part
+of the screen is for, at any time.
 
 Add `?seed=7` to the address to replay a known game: the same seed and the same decisions
 always give the same game. The summary at the end of a game gives its seed and offers to replay it.

@@ -93,3 +93,37 @@ export function storePanelClosed(panelId: string, closed: boolean): void {
     // Storage full, blocked, or a private window: the panel stays as it is for this visit.
   }
 }
+
+/** How far the player has come in the tutorial game: its seed, and the lesson open. */
+export interface TutorialProgress {
+  readonly seed: number;
+  readonly lesson: number;
+}
+
+/**
+ * Where the tutorial progress for a saved game is kept: apart from the saves, so that nothing
+ * reading saves meets it.
+ */
+const tutorialKey = (key: string) => `survive-and-grow/tutorial/${key.slice(KEY_PREFIX.length)}`;
+
+/** The tutorial progress kept beside a saved game, or null if there is none to be read. */
+export function readTutorial(key: string): TutorialProgress | null {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(tutorialKey(key)) ?? 'null') as unknown;
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const { seed, lesson } = parsed as Record<string, unknown>;
+    return typeof seed === 'number' && typeof lesson === 'number' ? { seed, lesson } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Keeps the tutorial progress, or with null forgets it. If the browser refuses, it is lost. */
+export function storeTutorial(key: string, progress: TutorialProgress | null): void {
+  try {
+    if (progress === null) window.localStorage.removeItem(tutorialKey(key));
+    else window.localStorage.setItem(tutorialKey(key), JSON.stringify(progress));
+  } catch {
+    // Storage full, blocked, or a private window: a reload starts the lessons over.
+  }
+}

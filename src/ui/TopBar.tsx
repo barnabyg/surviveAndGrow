@@ -482,7 +482,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart, onTutorial }: To
         {game.outcome.status === 'playing' && (
           <>
             <button type="button" className="button" data-tour="tutorial" onClick={onTutorial}>
-              Tutorial
+              Tour
             </button>
             <button type="button" className="button" onClick={onRestart}>
               Restart

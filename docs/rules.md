@@ -311,16 +311,24 @@ figure there must change it here in the same commit.
 
 ## The screen
 
-- **Tutorial** on the start screen starts a new game with a guided tour of the screen open, and
-  the **Tutorial** button in the top bar reopens it from its first step in a game in play. A step
-  at a time, the tour shades the screen but for one part of it, drawn round with a thick outline,
-  and says beside it what that part is for: the vital signs, the end-quarter button, the left
-  column, the lenses, the map, the timeline and legend, and each decision panel. It says how far
-  through it is, and Back, Next (or the arrow keys) and End tour (or Escape) move through it. A
-  part not on screen, such as the dilemma panel with no dilemma waiting, is passed over; a
-  collapsed decision panel opens while the tour points at it and closes again after. The tour
-  holds the screen while it is open, and ending it leaves an ordinary game, saved as usual. Its
-  steps are written in `src/ui/tourSteps.ts`.
+- **Tour** in the top bar opens a guided tour of the screen in a game in play. A step at a time,
+  it shades the screen but for one part of it, drawn round with a thick outline, and says beside
+  it what that part is for: the vital signs, the end-quarter button, the left column, the lenses,
+  the map, the timeline and legend, and each decision panel. It says how far through it is, and
+  Back, Next (or the arrow keys) and End tour (or Escape) move through it. A part not on screen,
+  such as the dilemma panel with no dilemma waiting, is passed over; a collapsed decision panel
+  opens while the tour points at it and closes again after. The tour holds the screen while it is
+  open.
+- **Tutorial** on the start screen starts the tutorial game: a fixed game whose first year, on
+  the country as it ships, has no drought, flood or world price shock, and one dilemma, as the
+  second quarter begins. Its lessons take the player through that year. Each draws round a part
+  of the screen without shading it, says what to do there, and moves on by itself once it is
+  done, saying what the action did: commit a budget, choose the food lens, select a region, plan
+  a project, end the quarter, answer the dilemma, then read the report, the risks ahead, the
+  timeline and the borrowing panel, and end the year. Skip lesson passes one by, and End
+  tutorial leaves an ordinary game; either way the game is saved as usual. A saved tutorial game
+  resumes at the lesson it was on. The tour's steps and the lessons are written in
+  `src/ui/tourSteps.ts`, and the game's seed in `src/ui/tutorialGame.ts`.
 - Click the treasury, the debt, the credit rating, the food reserve, approval or prosperity in the
   top bar to see what moved it. Approval, prosperity and the credit rating also list what they
   are made of.
