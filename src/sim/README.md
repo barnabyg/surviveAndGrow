@@ -52,8 +52,14 @@ A new mechanic usually touches most of these:
 - `vocabulary.ts`: the names the player sees, and any new kind of site, event or spending.
 - `report.ts` and the entries it compiles: what the turn report says about it.
 - `risks.ts`: the warning ahead, if it can hurt the player. Every loss must be foreseeable.
+  A danger of money (the treasury, a missed payment, a bond's maturity, the credit rating)
+  goes in `financeRisks.ts`. Both read the quarters played and weigh each danger with
+  `riskScope.ts`.
 - `approval.ts` or `prosperity.ts`, if it moves either.
-- `country.ts`: what a country file may say about it, and how that is checked.
+- `country.ts`: what a country file may say about it, and how that is checked. The file is
+  read through `countryReader.ts`; the starting treasury, budget and loans are read in
+  `countryStart.ts`; and the checks between sites, their dependencies and alternatives, are in
+  `siteChecks.ts`.
 - `index.ts`: anything the interface needs.
 - `save.ts` and `migrations.ts`: a new field in the state is a save-format change. Follow
   [ADR 0001](../../docs/adr/0001-save-format.md): raise the format, add a migration, and keep a

@@ -1,0 +1,179 @@
+import { sum } from './arithmetic';
+import { balance } from './balance';
+import type { Site } from './country';
+import type { Reader } from './countryReader';
+import {
+  SITE_CHAIN_ROLES,
+  SITE_POWER_ROLES,
+  SITE_TYPE_NAMES,
+  SITE_TYPES,
+  type SiteType,
+} from './vocabulary';
+
+/**
+ * Each site a site depends on must be another site the country has, and no chain of
+ * dependencies may lead back to where it started. A source must lead to an outlet, and a
+ * power line to a power station.
+ */
+export function checkDependencies(reader: Reader, sites: readonly Site[]): void {
+  const byId = new Map(sites.map((site) => [site.id, site]));
+  sites.forEach((site, index) => {
+    site.dependsOn.forEach((id, place) => {
+      const path = `sites[${index}].dependsOn[${place}]`;
+      if (id === site.id) reader.fault(path, `is "${id}": a site cannot depend on itself`);
+      else if (!byId.has(id)) reader.fault(path, `is "${id}", which is not the id of a site`);
+      else if (site.alternatives.includes(id)) {
+        reader.fault(
+          path,
+          `is "${id}", one of its alternatives: a site cannot depend on a site it rules out`,
+        );
+      }
+    });
+  });
+  // A site depended on stands for whichever of its alternatives is chosen.
+  const choices = (id: string): Site[] => {
+    const site = byId.get(id);
+    if (site === undefined) return [];
+    return [site, ...site.alternatives.flatMap((other) => byId.get(other) ?? [])];
+  };
+
+  // A depth-first walk; a site met again while its own dependencies are open is a cycle.
+  const done = new Set<string>();
+  const reported = new Set<string>();
+  const walk = (site: Site, trail: readonly string[]): void => {
+    if (done.has(site.id)) return;
+    const loopsAt = trail.indexOf(site.id);
+    if (loopsAt >= 0) {
+      const cycle = [...trail.slice(loopsAt), site.id];
+      const key = [...cycle.slice(0, -1)].sort().join(' ');
+      if (!reported.has(key)) {
+        reported.add(key);
+        const index = sites.indexOf(site);
+        reader.fault(
+          `sites[${index}].dependsOn`,
+          `goes round in a circle: ${cycle.map((id) => `"${id}"`).join(' depends on ')}`,
+        );
+      }
+      return;
+    }
+    for (const next of site.dependsOn.flatMap(choices)) {
+      if (next !== site) walk(next, [...trail, site.id]);
+    }
+    done.add(site.id);
+  };
+  for (const site of sites) walk(site, []);
+
+  // A source earns only through a chain that reaches an outlet, so it must lead to one.
+  const outlets = SITE_TYPES.filter((type) => SITE_CHAIN_ROLES[type] === 'outlet');
+  const outletNames = outlets.map((type) => SITE_TYPE_NAMES[type].toLowerCase()).join(' or ');
+  const reaches = (site: Site, seen: ReadonlySet<string>): boolean =>
+    site.dependsOn.some((id) => {
+      const nexts = choices(id);
+      // Whichever alternative is chosen, the chain must still reach an outlet.
+      return (
+        nexts.length > 0 &&
+        nexts.every(
+          (next) =>
+            outlets.includes(next.type) ||
+            (!seen.has(next.id) && reaches(next, new Set([...seen, next.id]))),
+        )
+      );
+    });
+  sites.forEach((site, index) => {
+    if (SITE_CHAIN_ROLES[site.type] !== 'source' || reaches(site, new Set([site.id]))) return;
+    reader.fault(
+      `sites[${index}].dependsOn`,
+      `must lead, directly or through other sites, to a ${outletNames}: a ${SITE_TYPE_NAMES[site.type].toLowerCase()} earns only through a chain that reaches one`,
+    );
+  });
+
+  // A power line carries power only from a station, so it must lead to one through lines.
+  const stationNames = SITE_TYPES.filter((type) => SITE_POWER_ROLES[type] === 'station')
+    .map((type) => SITE_TYPE_NAMES[type].toLowerCase())
+    .join(' or ');
+  const powers = (site: Site, seen: ReadonlySet<string>): boolean =>
+    site.dependsOn.some((id) => {
+      const nexts = choices(id);
+      return (
+        nexts.length > 0 &&
+        nexts.every(
+          (next) =>
+            SITE_POWER_ROLES[next.type] === 'station' ||
+            (SITE_POWER_ROLES[next.type] === 'line' &&
+              !seen.has(next.id) &&
+              powers(next, new Set([...seen, next.id]))),
+        )
+      );
+    });
+  sites.forEach((site, index) => {
+    if (SITE_POWER_ROLES[site.type] !== 'line' || powers(site, new Set([site.id]))) return;
+    const name = SITE_TYPE_NAMES[site.type].toLowerCase();
+    reader.fault(
+      `sites[${index}].dependsOn`,
+      `must lead, directly or through other ${name}s, to a ${stationNames}: a ${name} carries power only from one`,
+    );
+  });
+}
+
+/**
+ * Each alternative a site lists must be another site the country has, playing the same part
+ * in a chain and in bringing power, so that whichever is chosen a chain or a power line
+ * through it still works. Returns the sites
+ * with their alternatives said on both sides: if one rules out another, each rules out the other.
+ */
+export function checkAlternatives(reader: Reader, sites: readonly Site[]): Site[] {
+  const byId = new Map(sites.map((site) => [site.id, site]));
+  sites.forEach((site, index) => {
+    site.alternatives.forEach((id, place) => {
+      const path = `sites[${index}].alternatives[${place}]`;
+      const other = byId.get(id);
+      if (id === site.id) {
+        reader.fault(path, `is "${id}": a site cannot be an alternative to itself`);
+      } else if (other === undefined) {
+        reader.fault(path, `is "${id}", which is not the id of a site`);
+      } else if (
+        SITE_CHAIN_ROLES[other.type] !== SITE_CHAIN_ROLES[site.type] ||
+        SITE_POWER_ROLES[other.type] !== SITE_POWER_ROLES[site.type]
+      ) {
+        const name = (type: SiteType) => SITE_TYPE_NAMES[type].toLowerCase();
+        const part =
+          SITE_CHAIN_ROLES[other.type] === SITE_CHAIN_ROLES[site.type]
+            ? 'in bringing power'
+            : 'in a chain';
+        reader.fault(
+          path,
+          `is "${id}", a ${name(other.type)}, but a ${name(site.type)} can only be an alternative to a site that plays the same part ${part}`,
+        );
+      }
+    });
+  });
+  return sites.map((site) => ({
+    ...site,
+    alternatives: sites
+      .filter(
+        (other) =>
+          other !== site &&
+          (site.alternatives.includes(other.id) || other.alternatives.includes(site.id)),
+      )
+      .map((other) => other.id),
+  }));
+}
+
+/**
+ * The sites that could all be in use at once and between them need the most upkeep: every
+ * site, less those ruled out by the alternatives chosen.
+ */
+export function costliestTogether(sites: readonly Site[]): Site[] {
+  const upkeepOf = (chosen: readonly Site[]) =>
+    sum(chosen.map((site) => balance.sites[site.type].upkeep));
+  const choose = (left: readonly Site[], chosen: readonly Site[]): Site[] => {
+    const [site, ...rest] = left;
+    if (site === undefined) return [...chosen];
+    if (chosen.some((other) => other.alternatives.includes(site.id))) return choose(rest, chosen);
+    if (site.alternatives.length === 0) return choose(rest, [...chosen, site]);
+    const withIt = choose(rest, [...chosen, site]);
+    const withoutIt = choose(rest, chosen);
+    return upkeepOf(withIt) >= upkeepOf(withoutIt) ? withIt : withoutIt;
+  };
+  return choose(sites, []);
+}
