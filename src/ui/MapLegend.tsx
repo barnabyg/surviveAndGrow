@@ -1,7 +1,7 @@
 import './MapLegend.css';
 
 /**
- * What the marks for sites and routes mean. Each state has its own shape of line, so the
+ * What the marks for sites, routes and trade routes mean. Each state has its own shape of line, so the
  * legend can be read without telling the colours apart.
  */
 export function MapLegend() {
@@ -87,6 +87,39 @@ export function MapLegend() {
           />
         </svg>
         ✕ Missing link in a chain
+      </li>
+      <li>
+        <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
+          <path d="M1,8 H25" stroke="#f1e6c6" strokeWidth="10" strokeOpacity="0.8" />
+          <path d="M1,8 H25" stroke="#2b2622" strokeWidth="8" />
+          <path d="M1,8 H25" stroke="#f1e6c6" strokeWidth="4" />
+        </svg>
+        Trade route: its width is its capacity, its pale core what it carries
+      </li>
+      <li>
+        <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+          <path d="M-6,0 H6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          <path d="M0,0 V-8" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+        Border crossing
+      </li>
+      <li>
+        <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
+          <path
+            d="M3,8 H23"
+            stroke="currentColor"
+            strokeWidth="3.5"
+            strokeDasharray="0.1 6"
+            strokeLinecap="round"
+          />
+        </svg>
+        ✕ Missing trade link (infrastructure lens)
+      </li>
+      <li>
+        <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
+          <path d="M1,8 H25" stroke="currentColor" strokeWidth="5" strokeDasharray="6 3" />
+        </svg>
+        ▲ Weak trade link: a decaying port
       </li>
     </ul>
   );

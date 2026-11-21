@@ -150,6 +150,10 @@ test('a road is built along its route, and the legend explains every state', asy
     'Road',
     'Power line',
     '✕ Missing link in a chain',
+    'Trade route: its width is its capacity, its pale core what it carries',
+    'Border crossing',
+    '✕ Missing trade link (infrastructure lens)',
+    '▲ Weak trade link: a decaying port',
   ]);
 
   await endQuarters(page, 1);

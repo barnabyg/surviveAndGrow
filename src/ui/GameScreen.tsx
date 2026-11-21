@@ -35,6 +35,7 @@ import { RisksPanel } from './RisksPanel';
 import { SiteCard } from './SiteCard';
 import { Timeline } from './Timeline';
 import { TradePanel } from './TradePanel';
+import { TradeRouteCard } from './TradeRouteCard';
 import { TopBar } from './TopBar';
 import './GameScreen.css';
 
@@ -71,6 +72,7 @@ export function GameScreen(props: GameScreenProps) {
   // One thing is picked out on the map at a time: a region or a site. Its card is the one shown.
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   // The sites the player means to start building on. Building begins when the quarter
   // ends, so until then a plan can be taken back, like the relief target.
   const [plannedSiteIds, setPlannedSiteIds] = useState<readonly string[]>([]);
@@ -156,10 +158,17 @@ export function GameScreen(props: GameScreenProps) {
   const selectRegion = (regionId: string | null) => {
     setSelectedRegionId(regionId);
     setSelectedSiteId(null);
+    setSelectedRouteId(null);
   };
   const selectSite = (siteId: string | null) => {
     setSelectedSiteId(siteId);
     setSelectedRegionId(null);
+    setSelectedRouteId(null);
+  };
+  const selectRoute = (routeId: string | null) => {
+    setSelectedRouteId(routeId);
+    setSelectedRegionId(null);
+    setSelectedSiteId(null);
   };
 
   // Planning a project picks its site out on the map, so the player sees where it will stand.
@@ -256,6 +265,9 @@ export function GameScreen(props: GameScreenProps) {
                 selectedSiteId={selectedSiteId}
                 onSelectSite={selectSite}
                 plannedSiteIds={plannedSiteIds}
+                plannedTrade={plannedTrade}
+                selectedRouteId={selectedRouteId}
+                onSelectRoute={selectRoute}
               />
               {preview !== null && selectedRegionId !== null && (
                 <RegionCard
@@ -281,6 +293,16 @@ export function GameScreen(props: GameScreenProps) {
                   onPlan={planSite}
                   onClose={() => {
                     selectSite(null);
+                  }}
+                />
+              )}
+              {selectedRouteId !== null && (
+                <TradeRouteCard
+                  game={game}
+                  routeId={selectedRouteId}
+                  plannedTrade={plannedTrade}
+                  onClose={() => {
+                    selectRoute(null);
                   }}
                 />
               )}

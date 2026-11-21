@@ -222,6 +222,7 @@ test('the infrastructure lens colours each region by its access and rings every 
     '60 to 80',
     '80 and over',
     '✕ Ringed: missing link in a chain',
+    '✕ Dotted lane: missing trade link',
   ]);
   // Nothing is built yet: every region has no access, and says so in words.
   await expect(map(page).getByText('Infrastructure: 0.0', { exact: true })).toHaveCount(6);
