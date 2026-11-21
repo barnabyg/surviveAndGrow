@@ -74,7 +74,16 @@ import { heldAfter, victoryOf } from './victory';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { scheduleAhead } from './timeline';
-import { exactly, type Money } from './types';
+import {
+  movePrices,
+  openingPrices,
+  resolveTrade,
+  rollPrices,
+  tradeFault,
+  type TradeOrder,
+  type TradeOutcome,
+} from './trade';
+import { exactly, type Contribution, type Money } from './types';
 import { resolveUpkeep } from './upkeep';
 
 /** Starts a game. The same country and seed always start the same game. */
@@ -117,6 +126,7 @@ export function createGame(country: Country, seed: number): GameState {
     dilemma: null,
     dilemmasAnswered: [],
     credit: openingCredit(opening),
+    worldPrices: openingPrices(),
     tier,
     startingTier: tier,
     prosperousQuarters: 0,
@@ -135,12 +145,15 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   // Everything chance decides is drawn here, in a fixed order, and nowhere else.
   const weather = rollWeather(state.rng, state.regions.length);
   const next = nextDate(state.date);
+  // World prices, like the dilemmas, answer to the seed and the quarter alone.
+  const priceShocks = rollPrices(state.seed, next);
   const events = rollEvents(state.country, next, weather.rng);
   const campaign = isElectionQuarter(state.date) ? rollSwing(events.rng) : null;
   const resolved = resolveQuarter(state, decisions, {
     weatherShocks: weather.shocks,
     struck: events.struck,
     swing: campaign?.swing ?? 0,
+    priceShocks,
     // Dilemmas answer to the seed and the quarter alone, and leave the generator untouched.
     dilemmaRolls: rollDilemmas(state.seed, next),
   });
@@ -160,6 +173,12 @@ export interface Chance {
   readonly struck: readonly EventStrike[];
   /** How far the campaign moves the vote, in thousandths, if an election is held. */
   readonly swing: number;
+  /**
+   * How far world markets move each good's price this quarter, as a share of its full swing
+   * in thousandths, in the goods' order. A good with none given does not move but for the
+   * pull back towards its usual price.
+   */
+  readonly priceShocks: readonly number[];
   /**
    * The roll for each kind of dilemma, from 0 up to 1, in the vocabulary's order. One
    * arises when its roll falls under its chance. A kind with no roll does not arise.
@@ -185,6 +204,8 @@ export interface QuarterResolved extends TurnResult {
   readonly principalRepaid: Money;
   /** What borrowing brought into the treasury as the quarter ended. */
   readonly borrowed: Money;
+  /** What was paid for goods bought abroad as the quarter ended. */
+  readonly tradePaid: Money;
   /** The share of their needs each region's people ate, in thousandths, in the regions' order. */
   readonly fedPermille: readonly number[];
   readonly electionHeld: boolean;
@@ -202,7 +223,7 @@ export function resolveQuarter(
   const lived = liveQuarter(given, decisions, chance.weatherShocks);
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
-  const { serviced, taken, credit, bailout } = lived;
+  const { serviced, taken, traded, credit, bailout } = lived;
   const { prosperity, tier } = lived;
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
@@ -214,6 +235,7 @@ export function resolveQuarter(
       : endEventsAfterHarvest(state.events);
   const begun = beginStruck(remaining, chance.struck, date);
   const collapse = collapseOf(state.country, approval.regions);
+  const worldPrices = movePrices(state.worldPrices, chance.priceShocks);
   // The vote is held as each term's last quarter ends, unless the state has already fallen.
   const election =
     collapse === null && isElectionQuarter(state.date)
@@ -240,6 +262,7 @@ export function resolveQuarter(
             regions: approval.regions,
             events,
             dilemmasAnswered,
+            worldPrices,
           },
           chance.dilemmaRolls,
         )
@@ -260,6 +283,7 @@ export function resolveQuarter(
     ...building.entries,
     ...upkept.entries,
     ...taken.entries,
+    ...traded.entries,
     ...(passed === null ? [] : [passed]),
     ...ended.map((event) => endEntry(state.country, event)),
     ...begun.map((event) =>
@@ -284,6 +308,7 @@ export function resolveQuarter(
       projects: upkept.projects,
       debts: taken.debts,
       credit: credit.credit,
+      worldPrices,
       history: [
         ...state.history,
         vitalSigns({
@@ -343,6 +368,7 @@ export function resolveQuarter(
     bailedOut: bailout.bailedOut,
     principalRepaid: serviced.principal,
     borrowed: taken.borrowed,
+    tradePaid: traded.paid,
     fedPermille: food.fedPermille,
     electionHeld: election !== null,
   };
@@ -356,18 +382,25 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   // The answer to a dilemma takes effect first, so the rest of the quarter starts from it.
   const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
   const state = withAnswer(given, answer);
-  const { budget, building, upkept, serviced, taken, finances } = resolveMoney(state, decisions);
+  const { budget, building, upkept, serviced, taken, traded, finances } = resolveMoney(
+    state,
+    decisions,
+  );
 
   const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
   // The sites in use as the quarter begins are the ones that bear on it.
   const sites = siteEffects(state);
-  const food = resolveFood(foodSituation(state), {
-    agricultureSpentThisYear: agricultureSpent,
-    weatherShocks,
-    harvestPermille: eventsLeave(state, sites),
-    sites,
-    relief: reliefFor(decisions, finances),
-  });
+  // Grain bought abroad reaches the reserve as the quarter ends, once its food is done.
+  const food = withImported(
+    resolveFood(foodSituation(state), {
+      agricultureSpentThisYear: agricultureSpent,
+      weatherShocks,
+      harvestPermille: eventsLeave(state, sites),
+      sites,
+      relief: reliefFor(decisions, finances),
+    }),
+    traded,
+  );
   // What was spent on health and education builds up, or lets wear down, their lasting levels.
   const served = resolveServices(food.regions, finances.spent);
   // Prosperity is judged on the regions and the sites in use as the quarter leaves them.
@@ -418,6 +451,7 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     upkept,
     serviced,
     taken,
+    traded,
     finances,
     agricultureSpent,
     sites,
@@ -445,7 +479,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
   const calm = given.regions.map(() => 0);
   const lived = liveQuarter(given, decisions, calm);
   const { state, building, finances, sites, food: thisQuarter, approval, prosperity } = lived;
-  const { serviced, taken, credit } = lived;
+  const { serviced, taken, traded, credit } = lived;
   const owed = debtOf(taken.debts);
   const situation = foodSituation(state);
   const { quarter } = state.date;
@@ -459,6 +493,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
       agricultureSpent: quarterly.finances.spent.agriculture,
       relief: reliefFor(decisions, quarterly.finances),
       sites: quarterly.sites,
+      imported: quarterly.imported,
     })),
     // At worst, every event that could still begin this growing year does.
     worstHarvestPermille: state.regions.map((region, index) =>
@@ -480,6 +515,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     repayments: exactly(serviced.paid),
     missedPayment: serviced.missed,
     borrowed: taken.borrowed,
+    trade: { imported: traded.imported, paid: traded.paid },
     debt: exactly(owed),
     debtBurden: exactly(lived.debtBurden),
     creditRating: credit.credit.rating,
@@ -539,6 +575,8 @@ export function checkDecisions(state: GameState, decisions: Decisions, mustAnswe
   if (fault !== null) throw new RangeError(fault);
   const borrowing = borrowFault(state, decisions.borrow ?? []);
   if (borrowing !== null) throw new RangeError(borrowing);
+  const trading = tradeFault(state, decisions.trade ?? []);
+  if (trading !== null) throw new RangeError(trading);
 }
 
 interface QuarterMoney {
@@ -552,6 +590,8 @@ interface QuarterMoney {
   readonly upkept: ReturnType<typeof resolveUpkeep>;
   /** What was borrowed, which arrives as the quarter ends. */
   readonly taken: ReturnType<typeof takeDebts>;
+  /** What was bought abroad, paid for as the quarter ends, after what was borrowed arrives. */
+  readonly traded: TradeOutcome;
   /** All of it together: the quarter's whole effect on the treasury. */
   readonly finances: BudgetOutcome;
 }
@@ -561,16 +601,18 @@ interface QuarterMoney {
  * quarter's revenue; then the budget's own spending, cut if what is left cannot cover it;
  * then the instalments on projects are paid out of what is left. The sites that upkeep did
  * not reach are decaying from the next quarter. What is borrowed arrives as the quarter
- * ends, after all of it, unless a missed payment has brought a bailout.
+ * ends, after all of it, unless a missed payment has brought a bailout; and then what was
+ * bought abroad is paid for.
  */
 function resolveMoney(
   state: Pick<
     GameState,
-    'country' | 'treasury' | 'regions' | 'projects' | 'date' | 'debts' | 'credit'
+    'country' | 'treasury' | 'regions' | 'projects' | 'date' | 'debts' | 'credit' | 'worldPrices'
   >,
   decisions: Decisions,
   starts: readonly string[] = decisions.startProjects ?? [],
   borrowing: readonly Borrowing[] = decisions.borrow ?? [],
+  trading: readonly TradeOrder[] = decisions.trade ?? [],
 ): QuarterMoney {
   const serviced = serveDebts(
     state.debts,
@@ -586,17 +628,33 @@ function resolveMoney(
     state.date,
     state.credit.rating,
   );
+  const borrowed = withBorrowed(
+    withFixedCosts(budget, building.paid, building.contributions),
+    taken.borrowed,
+    taken.contributions,
+  );
+  const traded = resolveTrade(state, trading, borrowed.treasury);
   return {
     serviced,
     budget,
     building,
     upkept: resolveUpkeep({ country: state.country, projects: building.projects }, budget.upkeep),
     taken,
-    finances: withBorrowed(
-      withFixedCosts(budget, building.paid, building.contributions),
-      taken.borrowed,
-      taken.contributions,
-    ),
+    traded,
+    // Goods bought abroad leave the treasury but are no part of the budget's balance.
+    finances: withBorrowed(borrowed, -traded.paid, traded.money),
+  };
+}
+
+/** The quarter's food once the grain bought abroad has reached the national reserve. */
+function withImported<Food extends { foodReserve: number; contributions: readonly Contribution[] }>(
+  food: Food,
+  traded: TradeOutcome,
+): Food {
+  return {
+    ...food,
+    foodReserve: food.foodReserve + traded.imported,
+    contributions: [...food.contributions, ...traded.food],
   };
 }
 
@@ -648,6 +706,8 @@ interface QuarterAhead {
   readonly finances: BudgetOutcome;
   /** The sites in use as that quarter begins. */
   readonly sites: SiteEffects;
+  /** The grain bought abroad that reaches the reserve as that quarter ends, in tonnes. */
+  readonly imported: number;
 }
 
 /**
@@ -662,15 +722,21 @@ function quartersToHarvest(state: GameState, decisions: Decisions): QuarterAhead
   let projects: readonly Project[] = state.projects;
   let { debts } = state;
   for (let ahead = quartersUntilHarvest(state.date.quarter); ahead > 0; ahead -= 1) {
-    // Projects are started, and money borrowed, in the quarter being decided and none after.
+    // Projects are started, money borrowed and goods bought in the quarter being decided and
+    // none after.
     const later = quarterly.length === 0 ? undefined : [];
     const money = resolveMoney(
       { ...state, treasury, projects, date, debts },
       decisions,
       later,
       later,
+      later,
     );
-    quarterly.push({ finances: money.finances, sites: siteEffects({ ...state, projects }) });
+    quarterly.push({
+      finances: money.finances,
+      sites: siteEffects({ ...state, projects }),
+      imported: money.traded.imported,
+    });
     ({ treasury } = money.finances);
     ({ projects } = money.upkept);
     ({ debts } = money.taken);

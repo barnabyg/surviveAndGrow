@@ -276,23 +276,25 @@ describe('the dilemmas in Tavara', () => {
 
   // Tavara has 5.2 million people, who eat 260,000 t a quarter.
   it('offers grain from a neighbour while the reserve is below its safe level', () => {
+    // It is priced at the world price as the quarter begins, here $231 a tonne.
+    expect(reach('grainOffer', tavaraFile, 'dry-east').game.worldPrices.grain.at(-1)).toBe(231);
     expect(view('grainOffer')).toEqual({
       type: 'grainOffer',
       title: 'A neighbour offers grain',
       story:
-        'The national reserve is below its safe level, and a neighbouring government has noticed. It offers a shipment of grain at its own price, to be paid for at once.',
+        'The national reserve is below its safe level, and a neighbouring government has noticed. It offers a shipment of grain at the world price, to be paid for at once.',
       regionId: null,
       options: [
         {
           id: 'buy',
           label: 'Buy the whole shipment',
-          effects: ['Costs $12.5m', 'Adds 52,000 t to the national reserve'],
+          effects: ['Costs $12.0m', 'Adds 52,000 t to the national reserve'],
           unavailable: null,
         },
         {
           id: 'half',
           label: 'Buy half of it',
-          effects: ['Costs $6.2m', 'Adds 26,000 t to the national reserve'],
+          effects: ['Costs $6.0m', 'Adds 26,000 t to the national reserve'],
           unavailable: null,
         },
         { id: 'decline', label: 'Decline the offer', effects: [], unavailable: null },
@@ -403,11 +405,11 @@ describe('the dilemmas in Tavara', () => {
       seriousness: 'notable',
       headline: 'A neighbour offers grain',
       cause:
-        'You chose “Buy the whole shipment”. Costs $12.5m. Adds 52,000 t to the national reserve.',
+        'You chose “Buy the whole shipment”. Costs $12.0m. Adds 52,000 t to the national reserve.',
     });
     expect(bought.treasury.contributions).toContainEqual({
       label: 'Grain from a neighbour',
-      amount: -125,
+      amount: -120,
     });
     expect(bought.food.contributions).toContainEqual({
       label: 'Grain from a neighbour',

@@ -5,6 +5,7 @@ import type {
   DilemmaType,
   EventType,
   FoodStage,
+  Good,
   LastingService,
   Likelihood,
   ProsperityPart,
@@ -51,6 +52,20 @@ export interface SiteBalance {
    * its sites' capacities, and a decaying site has only part of its capacity.
    */
   readonly capacity?: number;
+}
+
+/**
+ * How the world price of one good moves. Prices are in whole dollars a tonne. Each quarter the
+ * price closes `revertPermillePerQuarter` thousandths of the gap to its usual level, and world
+ * markets then move it by up to `swingPermillePerQuarter` thousandths of the usual level either
+ * way, by the seed; it never leaves the range from `lowest` to `highest`.
+ */
+export interface GoodBalance {
+  readonly usualDollarsPerTonne: number;
+  readonly lowestDollarsPerTonne: number;
+  readonly highestDollarsPerTonne: number;
+  readonly swingPermillePerQuarter: number;
+  readonly revertPermillePerQuarter: number;
 }
 
 /**
@@ -561,6 +576,28 @@ export const balance = {
       } satisfies Record<CreditRating, CreditStepBalance>,
     },
   },
+  /**
+   * Trade with the world. Each good has a world price that moves every quarter. Grain can be
+   * ordered for the national reserve: it arrives, and is paid for at the price of the quarter
+   * it was ordered in, as that quarter ends.
+   */
+  trade: {
+    goods: {
+      // The usual price is what the neighbour's grain cost when its price was fixed: $2.4m for
+      // a fifth of what a million people eat in a quarter.
+      grain: {
+        usualDollarsPerTonne: 240,
+        lowestDollarsPerTonne: 150,
+        highestDollarsPerTonne: 420,
+        swingPermillePerQuarter: 125,
+        revertPermillePerQuarter: 250,
+      },
+    } satisfies Record<Good, GoodBalance>,
+    /** An order is for a whole number of these tonnes. */
+    orderStepTonnes: 1000,
+    /** How many quarters ahead the forecast range of a price looks, counting the next. */
+    forecastQuarters: 4,
+  },
   /** How the game is won. */
   victory: {
     /**
@@ -593,14 +630,14 @@ export const balance = {
       name: 'Grain from a neighbour',
       title: 'A neighbour offers grain',
       story:
-        'The national reserve is below its safe level, and a neighbouring government has noticed. It offers a shipment of grain at its own price, to be paid for at once.',
+        'The national reserve is below its safe level, and a neighbouring government has noticed. It offers a shipment of grain at the world price, to be paid for at once.',
       conditions: { reserve: 'belowSafe', restQuarters: 4 },
       options: [
         {
           id: 'buy',
           label: 'Buy the whole shipment',
           effects: [
-            { kind: 'treasury', perMillionPeople: -24 },
+            { kind: 'atWorldPrice', good: 'grain', needPermille: 200, pricePermille: 1000 },
             { kind: 'reserve', needPermille: 200 },
           ],
         },
@@ -608,7 +645,7 @@ export const balance = {
           id: 'half',
           label: 'Buy half of it',
           effects: [
-            { kind: 'treasury', perMillionPeople: -12 },
+            { kind: 'atWorldPrice', good: 'grain', needPermille: 100, pricePermille: 1000 },
             { kind: 'reserve', needPermille: 100 },
           ],
         },

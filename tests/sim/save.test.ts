@@ -2,14 +2,12 @@ import { describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
-  austerityStatus,
   createGame,
   loadCountry,
   loadSave,
   SAVE_FORMAT_VERSION,
   SaveError,
   saveGame,
-  siteStatus,
   type Budget,
   type Country,
   type Decisions,
@@ -18,7 +16,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import format6Save from '../saves/format-6.json';
+import format7Save from '../saves/format-7.json';
 import {
   bothCountries,
   tavara,
@@ -102,7 +100,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(6);
+    expect(save.formatVersion).toBe(7);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -315,8 +313,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 7))).toBe(
-      'The saved game was written by a newer release of the game (save format 7; this release reads format 6). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 8))).toBe(
+      'The saved game was written by a newer release of the game (save format 8; this release reads format 7). Open it with that release.',
     );
   });
 
@@ -677,53 +675,51 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 6', () => {
-  it('still opens on the game it was written from, in austerity after a bailout', () => {
-    const { game, report } = loadSave(format6Save);
+describe('the save kept from save format 7', () => {
+  it('still opens on the game it was written from, with grain bought abroad', () => {
+    const { game, report } = loadSave(format7Save);
 
-    expect(game.date).toEqual({ year: 2, quarter: 1 });
-    expect(game.austerity).toEqual({ quartersLeft: 7 });
-    expect(austerityStatus(game)).toMatchObject({ lastQuarter: { year: 3, quarter: 3 } });
-    expect(game.credit).toMatchObject({ rating: 'b', record: 25 });
-    expect(
-      game.debts.map((debt) => [debt.kind, debt.borrowed, debt.owed, debt.quartersLeft]),
-    ).toEqual([['bailout', 296, 279, 15]]);
-    expect(game.budget.taxRatePercent).toBe(25);
-    expect(game.projects.map((project) => [project.siteId, project.status])).toEqual([
-      ['lowmere-irrigation', 'building'],
-    ]);
-    expect(report?.entries.map((entry) => entry.kind)).toContain('projectStarted');
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(game.worldPrices).toEqual({ grain: [240, 223, 209, 247] });
+    expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
+    expect(report?.treasury.contributions).toContainEqual({ label: 'Grain imported', amount: -42 });
+    expect(report?.entries.map((entry) => entry.headline)).toContain('Grain imported');
   });
 
-  it('plays on through austerity to its end, building carrying on', () => {
-    let { game } = loadSave(format6Save);
-    const reports: TurnReport[] = [];
+  it('plays on, its world price moving on from where it was and grain bought at it', () => {
+    const { game } = loadSave(format7Save);
+    const decisions = {
+      ...answering(game, steward(game)),
+      trade: [{ good: 'grain', direction: 'import', tonnes: 10_000 }] as const,
+    };
 
-    for (let quarter = 0; quarter < 7; quarter += 1) {
-      const result = advanceQuarter(game, answering(game, steward(game)));
-      reports.push(result.report);
-      game = result.state;
-    }
+    const { state, report } = advanceQuarter(game, decisions);
 
-    expect(game.outcome).toEqual({ status: 'playing' });
-    expect(game.austerity).toBeNull();
-    expect(reports.at(-1)?.entries.map((entry) => entry.headline)).toContain('Austerity ends');
-    expect(siteStatus(game, 'lowmere-irrigation').state).toBe('operating');
+    expect(state.worldPrices.grain.slice(0, 4)).toEqual([240, 223, 209, 247]);
+    expect(state.worldPrices.grain).toHaveLength(5);
+    // 10,000 tonnes at $247 a tonne is $2.5m.
+    expect(report.treasury.contributions).toContainEqual({ label: 'Grain imported', amount: -25 });
   });
 
-  it('refuses austerity with no quarter left of it', () => {
-    const damaged = withValue(format6Save, ['state', 'austerity', 'quartersLeft'], 0);
+  it('refuses a world price that is not a whole number of dollars', () => {
+    const damaged = withValue(format7Save, ['state', 'worldPrices', 'grain', 1], 22.5);
 
-    expect(() => loadSave(damaged)).toThrow(/state\.austerity\.quartersLeft/);
+    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.grain\[1\]/);
   });
 
-  // This holds for as long as format 6 is the current format: saving must write exactly
+  it('refuses a good with no price', () => {
+    const damaged = withValue(format7Save, ['state', 'worldPrices', 'grain'], []);
+
+    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.grain/);
+  });
+
+  // This holds for as long as format 7 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(6);
-    const { game, report } = loadSave(format6Save);
+    expect(SAVE_FORMAT_VERSION).toBe(7);
+    const { game, report } = loadSave(format7Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format6Save);
+    expect(stored(saveGame(game, report))).toEqual(format7Save);
   });
 });

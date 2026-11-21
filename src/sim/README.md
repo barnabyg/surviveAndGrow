@@ -8,8 +8,9 @@ every file it needs.
 ## How a quarter is resolved
 
 `advanceQuarter` in `game.ts` draws everything chance decides, in this fixed order and nowhere
-else: the weather, the events that strike and the campaign swing in an election quarter. The
-dilemma rolls come from the seed and the quarter alone, and leave the generator untouched.
+else: the weather, the world prices (`trade.ts`), the events that strike and the campaign swing
+in an election quarter. The world prices and the dilemma rolls come from the seed and the quarter
+alone, and leave the generator untouched.
 `resolveQuarter` takes all of these as given, so the risks look-ahead (`risks.ts`) runs it on
 supposed chance. It lives the quarter through `liveQuarter`, which the preview
 (`previewQuarter`) shares, so turn and preview cannot come to differ:
@@ -20,10 +21,11 @@ supposed chance. It lives the quarter through `liveQuarter`, which the preview
    maturity. A payment missed on any of them brings a bailout: everything owed is
    consolidated into one bailout loan (`debt.ts`). Then the budget (`budget.ts`) with what is
    left; then project instalments, oldest first (`projects.ts`); then upkeep and decay
-   (`upkeep.ts`). What is borrowed arrives last, as the quarter ends (`debt.ts`), unless a
-   bailout has stopped it.
+   (`upkeep.ts`). What is borrowed arrives as the quarter ends (`debt.ts`), unless a
+   bailout has stopped it, and last of all grain bought abroad is paid for (`trade.ts`).
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
-   `power.ts`) and the events in force (`events.ts`).
+   `power.ts`) and the events in force (`events.ts`). Grain bought abroad then reaches the
+   national reserve.
 4. Health and education levels (`resolveServices` in `prosperity.ts`).
 5. Prosperity (`prosperity.ts`) and the tier it reaches (`tiers.ts`), which sets expectations.
 6. Approval (`approval.ts`), which decides who strikes next quarter. A bailout's blow lands
@@ -36,10 +38,11 @@ supposed chance. It lives the quarter through `liveQuarter`, which the preview
    allows is in `austerity.ts`, which `checkDecisions` and the menus of loans and projects
    consult.
 
-`resolveQuarter` then moves the calendar (`calendar.ts`, `terms.ts`), ends and begins events,
-checks for collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may
-put a new dilemma, records the vital signs (`history.ts`), and compiles the report
-(`report.ts`), whose entries keep the order written there.
+`resolveQuarter` then moves the world prices on (`trade.ts`), moves the calendar (`calendar.ts`,
+`terms.ts`), ends and begins events, checks for collapse, holds the election (`election.ts`),
+checks for victory (`victory.ts`), may put a new dilemma, records the vital signs
+(`history.ts`), and compiles the report (`report.ts`), whose entries keep the order written
+there.
 
 ## Adding a mechanic
 

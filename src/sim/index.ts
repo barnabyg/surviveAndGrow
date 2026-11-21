@@ -119,6 +119,18 @@ export {
   type TermCalendar,
   type TermQuarter,
 } from './timeline';
+export {
+  costOf,
+  formatPrice,
+  importTerms,
+  ORDER_STEP_TONNES,
+  plannedImport,
+  priceStatus,
+  type ImportTerms,
+  type PriceStatus,
+  type TradeOrder,
+  type WorldPrices,
+} from './trade';
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,
@@ -129,6 +141,7 @@ export {
   type RegionShortfall,
   type RegionState,
   type ReliefDelivery,
+  type TradePreview,
   type TurnReport,
   type TurnResult,
   type UpkeepPreview,
@@ -165,6 +178,8 @@ export {
   DILEMMA_TYPES,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
+  GOOD_NAMES,
+  GOODS,
   LIKELIHOOD_NAMES,
   LIKELIHOODS,
   MAP_FRAME,
@@ -192,6 +207,7 @@ export {
   type DilemmaType,
   type EventType,
   type FoodStage,
+  type Good,
   type LabelSide,
   type Likelihood,
   type PowerRole,
@@ -207,5 +223,6 @@ export {
   type SpendingArea,
   type Terrain,
   type Tier,
+  type TradeDirection,
   type Unrest,
 } from './vocabulary';

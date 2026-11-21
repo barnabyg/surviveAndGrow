@@ -134,8 +134,8 @@ function play(
   for (let quarter = 0; quarter < quarters && state.outcome.status === 'playing'; quarter += 1) {
     const resolved = resolveQuarter(
       state,
-      // Projects are started, money borrowed and a dilemma answered in the quarter being
-      // decided alone. A bailout on the way holds the budget within the austerity it brings.
+      // Projects are started, money borrowed, goods bought and a dilemma answered in the
+      // quarter being decided alone. A bailout on the way holds the budget within the austerity it brings.
       quarter === 0
         ? decisions
         : {
@@ -143,12 +143,16 @@ function play(
             budget: withinAusterity(state, decisions.budget),
             startProjects: [],
             borrow: [],
+            trade: [],
             dilemmaChoice: null,
           },
       {
         weatherShocks: state.regions.map(() => shock),
         struck: events.filter((event) => event.afterQuarters === quarter + 1),
         swing: 0,
+        // World prices bear on nothing bought after the quarter being decided, so markets are
+        // supposed to leave them be.
+        priceShocks: [],
         // No dilemma is supposed to arise: what one does is the player's to choose.
         dilemmaRolls: [],
       },

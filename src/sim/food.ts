@@ -265,6 +265,8 @@ export interface ForecastInputs {
     readonly relief: FoodInputs['relief'];
     /** The sites that will be in use as that quarter begins. */
     readonly sites: SiteEffects;
+    /** The grain bought abroad that reaches the reserve as that quarter ends, in tonnes. */
+    readonly imported: number;
   }[];
   /** The least that events could leave of each region's harvest, in thousandths. */
   readonly worstHarvestPermille: readonly number[];
@@ -309,13 +311,16 @@ function playToHarvest(
       relief: quarter.relief,
     });
     if (outcome.harvest !== null) {
-      return { harvest: outcome.harvest.total, foodReserve: outcome.foodReserve };
+      return {
+        harvest: outcome.harvest.total,
+        foodReserve: outcome.foodReserve + quarter.imported,
+      };
     }
     situation = {
       ...situation,
       quarter: nextQuarter(situation.quarter),
       regions: outcome.regions,
-      foodReserve: outcome.foodReserve,
+      foodReserve: outcome.foodReserve + quarter.imported,
     };
   }
   throw new Error('The forecast was not given every quarter up to the harvest.');

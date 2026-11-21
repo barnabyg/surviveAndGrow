@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   approvalStatus,
+  austerityStatus,
   debtStatus,
   electionStatus,
   loadSave,
@@ -9,12 +10,14 @@ import {
   siteStatus,
   termRecords,
   victoryStatus,
+  type TurnReport,
 } from '../../src/sim';
 import format1Save from '../saves/format-1.json';
 import format2Save from '../saves/format-2.json';
 import format3Save from '../saves/format-3.json';
 import format4Save from '../saves/format-4.json';
 import format5Save from '../saves/format-5.json';
+import format6Save from '../saves/format-6.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './players';
 
@@ -346,5 +349,52 @@ describe('the save kept from save format 5', () => {
     const { game } = loadSave(format5Save);
 
     expect(game.austerity).toBeNull();
+  });
+});
+
+describe('the save kept from save format 6', () => {
+  it('still opens on the game it was written from, in austerity after a bailout', () => {
+    const { game, report } = loadSave(format6Save);
+
+    expect(game.date).toEqual({ year: 2, quarter: 1 });
+    expect(game.austerity).toEqual({ quartersLeft: 7 });
+    expect(austerityStatus(game)).toMatchObject({ lastQuarter: { year: 3, quarter: 3 } });
+    expect(game.credit).toMatchObject({ rating: 'b', record: 25 });
+    expect(
+      game.debts.map((debt) => [debt.kind, debt.borrowed, debt.owed, debt.quartersLeft]),
+    ).toEqual([['bailout', 296, 279, 15]]);
+    expect(game.budget.taxRatePercent).toBe(25);
+    expect(game.projects.map((project) => [project.siteId, project.status])).toEqual([
+      ['lowmere-irrigation', 'building'],
+    ]);
+    expect(report?.entries.map((entry) => entry.kind)).toContain('projectStarted');
+  });
+
+  it('plays on through austerity to its end, building carrying on', () => {
+    let { game } = loadSave(format6Save);
+    const reports: TurnReport[] = [];
+
+    for (let quarter = 0; quarter < 7; quarter += 1) {
+      const result = advanceQuarter(game, answering(game, steward(game)));
+      reports.push(result.report);
+      game = result.state;
+    }
+
+    expect(game.outcome).toEqual({ status: 'playing' });
+    expect(game.austerity).toBeNull();
+    expect(reports.at(-1)?.entries.map((entry) => entry.headline)).toContain('Austerity ends');
+    expect(siteStatus(game, 'lowmere-irrigation').state).toBe('operating');
+  });
+
+  it('refuses austerity with no quarter left of it', () => {
+    const damaged = withValue(format6Save, ['state', 'austerity', 'quartersLeft'], 0);
+
+    expect(() => loadSave(damaged)).toThrow(/state\.austerity\.quartersLeft/);
+  });
+
+  it('is lifted to format 7 with the world grain price at its usual level', () => {
+    const { game } = loadSave(format6Save);
+
+    expect(game.worldPrices).toEqual({ grain: [240] });
   });
 });

@@ -11,6 +11,7 @@ import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { damaged, isRecord, SaveError, type Json } from './saveChecks';
 import type { RegionState } from './state';
 import { tierAt } from './tiers';
+import { openingPrices } from './trade';
 import type { Money } from './types';
 import { upkeepForEvery } from './upkeep';
 import { TIERS, type LastingService, type Tier } from './vocabulary';
@@ -20,7 +21,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 6;
+export const SAVE_FORMAT_VERSION = 7;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -35,6 +36,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   3: fromFormat3,
   4: fromFormat4,
   5: fromFormat5,
+  6: fromFormat6,
 };
 
 /**
@@ -197,6 +199,16 @@ function fromFormat4(older: Json): Json {
 function fromFormat5(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
   return { ...older, formatVersion: 6, state: { ...state, austerity: null } };
+}
+
+/**
+ * Format 7 added trade: a world price for each good, which moves every quarter. A game written
+ * in format 6 never saw one, so its path begins where a new game's does, at each good's usual
+ * price, in the quarter it is opened in. Its last report has nothing of trade in it.
+ */
+function fromFormat6(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return { ...older, formatVersion: 7, state: { ...state, worldPrices: openingPrices() } };
 }
 
 /**

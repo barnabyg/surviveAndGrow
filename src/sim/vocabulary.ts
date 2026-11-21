@@ -66,6 +66,22 @@ export type DilemmaType = (typeof DILEMMA_TYPES)[number];
 export const DILEMMA_PLACES = ['struckByEvent', 'inUnrest'] as const;
 export type DilemmaPlace = (typeof DILEMMA_PLACES)[number];
 
+/**
+ * The goods the world trades in, each with a price that moves every quarter. A country file
+ * cannot add one: what each costs and how its price moves are balance values
+ * (`balance.trade.goods`).
+ */
+export const GOODS = ['grain'] as const;
+export type Good = (typeof GOODS)[number];
+
+export const GOOD_NAMES: Readonly<Record<Good, string>> = {
+  grain: 'Grain',
+};
+
+/** Which way an order sends a good across the border. Bought abroad, it is imported. */
+export const TRADE_DIRECTIONS = ['import'] as const;
+export type TradeDirection = (typeof TRADE_DIRECTIONS)[number];
+
 /** The kinds of effect a dilemma's option can have on the country. */
 export const DILEMMA_EFFECT_KINDS = ['treasury', 'reserve', 'regionGrain', 'approval'] as const;
 
@@ -354,6 +370,7 @@ export const REPORT_KINDS = [
   'siteRestored',
   'loanTaken',
   'loanRepaid',
+  'trade',
   'bailout',
   'missedPayment',
   'austerity',
