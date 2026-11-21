@@ -98,3 +98,8 @@ export function formatSignedIndex(permille: number): string {
 export function formatPercent(permille: number, decimals: 0 | 1 = 1): string {
   return `${permille < 0 ? MINUS : ''}${(Math.abs(permille) / 10).toFixed(decimals)}%`;
 }
+
+/** A phrase with its first letter made a capital, to begin a sentence. */
+export function capitalised(phrase: string): string {
+  return phrase.charAt(0).toUpperCase() + phrase.slice(1);
+}

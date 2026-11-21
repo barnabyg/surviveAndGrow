@@ -201,8 +201,30 @@ export function siteDamageOf(country: Country, begun: readonly ActiveEvent[]): S
     .filter((event) => damagesSites(event.type))
     .map((event) => ({
       regionId: event.regionId,
-      cause: `The ${definitions[event.type].name.toLowerCase()} in ${regionName(country, event.regionId)}`,
+      cause: `the ${definitions[event.type].name.toLowerCase()} in ${regionName(country, event.regionId)}`,
     }));
+}
+
+/**
+ * What damaged a site as the quarter now being decided began, if an event did: "the flood in
+ * Lowmere Plains". A site it damaged is decaying for this quarter at least.
+ */
+export function damageTo(
+  state: {
+    readonly country: Country;
+    readonly events: readonly ActiveEvent[];
+    readonly date: GameDate;
+  },
+  siteId: string,
+): string | null {
+  const site = state.country.sites.find((candidate) => candidate.id === siteId);
+  const begun = state.events.filter(
+    (event) => event.began.year === state.date.year && event.began.quarter === state.date.quarter,
+  );
+  return (
+    siteDamageOf(state.country, begun).find((damage) => damage.regionId === site?.regionId)
+      ?.cause ?? null
+  );
 }
 
 /** Whether an event of this kind damages the sites in use in its region as it begins. */

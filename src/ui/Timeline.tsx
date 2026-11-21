@@ -1,4 +1,5 @@
 import {
+  damageTo,
   dateOfQuarter,
   formatMoney,
   siteTerms,
@@ -194,7 +195,14 @@ function ProjectRow(props: ProjectRowProps) {
           {site.name}
         </button>
         <span className="timeline__status">
-          {statusLine(schedule, calendar, supposed, unpaid, siteTerms(site.type))}
+          {statusLine(
+            schedule,
+            calendar,
+            supposed,
+            unpaid,
+            siteTerms(site.type),
+            damageTo(game, site.id),
+          )}
         </span>
       </th>
       {buildFrom > first && <td colSpan={buildFrom - first} />}
@@ -292,10 +300,14 @@ function statusLine(
   supposed: boolean,
   unpaid: boolean,
   terms: { readonly cost: number; readonly buildQuarters: number },
+  /** What damaged the site as this quarter began, if anything did. */
+  damage: string | null,
 ): string {
   const { state, inUseBeforeVote } = schedule;
   if (state === 'operating') return `In use since ${formatDate(dateOfQuarter(schedule.opens))}`;
-  if (state === 'decaying') return '▲ Decaying for want of upkeep';
+  if (state === 'decaying') {
+    return damage === null ? '▲ Decaying for want of upkeep' : `▲ Decaying: ${damage} damaged it`;
+  }
   if (inUseBeforeVote === 0) {
     const opens = formatDate(dateOfQuarter(schedule.opens));
     return `▲ ${state === 'planned' ? 'Would' : 'Will'} not be finished before the vote · opens ${opens}`;

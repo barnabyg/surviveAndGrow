@@ -79,7 +79,7 @@ export {
   type StartingLoan,
 } from './debt';
 export { electionStatus, type ElectionStatus } from './election';
-export { type ActiveEvent } from './events';
+export { damageTo, type ActiveEvent } from './events';
 export {
   foodStatus,
   monthsOfFood,

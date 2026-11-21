@@ -4,7 +4,7 @@ import type { Country, Site } from './country';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import { siteTerms } from './sites';
-import { formatMoney } from './text';
+import { capitalised, formatMoney } from './text';
 import type { Money } from './types';
 import type { ProjectStatus, SiteState, SiteType } from './vocabulary';
 
@@ -112,7 +112,7 @@ export function resolveUpkeep(
   return { projects: after, entries };
 }
 
-/** Damage done to the sites in use in one region, and what did it: "The flood in Lowmere". */
+/** Damage done to the sites in use in one region, and what did it: "the flood in Lowmere". */
 export interface SiteDamage {
   readonly regionId: string;
   readonly cause: string;
@@ -166,7 +166,7 @@ function damagedEntry(site: Site, damage: SiteDamage): ReportEntry {
     kind: 'siteDecaying',
     seriousness: 'warning',
     headline: `Decaying: ${site.name}`,
-    cause: `${damage.cause} has damaged it. This quarter it does only ${DECAYING_SHARE} of what it does in good repair, and paying its ${formatMoney(siteTerms(site.type).upkeep)} upkeep restores it from the next.`,
+    cause: `${capitalised(damage.cause)} has damaged it. This quarter it does only ${DECAYING_SHARE} of what it does in good repair, and paying its ${formatMoney(siteTerms(site.type).upkeep)} upkeep restores it from the next.`,
     regionId: site.regionId,
   };
 }
