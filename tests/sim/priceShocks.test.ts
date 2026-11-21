@@ -5,6 +5,7 @@ import {
   createGame,
   loadCountry,
   priceStatus,
+  risksAhead,
   type Decisions,
   type GameState,
   type TurnReport,
@@ -36,12 +37,18 @@ const files = [
 
 /** Each shock: the good it moves, its name, and which way and how far it pushes each quarter. */
 const shocks = [
-  { type: 'failedHarvestsAbroad', good: 'grain', name: 'Failed harvests abroad', push: 36 },
-  { type: 'oreGlut', good: 'ore', name: 'Ore glut', push: -20 },
+  {
+    type: 'failedHarvestsAbroad',
+    good: 'grain',
+    name: 'Failed harvests abroad',
+    called: 'failed harvests abroad',
+    push: 36,
+  },
+  { type: 'oreGlut', good: 'ore', name: 'Ore glut', called: 'an ore glut', push: -20 },
 ] as const;
 
 describe.each(files)('world price shocks in %s', (_country, file) => {
-  describe.each(shocks)('$name', ({ type, good, name, push }) => {
+  describe.each(shocks)('$name', ({ type, good, name, called, push }) => {
     // Certain every quarter it can be announced, and no other shock.
     const certain = () => withChances(file, { shocks: { [type]: 1 } });
     const never = () => withChances(file, { shocks: {} });
@@ -105,6 +112,7 @@ describe.each(files)('world price shocks in %s', (_country, file) => {
           type,
           name,
           inForce: false,
+          nextPushIn: 2,
           description: `From Year 1 · Quarter 4 the world ${good} price will be pushed ${push > 0 ? 'up' : 'down'} by $${Math.abs(push)} a tonne each quarter for 3 quarters.`,
         },
       ]);
@@ -130,6 +138,59 @@ describe.each(files)('world price shocks in %s', (_country, file) => {
           }
         }
       }
+    });
+
+    it('is listed among the risks while it could still be announced, however unlikely', () => {
+      const rare = withChances(file, { shocks: { [type]: 0.03 } });
+      const game = createGame(rare, 3);
+      const way = push > 0 ? 'up' : 'down';
+
+      expect(risksAhead(game, asItIs(game))).toContainEqual({
+        kind: 'priceShock',
+        likelihood: 'remote',
+        headline: name,
+        reason: `Should ${called} be announced as this quarter ends, a 3% chance, the world ${good} price would be pushed ${way} by $${Math.abs(push)} a tonne each quarter for 3 quarters, the first time in 3 quarters.`,
+        withinQuarters: 4,
+      });
+      // Too unlikely to matter, it is still listed: what it does to the price is certain.
+      const rarer = createGame(withChances(file, { shocks: { [type]: 0.005 } }), 3);
+      expect(
+        risksAhead(rarer, asItIs(rarer)).filter((risk) => risk.kind === 'priceShock'),
+      ).toHaveLength(1);
+      const calm = createGame(never(), 3);
+      expect(risksAhead(calm, asItIs(calm)).filter((risk) => risk.kind === 'priceShock')).toEqual(
+        [],
+      );
+    });
+
+    it('is listed as certain once announced, and while it still has quarters to run', () => {
+      const { states } = play(createGame(certain(), 3), 5);
+      const listed = (game: GameState | undefined) =>
+        game === undefined
+          ? []
+          : risksAhead(game, asItIs(game)).filter((risk) => risk.kind === 'priceShock');
+
+      expect(listed(states[1])).toEqual([
+        {
+          kind: 'priceShock',
+          likelihood: 'almostCertain',
+          headline: `${name} ahead`,
+          reason: `Announced: from Year 1 · Quarter 4 the world ${good} price will be pushed ${push > 0 ? 'up' : 'down'} by $${Math.abs(push)} a tonne each quarter for 3 quarters.`,
+          withinQuarters: 3,
+        },
+      ]);
+      expect(listed(states[3])).toMatchObject([
+        { likelihood: 'almostCertain', headline: name, withinQuarters: 1 },
+      ]);
+      expect(listed(states[3])[0]?.reason).toContain('and will be for 2 more quarters');
+      // In its last quarter it pushes no more, and the next is what could still be announced.
+      expect(listed(states[5])).toMatchObject([
+        {
+          likelihood: 'almostCertain',
+          headline: name,
+          reason: expect.stringMatching(/^Should /) as string,
+        },
+      ]);
     });
 
     it('is shown in what moved the price', () => {

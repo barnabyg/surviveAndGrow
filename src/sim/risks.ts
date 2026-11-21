@@ -20,6 +20,13 @@ import {
 } from './riskScope';
 import type { Decisions, GameState, RegionState } from './state';
 import { siteEffects, sitesInUse } from './projects';
+import {
+  shockCalled,
+  shockName,
+  shocksThatMayCome,
+  shockStatuses,
+  shockWouldDo,
+} from './priceShocks';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
@@ -97,6 +104,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
     ...eventRisk(whole),
+    ...priceShockRisk(state, watched),
     ...reserveRisk(state, decisions),
     ...treasuryRisk(whole),
     ...bailoutRisk(whole),
@@ -279,6 +287,43 @@ function eventRisk(scope: Scope): Risk[] {
         withinQuarters: event.afterQuarters + 1,
       };
     });
+}
+
+/**
+ * World price shocks: one announced, certain to come, or still in force with quarters to run;
+ * and one not yet announced that could be, and move its price within the horizon. What a shock
+ * does to the price is certain if it comes, so it is listed however unlikely it is. What the
+ * price then does to the treasury is read off the quarters played, which move the prices as
+ * the shocks announced push them.
+ */
+function priceShockRisk(state: GameState, watched: number): Risk[] {
+  const announced = GOODS.flatMap((good) => shockStatuses(state, good)).flatMap((status): Risk[] =>
+    status.nextPushIn === null
+      ? []
+      : [
+          {
+            kind: 'priceShock',
+            likelihood: 'almostCertain',
+            headline: status.inForce ? status.name : `${status.name} ahead`,
+            reason: status.inForce
+              ? status.description
+              : `Announced: ${status.description.charAt(0).toLowerCase()}${status.description.slice(1)}`,
+            // The price it pushes is the one the quarter after the push begins with.
+            withinQuarters: status.inForce ? 1 : status.nextPushIn + 1,
+          },
+        ],
+  );
+  const possible = shocksThatMayCome(state, watched).map((shock): Risk => {
+    const percent = Math.round(shock.chance * 100);
+    return {
+      kind: 'priceShock',
+      likelihood: likelihoodOf(Math.round(shock.chance * 1000)) ?? 'remote',
+      headline: shockName(shock.type),
+      reason: `Should ${shockCalled(shock.type)} be announced ${shock.drawsLeft === 1 && shock.soonest === shock.noticeQuarters + 1 ? 'as this quarter ends' : 'in time'}, ${articleFor(percent)} ${percent}% chance, ${shockWouldDo(shock.type)}, the first time ${when(shock.soonest)}.`,
+      withinQuarters: shock.soonest + 1,
+    };
+  });
+  return [...announced, ...possible];
 }
 
 /**

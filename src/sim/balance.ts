@@ -646,6 +646,7 @@ export const balance = {
   priceShocks: {
     failedHarvestsAbroad: {
       name: 'Failed harvests abroad',
+      called: 'failed harvests abroad',
       good: 'grain',
       // $36 a tonne a quarter: with markets and the pull towards the usual price the grain
       // price stays within $90 of where it was, and three quarters of it raise it by about a
@@ -661,6 +662,7 @@ export const balance = {
     },
     oreGlut: {
       name: 'Ore glut',
+      called: 'an ore glut',
       good: 'ore',
       // $20 a tonne a quarter: three quarters of it take the ore price down by about two fifths,
       // and a mine's earnings with it.

@@ -246,7 +246,7 @@ describe.each(bothCountries)('looking ahead for risks in %s', (_name, country) =
 describe('the risks ahead in Tavara', () => {
   const calm = () => withDroughtChance(tavaraFile, {});
 
-  it('open with the droughts and floods the country file makes possible, the likelier first', () => {
+  it('open with the droughts, floods and price shocks the country file makes possible, the likelier first', () => {
     const game = createGame(tavara(), 3);
 
     // A drought would begin next quarter and spoil the harvest three quarters after that,
@@ -297,6 +297,22 @@ describe('the risks ahead in Tavara', () => {
           'A drought there this year, a 10% chance, would leave it short of food in 4 quarters.',
         regionId: 'arden-vale',
         withinQuarters: 5,
+      },
+      {
+        kind: 'priceShock',
+        likelihood: 'remote',
+        headline: 'Failed harvests abroad',
+        reason:
+          'Should failed harvests abroad be announced as this quarter ends, a 4% chance, the world grain price would be pushed up by $36 a tonne each quarter for 3 quarters, the first time in 3 quarters.',
+        withinQuarters: 4,
+      },
+      {
+        kind: 'priceShock',
+        likelihood: 'remote',
+        headline: 'Ore glut',
+        reason:
+          'Should an ore glut be announced as this quarter ends, a 5% chance, the world ore price would be pushed down by $20 a tonne each quarter for 3 quarters, the first time in 3 quarters.',
+        withinQuarters: 4,
       },
       {
         kind: 'famine',

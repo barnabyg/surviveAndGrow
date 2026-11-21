@@ -18,6 +18,8 @@ import { GOOD_NAMES, GOODS, PRICE_SHOCK_TYPES, type Good, type PriceShockType } 
 /** What a world price shock is, as data. How likely it is is the country file's business. */
 export interface PriceShockDefinition {
   readonly name: string;
+  /** What it is called in the middle of a sentence: "an ore glut". */
+  readonly called: string;
   /** The good whose world price it moves. */
   readonly good: Good;
   /**
@@ -240,6 +242,10 @@ export interface PossibleShock {
   readonly chance: number;
   /** How many quarters are played before it first moves the price, at the soonest: 0 is the one being decided. */
   readonly soonest: number;
+  /** How many quarters of notice it gives. */
+  readonly noticeQuarters: number;
+  /** How many of the quarters played could end with it announced in time. */
+  readonly drawsLeft: number;
 }
 
 /**
@@ -259,8 +265,26 @@ export function shocksThatMayCome(watch: ShockWatch, quarters: number): Possible
     const last = quarters - 1 - noticeQuarters;
     if (chance <= 0 || first > last) return [];
     const draws = last - first + 1;
-    return [{ type, chance: 1 - (1 - chance) ** draws, soonest: first + noticeQuarters }];
+    return [
+      {
+        type,
+        chance: 1 - (1 - chance) ** draws,
+        soonest: first + noticeQuarters,
+        noticeQuarters,
+        drawsLeft: draws,
+      },
+    ];
   });
+}
+
+/** A shock as a risk ahead names it, in the middle of a sentence: "an ore glut". */
+export function shockCalled(type: PriceShockType): string {
+  return definitions[type].called;
+}
+
+/** What a kind of shock would do once announced, in a line: "the world ore price would be pushed down by $20 a tonne each quarter for 3 quarters". */
+export function shockWouldDo(type: PriceShockType): string {
+  return `${priceName(shockGood(type))} would be ${pushWords(type)}`;
 }
 
 /** A shock announced or in force, as the player sees it beside its good's price. */
@@ -269,6 +293,11 @@ export interface ShockStatus {
   readonly name: string;
   /** Whether it already moves the price, or is still to come. */
   readonly inForce: boolean;
+  /**
+   * How many quarters after this one the price is next pushed: as the next begins is 1. One
+   * that has pushed the price for the last time has none to come, and is null.
+   */
+  readonly nextPushIn: number | null;
   /** What it does and when, in a line. */
   readonly description: string;
 }
@@ -288,6 +317,7 @@ export function shockStatuses(watch: ShockWatch, good: Good): ShockStatus[] {
         type: shock.type,
         name: shockName(shock.type),
         inForce,
+        nextPushIn: !inForce ? quarterNumber(shock.begins) - now : more > 0 ? 1 : null,
         description: !inForce
           ? shockForecast(shock)
           : more > 0
