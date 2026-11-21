@@ -236,13 +236,15 @@ function fromFormat7(older: Json): Json {
 }
 
 /**
- * Format 9 added world price shocks, announced ahead and in force for a set time. A game
- * written in format 8 has none announced: its prices move as before until one is, and its
- * country, of a file format that cannot say how likely they are, never sees one.
+ * Format 9 added world price shocks, announced ahead and in force for a set time, and what
+ * each trade link carried in the quarter last played. A game written in format 8 has no shock
+ * announced: its prices move as before until one is, and its country, of a file format that
+ * cannot say how likely they are, never sees one. It did not keep what its links carried, so
+ * it is read as having carried nothing.
  */
 function fromFormat8(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
-  return { ...older, formatVersion: 9, state: { ...state, priceShocks: [] } };
+  return { ...older, formatVersion: 9, state: { ...state, priceShocks: [], tradeCarried: [] } };
 }
 
 /**

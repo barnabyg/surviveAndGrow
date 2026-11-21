@@ -76,6 +76,7 @@ import { heldAfter, victoryOf } from './victory';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { scheduleAhead } from './timeline';
+import { routeCarriage } from './tradeRoutes';
 import {
   FULL_SWING_PERMILLE,
   movePrices,
@@ -107,6 +108,7 @@ export function createGame(country: Country, seed: number): GameState {
     foodReserve: country.start.foodReserve,
     worldPrices: openingPrices(),
     priceShocks: [],
+    tradeCarried: [],
     regions: country.regions.map((region): RegionState => ({
       id: region.id,
       population: region.population,
@@ -341,6 +343,8 @@ export function resolveQuarter(
       credit: credit.credit,
       worldPrices,
       priceShocks: shocks.shocks,
+      // What crossed the border by each link, as the links stood when the quarter began.
+      tradeCarried: routeCarriage(state, traded.imported + traded.exported),
       history: [
         ...state.history,
         vitalSigns({

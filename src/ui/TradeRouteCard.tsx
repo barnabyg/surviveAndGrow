@@ -12,7 +12,8 @@ interface TradeRouteCardProps {
 
 /**
  * The card for the trade route picked out on the map: what it can carry across the border,
- * and what it carries this quarter, the mines' ore and grain, with what is left free.
+ * what it carried last quarter, and what it is to carry this quarter with the grain ordered
+ * so far, the mines' ore and grain each, with what is left free.
  */
 export function TradeRouteCard({ game, routeId, plannedTrade, onClose }: TradeRouteCardProps) {
   const route = tradeRoutes(game, plannedTrade).find((candidate) => candidate.id === routeId);
@@ -23,13 +24,13 @@ export function TradeRouteCard({ game, routeId, plannedTrade, onClose }: TradeRo
   );
   const capacity = formatTonnes(route.capacity);
   const kind = route.kind === 'crossing' ? 'Border crossing' : 'Shipping lane';
-  const rows: [label: string, tonnes: number][] = [
-    ...(route.kind === 'port' || route.ore > 0
-      ? [['Mines’ ore', route.ore] satisfies [string, number]]
+  const { carried, planned } = route;
+  const rows: [label: string, last: number, now: number][] = [
+    ...(route.kind === 'port' || carried.ore > 0 || planned.ore > 0
+      ? [['Mines’ ore', carried.ore, planned.ore] satisfies [string, number, number]]
       : []),
-    ['Grain bought and sold', route.grain],
-    ['Free', route.capacity - route.carried],
-    ['Capacity', route.capacity],
+    ['Grain bought and sold', carried.grain, planned.grain],
+    ['Carried', carried.total, planned.total],
   ];
 
   return (
@@ -59,17 +60,30 @@ export function TradeRouteCard({ game, routeId, plannedTrade, onClose }: TradeRo
         </p>
       )}
       {route.state !== 'missing' && (
-        <table className="breakdown__table" aria-label="What the route carries this quarter">
-          <caption className="label">This quarter</caption>
-          <tbody>
-            {rows.map(([label, tonnes]) => (
-              <tr key={label}>
-                <th scope="row">{label}</th>
-                <td>{formatTonnes(tonnes)}</td>
+        <>
+          <table className="breakdown__table" aria-label="What the route carries">
+            <thead>
+              <tr>
+                <th scope="col">Carried</th>
+                <th scope="col">Last quarter</th>
+                <th scope="col">This quarter</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map(([label, last, now]) => (
+                <tr key={label}>
+                  <th scope="row">{label}</th>
+                  <td>{formatTonnes(last)}</td>
+                  <td>{formatTonnes(now)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="map-card__note" role="status">
+            Capacity {capacity} a quarter: {formatTonnes(route.capacity - planned.total)} of it free
+            this quarter, with the mines’ ore and the grain ordered so far.
+          </p>
+        </>
       )}
       <p className="map-card__note">
         The mines’ ore goes by the port its chain runs to. Grain bought and sold abroad goes over

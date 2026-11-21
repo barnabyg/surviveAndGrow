@@ -485,4 +485,10 @@ describe('the save kept from save format 8', () => {
 
     expect(game.priceShocks).toEqual([]);
   });
+
+  it('is lifted to format 9 having carried nothing by its trade links, which it did not keep', () => {
+    const { game } = loadSave(format8Save);
+
+    expect(game.tradeCarried).toEqual([]);
+  });
 });

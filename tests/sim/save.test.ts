@@ -739,6 +739,30 @@ describe('the save kept from save format 9', () => {
     );
   });
 
+  it('remembers what each trade link carried in the quarter before it was saved', () => {
+    const { game } = loadSave(format9Save);
+
+    // The 20,000 t bought in its second quarter crossed the border at Korr Pass.
+    expect(game.tradeCarried).toEqual([{ routeId: 'korr-pass', ore: 0, grain: 20_000 }]);
+  });
+
+  it('refuses what was carried by a link the country does not have, or one listed twice', () => {
+    const unknown = withValue(format9Save, ['state', 'tradeCarried', 0, 'routeId'], 'nowhere');
+    const doubled = withValue(
+      format9Save,
+      ['state', 'tradeCarried'],
+      [
+        { routeId: 'korr-pass', ore: 0, grain: 1000 },
+        { routeId: 'korr-pass', ore: 0, grain: 1000 },
+      ],
+    );
+    const negative = withValue(format9Save, ['state', 'tradeCarried', 0, 'grain'], -1000);
+
+    expect(() => loadSave(unknown)).toThrow(/state\.tradeCarried\[0\]\.routeId/);
+    expect(() => loadSave(doubled)).toThrow(/state\.tradeCarried lists one trade link twice/);
+    expect(() => loadSave(negative)).toThrow(/state\.tradeCarried\[0\]\.grain/);
+  });
+
   it('refuses a shock the game does not have, or two of one kind', () => {
     const unknown = withValue(format9Save, ['state', 'priceShocks', 0, 'type'], 'locusts');
     const twice = withValue(format9Save, ['state', 'priceShocks', 1, 'type'], 'oreGlut');

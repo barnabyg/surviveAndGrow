@@ -34,6 +34,7 @@ import { siteTerms } from './sites';
 import type { ElectionResult, GameState, Outcome, RegionState, TurnReport } from './state';
 import { formatQuarters } from './text';
 import type { WorldPrices } from './trade';
+import type { RouteCarriage } from './tradeRoutes';
 import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVERS,
@@ -51,6 +52,7 @@ import {
   PROJECT_STATUSES,
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
+  SITE_CHAIN_ROLES,
   SPENDING_AREAS,
   TIERS,
   UNREST_LEVELS,
@@ -122,6 +124,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       credit: game.credit,
       worldPrices: game.worldPrices,
       priceShocks: game.priceShocks,
+      tradeCarried: game.tradeCarried,
       history: game.history,
       dilemma: game.dilemma,
       dilemmasAnswered: game.dilemmasAnswered,
@@ -184,6 +187,7 @@ export function loadSave(
       'state.worldPrices',
     ),
     priceShocks: readPriceShocks(state.priceShocks, 'state.priceShocks'),
+    tradeCarried: readTradeCarried(state.tradeCarried, 'state.tradeCarried', country),
     history: readHistory(state.history, 'state.history'),
     dilemma:
       state.dilemma === null
@@ -392,6 +396,33 @@ function readPriceShocks(saved: unknown, path: string): PriceShock[] {
     fail(path, 'holds two shocks of one kind');
   }
   return shocks;
+}
+
+/**
+ * What each trade link carried in the quarter last played: each a crossing or a port of the
+ * country, listed once, with whole tonnes of ore and grain.
+ */
+function readTradeCarried(saved: unknown, path: string, country: Country): RouteCarriage[] {
+  const links = new Set([
+    ...country.crossings.map((crossing) => crossing.id),
+    ...country.sites
+      .filter((site) => SITE_CHAIN_ROLES[site.type] === 'outlet')
+      .map((site) => site.id),
+  ]);
+  const carried = list(saved, path, (item, itemPath): RouteCarriage => {
+    const routeId = text(item.routeId, `${itemPath}.routeId`);
+    if (!links.has(routeId))
+      fail(`${itemPath}.routeId`, `is "${routeId}", which is not a trade link`);
+    return {
+      routeId,
+      ore: whole(item.ore, `${itemPath}.ore`, 0),
+      grain: whole(item.grain, `${itemPath}.grain`, 0),
+    };
+  });
+  if (new Set(carried.map((each) => each.routeId)).size !== carried.length) {
+    fail(path, 'lists one trade link twice');
+  }
+  return carried;
 }
 
 function readHistory(saved: unknown, path: string): VitalSigns[] {

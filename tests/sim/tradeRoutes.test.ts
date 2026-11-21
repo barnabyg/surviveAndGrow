@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  advanceQuarter,
   contains,
   createGame,
   tradeRoutes,
@@ -89,34 +90,57 @@ describe('shipping lanes on the map', () => {
   );
 });
 
-describe('what the routes carry this quarter', () => {
-  const chain = { 'korr-mine': 'operating', 'korr-trunk-road': 'operating' } as const;
-  const grain = (tonnes: number) => ({ good: 'grain', direction: 'import', tonnes }) as const;
+const chain = { 'korr-mine': 'operating', 'korr-trunk-road': 'operating' } as const;
+const grain = (tonnes: number) => ({ good: 'grain', direction: 'import', tonnes }) as const;
 
+/** Tavara with the mine's chain through Saltmouth port in use, and money for any grain. */
+function shipping(): GameState {
+  return {
+    ...withSites(createGame(tavara(), 1), { ...chain, 'saltmouth-port': 'operating' }),
+    treasury: 5000,
+  };
+}
+
+describe('what the routes are to carry this quarter', () => {
   it('sends the mine’s ore by its port, and grain over the border crossings first', () => {
-    const game = withSites(createGame(tavara(), 1), { ...chain, 'saltmouth-port': 'operating' });
-
-    const carried = tradeRoutes(game, [grain(70_000)]).map((route) => [
+    const planned = tradeRoutes(shipping(), [grain(70_000)]).map((route) => [
       route.name,
-      route.ore,
-      route.grain,
-      route.carried,
+      route.planned,
       route.capacity,
     ]);
 
-    expect(carried).toEqual([
-      ['Korr Pass', 0, 50_000, 50_000, 50_000],
-      ['Selama bridge', 0, 20_000, 20_000, 40_000],
-      ['Saltmouth port', 600_000, 0, 600_000, 900_000],
+    expect(planned).toEqual([
+      ['Korr Pass', { ore: 0, grain: 50_000, total: 50_000 }, 50_000],
+      ['Selama bridge', { ore: 0, grain: 20_000, total: 20_000 }, 40_000],
+      ['Saltmouth port', { ore: 600_000, grain: 0, total: 600_000 }, 900_000],
     ]);
   });
 
   it('sends grain by sea once the border crossings are full', () => {
-    const game = withSites(createGame(tavara(), 1), { ...chain, 'saltmouth-port': 'operating' });
+    const port = tradeRoutes(shipping(), [grain(150_000)]).find((route) => route.kind === 'port');
 
-    const port = tradeRoutes(game, [grain(150_000)]).find((route) => route.kind === 'port');
+    expect(port?.planned).toEqual({ ore: 600_000, grain: 60_000, total: 660_000 });
+  });
+});
 
-    expect(port).toMatchObject({ ore: 600_000, grain: 60_000, carried: 660_000 });
+describe('what the routes carried last quarter', () => {
+  it('is nothing before a quarter has been played', () => {
+    const routes = tradeRoutes(shipping(), [grain(70_000)]);
+
+    expect(routes.map((route) => route.carried.total)).toEqual([0, 0, 0]);
+  });
+
+  it('is what crossed the border by each route in the quarter just played', () => {
+    const game = shipping();
+    const { state } = advanceQuarter(game, { budget: game.budget, trade: [grain(70_000)] });
+
+    expect(tradeRoutes(state).map((route) => [route.name, route.carried])).toEqual([
+      ['Korr Pass', { ore: 0, grain: 50_000, total: 50_000 }],
+      ['Selama bridge', { ore: 0, grain: 20_000, total: 20_000 }],
+      ['Saltmouth port', { ore: 600_000, grain: 0, total: 600_000 }],
+    ]);
+    // Nothing is ordered yet for the quarter now being decided but the mine's ore.
+    expect(tradeRoutes(state).map((route) => route.planned.total)).toEqual([0, 0, 600_000]);
   });
 });
 
@@ -129,7 +153,7 @@ describe('missing and weak trade links', () => {
     expect(
       tradeRoutes(game)
         .filter((route) => route.kind === 'port')
-        .map((route) => [route.name, route.state, route.capacity, route.carried]),
+        .map((route) => [route.name, route.state, route.capacity, route.carried.total]),
     ).toEqual([
       ['Saltmouth port', 'missing', 900_000, 0],
       ['Saltmouth quay', 'missing', 360_000, 0],

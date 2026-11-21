@@ -30,7 +30,8 @@ preview (`previewQuarter`) shares, so turn and preview cannot come to differ:
    unless a bailout has stopped it, and last of all grain sold abroad is paid for and grain bought
    abroad is paid for (`trade.ts`), within what the trade links carry once the mines' ore has
    its share (`tradeLinks.ts`), as they stood when the quarter began; grain sold is set aside from the reserve as it stands
-   after the dilemma's answer.
+   after the dilemma's answer. What each link carried, the ore and the grain really bought and
+   sold, is kept for the map to show next quarter (`tradeRoutes.ts`).
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
    `power.ts`) and the events in force (`events.ts`), from the reserve less the grain sold
    abroad. Grain bought abroad then reaches the national reserve.
