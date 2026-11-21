@@ -1,5 +1,5 @@
 {
-  "formatVersion": 5,
+  "formatVersion": 6,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -43,7 +43,10 @@
       "label": [370, 200],
       "population": 300000,
       "output": 20,
-      "farmland": 70
+      "farmland": 70,
+      "eventLikelihood": {
+        "flood": 0.15
+      }
     },
     {
       "id": "sandreach",

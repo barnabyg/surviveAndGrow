@@ -29,7 +29,7 @@ interface Played {
   readonly reports: readonly TurnReport[];
 }
 
-/** Plays quarters with the decisions each quarter brings, until the game ends or the count is reached. */
+/** Plays quarters with the decisions each brings, until the game ends or the count is reached. */
 function play(start: GameState, quarters: number, decide: (game: GameState) => Decisions): Played {
   let state = start;
   const states: GameState[] = [];
@@ -191,22 +191,19 @@ describe('the risks ahead in a country where floods come', () => {
 });
 
 describe('flood likelihoods in a country file', () => {
-  const format6 = withValue(tavaraFile, ['formatVersion'], 6);
-
   it('set how likely a flood is in each region', () => {
     const country = loadCountry(
-      withValue(format6, ['regions', 4, 'eventLikelihood'], { drought: 0, flood: 0.25 }),
+      withValue(tavaraFile, ['regions', 4, 'eventLikelihood'], { drought: 0, flood: 0.25 }),
     );
 
     expect(country.regions[4]?.eventLikelihood).toEqual({ drought: 0, flood: 0.25 });
   });
 
   it('need country file format 6', () => {
-    const faults = faultsOf(
-      withValue(tavaraFile, ['regions', 4, 'eventLikelihood'], { drought: 0, flood: 0.25 }),
-    );
+    const faults = faultsOf(withValue(tavaraFile, ['formatVersion'], 5));
 
     expect(faults).toEqual([
+      'regions[2].eventLikelihood.flood needs country file format 6 or later.',
       'regions[4].eventLikelihood.flood needs country file format 6 or later.',
     ]);
   });
@@ -219,7 +216,7 @@ describe('flood likelihoods in a country file', () => {
 
   it('share one chance with drought, which begins in the same season', () => {
     const faults = faultsOf(
-      withValue(format6, ['regions', 3, 'eventLikelihood'], { drought: 0.75, flood: 0.5 }),
+      withValue(tavaraFile, ['regions', 3, 'eventLikelihood'], { drought: 0.75, flood: 0.5 }),
     );
 
     expect(faults).toEqual([
@@ -227,7 +224,7 @@ describe('flood likelihoods in a country file', () => {
     ]);
     expect(
       loadCountry(
-        withValue(format6, ['regions', 3, 'eventLikelihood'], { drought: 0.35, flood: 0.65 }),
+        withValue(tavaraFile, ['regions', 3, 'eventLikelihood'], { drought: 0.35, flood: 0.65 }),
       ).regions[3]?.eventLikelihood,
     ).toEqual({ drought: 0.35, flood: 0.65 });
   });

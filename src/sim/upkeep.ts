@@ -112,7 +112,7 @@ export function resolveUpkeep(
   return { projects: after, entries };
 }
 
-/** Damage done to the sites in use in one region, and what did it: "The flood in Lowmere Plains". */
+/** Damage done to the sites in use in one region, and what did it: "The flood in Lowmere". */
 export interface SiteDamage {
   readonly regionId: string;
   readonly cause: string;

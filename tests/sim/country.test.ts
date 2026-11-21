@@ -17,6 +17,7 @@ import {
   testlandFormat1File,
   testlandFormat3File,
   testlandFormat4File,
+  testlandFormat5File,
   testlandInDebt,
 } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
@@ -25,7 +26,7 @@ describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
     const country = tavara();
 
-    expect(tavaraAsShipped().formatVersion).toBe(5);
+    expect(tavaraAsShipped().formatVersion).toBe(6);
     expect(country.regions.map((region) => [region.name, region.terrain])).toEqual([
       ['Korr Highlands', 'highlands'],
       ['Salt Coast', 'coast'],
@@ -364,7 +365,7 @@ describe('a country file in format 3', () => {
   it('may mark sites as alternatives, each ruling out the other whichever side says so', () => {
     const country = testland();
 
-    expect(country.formatVersion).toBe(5);
+    expect(country.formatVersion).toBe(6);
     expect(valueAt(testlandFile, ['sites', 5, 'alternatives'])).toBeUndefined();
     expect(country.sites.map((site) => [site.id, site.alternatives])).toEqual([
       ['north-irrigation', []],
@@ -446,7 +447,7 @@ describe('a country file in format 4', () => {
   it('may say the loans the game starts with, each with its own terms', () => {
     const country = testlandInDebt();
 
-    expect(country.formatVersion).toBe(5);
+    expect(country.formatVersion).toBe(6);
     expect(country.start.loans).toEqual([
       { owed: 70, annualRateBasisPoints: 700, quarters: 8 },
       { owed: 40, annualRateBasisPoints: 950, quarters: 12 },
@@ -598,7 +599,7 @@ describe('a country file in format 5', () => {
   });
 
   it('cannot be given crossings in a format 4 file', () => {
-    expect(faultsOf(withValue(testlandFile, ['formatVersion'], 4))).toEqual([
+    expect(faultsOf(withValue(testlandFormat5File(), ['formatVersion'], 4))).toEqual([
       'crossings needs country file format 5 or later.',
     ]);
   });

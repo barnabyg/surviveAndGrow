@@ -21,10 +21,13 @@ export const testland = (): Country =>
 /** Testland with its dilemmas left out and no growth, but owing the loans it starts with. */
 export const testlandInDebt = (): Country => loadCountry(withoutDilemmas(testlandFile));
 
-/** The two countries with their dilemmas left out, but growing as they do when shipped. */
+/**
+ * The two countries with their dilemmas left out, but growing as they do when shipped.
+ * Testland has neither drought nor flood: it spends nothing on relief, so either would bring
+ * famine, and famine stops its people growing.
+ */
 export const tavaraGrowing = (): Country => loadCountry(withGrowth(withoutDilemmas(tavaraFile)));
-export const testlandGrowing = (): Country =>
-  loadCountry(withoutStartingDebt(withGrowth(withoutDilemmas(testlandFile))));
+export const testlandGrowing = (): Country => withChances(testlandFile, { growing: true });
 
 /** The two countries exactly as their files are written, dilemmas and all. */
 export const tavaraAsShipped = (): Country => loadCountry(tavaraFile);
@@ -71,9 +74,19 @@ export function testlandFormat3File(): unknown {
 
 /** Testland's file as format 4 could write it: it names no border crossings. */
 export function testlandFormat4File(): unknown {
-  const file = structuredClone(testlandFile) as { formatVersion: number; crossings?: unknown };
+  const file = testlandFormat5File() as { formatVersion: number; crossings?: unknown };
   delete file.crossings;
   file.formatVersion = 4;
+  return file;
+}
+
+/** Testland's file as format 5 could write it: no flood ever comes. */
+export function testlandFormat5File(): unknown {
+  const file = structuredClone(testlandFile) as Chances;
+  for (const region of file.regions) {
+    if (region.eventLikelihood !== undefined) delete region.eventLikelihood.flood;
+  }
+  file.formatVersion = 5;
   return file;
 }
 
