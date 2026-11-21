@@ -229,6 +229,31 @@ integration runs the same command on every push and pull request.
 
 `npm run format` rewrites files to the house format.
 
+### Run one test
+
+One simulation test, by file and, optionally, by name:
+
+```powershell
+npx vitest run tests/sim/loans.test.ts -t "is paid before the budget"
+```
+
+One browser test. The browser tests serve the production build in `dist/`, not the source, so
+build first, and build again after every change to `src/`, or the test runs against the old
+build:
+
+```powershell
+npm run build; npx playwright test tests/e2e/loans.spec.ts -g "a loan is planned"
+```
+
+`npm run test:e2e` builds for you. Set `E2E_PORT` to run the browser tests from two checkouts at
+once without their servers colliding.
+
+[tests/e2e/app.ts](tests/e2e/app.ts) is where a browser test starts a game in a known state:
+`startGame` and `openApp` with a seed or a country file of the test's own; `tavaraWith`,
+`tavaraWithDroughtIn` and `testlandFile` for a country with chance pinned (which dilemmas and
+events can arise, and people who do not grow); and `tavaraPoisedBelowDeveloping` and
+`tavaraProsperous` for one prepared near a tier. Add a new prepared country there.
+
 Gates that do not apply:
 
 - **Secret scanning** has no local tool. The game has no server and holds no credentials;
@@ -307,5 +332,5 @@ still read what this one writes. The save format, and how to change it, are in
 kept save for a new format.
 
 Both test suites run in parallel. They stop at the first failure in continuous integration and
-report every failure locally. Set `E2E_PORT` to run the browser tests from two checkouts at once.
+report every failure locally.
 Each browser test has storage of its own, so one test's saved game never reaches another.
