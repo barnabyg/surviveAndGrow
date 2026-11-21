@@ -33,10 +33,22 @@ function stored(save: unknown): unknown {
   return JSON.parse(JSON.stringify(save)) as unknown;
 }
 
-/** Each country, and the region that drought is made to strike in it. */
+/** Each country, and the regions that drought and flood are made to strike in it. */
 const countries = [
-  { name: 'Tavara', file: tavaraFile, shipped: tavaraAsShipped, dry: 'dry-east' },
-  { name: 'Testland', file: testlandFile, shipped: testlandAsShipped, dry: 'sandreach' },
+  {
+    name: 'Tavara',
+    file: tavaraFile,
+    shipped: tavaraAsShipped,
+    dry: 'dry-east',
+    wet: 'lowmere-plains',
+  },
+  {
+    name: 'Testland',
+    file: testlandFile,
+    shipped: testlandAsShipped,
+    dry: 'sandreach',
+    wet: 'northfield',
+  },
 ] as const;
 
 /** Every tax the country can bear and nothing spent, so the treasury only grows. */
@@ -136,7 +148,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
 describe.each(countries)(
   'a game in $name that is saved, restored and continued',
-  ({ file, shipped, dry }) => {
+  ({ file, shipped, dry, wet }) => {
     it.each([1, 2, 3])(
       'is the same game as one never saved, through the first election as shipped (seed %i)',
       (seed) => {
@@ -186,6 +198,23 @@ describe.each(countries)(
         passed.some((game) => game.regions.some((region) => region.foodStage === 'famine')),
       ).toBe(true);
       expect(passed.at(-1)?.outcome).toMatchObject({ status: 'lost', cause: 'famine' });
+    });
+
+    it('is the same through a flood that sets a site in use decaying', () => {
+      const country = withChances(file, { flood: { [wet]: 1 } });
+      const store = country.sites.find(
+        (site) => site.type === 'grainStore' && site.regionId === wet,
+      );
+      if (!store) throw new Error('The flooded region has no grain store site');
+
+      // The store is paid for out of a high tax, and its upkeep is paid every quarter.
+      const passed = playThroughSaves(createGame(country, 4), 10, (_game, quarter) => ({
+        budget: { ...austere, spending: { ...austere.spending, upkeep: 10 } },
+        ...(quarter === 0 ? { startProjects: [store.id] } : {}),
+      }));
+
+      expect(passed.some((game) => game.events.some((event) => event.type === 'flood'))).toBe(true);
+      expect(passed.map((game) => game.projects[0]?.status)).toContain('decaying');
     });
 
     it('is the same with regions on strike and in protest', () => {
