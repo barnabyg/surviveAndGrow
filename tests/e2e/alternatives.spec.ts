@@ -24,7 +24,9 @@ test('a site card warns that starting it closes its alternative, which is then c
   const quay = page.getByRole('region', { name: 'Saltmouth quay' });
   await expect(quay).toContainText('Shallow port · empty site');
   await expect(quay.getByRole('group', { name: 'Cost' })).toContainText('$25.0m');
-  await expect(quay).toContainText('Ships up to 360,000 t of a mine’s ore a quarter.');
+  await expect(quay).toContainText(
+    'Ships up to 360,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
+  );
   await expect(quay).toContainText(
     '▲ Starting it closes Saltmouth port for good: they are alternatives, and only one of them can be built.',
   );

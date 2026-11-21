@@ -25,7 +25,8 @@ preview (`previewQuarter`) shares, so turn and preview cannot come to differ:
    (`upkeep.ts`). Revenue taxes what each mine's chain earns at the world ore price as the
    quarter began (`chains.ts`). What is borrowed arrives as the quarter ends (`debt.ts`),
    unless a bailout has stopped it, and last of all grain sold abroad is paid for and grain bought
-   abroad is paid for (`trade.ts`); grain sold is set aside from the reserve as it stands
+   abroad is paid for (`trade.ts`), within what the trade links carry once the mines' ore has
+   its share (`tradeLinks.ts`), as they stood when the quarter began; grain sold is set aside from the reserve as it stands
    after the dilemma's answer.
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
    `power.ts`) and the events in force (`events.ts`), from the reserve less the grain sold

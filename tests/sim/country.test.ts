@@ -244,15 +244,19 @@ describe('the types of site', () => {
       cost: 500,
       buildQuarters: 8,
       upkeep: 8,
-      effect: 'Ships up to 900,000 t of a mine’s ore a quarter.',
-      decayingEffect: 'Ships up to 450,000 t of a mine’s ore a quarter.',
+      effect:
+        'Ships up to 900,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
+      decayingEffect:
+        'Ships up to 450,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
     });
     expect(siteTerms('shallowPort')).toEqual({
       cost: 250,
       buildQuarters: 5,
       upkeep: 4,
-      effect: 'Ships up to 360,000 t of a mine’s ore a quarter.',
-      decayingEffect: 'Ships up to 180,000 t of a mine’s ore a quarter.',
+      effect:
+        'Ships up to 360,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
+      decayingEffect:
+        'Ships up to 180,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
     });
   });
 });

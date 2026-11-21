@@ -10,6 +10,7 @@ import {
   previewQuarter,
   priceStatus,
   risksAhead,
+  tradeCapacity,
   type Decisions,
   type GameState,
   type TradeOrder,
@@ -18,6 +19,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, withChances, withDroughtChance } from './countries';
+import { withValue } from './files';
 
 /** An order for tonnes of grain from abroad. */
 function grain(tonnes: number): TradeOrder {
@@ -466,8 +468,18 @@ describe('an export that would take the reserve below its safe level', () => {
 
 describe('an export the reserve can no longer cover as the quarter ends', () => {
   it('is cut to the thousands of tonnes the reserve still holds, and the report says so', () => {
-    // The merchants take their grain first, before the grain ordered is shipped.
-    const country = withChances(tavaraFile, { dilemmas: { merchantOffer: 1 }, reserve: 400_000 });
+    // The merchants take their grain first, before the grain ordered is shipped. Its border
+    // crossings carry the whole reserve, so the trade links do not limit the sale.
+    const crossings = [0, 1, 2, 3, 4, 5].map((index) => ({
+      id: `crossing-${index}`,
+      name: `Crossing ${index}`,
+      neighbour: 'voskar',
+      tonnes: 100_000,
+    }));
+    const country = withChances(withValue(tavaraFile, ['crossings'], crossings), {
+      dilemmas: { merchantOffer: 1 },
+      reserve: 400_000,
+    });
     let game = createGame(country, 1);
     while (game.dilemma?.type !== 'merchantOffer') {
       game = advanceQuarter(game, keep(game)).state;
@@ -506,8 +518,11 @@ describe.each(bothCountries)('a surplus sold after a good harvest in %s', (name)
     (game: GameState): Decisions => ({
       ...keep(game),
       // The harvest reaches the reserve as the first year ends; what is above the safe level
-      // is sold as the second begins.
-      trade: selling && game.history.length === 5 ? [sale(surplusOf(game))] : [],
+      // is sold as the second begins, as much of it as the trade links carry.
+      trade:
+        selling && game.history.length === 5
+          ? [sale(Math.min(surplusOf(game), tradeCapacity(game).free))]
+          : [],
     });
 
   it('ends the year with more money and no hunger', () => {

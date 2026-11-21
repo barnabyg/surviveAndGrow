@@ -241,6 +241,16 @@ figure there must change it here in the same commit.
   The price moves as the quarter ends, so prosperity and the debt burden the quarter leaves are
   judged at the new price, and the outlook gives prosperity next quarter as a range while a mine
   earns.
+- Everything that crosses the border moves through a trade link. Border crossings are named in
+  the country file, each carrying so many tonnes a quarter from the start: Tavara's Korr Pass to
+  Voskar carries 50,000 t and Selama bridge 40,000 t. A port in use adds what it ships for a
+  chain: 900,000 t for a port and 360,000 t for a shallow port, half while it decays. The ore
+  the mines' chains ship takes its share first, and grain bought and sold abroad together is
+  limited to what is left, so a mine that fills its port leaves grain the crossings alone. The
+  trade panel shows what the links carry, the ore's share, the grain ordered and what is free,
+  and refuses an order beyond it. What the links carry is fixed as the quarter begins, so an
+  order the panel accepts is never cut for want of room. A port's card says what it carries and
+  how it is shared. The grain a dilemma's offer brings or takes is outside this limit.
 
 ## Risks ahead
 

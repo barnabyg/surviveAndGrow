@@ -172,7 +172,8 @@ export const CHAIN_ROLE_SENTENCES: Readonly<Record<ChainRole, string>> = {
   source:
     'Ships {tonnes} of ore a quarter, worth {money} at the usual world ore price, to add to its region’s output, but only while its chain to a port is complete.',
   link: 'Carries up to {tonnes} of a mine’s ore a quarter along its chain.',
-  outlet: 'Ships up to {tonnes} of a mine’s ore a quarter.',
+  outlet:
+    'Ships up to {tonnes} a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
 };
 
 /**

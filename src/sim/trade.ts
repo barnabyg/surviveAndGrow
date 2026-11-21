@@ -1,9 +1,12 @@
 import { clamp, sum } from './arithmetic';
+import type { Country } from './country';
+import type { Project } from './projects';
 import { balance } from './balance';
 import { quarterNumber } from './calendar';
 import type { ReportEntry } from './report';
 import { foodStatus, safeReserveTonnes } from './food';
 import { drawAt } from './rng';
+import { capacityFault } from './tradeLinks';
 import type { RegionState } from './state';
 import { formatMoney, formatQuarters, formatTonnes } from './text';
 import type { Contribution, Figure, GameDate, Money, Range } from './types';
@@ -203,6 +206,9 @@ export interface ExportTerms {
 }
 
 interface Trader {
+  readonly country: Country;
+  /** The sites built and being built: a port in use is a trade link. */
+  readonly projects: readonly Project[];
   readonly worldPrices: WorldPrices;
   readonly treasury: Money;
   /** The national reserve, which grain sold abroad comes out of. */
@@ -339,6 +345,8 @@ export function tradeFault(game: Trader, orders: readonly TradeOrder[]): string 
   if (both !== undefined) {
     return `${GOOD_NAMES[both]} cannot be both bought and sold in one quarter.`;
   }
+  const carried = capacityFault(game, orders);
+  if (carried !== null) return carried;
   const imports = orders.filter((order) => order.direction === 'import');
   const cost = sum(
     imports.map((order) => costOf(order.tonnes, priceOf(game.worldPrices, order.good))),

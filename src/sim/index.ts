@@ -147,6 +147,7 @@ export {
   type TradeOrder,
   type WorldPrices,
 } from './trade';
+export { tradeCapacity, type TradeCapacity, type TradeLink } from './tradeLinks';
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,
