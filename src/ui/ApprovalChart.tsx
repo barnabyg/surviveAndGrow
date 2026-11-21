@@ -46,7 +46,11 @@ export function ApprovalChart({ game }: { readonly game: GameState }) {
   const quarters = values.length - 1;
 
   return (
-    <section className="approval-chart" aria-labelledby="approval-chart-title">
+    <section
+      className="approval-chart"
+      aria-labelledby="approval-chart-title"
+      data-tour="approval-chart"
+    >
       <div className="section-head">
         <h2 className="section-title" id="approval-chart-title">
           Approval

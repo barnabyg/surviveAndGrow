@@ -311,6 +311,16 @@ figure there must change it here in the same commit.
 
 ## The screen
 
+- **Tutorial** on the start screen starts a new game with a guided tour of the screen open, and
+  the **Tutorial** button in the top bar reopens it from its first step in a game in play. A step
+  at a time, the tour shades the screen but for one part of it, drawn round with a thick outline,
+  and says beside it what that part is for: the vital signs, the end-quarter button, the left
+  column, the lenses, the map, the timeline and legend, and each decision panel. It says how far
+  through it is, and Back, Next (or the arrow keys) and End tour (or Escape) move through it. A
+  part not on screen, such as the dilemma panel with no dilemma waiting, is passed over; a
+  collapsed decision panel opens while the tour points at it and closes again after. The tour
+  holds the screen while it is open, and ending it leaves an ordinary game, saved as usual. Its
+  steps are written in `src/ui/tourSteps.ts`.
 - Click the treasury, the debt, the credit rating, the food reserve, approval or prosperity in the
   top bar to see what moved it. Approval, prosperity and the credit rating also list what they
   are made of.

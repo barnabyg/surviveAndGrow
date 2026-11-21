@@ -6,7 +6,7 @@ import './MapLegend.css';
  */
 export function MapLegend() {
   return (
-    <ul className="legend" aria-label="Map legend">
+    <ul className="legend" aria-label="Map legend" data-tour="legend">
       <li>
         <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
           <circle

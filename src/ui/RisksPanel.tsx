@@ -24,7 +24,7 @@ interface RisksPanelProps {
  */
 export function RisksPanel({ risks, selectedRisk, onSelectRisk }: RisksPanelProps) {
   return (
-    <section className="risks" aria-labelledby="risks-title">
+    <section className="risks" aria-labelledby="risks-title" data-tour="risks">
       <div className="section-head">
         <h2 className="section-title" id="risks-title">
           Risks ahead

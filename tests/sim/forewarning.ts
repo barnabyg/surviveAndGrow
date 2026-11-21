@@ -57,6 +57,9 @@ const ofKind = (risks: readonly Risk[], kind: Risk['kind']) =>
  * likely, looking ahead before each of them takes longer, so the runs are shorter. Each country is
  * swept in a file of its own, so that the sweeps share out across the workers.
  */
+/** How long one run of a sweep may take. */
+const SWEEP_TIMEOUT_MS = 20_000;
+
 export function sweepDoingNothing(
   name: string,
   country: () => Country,
@@ -91,6 +94,9 @@ export function sweepDoingNothing(
       (first, last) => {
         foundIn(first, last);
       },
+      // A run takes about 3 s on a CI runner, too close to vitest's default of 5 s: a busy
+      // runner once took longer. This allows for that without hiding a game that hangs.
+      SWEEP_TIMEOUT_MS,
     );
 
     it('has famine end a good share of those games', () => {

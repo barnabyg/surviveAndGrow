@@ -49,6 +49,8 @@ interface TopBarProps {
   readonly onEndQuarter: () => void;
   /** Asks to give up this game for a fresh one. */
   readonly onRestart: () => void;
+  /** Opens the guided tour of the screen. */
+  readonly onTutorial: () => void;
 }
 
 /** How the debt stands against the win's debt test, shown while the nation is in the top tier. */
@@ -98,7 +100,7 @@ function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
   return { text, tone } as const;
 }
 
-export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
+export function TopBar({ game, report, onEndQuarter, onRestart, onTutorial }: TopBarProps) {
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
@@ -134,7 +136,7 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
         </div>
       </div>
 
-      <div className="vitals">
+      <div className="vitals" data-tour="vitals">
         <VitalSign
           label="Treasury"
           value={formatMoney(game.treasury)}
@@ -478,13 +480,19 @@ export function TopBar({ game, report, onEndQuarter, onRestart }: TopBarProps) {
       <div className="topbar__actions">
         {/* A finished game offers its own replay on the summary, so this is for one in play. */}
         {game.outcome.status === 'playing' && (
-          <button type="button" className="button" onClick={onRestart}>
-            Restart
-          </button>
+          <>
+            <button type="button" className="button" data-tour="tutorial" onClick={onTutorial}>
+              Tutorial
+            </button>
+            <button type="button" className="button" onClick={onRestart}>
+              Restart
+            </button>
+          </>
         )}
         <button
           type="button"
           className="button button--primary"
+          data-tour="end-quarter"
           disabled={game.outcome.status !== 'playing'}
           onClick={onEndQuarter}
         >

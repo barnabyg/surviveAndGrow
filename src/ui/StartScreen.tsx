@@ -11,6 +11,8 @@ interface StartScreenProps {
   /** What the browser holds for this country: nothing, a game to resume, or a save it cannot open. */
   readonly stored: StoredGame;
   readonly onStart: () => void;
+  /** Starts a new game with the guided tour of the screen open. */
+  readonly onTutorial: () => void;
   /** Opens the saved game where it was left. */
   readonly onResume: () => void;
   /** Removes a save that cannot be opened, once the player has said so. */
@@ -24,7 +26,8 @@ function describeSave(game: GameState): string {
     : `${game.country.name}, finished. ${game.outcome.headline}.`;
 }
 
-export function StartScreen({ country, stored, onStart, onResume, onDiscard }: StartScreenProps) {
+export function StartScreen(props: StartScreenProps) {
+  const { country, stored, onStart, onTutorial, onResume, onDiscard } = props;
   const [discarding, setDiscarding] = useState(false);
   const resumable = stored.status === 'ready';
   return (
@@ -82,6 +85,9 @@ export function StartScreen({ country, stored, onStart, onResume, onDiscard }: S
           onClick={onStart}
         >
           Start new game
+        </button>
+        <button type="button" className="button start__second" onClick={onTutorial}>
+          Tutorial
         </button>
       </div>
 

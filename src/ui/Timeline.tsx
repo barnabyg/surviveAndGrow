@@ -48,7 +48,7 @@ export function Timeline(props: TimelineProps) {
   ];
 
   return (
-    <section className="timeline" aria-labelledby="timeline-title">
+    <section className="timeline" aria-labelledby="timeline-title" data-tour="timeline">
       <div className="timeline__head">
         <h2 className="section-title" id="timeline-title">
           This term
