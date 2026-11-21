@@ -74,31 +74,8 @@ describe('the timing trader', () => {
     expect(trade[0]).toMatchObject({ good: 'grain', direction: 'import' });
   });
 
-  it('stocks the reserve, and sells nothing, while failed harvests abroad are still to come', () => {
-    const past = grainAt(pastTheHarvest(), 260);
-    const announced = {
-      ...past,
-      priceShocks: [
-        { type: 'failedHarvestsAbroad' as const, announced: past.date, begins: past.date },
-      ],
-    };
-    // Announced as beginning next quarter: it has not yet moved the price.
-    const coming = {
-      ...announced,
-      priceShocks: announced.priceShocks.map((shock) => ({
-        ...shock,
-        begins: { year: past.date.year + 1, quarter: past.date.quarter },
-      })),
-    };
-    const lean = { ...coming, foodReserve: foodStatus(coming).quarterlyConsumption };
-
-    expect(trader().decide(grainAt(past, 260)).trade?.[0]?.direction).toBe('export');
-    expect(trader().decide(coming).trade).toBeUndefined();
-    expect(trader().decide(lean).trade?.[0]?.direction).toBe('import');
-  });
-
-  it('has a twin, blind to failed harvests abroad, that sells as if none were coming', () => {
-    const past = grainAt(pastTheHarvest(), 260);
+  it('stocks a lean reserve while failed harvests abroad are still to come', () => {
+    const past = grainAt(pastTheHarvest(), 230);
     const coming = {
       ...past,
       priceShocks: [
@@ -109,9 +86,35 @@ describe('the timing trader', () => {
         },
       ],
     };
+    // Above its safe level but below what the trader keeps; grain at $230 is not cheap.
+    const reserve = Math.ceil(foodStatus(coming).quarterlyConsumption * 1.1);
+    const lean = { ...coming, foodReserve: reserve };
     const blind = DEGENERATE_PLAYERS.find((player) => player.name === 'Trader blind to shocks');
 
-    expect(blind?.decide(coming).trade?.[0]?.direction).toBe('export');
+    expect(trader().decide({ ...past, foodReserve: reserve }).trade).toBeUndefined();
+    expect(trader().decide(lean).trade?.[0]?.direction).toBe('import');
+    expect(blind?.decide(lean).trade).toBeUndefined();
+  });
+});
+
+describe('the borrower wary of gluts', () => {
+  it('borrows nothing while an ore glut is announced, where the sensible borrower would', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    const glut = {
+      ...game,
+      priceShocks: [
+        {
+          type: 'oreGlut' as const,
+          announced: game.date,
+          begins: { year: game.date.year + 1, quarter: game.date.quarter },
+        },
+      ],
+    };
+    const wary = DEGENERATE_PLAYERS.find((player) => player.name === 'Borrower wary of gluts');
+
+    expect(playerNamed('Sensible borrower').decide(glut).borrow?.length).toBeGreaterThan(0);
+    expect(wary?.decide(game).borrow).toEqual(playerNamed('Sensible borrower').decide(game).borrow);
+    expect(wary?.decide(glut).borrow).toBeUndefined();
   });
 });
 

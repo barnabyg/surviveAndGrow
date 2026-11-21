@@ -278,6 +278,16 @@ function quarterlyCost(offer: LoanOffer): Money {
     : offer.repayment;
 }
 
+/** The order the sensible borrower builds in: the mine's chain, then power and the small sites. */
+const BORROWER_ORDER: readonly SiteType[] = [
+  'port',
+  'trunkRoad',
+  'mine',
+  'powerStation',
+  'powerLine',
+  ...SMALL_SITES,
+];
+
 /**
  * Plays as the chain builder does and builds the same sites, but the mine's chain first, so
  * that what the mine earns comes in to pay what was borrowed, and power after it. It borrows
@@ -285,10 +295,14 @@ function quarterlyCost(offer: LoanOffer): Money {
  * its own: loans while the credit rating allows nothing better, bonds once it allows them. It
  * puts money by for each bond's maturity as the bond runs.
  */
-const sensibleBorrower: Decide = builder(
-  ['port', 'trunkRoad', 'mine', 'powerStation', 'powerLine', ...SMALL_SITES],
-  borrowsSensibly,
-);
+const sensibleBorrower: Decide = builder(BORROWER_ORDER, borrowsSensibly);
+
+/**
+ * Borrows as the sensible borrower does, but nothing while an ore glut is announced or in
+ * force: what the mine earns will not repay it as the borrower counted on.
+ */
+const borrowsUnlessGlut: Lending = (game, short) =>
+  priceStatus(game, 'ore').shocks.length > 0 ? [] : borrowsSensibly(game, short);
 
 /**
  * The sensible way of running the country, building the sites of the types given in turn: a
@@ -697,7 +711,7 @@ function timedTrade(game: GameState, decisions: Decisions, heedsShocks = true): 
     return [];
   }
   const surplus = wholeSteps(Math.min(carried, reserve - keep));
-  if (dear && !dearer && surplus > 0) {
+  if (dear && surplus > 0) {
     for (let tonnes = surplus; tonnes > 0; tonnes -= ORDER_STEP_TONNES) {
       if (exportTerms(game, 'grain', tonnes).unavailable === null) {
         return [{ good: 'grain', direction: 'export', tonnes }];
@@ -860,6 +874,12 @@ export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
     manner:
       'Borrows all the lenders allow and builds everything at once, as the reckless borrower does, but taxes enough to pay the repayments and the building as it goes.',
     decide: (game) => borrowAndBuild(game, true),
+  },
+  {
+    name: 'Borrower wary of gluts',
+    manner:
+      'Plays as the sensible borrower does, but borrows nothing while an ore glut is announced or in force.',
+    decide: builder(BORROWER_ORDER, borrowsUnlessGlut),
   },
   {
     name: 'Trader blind to shocks',
