@@ -148,6 +148,8 @@ export {
   type WorldPrices,
 } from './trade';
 export { portTonnesOf, tradeCapacity, type TradeCapacity, type TradeLink } from './tradeLinks';
+export { tradeRoutes, type TradeRoute } from './tradeRoutes';
+export { contains } from './geometry';
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,

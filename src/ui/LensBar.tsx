@@ -68,13 +68,34 @@ export function LensBar({ game, lens, onChange }: LensBarProps) {
             </>
           )}
           {lens === 'infrastructure' && (
-            <li>
-              <MissingRingSwatch palette={palette} />✕ Ringed: missing link in a chain
-            </li>
+            <>
+              <li>
+                <MissingRingSwatch palette={palette} />✕ Ringed: missing link in a chain
+              </li>
+              <li>
+                <MissingLaneSwatch palette={palette} />✕ Dotted lane: missing trade link
+              </li>
+            </>
           )}
         </ul>
       </div>
     </div>
+  );
+}
+
+/** The dotted lane the infrastructure lens draws from every port not yet in use. */
+function MissingLaneSwatch({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <svg className="lens-scale__mark" width="22" height="14" viewBox="0 0 22 14" aria-hidden="true">
+      <path d="M2,7 H20" stroke={palette.tagBackground} strokeWidth="6" strokeLinecap="round" />
+      <path
+        d="M2,7 H20"
+        stroke={palette.tagText}
+        strokeWidth="3.5"
+        strokeDasharray="0.1 5"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }
 

@@ -79,6 +79,21 @@
   stroke: var(--blue);
 }
 
+/* A trade route: a border crossing or a shipping lane */
+
+.map__route {
+  cursor: pointer;
+  outline: none;
+}
+
+.map__route:hover {
+  filter: brightness(1.12);
+}
+
+.map__route:focus-visible .map__route-capacity {
+  stroke: var(--blue);
+}
+
 /* Labels and marks sit over the regions and must not swallow the clicks meant for them. */
 .map__overlay {
   pointer-events: none;

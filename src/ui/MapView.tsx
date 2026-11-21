@@ -13,6 +13,7 @@ import {
   MAP_FRAME,
   settlementLooks,
   siteStatus,
+  tradeRoutes,
   UNREST_NAMES,
   type Decoration,
   type GameState,
@@ -21,11 +22,13 @@ import {
   type Region,
   type Settlement,
   type SettlementLook,
+  type TradeOrder,
   UNREST_KINDS,
 } from '../sim';
 import { infrastructureOf, lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
 import { TIER_PALETTES, type MapPalette } from './mapPalette';
 import { SiteMark } from './SiteMark';
+import { TradeRouteMark } from './TradeRouteMark';
 import './MapView.css';
 
 interface MapViewProps {
@@ -42,6 +45,11 @@ interface MapViewProps {
   readonly onSelectSite: (siteId: string) => void;
   /** The sites the player means to start building on when the quarter ends. */
   readonly plannedSiteIds: readonly string[];
+  /** The grain the player means to buy and sell abroad this quarter, which the routes carry. */
+  readonly plannedTrade: readonly TradeOrder[];
+  /** The trade route the player has picked out, if any. */
+  readonly selectedRouteId: string | null;
+  readonly onSelectRoute: (routeId: string) => void;
 }
 
 /** How one region is painted under the chosen lens. */
@@ -54,12 +62,14 @@ interface Paint {
 /**
  * The country, drawn entirely from its country file and the state of the game. Nothing
  * here knows any one country. A lens recolours the regions and changes the figure each is
- * labelled with; sites, routes, events and tags are drawn the same under every lens, except
- * that the infrastructure lens marks and rings every missing link in a chain.
+ * labelled with; sites, routes, trade routes, events and tags are drawn the same under every
+ * lens, except that the infrastructure lens marks and rings every missing link in a chain and
+ * marks every missing or weak trade link.
  */
 export function MapView(props: MapViewProps) {
   const { game, lens, selectedRegionId, reliefRegionId, onSelectRegion } = props;
   const { selectedSiteId, onSelectSite, plannedSiteIds } = props;
+  const { plannedTrade, selectedRouteId, onSelectRoute } = props;
   const { country } = game;
   // The whole map takes on the look of the tier of prosperity in force.
   const palette = TIER_PALETTES[game.tier];
@@ -94,6 +104,17 @@ export function MapView(props: MapViewProps) {
     const chain = chainOf(game, siteId);
     const state = siteStatus(game, siteId).state;
     return chain !== null && chain.output === 0 && isInUseState(state);
+  };
+  // The trade routes, with what they carry this quarter. A port not yet in use is a missing
+  // trade link, drawn only under the infrastructure lens.
+  const routes = tradeRoutes(game, plannedTrade).filter(
+    (route) => ringMissing || route.state !== 'missing',
+  );
+  const neighbourOf = (routeId: string) => {
+    const crossing = country.crossings.find((candidate) => candidate.id === routeId);
+    return (
+      country.map.neighbours.find((neighbour) => neighbour.id === crossing?.neighbourId) ?? null
+    );
   };
   // Settlements are built up and lit by their region's living standard, under every lens.
   const looks = settlementLooks(game);
@@ -312,6 +333,19 @@ export function MapView(props: MapViewProps) {
           />
         ))}
       </g>
+
+      {/* Trade routes go under the sites, so a lane never covers its port. */}
+      {routes.map((route) => (
+        <TradeRouteMark
+          key={`${route.kind} ${route.id}`}
+          route={route}
+          neighbour={neighbourOf(route.id)}
+          palette={palette}
+          selected={route.id === selectedRouteId}
+          infrastructure={ringMissing}
+          onSelect={onSelectRoute}
+        />
+      ))}
 
       {/* Sites are drawn last, over everything, so that each can be picked. Routes go under
           the sites that stand in one place, so a route that starts at a site never covers it. */}

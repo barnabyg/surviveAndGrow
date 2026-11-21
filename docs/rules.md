@@ -318,9 +318,18 @@ figure there must change it here in the same commit.
   lens colours each region by its living standard, and the infrastructure lens by its
   infrastructure access, from none upwards; one site in use moves a region up a step. The
   infrastructure lens also marks every link missing from a chain, ringed, with no site picked
-  out, so you can see what each region has built and what it still lacks. Each lens has a scale
-  beside the buttons, its steps differ in lightness, and every region also carries its value as
-  text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
+  out, so you can see what each region has built and what it still lacks. It marks the trade
+  links too: every port not yet in use has a dotted shipping lane tagged "✕ Missing trade link",
+  and a decaying port's lane is tagged "▲ Weak trade link". Each lens has a scale beside the
+  buttons, its steps differ in lightness, and every region also carries its value as text. The
+  lens stays as you chose it from quarter to quarter, and sites, routes, trade routes, events and
   relief are drawn under all of them.
+- The trade routes are drawn on the map from the country file: a bar where each border crossing
+  meets its neighbour, and a shipping lane from each port in use to the edge of the map. Each
+  route is as wide as what it can carry, with a pale core as wide as what it carries this
+  quarter, and a tag gives both in tonnes: "600,000 t of 900,000 t". The mines' ore goes by the
+  port its chain runs to, and grain bought and sold abroad over the border crossings first, then
+  by sea, so the figures move as you order grain. A decaying port's lane is dashed. Select a
+  route to open its card: the mines' ore, the grain, what is free and its capacity.
 - The side columns scroll on their own when they run long, and the map gives up height to the
   timeline, so the whole screen stays in view.
