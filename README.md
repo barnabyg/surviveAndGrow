@@ -242,7 +242,7 @@ build first, and build again after every change to `src/`, or the test runs agai
 build:
 
 ```powershell
-npm run build; npx playwright test tests/e2e/loans.spec.ts -g "a loan is planned"
+npm run build && npx playwright test tests/e2e/loans.spec.ts -g "a loan is planned"
 ```
 
 `npm run test:e2e` builds for you. Set `E2E_PORT` to run the browser tests from two checkouts at

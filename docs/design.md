@@ -85,7 +85,8 @@ Prosperity, tiers and people.
 - **Finance.** Loans, and bonds once the credit rating is good enough, pull the mine's chain
   forward at the price of repayments that squeeze the budget before it pays off. The credit
   rating sets the rates and the most that may be owed. A missed payment brings a bailout with
-  forced austerity. Rules: rules.md, Borrowing and the credit rating, and Bailout and austerity; balance: `docs/balance/phase-3.md`.
+  forced austerity. Rules: rules.md, Borrowing and the credit rating, and Bailout and austerity;
+  balance: `docs/balance/phase-3.md`.
 
 ### Still to come
 
@@ -104,7 +105,8 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
   mine, irrigation, a grain store, and possible road routes.
 - **Chains, not a checklist.** A mine earns nothing until a road links it to a port. The map shows
   these dependencies, and the player plans routes. A chain yields no more than its weakest link, and
-  large projects started late in a term open after the election. Rules: rules.md, Chains and alternatives.
+  large projects started late in a term open after the election. Rules: rules.md, Chains and
+  alternatives.
 - **More sites than money.** Some sites are alternatives, such as a cheap shallow port against a
   costly deep-water one. One game cannot build everything. Starting a project on one closes the
   others for good, and the site card says so before the player commits.
