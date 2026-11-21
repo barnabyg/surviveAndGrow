@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { availableParallelism, tmpdir } from 'node:os';
+import { availableParallelism, constants, setPriority, tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it } from 'vitest';
 import { DEFAULT_TERMS, summarise } from './batch';
@@ -18,11 +18,12 @@ import { writeUp, type Row } from './report';
  *   BALANCE_PLAYERS  `all` adds the one-lever players that probe for a winning trick; or the
  *                    names of the players to play, separated by commas
  *   BALANCE_TERMS    the most terms each game is played for (default 4; 1 is Phase 1's single term)
- *   BALANCE_WORKERS  how many workers play games at once (default: all but two processors)
+ *   BALANCE_WORKERS  how many workers play games at once (default: half the processors)
  *
  * The games are shared out among workers (`worker.ts`), each a process of its own, and every
  * game depends only on its country, player and seed, so the report is the same however many
- * workers play it.
+ * workers play it. The workers run at below-normal priority and, by default, on half the
+ * processors, so a long run leaves the machine usable.
  */
 const SEEDS_PER_JOB = 20;
 
@@ -53,6 +54,13 @@ function work(job: Job): Promise<Played[]> {
       env: { ...process.env, BALANCE_JOB: JSON.stringify(job) },
       stdio: ['ignore', 'ignore', 'pipe'],
     });
+    if (child.pid !== undefined) {
+      try {
+        setPriority(child.pid, constants.priority.PRIORITY_BELOW_NORMAL);
+      } catch {
+        // A worker that exits before its priority is set has nothing left to slow down.
+      }
+    }
     let errors = '';
     child.stderr.on('data', (chunk: Buffer) => (errors += chunk.toString()));
     child.on('error', reject);
@@ -85,7 +93,10 @@ async function runAll(
 it('plays the scripted players and reports the balance', async () => {
   const range = process.env.BALANCE_SEEDS ?? '1-300';
   const terms = wholeNumber('BALANCE_TERMS', DEFAULT_TERMS);
-  const workers = wholeNumber('BALANCE_WORKERS', Math.max(1, availableParallelism() - 2));
+  const workers = wholeNumber(
+    'BALANCE_WORKERS',
+    Math.max(1, Math.floor(availableParallelism() / 2)),
+  );
   const wanted = process.env.BALANCE_COUNTRY ?? 'both';
   const out = path.resolve(process.env.BALANCE_OUT ?? 'balance-results.md');
   const seeds = seedsFrom(range);

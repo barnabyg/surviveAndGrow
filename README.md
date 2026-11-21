@@ -300,8 +300,9 @@ region. It also gives the terms served, the quarter of each win, and the prosper
 game reached, and what each player borrowed: how many games a bailout struck, how often the debt
 test held back a win and whether it was won later, and the debt burden. It prints the tables and writes them to `balance-results.md`. It is not one of the
 checks and gates nothing; a short run of the same players over a few seeds is part of the
-simulation tests. The games are shared out among worker processes, so a run uses most of the
-machine; 300 seeds of every player take a few minutes.
+simulation tests. The games are shared out among worker processes at below-normal priority, on half the
+processors by default; 300 seeds of every player take a few minutes. How large a balance ticket's
+runs should be is in [docs/agents/balance-tickets.md](docs/agents/balance-tickets.md).
 
 Six players are what the balance is judged by: one that does nothing, one that spends
 everything on popularity, one that plays sensibly but builds no large site, one that builds
@@ -324,7 +325,7 @@ Set these before the command to change the run:
 | `BALANCE_COUNTRY` | `tavara`, `testland` or `both` | `both` |
 | `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the six |
 | `BALANCE_TERMS` | The most terms each game is played for | `4` |
-| `BALANCE_WORKERS` | How many games are played at once | all but two processors |
+| `BALANCE_WORKERS` | How many games are played at once, each at below-normal priority | half the processors |
 | `BALANCE_OUT` | Where the tables are written | `balance-results.md` |
 
 ```powershell
