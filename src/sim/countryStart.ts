@@ -4,7 +4,6 @@ import { spendingFault, taxOn, taxRateFault, type Budget } from './budget';
 import type { Country, Region, Site } from './country';
 import { join, type Json, type Reader } from './countryReader';
 import { levelRepaymentOf, type StartingLoan } from './debt';
-import { costliestTogether } from './siteChecks';
 import { formatMoney, formatPercent } from './text';
 import type { Money } from './types';
 import { upkeepForEvery } from './upkeep';
@@ -144,4 +143,23 @@ function readRate(reader: Reader, loan: Json, path: string, mostPercent: number)
     return 0;
   }
   return basisPoints;
+}
+
+/**
+ * The sites that could all be in use at once and between them need the most upkeep: every
+ * site, less those ruled out by the alternatives chosen.
+ */
+export function costliestTogether(sites: readonly Site[]): Site[] {
+  const upkeepOf = (chosen: readonly Site[]) =>
+    sum(chosen.map((site) => balance.sites[site.type].upkeep));
+  const choose = (left: readonly Site[], chosen: readonly Site[]): Site[] => {
+    const [site, ...rest] = left;
+    if (site === undefined) return [...chosen];
+    if (chosen.some((other) => other.alternatives.includes(site.id))) return choose(rest, chosen);
+    if (site.alternatives.length === 0) return choose(rest, [...chosen, site]);
+    const withIt = choose(rest, [...chosen, site]);
+    const withoutIt = choose(rest, chosen);
+    return upkeepOf(withIt) >= upkeepOf(withoutIt) ? withIt : withoutIt;
+  };
+  return choose(sites, []);
 }

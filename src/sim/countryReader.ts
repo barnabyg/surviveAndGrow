@@ -171,10 +171,10 @@ export function join(path: string, key: string): string {
 }
 
 export function wrongKind(value: unknown, wanted: string): string {
-  return value === undefined ? 'is missing' : `must be ${wanted}, but is ${describe(value)}`;
+  return value === undefined ? 'is missing' : `must be ${wanted}, but is ${describeKind(value)}`;
 }
 
-export function describe(value: unknown): string {
+export function describeKind(value: unknown): string {
   if (value === null) return 'empty';
   if (Array.isArray(value)) return 'a list';
   if (typeof value === 'string') return value.trim() === '' ? 'blank' : 'text';

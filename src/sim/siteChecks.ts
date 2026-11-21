@@ -1,5 +1,3 @@
-import { sum } from './arithmetic';
-import { balance } from './balance';
 import type { Site } from './country';
 import type { Reader } from './countryReader';
 import {
@@ -157,23 +155,4 @@ export function checkAlternatives(reader: Reader, sites: readonly Site[]): Site[
       )
       .map((other) => other.id),
   }));
-}
-
-/**
- * The sites that could all be in use at once and between them need the most upkeep: every
- * site, less those ruled out by the alternatives chosen.
- */
-export function costliestTogether(sites: readonly Site[]): Site[] {
-  const upkeepOf = (chosen: readonly Site[]) =>
-    sum(chosen.map((site) => balance.sites[site.type].upkeep));
-  const choose = (left: readonly Site[], chosen: readonly Site[]): Site[] => {
-    const [site, ...rest] = left;
-    if (site === undefined) return [...chosen];
-    if (chosen.some((other) => other.alternatives.includes(site.id))) return choose(rest, chosen);
-    if (site.alternatives.length === 0) return choose(rest, [...chosen, site]);
-    const withIt = choose(rest, [...chosen, site]);
-    const withoutIt = choose(rest, chosen);
-    return upkeepOf(withIt) >= upkeepOf(withoutIt) ? withIt : withoutIt;
-  };
-  return choose(sites, []);
 }

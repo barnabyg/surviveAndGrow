@@ -1,7 +1,7 @@
 import { balance } from './balance';
 import type { Budget } from './budget';
 import {
-  describe,
+  describeKind,
   isRecord,
   join,
   readChances,
@@ -325,7 +325,7 @@ function readSiteIds(
  */
 export function loadCountry(file: unknown): Country {
   if (!isRecord(file)) {
-    throw new CountryFileError([`The file must be an object, but is ${describe(file)}.`]);
+    throw new CountryFileError([`The file must be an object, but is ${describeKind(file)}.`]);
   }
   const reader = new Reader();
 
