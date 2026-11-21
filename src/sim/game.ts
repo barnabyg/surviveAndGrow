@@ -75,6 +75,7 @@ import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { scheduleAhead } from './timeline';
 import {
+  FULL_SWING_PERMILLE,
   movePrices,
   openingPrices,
   resolveTrade,
@@ -507,11 +508,11 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
   const lived = liveQuarter(given, decisions, calm, movePrices(given.worldPrices, []));
   const low = movePrices(
     given.worldPrices,
-    GOODS.map(() => -1000),
+    GOODS.map(() => -FULL_SWING_PERMILLE),
   );
   const high = movePrices(
     given.worldPrices,
-    GOODS.map(() => 1000),
+    GOODS.map(() => FULL_SWING_PERMILLE),
   );
   const { state, building, finances, sites, food: thisQuarter, approval } = lived;
   const { serviced, taken, traded, credit } = lived;

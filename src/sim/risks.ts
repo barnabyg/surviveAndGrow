@@ -22,7 +22,7 @@ import type { Decisions, GameState, RegionState } from './state';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
-import { belowSafeAfterExport } from './trade';
+import { belowSafeAfterExport, FULL_SWING_PERMILLE } from './trade';
 import { UPKEEP_ORDER_RULE } from './upkeep';
 import {
   FOOD_STAGES,
@@ -139,7 +139,9 @@ const STEADY: PriceCourse = () => [];
 
 /** The world ore price slumping as far as its forecast allows, and then left be. */
 const ORE_SLUMP: PriceCourse = (quarter) =>
-  quarter < balance.trade.forecastQuarters ? GOODS.map((good) => (good === 'ore' ? -1000 : 0)) : [];
+  quarter < balance.trade.forecastQuarters
+    ? GOODS.map((good) => (good === 'ore' ? -FULL_SWING_PERMILLE : 0))
+    : [];
 
 /** Plays the quarters ahead with the weather at one share of its swing throughout. */
 function play(

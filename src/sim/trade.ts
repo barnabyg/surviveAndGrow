@@ -65,19 +65,25 @@ export function priceOf(prices: WorldPrices, good: Good): number {
   return prices[good].at(-1) ?? balance.trade.goods[good].usualDollarsPerTonne;
 }
 
+/**
+ * The most world markets can move a price in a quarter, as a share of the good's full swing in
+ * thousandths: a shock runs from minus this to this.
+ */
+export const FULL_SWING_PERMILLE = 1000;
+
 /** A key that keeps the draws for prices apart from every other draw keyed on the seed. */
 const PRICE_DRAWS = 0x70726963;
 
 /**
  * How far world markets move each good's price as the game moves into a quarter, as a share
- * of the good's full swing in thousandths, from −1000 to 1000, in the goods' order. Like the
- * dilemma rolls they depend on the seed and the quarter alone, so the weather and events a
- * seed brings do not shift with them.
+ * of the good's full swing in thousandths, from −`FULL_SWING_PERMILLE` to `FULL_SWING_PERMILLE`,
+ * in the goods' order. Like the dilemma rolls they depend on the seed and the quarter alone, so
+ * the weather and events a seed brings do not shift with them.
  */
 export function rollPrices(seed: number, date: GameDate): number[] {
   return GOODS.map((_good, index) => {
     const roll = drawAt(seed, PRICE_DRAWS, quarterNumber(date), index);
-    return Math.floor(roll * 2001) - 1000;
+    return Math.floor(roll * (2 * FULL_SWING_PERMILLE + 1)) - FULL_SWING_PERMILLE;
   });
 }
 
@@ -175,8 +181,8 @@ function forecastPrice(good: Good, price: number): Range {
   let min = price;
   let max = price;
   for (let quarter = 0; quarter < balance.trade.forecastQuarters; quarter += 1) {
-    low = movePrice(good, low, -1000).price;
-    high = movePrice(good, high, 1000).price;
+    low = movePrice(good, low, -FULL_SWING_PERMILLE).price;
+    high = movePrice(good, high, FULL_SWING_PERMILLE).price;
     min = Math.min(min, low);
     max = Math.max(max, high);
   }
