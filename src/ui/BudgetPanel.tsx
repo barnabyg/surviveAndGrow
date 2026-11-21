@@ -23,6 +23,7 @@ import {
   type GameState,
   type Range,
   type RegionUnrest,
+  type TradeOrder,
   UNREST_KINDS,
   UPKEEP_ORDER_RULE,
 } from '../sim';
@@ -42,6 +43,8 @@ interface BudgetPanelProps {
   readonly startProjects: readonly string[];
   /** The loans to be taken this quarter, whose money arrives as it ends. */
   readonly borrow: readonly Borrowing[];
+  /** The goods to be bought abroad this quarter, paid for and arriving as it ends. */
+  readonly trade: readonly TradeOrder[];
   /** The answer given to the quarter's dilemma, if there is one, which bears on them too. */
   readonly dilemmaChoice: string | null;
   readonly onChange: (pending: Budget) => void;
@@ -58,8 +61,9 @@ export function countChanges(pending: Budget, committed: Budget): number {
 }
 
 export function BudgetPanel(props: BudgetPanelProps) {
-  const { game, committed, pending, reliefRegionId, startProjects, borrow, dilemmaChoice } = props;
-  const held = { reliefRegionId, startProjects, borrow, dilemmaChoice };
+  const { game, committed, pending, reliefRegionId, startProjects, borrow, trade } = props;
+  const { dilemmaChoice } = props;
+  const held = { reliefRegionId, startProjects, borrow, trade, dilemmaChoice };
   const { onChange, onCommit, onReset } = props;
   const changes = countChanges(pending, committed);
   // The same projection twice: where the committed budget leads, and where the sliders would.

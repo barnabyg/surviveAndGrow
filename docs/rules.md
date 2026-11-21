@@ -203,6 +203,20 @@ figure there must change it here in the same commit.
   austerity is extended and when it ends, and the risks ahead warn of a bailout, or of austerity
   extended, on the current course.
 
+## Trade
+
+- Grain has a world price, which moves every quarter: world markets move it by up to $30 a tonne
+  either way, and it is pulled a quarter of the way back towards its usual $240, never leaving
+  $150 to $420. The trade panel in the right column shows the price with its trend over the last
+  eight quarters and a forecast range over the next four; click it to see what moved it. Order
+  grain for the national reserve there, in thousands of tonnes, with the cost at this quarter's
+  price shown before you order. The treasury must hold the cost, and the order can be taken back
+  until the quarter ends. The grain arrives and is paid for as the quarter ends, after anything
+  borrowed arrives; if the treasury can no longer pay for all of it by then, it buys the
+  thousands of tonnes it can, and the report says so. The cost is in the treasury's breakdown
+  but not in the budget's balance, and the grain in the reserve's, in the outlook and in the
+  risks ahead. Austerity does not bar imports: austerity starves no one.
+
 ## Risks ahead
 
 - The left column lists the risks ahead: famine in a region, strikes, a treasury that runs out,
@@ -218,7 +232,8 @@ figure there must change it here in the same commit.
 
 - Some quarters open with a dilemma: a neighbour offering grain, merchants wanting to buy from
   the reserve, a region in drought asking for emergency works, strikers asking for talks,
-  teachers demanding a pay rise, a donor offering a grant with conditions. Each has two or three
+  teachers demanding a pay rise, a donor offering a grant with conditions. The neighbour's grain
+  is priced at the world grain price. Each has two or three
   options, and each option states everything it will do, in money, food and approval, before you
   choose. You can put the dilemma aside to look at the country, but the quarter cannot end until
   you choose, and you can change your choice until it does. An option the treasury or the reserve

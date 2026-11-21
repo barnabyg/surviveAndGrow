@@ -11,6 +11,7 @@ import {
   withinAusterity,
   type Borrowing,
   type GameState,
+  type TradeOrder,
   type TurnReport,
 } from '../sim';
 import { ApprovalChart } from './ApprovalChart';
@@ -33,6 +34,7 @@ import { ReportList } from './ReportList';
 import { RisksPanel } from './RisksPanel';
 import { SiteCard } from './SiteCard';
 import { Timeline } from './Timeline';
+import { TradePanel } from './TradePanel';
 import { TopBar } from './TopBar';
 import './GameScreen.css';
 
@@ -75,6 +77,9 @@ export function GameScreen(props: GameScreenProps) {
   // The loans the player means to take. Their money arrives when the quarter ends, so until
   // then they can be taken back, like a planned project.
   const [plannedLoans, setPlannedLoans] = useState<readonly Borrowing[]>([]);
+  // The goods the player means to buy abroad. They arrive, and are paid for, when the quarter
+  // ends, so until then an order can be taken back, like a loan.
+  const [plannedTrade, setPlannedTrade] = useState<readonly TradeOrder[]>([]);
   // The report the player last selected, by its place in the list. It counts as selected
   // only while its region is still the one picked out on the map.
   const [reportPicked, setReportPicked] = useState<number | null>(null);
@@ -99,6 +104,7 @@ export function GameScreen(props: GameScreenProps) {
     reliefRegionId,
     startProjects: plannedSiteIds,
     borrow: plannedLoans,
+    trade: plannedTrade,
     dilemmaChoice,
   };
   const dilemma = playing ? pendingDilemma(game) : null;
@@ -112,10 +118,20 @@ export function GameScreen(props: GameScreenProps) {
             reliefRegionId,
             startProjects: plannedSiteIds,
             borrow: plannedLoans,
+            trade: plannedTrade,
             dilemmaChoice,
           })
         : [],
-    [playing, game, committed, reliefRegionId, plannedSiteIds, plannedLoans, dilemmaChoice],
+    [
+      playing,
+      game,
+      committed,
+      reliefRegionId,
+      plannedSiteIds,
+      plannedLoans,
+      plannedTrade,
+      dilemmaChoice,
+    ],
   );
   const pickedRisk = risks.findIndex(
     (risk) => risk.headline === riskPicked && risk.regionId === selectedRegionId,
@@ -182,6 +198,7 @@ export function GameScreen(props: GameScreenProps) {
     setReportPicked(null);
     setPlannedSiteIds([]);
     setPlannedLoans([]);
+    setPlannedTrade([]);
     setConfirmingEnd(false);
     setDilemmaChoice(null);
     setDilemmaShown(result.state.dilemma === null ? 'no' : 'yes');
@@ -300,6 +317,7 @@ export function GameScreen(props: GameScreenProps) {
                 reliefRegionId={reliefRegionId}
                 startProjects={plannedSiteIds}
                 borrow={plannedLoans}
+                trade={plannedTrade}
                 dilemmaChoice={dilemmaChoice}
                 onChange={setPending}
                 onCommit={() => {
@@ -320,6 +338,12 @@ export function GameScreen(props: GameScreenProps) {
                 preview={preview}
                 planned={plannedLoans}
                 onPlan={setPlannedLoans}
+              />
+              <TradePanel
+                game={game}
+                preview={preview}
+                planned={plannedTrade}
+                onPlan={setPlannedTrade}
               />
               <ReliefPanel
                 game={game}
