@@ -79,3 +79,43 @@
 .tour__actions .button {
   white-space: nowrap;
 }
+
+/* Lessons leave the screen free to use: only the card takes clicks, and the outline is drawn
+   over the screen without shading it. They sit under any dialog the game opens. */
+
+.lessons {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.lessons__outline {
+  position: absolute;
+  border: 3px dashed var(--amber);
+  border-radius: 8px;
+  transition:
+    left 0.2s,
+    top 0.2s,
+    width 0.2s,
+    height 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lessons__outline {
+    transition: none;
+  }
+}
+
+.lessons__card {
+  pointer-events: auto;
+}
+
+.lessons__note {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-left: 3px solid var(--blue);
+  background: var(--panel-deep);
+  font-size: 14.5px;
+  color: var(--text);
+}

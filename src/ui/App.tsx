@@ -10,7 +10,16 @@ import {
 } from '../sim';
 import { GameScreen } from './GameScreen';
 import { StartScreen } from './StartScreen';
-import { discardStoredGame, readStoredGame, saveKey, storeGame, type StoredGame } from './storage';
+import {
+  discardStoredGame,
+  readStoredGame,
+  readTutorial,
+  saveKey,
+  storeGame,
+  storeTutorial,
+  type StoredGame,
+} from './storage';
+import { TUTORIAL_SEED } from './tutorialGame';
 
 type CountrySource =
   | { readonly status: 'loading' }
@@ -132,8 +141,8 @@ export function App() {
 interface Play {
   readonly game: GameState;
   readonly report: TurnReport | null;
-  /** Whether the game opens with the guided tour of the screen. */
-  readonly tour?: boolean;
+  /** The tutorial lesson the game opens on, or null outside the tutorial. */
+  readonly lesson: number | null;
 }
 
 interface SessionProps {
@@ -168,13 +177,20 @@ function Session({ country, storageKey }: SessionProps) {
         country={country}
         stored={stored}
         onStart={() => {
-          begin({ game: createGame(country, chooseSeed()), report: null });
+          storeTutorial(storageKey, null);
+          begin({ game: createGame(country, chooseSeed()), report: null, lesson: null });
         }}
         onTutorial={() => {
-          begin({ game: createGame(country, chooseSeed()), report: null, tour: true });
+          storeTutorial(storageKey, { seed: TUTORIAL_SEED, lesson: 0 });
+          begin({ game: createGame(country, TUTORIAL_SEED), report: null, lesson: 0 });
         }}
         onResume={() => {
-          if (stored.status === 'ready') begin({ game: stored.game, report: stored.report });
+          if (stored.status !== 'ready') return;
+          // The tutorial picks up where it was, if the saved game is the tutorial's.
+          const progress = readTutorial(storageKey);
+          const lesson =
+            progress !== null && progress.seed === stored.game.seed ? progress.lesson : null;
+          begin({ game: stored.game, report: stored.report, lesson });
         }}
         onDiscard={() => {
           if (discardStoredGame(storageKey)) setStored({ status: 'none' });
@@ -187,7 +203,8 @@ function Session({ country, storageKey }: SessionProps) {
   const replay = () => {
     writeSeedToAddress(game.seed);
     // The same game again is the same seed on the country this game was played on.
-    begin({ game: createGame(game.country, game.seed), report: null });
+    storeTutorial(storageKey, null);
+    begin({ game: createGame(game.country, game.seed), report: null, lesson: null });
   };
   const newGame = () => {
     // A new game is a different game, so the address stops naming this one's seed.
@@ -206,7 +223,10 @@ function Session({ country, storageKey }: SessionProps) {
       initialGame={game}
       initialReport={play.report}
       saveNotice={saveNotice}
-      startTour={play.tour === true}
+      initialLesson={play.lesson}
+      onLessonChange={(lesson) => {
+        storeTutorial(storageKey, lesson === null ? null : { seed: game.seed, lesson });
+      }}
       onQuarterEnded={(ended, report) => {
         if (stored.status === 'refused') return;
         const kept = storeGame(storageKey, ended, report);
