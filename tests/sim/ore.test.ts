@@ -6,6 +6,7 @@ import {
   costOf,
   createGame,
   livingStandards,
+  oreEarnings,
   previewQuarter,
   priceStatus,
   risksAhead,
@@ -166,6 +167,26 @@ describe.each(withMine)('a mine’s earnings in %s', (_name, country) => {
     expect(lines).toEqual([
       { label: `Tax from ${mine.name}`, amount: 150, regionId: mine.regionId },
     ]);
+  });
+
+  it('are shown on the mine’s card at the price now and across its forecast', () => {
+    const before = createGame(country(), 11);
+    expect(oreEarnings(before, mine.id)).toEqual({
+      tonnes: 600_000,
+      shipping: false,
+      price: 100,
+      earns: 600,
+      forecast: {
+        min: costOf(600_000, priceStatus(before, 'ore').forecast.min),
+        max: costOf(600_000, priceStatus(before, 'ore').forecast.max),
+      },
+    });
+    expect(oreEarnings(atOrePrice(game, 80), mine.id)).toMatchObject({
+      tonnes: 600_000,
+      shipping: true,
+      price: 80,
+      earns: 480,
+    });
   });
 
   it('are the ore shipped at the world ore price, with the price’s effect shown beside them', () => {

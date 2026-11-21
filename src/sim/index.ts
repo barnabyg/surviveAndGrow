@@ -90,7 +90,16 @@ export { dateOfQuarter, seasonOf } from './calendar';
 export { drawAt } from './rng';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
-export { chainOf, chains, chainsThrough, oreTonnesOf, type Chain, type ChainLink } from './chains';
+export {
+  chainOf,
+  chains,
+  chainsThrough,
+  oreEarnings,
+  type Chain,
+  type ChainLink,
+  type OreEarnings,
+} from './chains';
+export { oreTonnesOf } from './sites';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
 export { regionPower, type RegionPower } from './power';
 export {

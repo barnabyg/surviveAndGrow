@@ -7,7 +7,6 @@ import {
   formatMoney,
   formatPercent,
   formatPrice,
-  formatQuarters,
   formatTonnes,
   importTerms,
   ORDER_STEP_TONNES,
@@ -19,10 +18,7 @@ import {
   type TradeOrder,
 } from '../sim';
 import { DecisionPanel } from './DecisionPanel';
-import { formatRange } from './format';
-import { recent } from './trend';
-import { TrendLine } from './TrendLine';
-import { VitalSign } from './VitalSign';
+import { WorldPriceSign } from './WorldPriceSign';
 import './TradePanel.css';
 
 interface TradePanelProps {
@@ -35,15 +31,11 @@ interface TradePanelProps {
   readonly onPlan: (planned: readonly TradeOrder[]) => void;
 }
 
-/** A price with its sign, in dollars: `+$12` or `−$8`. */
-function formatSignedDollars(dollars: number): string {
-  return `${dollars > 0 ? '+' : dollars < 0 ? '−' : ''}$${Math.abs(dollars)}`;
-}
-
 /**
  * Trade with the world. The world grain price, with its trend, what moved it and the range it
  * could reach; grain ordered for the national reserve at that price, and grain sold from it at
- * that price less the export margin. The cost or income is shown before the order is planned,
+ * that price less the export margin. Ore is sold only by a mine's chain, so its price is on the
+ * mine's card. The cost or income is shown before the order is planned,
  * with a warning when a sale would take the reserve below its safe level, and like a loan the
  * order can be taken back until the quarter ends, when the grain is shipped and paid for.
  */
@@ -71,37 +63,7 @@ export function TradePanel({ game, preview, planned, onPlan }: TradePanelProps) 
         </span>
       }
     >
-      <div className="trade__price">
-        <VitalSign
-          label="World grain price"
-          value={`$${status.price}`}
-          unit="a tonne"
-          figure={status.figure}
-          formatChange={formatSignedDollars}
-          formatMovement={(dollars) => `$${dollars}`}
-          goodWhen="falling"
-          note={`Forecast ${formatRange(status.forecast, (price) => `$${price}`)} a tonne over the next ${formatQuarters(status.forecastQuarters)}`}
-          breakdownTitle="What moved the world grain price"
-          trend={
-            <TrendLine
-              subject="World grain price"
-              values={recent(status.path)}
-              format={formatPrice}
-              mark={{
-                value: status.usual,
-                label: `Usual: $${status.usual}`,
-                name: `the usual price of $${status.usual}`,
-              }}
-            />
-          }
-        >
-          <p className="breakdown__empty">
-            World markets move the price each quarter, and it is pulled part of the way back towards
-            its usual {formatPrice(status.usual)}. The forecast is the range it could reach if
-            markets moved it the same way every quarter.
-          </p>
-        </VitalSign>
-      </div>
+      <WorldPriceSign status={status} goodWhen="falling" />
 
       {imported !== undefined && (
         <PlannedOrder

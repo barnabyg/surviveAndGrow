@@ -228,30 +228,30 @@ describe('the types of site', () => {
       buildQuarters: 6,
       upkeep: 6,
       effect:
-        'Adds $60.0m a quarter to its region’s output, but only while its chain to a port is complete.',
+        'Ships 600,000 t of ore a quarter, worth $60.0m at the usual world ore price, to add to its region’s output, but only while its chain to a port is complete.',
       decayingEffect:
-        'Adds $30.0m a quarter to its region’s output, but only while its chain to a port is complete.',
+        'Ships 300,000 t of ore a quarter, worth $30.0m at the usual world ore price, to add to its region’s output, but only while its chain to a port is complete.',
     });
     expect(siteTerms('trunkRoad')).toEqual({
       cost: 300,
       buildQuarters: 5,
       upkeep: 5,
-      effect: 'Carries up to $72.0m a quarter of a mine’s output along its chain.',
-      decayingEffect: 'Carries up to $36.0m a quarter of a mine’s output along its chain.',
+      effect: 'Carries up to 720,000 t of a mine’s ore a quarter along its chain.',
+      decayingEffect: 'Carries up to 360,000 t of a mine’s ore a quarter along its chain.',
     });
     expect(siteTerms('port')).toEqual({
       cost: 500,
       buildQuarters: 8,
       upkeep: 8,
-      effect: 'Ships up to $90.0m a quarter of a mine’s output.',
-      decayingEffect: 'Ships up to $45.0m a quarter of a mine’s output.',
+      effect: 'Ships up to 900,000 t of a mine’s ore a quarter.',
+      decayingEffect: 'Ships up to 450,000 t of a mine’s ore a quarter.',
     });
     expect(siteTerms('shallowPort')).toEqual({
       cost: 250,
       buildQuarters: 5,
       upkeep: 4,
-      effect: 'Ships up to $36.0m a quarter of a mine’s output.',
-      decayingEffect: 'Ships up to $18.0m a quarter of a mine’s output.',
+      effect: 'Ships up to 360,000 t of a mine’s ore a quarter.',
+      decayingEffect: 'Ships up to 180,000 t of a mine’s ore a quarter.',
     });
   });
 });

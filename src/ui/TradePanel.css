@@ -8,17 +8,6 @@
   border-top: 1px solid var(--line);
 }
 
-.trade__price .vital {
-  flex-wrap: wrap;
-}
-
-/* In the column the breakdown opens in place, under the price, rather than over the map. */
-.trade__price .breakdown {
-  position: static;
-  width: 100%;
-  box-shadow: none;
-}
-
 .trade .loan__choice input {
   min-height: 44px;
   padding: 0 10px;

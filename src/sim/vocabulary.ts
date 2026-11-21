@@ -165,13 +165,14 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
 
 /**
  * What a site in each part of a chain does, in a sentence the player can be shown.
- * `{money}` is what it produces or carries a quarter.
+ * `{tonnes}` is the ore it produces or carries a quarter, and `{money}` what that ore is worth
+ * at the usual world ore price.
  */
 export const CHAIN_ROLE_SENTENCES: Readonly<Record<ChainRole, string>> = {
   source:
-    'Adds {money} a quarter to its region’s output, but only while its chain to a port is complete.',
-  link: 'Carries up to {money} a quarter of a mine’s output along its chain.',
-  outlet: 'Ships up to {money} a quarter of a mine’s output.',
+    'Ships {tonnes} of ore a quarter, worth {money} at the usual world ore price, to add to its region’s output, but only while its chain to a port is complete.',
+  link: 'Carries up to {tonnes} of a mine’s ore a quarter along its chain.',
+  outlet: 'Ships up to {tonnes} of a mine’s ore a quarter.',
 };
 
 /**

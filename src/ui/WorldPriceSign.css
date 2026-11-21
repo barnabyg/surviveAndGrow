@@ -1,0 +1,12 @@
+/* A good's world price, in a panel or a card rather than the top bar */
+
+.world-price .vital {
+  flex-wrap: wrap;
+}
+
+/* In a column or a card the breakdown opens in place, under the price, rather than over the map. */
+.world-price .breakdown {
+  position: static;
+  width: 100%;
+  box-shadow: none;
+}

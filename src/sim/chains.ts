@@ -1,8 +1,8 @@
 import { balance } from './balance';
 import type { Country, Site } from './country';
 import { siteStatus, type Project } from './projects';
-import { capacityOf } from './sites';
-import { costOf, priceOf, type WorldPrices } from './trade';
+import { capacityOf, oreTonnesOf } from './sites';
+import { costOf, priceOf, priceStatus, type WorldPrices } from './trade';
 import type { Money } from './types';
 import { inUse } from './upkeep';
 import { SITE_CHAIN_ROLES, type SiteState } from './vocabulary';
@@ -12,14 +12,6 @@ interface Building {
   readonly projects: readonly Project[];
   /** The world prices now: what the ore a chain ships is worth. */
   readonly worldPrices: WorldPrices;
-}
-
-/**
- * The tonnes of ore a capacity amounts to. Capacities are counted as what their ore is worth
- * at the usual world ore price (`balance.sites`).
- */
-export function oreTonnesOf(capacity: Money): number {
-  return Math.round((capacity * 100_000) / balance.trade.goods.ore.usualDollarsPerTonne);
 }
 
 /** One site of a chain, as it stands. */
@@ -138,6 +130,40 @@ export function chainEarnings(building: Building): ChainEarning[] {
     const { output, atUsualPrice, orePrice } = chain;
     return [{ site, output, atUsualPrice, orePrice }];
   });
+}
+
+/** What a mine earns at the world ore price, and could earn within the price's forecast. */
+export interface OreEarnings {
+  /**
+   * The ore it ships a quarter, in tonnes: what its chain ships while it earns, and otherwise
+   * what the mine itself could produce once its chain is complete.
+   */
+  readonly tonnes: number;
+  /** Whether its chain ships ore this quarter. */
+  readonly shipping: boolean;
+  /** The world ore price now, in dollars a tonne. */
+  readonly price: number;
+  /** What the ore earns a quarter at the price now. */
+  readonly earns: Money;
+  /** What it would earn at the low and the high end of the price's forecast. */
+  readonly forecast: { readonly min: Money; readonly max: Money };
+}
+
+/** What a source earns, or could earn, at the world ore price; null for any other site. */
+export function oreEarnings(building: Building, siteId: string): OreEarnings | null {
+  const chain = chainOf(building, siteId);
+  const source = building.country.sites.find((site) => site.id === siteId);
+  if (chain === null || source === undefined) return null;
+  const shipping = chain.shipped > 0;
+  const tonnes = shipping ? chain.shipped : oreTonnesOf(capacityOf(source.type) ?? 0);
+  const { price, forecast } = priceStatus(building, 'ore');
+  return {
+    tonnes,
+    shipping,
+    price,
+    earns: costOf(tonnes, price),
+    forecast: { min: costOf(tonnes, forecast.min), max: costOf(tonnes, forecast.max) },
+  };
 }
 
 /**
