@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   createGame,
+  quarterNumber,
   risksAhead,
+  shockName,
   type Country,
   type Decisions,
   type GameState,
   type ActiveEvent,
+  type PriceShock,
   type Risk,
 } from '../../src/sim';
 import { answering, inFirstTerm } from './players';
@@ -32,6 +35,8 @@ const floodIn = (risks: readonly Risk[], regionId: string) =>
     (risk) =>
       risk.kind === 'event' && risk.regionId === regionId && risk.headline.startsWith('Flood'),
   );
+const shockIn = (risks: readonly Risk[], headline: string) =>
+  risks.find((risk) => risk.kind === 'priceShock' && risk.headline === headline);
 const ofKind = (risks: readonly Risk[], kind: Risk['kind']) =>
   risks.find((risk) => risk.kind === kind);
 
@@ -42,12 +47,14 @@ const ofKind = (risks: readonly Risk[], kind: Risk['kind']) =>
  * latest, and in the quarters leading up to it. Every game lost at the vote must have listed
  * defeat in the election quarter and in the quarter before it. And no loss from a flood comes
  * unannounced: every flood must have been listed in the quarter before it began, the last in
- * which the player could act before its damage was done. With `floods` set, the sweep also
- * checks that floods really do come.
+ * which the player could act before its damage was done. Nor does any from a world price
+ * shock: every shock must have been listed as one that could come in the quarter before it
+ * was announced, and as announced in every quarter from then until it first moved its price.
+ * With `floods` or `shocks` set, the sweep also checks that they really do come.
  *
  * Three hundred whole games, each looked ahead from every quarter, take seconds, so each test
- * plays a run of them and the last tests check the runs together. Where floods are likely,
- * looking ahead before each of them takes longer, so the runs are shorter. Each country is
+ * plays a run of them and the last tests check the runs together. Where floods or shocks are
+ * likely, looking ahead before each of them takes longer, so the runs are shorter. Each country is
  * swept in a file of its own, so that the sweeps share out across the workers.
  */
 export function sweepDoingNothing(
@@ -55,9 +62,11 @@ export function sweepDoingNothing(
   country: () => Country,
   {
     floods = false,
+    shocks = false,
     seedsPerTest = 25,
   }: {
     readonly floods?: boolean;
+    readonly shocks?: boolean;
     /** How many seeds each test plays: few enough to stay well inside a test's time limit. */
     readonly seedsPerTest?: number;
   } = {},
@@ -78,7 +87,7 @@ export function sweepDoingNothing(
       runs.reduce((sum, [first, last]) => sum + count(foundIn(first, last)), 0);
 
     it.each(runs)(
-      'is warned of famine, defeat and floods before any comes in games %i to %i',
+      'is warned of famine, defeat, floods and price shocks before any comes in games %i to %i',
       (first, last) => {
         foundIn(first, last);
       },
@@ -94,13 +103,20 @@ export function sweepDoingNothing(
         expect(total((found) => found.floods)).toBeGreaterThan(SEEDS / 5);
       });
     }
+
+    if (shocks) {
+      it('has world price shocks come in a good share of those games', () => {
+        expect(total((found) => found.shocks)).toBeGreaterThan(SEEDS / 5);
+      });
+    }
   });
 }
 
-/** What a run of games found: how many famine ended, and how many floods came. */
+/** What a run of games found: how many famine ended, and how many floods and shocks came. */
 interface Found {
   readonly famines: number;
   readonly floods: number;
+  readonly shocks: number;
 }
 
 /**
@@ -110,10 +126,44 @@ interface Found {
 function playRun(country: () => Country, first: number, last: number): Found {
   let famines = 0;
   let floods = 0;
+  let shocks = 0;
   for (let seed = first; seed <= last; seed += 1) {
     const states = [createGame(country(), seed)];
     for (let game = states[0]; game !== undefined && inFirstTerm(game); game = states.at(-1)) {
       states.push(advanceQuarter(game, doNothing(game)).state);
+    }
+    // Looking ahead is slow, so each quarter is looked ahead from once at most.
+    const looked = new Map<GameState, readonly Risk[]>();
+    const risksIn = (game: GameState) => {
+      const known = looked.get(game);
+      if (known !== undefined) return known;
+      const risks = risksAhead(game, doNothing(game));
+      looked.set(game, risks);
+      return risks;
+    };
+    for (const [index, game] of states.slice(1).entries()) {
+      const before = states[index];
+      if (before === undefined) continue;
+      const announced = game.priceShocks.filter(
+        (shock) => !before.priceShocks.some((was) => sameShock(was, shock)),
+      );
+      for (const shock of announced) {
+        shocks += 1;
+        const name = shockName(shock.type);
+        const where = `seed ${seed}, ${before.date.year}/${before.date.quarter}`;
+        expect(shockIn(risksIn(before), name), where).toBeDefined();
+        // From its announcement until it first moves the price, it is listed as announced.
+        const waiting = states.filter(
+          (later) =>
+            later.outcome.status === 'playing' &&
+            quarterNumber(later.date) >= quarterNumber(shock.announced) &&
+            quarterNumber(later.date) < quarterNumber(shock.begins),
+        );
+        for (const later of waiting) {
+          const when = `seed ${seed}, ${later.date.year}/${later.date.quarter}`;
+          expect(shockIn(risksIn(later), `${name} ahead`), when).toBeDefined();
+        }
+      }
     }
     for (const [index, game] of states.slice(0, -1).entries()) {
       const begun = (states[index + 1]?.events ?? []).filter(
@@ -121,7 +171,7 @@ function playRun(country: () => Country, first: number, last: number): Found {
       );
       if (begun.length === 0) continue;
       floods += begun.length;
-      const risks = risksAhead(game, doNothing(game));
+      const risks = risksIn(game);
       for (const flood of begun) {
         const warned = floodIn(risks, flood.regionId);
         expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
@@ -150,8 +200,11 @@ function playRun(country: () => Country, first: number, last: number): Found {
       expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
     }
   }
-  return { famines, floods };
+  return { famines, floods, shocks };
 }
+
+const sameShock = (a: PriceShock, b: PriceShock) =>
+  a.type === b.type && quarterNumber(a.announced) === quarterNumber(b.announced);
 
 const sameEvent = (a: ActiveEvent, b: ActiveEvent) =>
   a.type === b.type && a.regionId === b.regionId && a.began.year === b.began.year;

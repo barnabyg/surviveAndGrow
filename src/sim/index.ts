@@ -87,7 +87,7 @@ export {
   type Harvest,
   type RegionHarvest,
 } from './food';
-export { dateOfQuarter, seasonOf } from './calendar';
+export { dateOfQuarter, quarterNumber, seasonOf } from './calendar';
 export { drawAt } from './rng';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
