@@ -371,8 +371,9 @@ test held back a win and whether it was won later, and the debt burden; and what
 the grain bought and sold abroad, what it brought in and cost, and the world price shocks,
 droughts and floods each game met. It prints the tables and writes them to `balance-results.md`. It is not one of the
 checks and gates nothing; a short run of the same players over a few seeds is part of the
-simulation tests. The games are shared out among worker processes, so a run uses most of the
-machine; 300 seeds of every player take a few minutes.
+simulation tests. The games are shared out among worker processes at below-normal priority, on half the
+processors by default; 300 seeds of every player take a few minutes. How large a balance ticket's
+runs should be is in [docs/agents/balance-tickets.md](docs/agents/balance-tickets.md).
 
 Eight players are what the balance is judged by: one that does nothing, one that spends
 everything on popularity, one that plays sensibly but builds no large site, one that builds
@@ -399,7 +400,7 @@ Set these before the command to change the run:
 | `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the eight |
 | `BALANCE_TERMS` | The most terms each game is played for | `4` |
 | `BALANCE_SHOCKS` | `none` plays the same games without world price shocks | `shipped` |
-| `BALANCE_WORKERS` | How many games are played at once | all but two processors |
+| `BALANCE_WORKERS` | How many games are played at once, each at below-normal priority | half the processors |
 | `BALANCE_OUT` | Where the tables are written | `balance-results.md` |
 
 ```powershell
