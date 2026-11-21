@@ -50,7 +50,7 @@ The first term is 20 quarters, ending in an election. Win it and you govern on i
 the game itself is won on prosperity, held in the top tier.
 It is meant to be hard. You take office with approval near 52%, a budget that loses $5.0m a
 quarter, and a food reserve below its safe level. Left alone, the country votes you out, if a
-drought does not starve a region first.
+drought or a flood does not starve a region first.
 
 - **Feed people first.** Watch the risks in the left column. When a region runs short, pick it
   on the map and send it relief, and pay for relief only while someone needs it.
@@ -219,12 +219,24 @@ Ports in use add their own capacity. A file of format 5 that lists no crossings 
 through its ports. A file of an earlier format cannot name crossings, and is read as having one on
 each neighbour carrying 45,000 tonnes; it still loads as it is.
 
+Each region's `eventLikelihood` says how likely each of the game's events is to strike it in a
+year: the chance, from 0 to 1, of a `drought` (40% off its harvest) and, in a file of
+`"formatVersion": 6`, of a `flood` (30% off its harvest, and every site in use there decaying
+until its upkeep is paid). Both begin with the planting season, and they share one roll in each
+region, so a region's chances of the two may come to at most 1 between them. An event the region
+leaves out never strikes it. A file of an earlier format cannot name floods, and still loads as it
+is, with none:
+
+```json
+"eventLikelihood": { "drought": 0, "flood": 0.1 }
+```
+
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:
 `grainOffer` (the reserve is below its safe level), `merchantOffer` (the first quarter of a year,
-with the reserve above its safe level), `emergencyWorks` (a region is in drought), `strikeTalks`
-(a region is striking or protesting), `teachersPay` (any time) and `donorGrant` (the treasury is
-low). One the file leaves out never arises, and the whole entry may be left out. What each
+with the reserve above its safe level), `emergencyWorks` (a region is in drought or flood),
+`strikeTalks` (a region is striking or protesting), `teachersPay` (any time) and `donorGrant` (the
+treasury is low). One the file leaves out never arises, and the whole entry may be left out. What each
 dilemma offers scales with the country's population, so the same dilemma suits a country of any
 size.
 
@@ -277,9 +289,9 @@ once without their servers colliding.
 
 [tests/e2e/app.ts](tests/e2e/app.ts) is where a browser test starts a game in a known state:
 `startGame` and `openApp` with a seed or a country file of the test's own; `tavaraWith`,
-`tavaraWithDroughtIn` and `testlandFile` for a country with chance pinned (which dilemmas and
-events can arise, and people who do not grow); and `tavaraPoisedBelowDeveloping` and
-`tavaraProsperous` for one prepared near a tier. Add a new prepared country there.
+`tavaraWithDroughtIn` and `testlandFile` for a country with chance pinned (which dilemmas arise,
+where droughts and floods strike, and people who do not grow); and `tavaraPoisedBelowDeveloping`
+and `tavaraProsperous` for one prepared near a tier. Add a new prepared country there.
 
 Gates that do not apply:
 

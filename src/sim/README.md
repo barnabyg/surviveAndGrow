@@ -46,8 +46,9 @@ preview (`previewQuarter`) shares, so turn and preview cannot come to differ:
    consult.
 
 `resolveQuarter` moves the world prices on (`trade.ts`) before it lives the quarter. Once it is
-lived, it moves the calendar (`calendar.ts`, `terms.ts`), ends and begins events, checks for
-collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may put a new
+lived, it moves the calendar (`calendar.ts`, `terms.ts`), ends and begins events (`events.ts`),
+sets decaying the sites in use where an event that damages them has begun (`upkeep.ts`), checks
+for collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may put a new
 dilemma, records the vital signs (`history.ts`), and compiles the report (`report.ts`), whose
 entries keep the order written there.
 
@@ -59,7 +60,10 @@ A new mechanic usually touches most of these:
 - `game.ts`: where it is resolved in the quarter, and what the preview projects.
 - A module of its own for its rules, called from `game.ts`.
 - `balance.ts`: its tuning values. No rule hard-codes a number.
-- `vocabulary.ts`: the names the player sees, and any new kind of site, event or spending.
+- `vocabulary.ts`: the names the player sees, and any new kind of site, event or spending. A
+  new kind of event goes at the end of `EVENT_TYPES`: the events that begin in the same quarter
+  share one roll in each region, taken in that order, so the others' strikes stay as they were.
+  `country.ts` says which country file format first lets a file name it.
 - `report.ts` and the entries it compiles: what the turn report says about it.
 - `risks.ts`: the warning ahead, if it can hurt the player. Every loss must be foreseeable.
   A danger of money (the treasury, a missed payment, a bond's maturity, the credit rating)
