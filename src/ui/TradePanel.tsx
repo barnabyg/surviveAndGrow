@@ -13,6 +13,7 @@ import {
   plannedExport,
   plannedImport,
   priceStatus,
+  tradeCapacity,
   type GameState,
   type Preview,
   type TradeOrder,
@@ -64,6 +65,7 @@ export function TradePanel({ game, preview, planned, onPlan }: TradePanelProps) 
       }
     >
       <WorldPriceSign status={status} goodWhen="falling" />
+      <TradeCapacityView game={game} planned={planned} />
 
       {imported !== undefined && (
         <PlannedOrder
@@ -214,6 +216,69 @@ function PlannedOrder({ title, group, cancel, onCancel, warning, children }: Pla
         </button>
       </div>
       {warning !== undefined && warning !== null && <p className="warning-note">▲ {warning}</p>}
+    </div>
+  );
+}
+
+/**
+ * What the trade links carry this quarter and how it is shared: the mines' ore first, then the
+ * grain ordered, and what is left free. Each link is listed with what it carries, so a missing
+ * or decaying port shows up as the bottleneck it is.
+ */
+function TradeCapacityView({
+  game,
+  planned,
+}: {
+  readonly game: GameState;
+  readonly planned: readonly TradeOrder[];
+}) {
+  const capacity = tradeCapacity(game, planned);
+  const neighbourName = (id: string) =>
+    game.country.map.neighbours.find((neighbour) => neighbour.id === id)?.name ?? id;
+  const crossingTo = new Map(
+    game.country.crossings.map((crossing) => [crossing.id, crossing.neighbourId]),
+  );
+  const rows: [label: string, tonnes: string][] = [
+    ['Trade links carry', formatTonnes(capacity.total)],
+    ...(capacity.ore > 0
+      ? [['Mines’ ore', formatTonnes(capacity.ore)] satisfies [string, string]]
+      : []),
+    ['Grain ordered', formatTonnes(capacity.grain)],
+    ['Free', formatTonnes(Math.max(capacity.free, 0))],
+  ];
+  return (
+    <div className="trade__capacity" role="group" aria-label="Trade capacity">
+      <table className="breakdown__table" aria-label="What the trade links carry this quarter">
+        <caption className="label">Trade capacity</caption>
+        <tbody>
+          {rows.map(([label, tonnes]) => (
+            <tr key={label}>
+              <th scope="row">{label}</th>
+              <td>{tonnes}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <ul className="trade__links" aria-label="Trade links">
+        {capacity.links.map((link) => (
+          <li key={`${link.kind} ${link.id}`}>
+            <span>{link.name}</span>
+            <span className="fixed-costs__note">
+              {link.kind === 'crossing'
+                ? `Border crossing to ${neighbourName(crossingTo.get(link.id) ?? '')}`
+                : link.decaying
+                  ? 'Port, decaying: half its capacity'
+                  : 'Port'}{' '}
+              · {formatTonnes(link.tonnes)}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="section-empty">
+        Everything that crosses the border moves through a trade link: the border crossings, and
+        each port in use, which carries half while it decays. The mines’ ore takes its share first,
+        and grain bought and sold is limited to what is left.
+      </p>
     </div>
   );
 }

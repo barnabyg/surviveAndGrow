@@ -87,6 +87,18 @@ test('a mine shows its missing links, and once its road and port are built it ea
   await expect(map(page).getByText('▲ Earning nothing')).toHaveCount(0);
   await expect(site(page, 'Korrgate mine')).toHaveAccessibleName('Korrgate mine, mine, operating');
 
+  // The port is a trade link, and the mine's ore takes its share of what the links carry. The
+  // mine's card covers the port on the map, so the port is picked from the keyboard.
+  await site(page, 'Saltmouth port').press('Enter');
+  await expect(page.getByRole('region', { name: 'Saltmouth port' })).toContainText(
+    'Trade link: it carries 900,000 t a quarter across the border. Of the 990,000 t all the trade links carry, the mines’ ore takes 600,000 t, leaving 390,000 t for grain bought and sold abroad.',
+  );
+  const capacity = decisions(page)
+    .getByRole('region', { name: 'Trade' })
+    .getByRole('group', { name: 'Trade capacity' });
+  await expect(capacity.getByRole('row', { name: /Mines’ ore/ })).toContainText('600,000 t');
+  await expect(capacity.getByRole('row', { name: /Free/ })).toContainText('390,000 t');
+
   // Its output is taxed: 18% of the $60.0m it adds at the usual ore price, and $1.1m more for
   // the ore price at $110 a tonne.
   await endQuarters(page, 1);

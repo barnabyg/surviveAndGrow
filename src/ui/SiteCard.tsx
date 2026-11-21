@@ -7,9 +7,11 @@ import {
   formatTonnes,
   oreEarnings,
   oreTonnesOf,
+  portTonnesOf,
   priceStatus,
   regionName,
   regionPower,
+  SITE_CHAIN_ROLES,
   SITE_POWER_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
@@ -17,6 +19,7 @@ import {
   siteTerms,
   startFault,
   termCalendar,
+  tradeCapacity,
   UPKEEP_ORDER_RULE,
   type Chain,
   type GameState,
@@ -149,6 +152,9 @@ export function SiteCard(props: SiteCardProps) {
           {UPKEEP_ORDER_RULE}
         </p>
       )}
+      {SITE_CHAIN_ROLES[site.type] === 'outlet' && status.closedBy === null && (
+        <TradeLinkNote game={game} siteId={site.id} />
+      )}
       {chainsThrough(game, site.id).map((chain) => (
         <ChainList key={chain.sourceId} game={game} chain={chain} siteId={site.id} />
       ))}
@@ -269,6 +275,34 @@ function OrePrice({ game, siteId }: { readonly game: GameState; readonly siteId:
         {forecastSpan()}.
       </p>
     </section>
+  );
+}
+
+/**
+ * What a port carries across the border, and how what all the trade links carry is shared;
+ * or, before it is in use, what it would add to them.
+ */
+function TradeLinkNote({ game, siteId }: { readonly game: GameState; readonly siteId: string }) {
+  const site = game.country.sites.find((candidate) => candidate.id === siteId);
+  if (site === undefined) return null;
+  const capacity = tradeCapacity(game);
+  const link = capacity.links.find((candidate) => candidate.id === siteId);
+  if (link === undefined) {
+    return (
+      <p className="map-card__note">
+        Once in use, it adds {formatTonnes(portTonnesOf(site.type))} a quarter to the{' '}
+        {formatTonnes(capacity.total)} the trade links carry now.
+      </p>
+    );
+  }
+  return (
+    <p className="map-card__note" role="status">
+      Trade link: it carries {formatTonnes(link.tonnes)} a quarter across the border
+      {link.decaying ? ', half its capacity while it decays' : ''}. Of the{' '}
+      {formatTonnes(capacity.total)} all the trade links carry, the mines’ ore takes{' '}
+      {formatTonnes(capacity.ore)}, leaving {formatTonnes(capacity.total - capacity.ore)} for grain
+      bought and sold abroad.
+    </p>
   );
 }
 

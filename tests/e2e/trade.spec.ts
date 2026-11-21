@@ -89,3 +89,42 @@ test('grain is sold with its income and a warning shown, and leaves the reserve 
   const stored = foodReserve(page).getByRole('table', { name: 'What moved the food reserve' });
   await expect(stored.getByRole('row', { name: /Grain exported/ })).toContainText('−10,000 t');
 });
+
+test('the trade panel shows what the trade links carry, and refuses grain beyond it', async ({
+  page,
+}) => {
+  await startGame(page);
+
+  // Tavara's two border crossings carry 90,000 t a quarter between them, and no port is built.
+  const capacity = trade(page).getByRole('group', { name: 'Trade capacity' });
+  await expect(capacity.getByRole('row', { name: /Trade links carry/ })).toContainText('90,000 t');
+  await expect(capacity.getByRole('row', { name: /Free/ })).toContainText('90,000 t');
+  await expect(capacity.getByRole('listitem').filter({ hasText: 'Korr Pass' })).toContainText(
+    'Border crossing to Voskar · 50,000 t',
+  );
+  await expect(capacity.getByRole('listitem').filter({ hasText: 'Selama bridge' })).toContainText(
+    'Border crossing to Selama · 40,000 t',
+  );
+
+  await trade(page).getByLabel('Tonnes to buy').fill('100000');
+  const terms = trade(page).getByRole('group', { name: 'Import terms' });
+  await expect(terms).toContainText(
+    'The trade links carry 90,000 t a quarter, so no more than 90,000 t of grain can cross the border, but 100,000 t would.',
+  );
+  await expect(trade(page).getByRole('button', { name: 'Order grain' })).toBeDisabled();
+
+  // Ordered within it, the grain takes its share of what the links carry.
+  await trade(page).getByLabel('Tonnes to buy').fill('30000');
+  await trade(page).getByRole('button', { name: 'Order grain' }).click();
+  await expect(capacity.getByRole('row', { name: /Grain ordered/ })).toContainText('30,000 t');
+  await expect(capacity.getByRole('row', { name: /Free/ })).toContainText('60,000 t');
+
+  // A port would widen it, and its card says so.
+  await page
+    .getByRole('group', { name: 'Map of Republic of Tavara' })
+    .getByRole('button', { name: /^Saltmouth port,/ })
+    .click();
+  await expect(page.getByRole('region', { name: 'Saltmouth port' })).toContainText(
+    'Once in use, it adds 900,000 t a quarter to the 90,000 t the trade links carry now.',
+  );
+});

@@ -6,7 +6,7 @@ import { capacityOf, oreTonnesOf } from './sites';
 import { formatTonnes } from './text';
 import type { TradeOrder, WorldPrices } from './trade';
 import { inUse } from './upkeep';
-import { SITE_CHAIN_ROLES } from './vocabulary';
+import { SITE_CHAIN_ROLES, type SiteType } from './vocabulary';
 
 interface Trading {
   readonly country: Country;
@@ -66,7 +66,7 @@ export function tradeCapacity(game: Trading, orders: readonly TradeOrder[] = [])
       return [];
     }
     const decaying = project.status === 'decaying';
-    const tonnes = oreTonnesOf(capacityOf(site.type, decaying) ?? 0);
+    const tonnes = portTonnesOf(site.type, decaying);
     return [{ id: site.id, name: site.name, kind: 'port', tonnes, decaying }];
   });
   const links = [...crossings, ...ports];
@@ -74,6 +74,15 @@ export function tradeCapacity(game: Trading, orders: readonly TradeOrder[] = [])
   const ore = Math.min(total, sum(chains(game).map((chain) => chain.shipped)));
   const grain = sum(orders.map((order) => order.tonnes));
   return { links, total, ore, grain, free: total - ore - grain };
+}
+
+/**
+ * What a port of one type carries across the border in a quarter while in use, in tonnes: what
+ * it ships for a chain, and half of it while it decays. Nothing for a site that is not a port.
+ */
+export function portTonnesOf(type: SiteType, decaying = false): number {
+  if (SITE_CHAIN_ROLES[type] !== 'outlet') return 0;
+  return oreTonnesOf(capacityOf(type, decaying) ?? 0);
 }
 
 /**
