@@ -3,7 +3,7 @@ import { dateOfQuarter, quarterNumber } from './calendar';
 import type { Country } from './country';
 import type { ReportEntry } from './report';
 import { drawAt } from './rng';
-import { formatQuarters } from './text';
+import { capitalised, formatQuarters } from './text';
 import type { GameDate } from './types';
 import { GOOD_NAMES, GOODS, PRICE_SHOCK_TYPES, type Good, type PriceShockType } from './vocabulary';
 
@@ -193,7 +193,7 @@ function begunEntry(shock: PriceShock): ReportEntry {
     kind: 'priceShock',
     seriousness: 'warning',
     headline: `${definition.name} pushes the world ${GOOD_NAMES[definition.good].toLowerCase()} price ${way(push)}`,
-    cause: `${capital(priceName(definition.good))} was pushed ${way(push)} by $${Math.abs(push)} a tonne as the quarter ended${more > 0 ? `, and will be for ${formatQuarters(more, 'more')}` : ''}.`,
+    cause: `${capitalised(priceName(definition.good))} was pushed ${way(push)} by $${Math.abs(push)} a tonne as the quarter ended${more > 0 ? `, and will be for ${formatQuarters(more, 'more')}` : ''}.`,
   };
 }
 
@@ -203,12 +203,8 @@ function endedEntry(shock: PriceShock): ReportEntry {
     kind: 'priceShock',
     seriousness: 'notable',
     headline: `${definition.name} has ended`,
-    cause: `${definition.announcement.ends} ${capital(priceName(definition.good))} is no longer pushed ${way(pushOf(shock.type))}, and is pulled back towards its usual $${balance.trade.goods[definition.good].usualDollarsPerTonne} a tonne.`,
+    cause: `${definition.announcement.ends} ${capitalised(priceName(definition.good))} is no longer pushed ${way(pushOf(shock.type))}, and is pulled back towards its usual $${balance.trade.goods[definition.good].usualDollarsPerTonne} a tonne.`,
   };
-}
-
-function capital(phrase: string): string {
-  return phrase.charAt(0).toUpperCase() + phrase.slice(1);
 }
 
 /**
@@ -312,7 +308,7 @@ export function shockStatuses(watch: ShockWatch, good: Good): ShockStatus[] {
       // The pushes still to come, as the game moves into the quarters after this one.
       const more = endOf(shock) - now - 1;
       const push = pushOf(shock.type);
-      const pushed = `${capital(priceName(good))} was pushed ${way(push)} by $${Math.abs(push)} a tonne as this quarter began`;
+      const pushed = `${capitalised(priceName(good))} was pushed ${way(push)} by $${Math.abs(push)} a tonne as this quarter began`;
       return {
         type: shock.type,
         name: shockName(shock.type),

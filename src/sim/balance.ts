@@ -641,7 +641,8 @@ export const balance = {
    * announced `noticeQuarters` before it first moves the price, and is in force for
    * `lastsQuarters`. How likely each is to be announced in a quarter is the country file's
    * business. The notice is shorter than the risks' horizon, so a shock that could still be
-   * announced is looked for there, and the forecast of the price allows for it.
+   * announced is looked for there as a risk of its own. The forecast of the price allows only
+   * for shocks already announced.
    */
   priceShocks: {
     failedHarvestsAbroad: {

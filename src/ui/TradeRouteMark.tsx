@@ -12,7 +12,6 @@ export function routeWidth(tonnes: number): number {
   return 3 + 9 * Math.sqrt(Math.min(1, Math.max(0, tonnes) / WIDEST_TONNES));
 }
 /** What a route carried last quarter against its capacity, as the map writes it: "600,000 t of 900,000 t". */
-/** What a route carries against its capacity, as the map writes it: "600,000 t of 900,000 t". */
 export function carriedText(route: TradeRoute): string {
   return `${formatTonnes(route.carried.total)} of ${formatTonnes(route.capacity)}`;
 }

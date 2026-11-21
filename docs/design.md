@@ -1,7 +1,8 @@
 # Survive and Grow: game design
 
 Status: Phase 1 is built, and Phase 2 (build), Phase 3 (borrow) and Phase 4 (feed and trade) are
-built and balanced. Last updated 2026-11-21.
+built and balanced, except Phase 4's two targets for world price shocks, which values alone did
+not meet and which await the owner (see `docs/balance/phase-4.md`). Last updated 2026-11-21.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
 [rules.md](rules.md), which is the one place they are stated in full.

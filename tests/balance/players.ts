@@ -675,8 +675,9 @@ const traderHabits = {
 /**
  * The timing trader's orders for the quarter, on top of what it has already decided: it buys
  * grain when the reserve is short, and stocks up when grain is cheap or failed harvests abroad
- * are announced; it sells what the reserve holds above what it keeps when grain is dear, but
- * not while failed harvests abroad are still to come, which will make it dearer.
+ * are announced; it sells what the reserve holds above what it keeps when grain is at or above
+ * its usual price. It sells even while failed harvests abroad are still to come: the trade
+ * links cap what it can sell in a quarter, so a quarter held back is a sale lost.
  */
 function timedTrade(game: GameState, decisions: Decisions, heedsShocks = true): TradeOrder[] {
   const grain = priceStatus(game, 'grain');
