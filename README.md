@@ -219,6 +219,12 @@ Ports in use add their own capacity. A file of format 5 that lists no crossings 
 through its ports. A file of an earlier format cannot name crossings, and is read as having one on
 each neighbour carrying 45,000 tonnes; it still loads as it is.
 
+The map draws the trade routes from the file alone, so no country needs artwork for them. A
+crossing stands on the country's border with its neighbour, at the point nearest the
+neighbour's `label`, so place the label where the crossing should be. A port's shipping lane runs
+straight from the port to whichever edge of the map it reaches over the least land, the
+country's own or a neighbour's: give a port a stretch of open sea between it and the edge.
+
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:
 `grainOffer` (the reserve is below its safe level), `merchantOffer` (the first quarter of a year,
@@ -343,7 +349,7 @@ $env:BALANCE_SEEDS = '1001-2200'; $env:BALANCE_PLAYERS = 'all'; npm run balance
 - `src/ui/` is the interface. Each component imports its own stylesheet, named after it
   (`MapView.css` beside `MapView.tsx`). `styles.css` holds the colours, the base elements and
   the rules several components share, and `chart.css` and `map-card.css` are shared by the
-  two components that draw charts and the two map cards. `main.tsx` imports `styles.css`
+  two components that draw charts and the three map cards. `main.tsx` imports `styles.css`
   before the components, so their rules come after it.
 - `tests/sim/` tests the game rules through the simulation's public interface.
 - `tests/e2e/` drives the real app in a browser at 2560 x 1440.
