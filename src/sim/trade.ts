@@ -470,14 +470,14 @@ function exportEntry(order: TradeOrder, tonnes: number, income: Money, price: nu
       kind: 'trade',
       seriousness: 'notable',
       headline: `${name} exported`,
-      cause: `${formatTonnes(tonnes)} left the national reserve, sold for ${formatMoney(income)} at $${price} a tonne.`,
+      cause: `${formatTonnes(tonnes)} left the national reserve, sold for ${formatMoney(income)} at ${formatPrice(price)}.`,
     };
   }
   return {
     kind: 'trade',
     seriousness: 'warning',
     headline: `${name} export cut short`,
-    cause: `The national reserve held only ${formatTonnes(tonnes)} of the ${formatTonnes(order.tonnes)} sold once the dilemma was answered, at $${price} a tonne: ${formatMoney(income)}.`,
+    cause: `The national reserve held only ${formatTonnes(tonnes)} of the ${formatTonnes(order.tonnes)} sold once the dilemma was answered, at ${formatPrice(price)}: ${formatMoney(income)}.`,
   };
 }
 
@@ -498,14 +498,14 @@ function importEntry(order: TradeOrder, tonnes: number, cost: Money, price: numb
       kind: 'trade',
       seriousness: 'notable',
       headline: `${name} imported`,
-      cause: `${formatTonnes(tonnes)} reached the national reserve, bought for ${formatMoney(cost)} at $${price} a tonne.`,
+      cause: `${formatTonnes(tonnes)} reached the national reserve, bought for ${formatMoney(cost)} at ${formatPrice(price)}.`,
     };
   }
   return {
     kind: 'trade',
     seriousness: 'warning',
     headline: `${name} import cut short`,
-    cause: `The treasury could pay for only ${formatTonnes(tonnes)} of the ${formatTonnes(order.tonnes)} ordered, at $${price} a tonne: ${formatMoney(cost)}.`,
+    cause: `The treasury could pay for only ${formatTonnes(tonnes)} of the ${formatTonnes(order.tonnes)} ordered, at ${formatPrice(price)}: ${formatMoney(cost)}.`,
   };
 }
 

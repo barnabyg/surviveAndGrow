@@ -2,7 +2,7 @@ import { balance } from './balance';
 import type { Country, Site } from './country';
 import { siteStatus, type Project } from './projects';
 import { capacityOf, oreTonnesOf } from './sites';
-import { costOf, priceOf, priceStatus, type WorldPrices } from './trade';
+import { costOf, formatPrice, priceOf, priceStatus, type WorldPrices } from './trade';
 import type { Money } from './types';
 import { inUse } from './upkeep';
 import { SITE_CHAIN_ROLES, type SiteState } from './vocabulary';
@@ -182,7 +182,7 @@ export function earningLines(
     { label, amount: usual },
     ...(effect === 0
       ? []
-      : [{ label: `${label}: ore at $${earning.orePrice} a tonne`, amount: effect }]),
+      : [{ label: `${label}: ore at ${formatPrice(earning.orePrice)}`, amount: effect }]),
   ];
 }
 
