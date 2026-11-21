@@ -1401,6 +1401,13 @@
         }
       }
     ],
+    "tradeCarried": [
+      {
+        "routeId": "korr-pass",
+        "ore": 0,
+        "grain": 20000
+      }
+    ],
     "history": [
       {
         "date": {

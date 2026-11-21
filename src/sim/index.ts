@@ -148,7 +148,7 @@ export {
   type WorldPrices,
 } from './trade';
 export { portTonnesOf, tradeCapacity, type TradeCapacity, type TradeLink } from './tradeLinks';
-export { tradeRoutes, type TradeRoute } from './tradeRoutes';
+export { tradeRoutes, type Carriage, type RouteCarriage, type TradeRoute } from './tradeRoutes';
 export {
   shockName,
   type PriceShock,

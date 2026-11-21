@@ -343,10 +343,13 @@ figure there must change it here in the same commit.
   relief are drawn under all of them.
 - The trade routes are drawn on the map from the country file: a bar where each border crossing
   meets its neighbour, and a shipping lane from each port in use to the edge of the map. Each
-  route is as wide as what it can carry, with a pale core as wide as what it carries this
+  route is as wide as what it can carry, with a pale core as wide as what it carried last
   quarter, and a tag gives both in tonnes: "600,000 t of 900,000 t". The mines' ore goes by the
   port its chain runs to, and grain bought and sold abroad over the border crossings first, then
-  by sea, so the figures move as you order grain. A decaying port's lane is dashed. Select a
-  route to open its card: the mines' ore, the grain, what is free and its capacity.
+  by sea; grain an order could not pay for, or a dilemma's answer left the reserve without, never
+  crossed. A port that has just come into use has carried nothing yet. A decaying port's lane is
+  dashed. Select a route to open its card: the mines' ore and the grain it carried last quarter
+  and is to carry this quarter with the grain ordered so far, and how much of its capacity is
+  free.
 - The side columns scroll on their own when they run long, and the map gives up height to the
   timeline, so the whole screen stays in view.

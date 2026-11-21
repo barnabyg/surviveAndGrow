@@ -11,10 +11,10 @@ const WIDEST_TONNES = 900_000;
 export function routeWidth(tonnes: number): number {
   return 3 + 9 * Math.sqrt(Math.min(1, Math.max(0, tonnes) / WIDEST_TONNES));
 }
-
+/** What a route carried last quarter against its capacity, as the map writes it: "600,000 t of 900,000 t". */
 /** What a route carries against its capacity, as the map writes it: "600,000 t of 900,000 t". */
 export function carriedText(route: TradeRoute): string {
-  return `${formatTonnes(route.carried)} of ${formatTonnes(route.capacity)}`;
+  return `${formatTonnes(route.carried.total)} of ${formatTonnes(route.capacity)}`;
 }
 
 /** What a route is, in words: "Korr Pass" or "Shipping lane from Saltmouth port". */
@@ -28,7 +28,7 @@ export function routeDescription(route: TradeRoute, neighbourName: string | null
   const how =
     route.state === 'missing'
       ? `missing trade link: it would carry ${formatTonnes(route.capacity)} a quarter once the port is in use`
-      : `carrying ${carriedText(route)} this quarter`;
+      : `carried ${carriedText(route)} last quarter`;
   const weak =
     route.state === 'weak' ? ['weak trade link: half its capacity while the port decays'] : [];
   return [routeTitle(route), ...what, how, ...weak].join(', ');
@@ -51,7 +51,7 @@ interface TradeRouteMarkProps {
 /**
  * A trade route on the map. It is a button: picking it opens the route's card. A route in
  * use is a dark line as wide as what it can carry, with a pale core as wide as the share of
- * it carried this quarter, and a tag that gives both in tonnes. A border crossing also has a
+ * it carried last quarter, and a tag that gives both in tonnes. A border crossing also has a
  * bar across the border where it stands. A missing trade link is dotted, in the style of a
  * missing link in a chain, and tagged; a weak one is dashed, and tagged under the
  * infrastructure lens.
@@ -61,7 +61,7 @@ export function TradeRouteMark(props: TradeRouteMarkProps) {
   const [start = [0, 0], end = start] = [route.path[0], route.path.at(-1)];
   const points = route.path.map(([x, y]) => `${x},${y}`).join(' ');
   const width = routeWidth(route.capacity);
-  const share = route.capacity > 0 ? route.carried / route.capacity : 0;
+  const share = route.capacity > 0 ? route.carried.total / route.capacity : 0;
   const missing = route.state === 'missing';
   const weak = route.state === 'weak';
   const tags = [

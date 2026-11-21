@@ -261,6 +261,7 @@ crossing stands on the country's border with its neighbour, at the point nearest
 neighbour's `label`, so place the label where the crossing should be. A port's shipping lane runs
 straight from the port to whichever edge of the map it reaches over the least land, the
 country's own or a neighbour's: give a port a stretch of open sea between it and the edge.
+Each route is tagged with what it carried last quarter against what it can carry.
 
 Each region's `eventLikelihood` says how likely each of the game's events is to strike it in a
 year: the chance, from 0 to 1, of a `drought` (40% off its harvest) and, in a file of

@@ -3,7 +3,7 @@ import type { Country, Point } from './country';
 import { contains } from './geometry';
 import { siteStatus, type Project } from './projects';
 import type { TradeOrder, WorldPrices } from './trade';
-import { portTonnesOf, tradeCapacity } from './tradeLinks';
+import { portTonnesOf, tradeCapacity, tradeLinks } from './tradeLinks';
 import { MAP_FRAME, SITE_CHAIN_ROLES } from './vocabulary';
 
 interface Trading {
@@ -12,9 +12,29 @@ interface Trading {
   readonly worldPrices: WorldPrices;
 }
 
+/** What a trade route carries across the border in a quarter, in tonnes. */
+export interface Carriage {
+  /** The ore the mines' chains ship by it. */
+  readonly ore: number;
+  /** The grain bought and sold abroad that goes by it. */
+  readonly grain: number;
+  /** The two together. */
+  readonly total: number;
+}
+
+/** What one trade link carried across the border in a quarter, as the game remembers it. */
+export interface RouteCarriage {
+  /** The crossing's id, or the port's site id. */
+  readonly routeId: string;
+  /** The ore the mines' chains shipped by it, in tonnes. */
+  readonly ore: number;
+  /** The grain bought and sold abroad that went by it, in tonnes. */
+  readonly grain: number;
+}
+
 /**
  * A trade link as the map draws it: a border crossing, or a shipping lane from a port to the
- * edge of the map, with what it carries this quarter.
+ * edge of the map, with what it carried last quarter and what it is to carry this quarter.
  */
 export interface TradeRoute {
   /** The crossing's id, or the port's site id. */
@@ -31,12 +51,10 @@ export interface TradeRoute {
    * would carry once in use.
    */
   readonly capacity: number;
-  /** The ore the mines' chains ship by it this quarter, in tonnes. */
-  readonly ore: number;
-  /** The grain bought and sold abroad that goes by it this quarter, in tonnes. */
-  readonly grain: number;
-  /** What it carries this quarter, ore and grain, in tonnes. */
-  readonly carried: number;
+  /** What it carried in the quarter last played: nothing before the first. */
+  readonly carried: Carriage;
+  /** What it is to carry this quarter: the mines' ore and the grain ordered so far. */
+  readonly planned: Carriage;
   /**
    * The line it is drawn along: from the border out into the neighbour, or from the port out
    * to the edge of the map.
@@ -47,33 +65,54 @@ export interface TradeRoute {
 /** How far a crossing's mark reaches into the neighbour, in the map frame. */
 const CROSSING_REACH = 40;
 
+const NOTHING: Carriage = { ore: 0, grain: 0, total: 0 };
+
+/**
+ * What each trade link carries this quarter, with the grain given crossing the border: the
+ * mines' ore goes by the port its chain runs to, and the grain over the border crossings first
+ * and then by sea, each link taking what it has room for. Only the links that carry anything
+ * are listed, in the order of the links.
+ */
+export function routeCarriage(game: Trading, grainTonnes: number): RouteCarriage[] {
+  const links = tradeLinks(game);
+  const ore = new Map<string, number>();
+  for (const chain of chains(game)) {
+    const port = chain.links.find((link) => links.some((each) => each.id === link.siteId));
+    if (port === undefined) continue;
+    ore.set(port.siteId, (ore.get(port.siteId) ?? 0) + chain.shipped);
+  }
+  let grainLeft = grainTonnes;
+  return links.flatMap((link): RouteCarriage[] => {
+    const shipped = Math.min(link.tonnes, ore.get(link.id) ?? 0);
+    const grain = Math.max(0, Math.min(grainLeft, link.tonnes - shipped));
+    grainLeft -= grain;
+    return shipped + grain > 0 ? [{ routeId: link.id, ore: shipped, grain }] : [];
+  });
+}
+
 /**
  * The trade routes this quarter, in the order of the trade links: the border crossings, then
  * the ports in use, then the ports that could still be built, which are missing links. Where
- * each is drawn comes from the country file alone. The mines' ore goes by the port its chain
- * runs to, and the grain in the orders goes over the border crossings first and then by sea,
- * each route taking what it has room for.
+ * each is drawn comes from the country file alone. Each says what it carried in the quarter
+ * last played, and what it is to carry this quarter with the grain in the orders.
  */
 export function tradeRoutes(
-  game: Trading,
+  game: Trading & { readonly tradeCarried: readonly RouteCarriage[] },
   orders: readonly TradeOrder[] = [],
 ): readonly TradeRoute[] {
   const { country } = game;
   const capacity = tradeCapacity(game, orders);
-  const ore = new Map<string, number>();
-  for (const chain of chains(game)) {
-    const port = chain.links.find((link) => capacity.links.some((each) => each.id === link.siteId));
-    if (port === undefined) continue;
-    ore.set(port.siteId, (ore.get(port.siteId) ?? 0) + chain.shipped);
-  }
-  let grainLeft = capacity.grain;
+  const planned = routeCarriage(game, capacity.grain);
+  const carriage = (carried: readonly RouteCarriage[], id: string): Carriage => {
+    const found = carried.find((each) => each.routeId === id);
+    return found === undefined
+      ? NOTHING
+      : { ore: found.ore, grain: found.grain, total: found.ore + found.grain };
+  };
   const open = capacity.links.flatMap((link): TradeRoute[] => {
     const path =
       link.kind === 'crossing' ? crossingPath(country, link.id) : lanePath(country, link.id);
     if (path === null) return [];
-    const shipped = Math.min(link.tonnes, ore.get(link.id) ?? 0);
-    const grain = Math.min(grainLeft, link.tonnes - shipped);
-    grainLeft -= grain;
     return [
       {
         id: link.id,
@@ -81,9 +120,8 @@ export function tradeRoutes(
         kind: link.kind,
         state: link.decaying ? 'weak' : 'open',
         capacity: link.tonnes,
-        ore: shipped,
-        grain,
-        carried: shipped + grain,
+        carried: carriage(game.tradeCarried, link.id),
+        planned: carriage(planned, link.id),
         path,
       },
     ];
@@ -100,9 +138,8 @@ export function tradeRoutes(
         kind: 'port',
         state: 'missing',
         capacity: portTonnesOf(site.type),
-        ore: 0,
-        grain: 0,
-        carried: 0,
+        carried: NOTHING,
+        planned: NOTHING,
         path,
       },
     ];
