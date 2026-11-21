@@ -20,6 +20,7 @@ import {
   DECORATION_KINDS,
   DILEMMA_TYPES,
   EVENT_TYPES,
+  PRICE_SHOCK_TYPES,
   LABEL_SIDES,
   SETTLEMENT_SIZES,
   SITE_FORMS,
@@ -30,6 +31,7 @@ import {
   type DilemmaType,
   type EventType,
   type LabelSide,
+  type PriceShockType,
   type SettlementSize,
   type SiteType,
   type Terrain,
@@ -40,10 +42,13 @@ import {
  * earlier version: format 2 added the sites a site depends on and a region's own population
  * growth, which format 1 cannot say, and format 3 added sites that are alternatives to each
  * other, which format 2 cannot, format 4 added debt the game starts with, which format 3
- * cannot, format 5 added border crossings, which format 4 cannot, and format 6 added floods,
- * which format 5 cannot.
+ * cannot, format 5 added border crossings, which format 4 cannot, format 6 added floods,
+ * which format 5 cannot, and format 7 added world price shocks, which format 6 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 6;
+export const COUNTRY_FORMAT_VERSION = 7;
+
+/** The country file format that first lets a file say how likely each world price shock is. */
+const PRICE_SHOCK_FORMAT = 7;
 
 /** The country file format that first lets a file say how likely each event is. */
 const EVENT_FORMATS = { drought: 1, flood: 6 } as const satisfies Record<EventType, number>;
@@ -176,6 +181,12 @@ export interface Country {
    * conditions it needs hold. One the file does not mention never arises.
    */
   readonly dilemmaLikelihood: Readonly<Record<DilemmaType, number>>;
+  /**
+   * The chance, from 0 to 1, that each world price shock is announced as a quarter begins,
+   * unless one of its kind is already announced or in force. One the file does not mention
+   * never comes.
+   */
+  readonly priceShockLikelihood: Readonly<Record<PriceShockType, number>>;
   readonly start: {
     readonly treasury: Money;
     /** The budget in force when the game starts. */
@@ -438,6 +449,32 @@ function readEventLikelihood(
 }
 
 /**
+ * How likely each world price shock is to be announced in a quarter, from a file of format 7
+ * or later. An earlier format cannot name them, and no shock ever comes in its country.
+ */
+function readPriceShockLikelihood(
+  reader: Reader,
+  file: Json,
+  formatVersion: number,
+): Record<PriceShockType, number> {
+  if (formatVersion < PRICE_SHOCK_FORMAT && file.priceShockLikelihood !== undefined) {
+    reader.fault(
+      'priceShockLikelihood',
+      `needs country file format ${PRICE_SHOCK_FORMAT} or later`,
+    );
+    return readChances(reader, {}, 'priceShockLikelihood', '', PRICE_SHOCK_TYPES, '');
+  }
+  return readChances(
+    reader,
+    file,
+    'priceShockLikelihood',
+    '',
+    PRICE_SHOCK_TYPES,
+    'a world price shock',
+  );
+}
+
+/**
  * Checks a country file and returns the country it describes.
  * @throws CountryFileError naming every fault found.
  */
@@ -562,6 +599,7 @@ export function loadCountry(file: unknown): Country {
       DILEMMA_TYPES,
       'a dilemma',
     ),
+    priceShockLikelihood: readPriceShockLikelihood(reader, file, formatVersion),
     start: readStart(reader, start, formatVersion, regions, sites),
     // A copy, so that nothing done to the file afterwards reaches the country.
     source: JSON.parse(JSON.stringify(file)) as unknown,

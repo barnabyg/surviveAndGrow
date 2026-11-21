@@ -1,5 +1,6 @@
 import { balance } from './balance';
 import type { Country, Site } from './country';
+import type { ShockWatch } from './priceShocks';
 import { siteStatus, type Project } from './projects';
 import { capacityOf, oreTonnesOf } from './sites';
 import { costOf, formatPrice, priceOf, priceStatus, type WorldPrices } from './trade';
@@ -150,7 +151,7 @@ export interface OreEarnings {
 }
 
 /** What a source earns, or could earn, at the world ore price; null for any other site. */
-export function oreEarnings(building: Building, siteId: string): OreEarnings | null {
+export function oreEarnings(building: Building & ShockWatch, siteId: string): OreEarnings | null {
   const chain = chainOf(building, siteId);
   const source = building.country.sites.find((site) => site.id === siteId);
   if (chain === null || source === undefined) return null;

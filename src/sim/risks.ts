@@ -183,6 +183,7 @@ function play(
         // Nothing is bought after the quarter being decided, but a mine's chain earns at the
         // world ore price every quarter.
         priceShocks: prices(quarter),
+        shocksAnnounced: [],
         // No dilemma is supposed to arise: what one does is the player's to choose.
         dilemmaRolls: [],
       },

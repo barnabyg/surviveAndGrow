@@ -5,6 +5,15 @@ import { balance } from './balance';
 import { quarterNumber } from './calendar';
 import type { ReportEntry } from './report';
 import { foodStatus, safeReserveTonnes } from './food';
+import {
+  pushesAhead,
+  shockName,
+  shocksThatMoved,
+  shockStatuses,
+  pushOf,
+  type ShockStatus,
+  type ShockWatch,
+} from './priceShocks';
 import { drawAt } from './rng';
 import { capacityFault } from './tradeLinks';
 import type { RegionState } from './state';
@@ -96,25 +105,36 @@ interface PriceMove {
   readonly price: number;
 }
 
-/** A good's price after a quarter, from its price before and what markets did to it. */
-function movePrice(good: Good, price: number, shock: number): PriceMove {
+/**
+ * A good's price after a quarter, from its price before, what markets did to it and what
+ * world price shocks in force pushed it by, in dollars a tonne.
+ */
+function movePrice(good: Good, price: number, shock: number, push = 0): PriceMove {
   const rules = balance.trade.goods[good];
   const usual = rules.usualDollarsPerTonne;
   const revert = Math.round(((usual - price) * rules.revertPermillePerQuarter) / 1000);
   const swing = Math.round((usual * rules.swingPermillePerQuarter * shock) / 1_000_000);
   const next = clamp(
-    price + revert + swing,
+    price + revert + swing + push,
     rules.lowestDollarsPerTonne,
     rules.highestDollarsPerTonne,
   );
   return { revert, markets: next - price - revert, price: next };
 }
 
-/** The world prices once a quarter is over, with the new price of each good added to its path. */
-export function movePrices(prices: WorldPrices, shocks: readonly number[]): WorldPrices {
+/**
+ * The world prices once a quarter is over, with the new price of each good added to its path.
+ * `pushes` is what world price shocks in force push each good's price by, in dollars a tonne,
+ * in the goods' order (`pushesInto`).
+ */
+export function movePrices(
+  prices: WorldPrices,
+  shocks: readonly number[],
+  pushes: readonly number[] = [],
+): WorldPrices {
   return byGood((good, index) => [
     ...prices[good],
-    movePrice(good, priceOf(prices, good), shocks[index] ?? 0).price,
+    movePrice(good, priceOf(prices, good), shocks[index] ?? 0, pushes[index] ?? 0).price,
   ]);
 }
 
@@ -134,10 +154,17 @@ export interface PriceStatus {
   readonly forecast: Range;
   /** How many quarters ahead the forecast looks. */
   readonly forecastQuarters: number;
+  /** The world price shocks announced or in force on it. */
+  readonly shocks: readonly ShockStatus[];
+}
+
+/** What a game must say for a good's price to be read. */
+export interface PriceWatch extends ShockWatch {
+  readonly worldPrices: WorldPrices;
 }
 
 /** Where a good's world price stands, what moved it and where it could go. */
-export function priceStatus(game: { readonly worldPrices: WorldPrices }, good: Good): PriceStatus {
+export function priceStatus(game: PriceWatch, good: Good): PriceStatus {
   const path = game.worldPrices[good];
   const price = priceOf(game.worldPrices, good);
   const before = path.at(-2);
@@ -147,42 +174,53 @@ export function priceStatus(game: { readonly worldPrices: WorldPrices }, good: G
     price,
     usual: balance.trade.goods[good].usualDollarsPerTonne,
     path,
-    figure: before === undefined ? null : priceFigure(good, before, price),
-    forecast: forecastPrice(good, price),
+    figure: before === undefined ? null : priceFigure(game, good, before, price),
+    forecast: forecastPrice(game, good, price),
     forecastQuarters: balance.trade.forecastQuarters,
+    shocks: shockStatuses(game, good),
   };
 }
 
 /**
  * What moved a price from one quarter to the next: the pull back towards the usual price,
- * and world markets, which take in whatever the limits held back.
+ * any world price shock in force, and world markets, which take in whatever the limits held
+ * back.
  */
-function priceFigure(good: Good, before: number, after: number): Figure {
+function priceFigure(game: ShockWatch, good: Good, before: number, after: number): Figure {
+  const rules = balance.trade.goods[good];
+  const within = (price: number) =>
+    clamp(price, rules.lowestDollarsPerTonne, rules.highestDollarsPerTonne);
   const { revert } = movePrice(good, before, 0);
-  const pulled = clamp(
-    before + revert,
-    balance.trade.goods[good].lowestDollarsPerTonne,
-    balance.trade.goods[good].highestDollarsPerTonne,
-  );
+  const pulled = within(before + revert);
+  let reached = pulled;
+  const shocks = shocksThatMoved(game, good).map((shock) => {
+    const from = reached;
+    reached = within(reached + pushOf(shock.type));
+    return { label: shockName(shock.type), amount: reached - from };
+  });
   return {
     value: after,
     change: after - before,
     contributions: [
       { label: 'Pull towards the usual price', amount: pulled - before },
-      { label: 'World markets', amount: after - pulled },
+      ...shocks,
+      { label: 'World markets', amount: after - reached },
     ],
   };
 }
 
-/** The lowest and highest a price could reach within the forecast. */
-function forecastPrice(good: Good, price: number): Range {
+/**
+ * The lowest and highest a price could reach within the forecast: markets moving it the
+ * same way every quarter, and the world price shocks announced pushing it as they will.
+ */
+function forecastPrice(game: ShockWatch, good: Good, price: number): Range {
   let low = price;
   let high = price;
   let min = price;
   let max = price;
-  for (let quarter = 0; quarter < balance.trade.forecastQuarters; quarter += 1) {
-    low = movePrice(good, low, -FULL_SWING_PERMILLE).price;
-    high = movePrice(good, high, FULL_SWING_PERMILLE).price;
+  for (const push of pushesAhead(game, good, balance.trade.forecastQuarters)) {
+    low = movePrice(good, low, -FULL_SWING_PERMILLE, push).price;
+    high = movePrice(good, high, FULL_SWING_PERMILLE, push).price;
     min = Math.min(min, low);
     max = Math.max(max, high);
   }

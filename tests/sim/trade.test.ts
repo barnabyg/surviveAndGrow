@@ -19,7 +19,13 @@ import {
   withinAusterity,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { bothCountries, tavara, withChances, withDroughtChance } from './countries';
+import {
+  bothCountries,
+  tavara,
+  withChances,
+  withDroughtChance,
+  withoutPriceShocks,
+} from './countries';
 import { withValue } from './files';
 
 /** An order for tonnes of grain from abroad. */
@@ -86,7 +92,8 @@ describe.each(bothCountries)('the world grain price in %s', (_name, country) => 
   });
 
   it('is explained by the pull towards its usual price and by world markets', () => {
-    const { state } = play(createGame(country(), 4), 6, keep);
+    // A world price shock in force would have a line of its own (priceShocks.test.ts).
+    const { state } = play(createGame(withoutPriceShocks(country()), 4), 6, keep);
     const status = priceStatus(state, 'grain');
     const [before, now] = state.worldPrices.grain.slice(-2);
 

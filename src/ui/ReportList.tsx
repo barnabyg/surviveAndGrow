@@ -180,6 +180,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Trade report',
     path: 'M2,12 H18 L15,17 H5 Z M10,12 V3 M10,4 L15,10 H10',
   },
+  // A price tag with an arrow leaping from it.
+  priceShock: {
+    label: 'World price shock report',
+    path: 'M2,10 L8,4 H13 V9 L7,15 Z M10.5,6.5 A0.5,0.5 0 1 1 10.49,6.5 M12,16 L18,10 M18,10 H14 M18,10 V14',
+  },
   // A lifebuoy.
   bailout: {
     label: 'Bailout report',

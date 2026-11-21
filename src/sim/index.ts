@@ -149,6 +149,12 @@ export {
 } from './trade';
 export { portTonnesOf, tradeCapacity, type TradeCapacity, type TradeLink } from './tradeLinks';
 export { tradeRoutes, type TradeRoute } from './tradeRoutes';
+export {
+  shockName,
+  type PriceShock,
+  type PriceShockDefinition,
+  type ShockStatus,
+} from './priceShocks';
 export { contains } from './geometry';
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {

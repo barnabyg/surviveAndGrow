@@ -12,7 +12,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { testlandFormat4File, withChances } from './countries';
-import { faultsOf, withValue } from './files';
+import { faultsOf, withValue, without } from './files';
 import { steward } from './players';
 
 /** Each country with a region by a river, that a flood strikes every single year. */
@@ -200,7 +200,9 @@ describe('flood likelihoods in a country file', () => {
   });
 
   it('need country file format 6', () => {
-    const faults = faultsOf(withValue(tavaraFile, ['formatVersion'], 5));
+    // Tavara as format 6 wrote it, before it could name world price shocks.
+    const format6 = without(tavaraFile, ['priceShockLikelihood']);
+    const faults = faultsOf(withValue(format6, ['formatVersion'], 5));
 
     expect(faults).toEqual([
       'regions[2].eventLikelihood.flood needs country file format 6 or later.',

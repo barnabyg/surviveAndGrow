@@ -82,12 +82,28 @@ export function testlandFormat4File(): unknown {
 
 /** Testland's file as format 5 could write it: no flood ever comes. */
 export function testlandFormat5File(): unknown {
-  const file = structuredClone(testlandFile) as Chances;
+  const file = testlandFormat6File() as Chances;
   for (const region of file.regions) {
     if (region.eventLikelihood !== undefined) delete region.eventLikelihood.flood;
   }
   file.formatVersion = 5;
   return file;
+}
+
+/** Testland's file as format 6 could write it: no world price shock ever comes. */
+export function testlandFormat6File(): unknown {
+  const file = structuredClone(testlandFile) as Chances;
+  delete file.priceShockLikelihood;
+  file.formatVersion = 6;
+  return file;
+}
+
+/**
+ * A country as it is, but with no world price shock ever coming: for a test that pins down
+ * how prices move from the seed alone.
+ */
+export function withoutPriceShocks(country: Country): Country {
+  return loadCountry({ ...(country.source as object), priceShockLikelihood: {} });
 }
 
 /** A copy of a country file that starts the game owing nothing. */
@@ -121,6 +137,7 @@ interface Chances {
   formatVersion: number;
   regions: { id: string; eventLikelihood?: Record<string, number>; populationGrowth?: number }[];
   dilemmaLikelihood?: Record<string, number>;
+  priceShockLikelihood?: Record<string, number>;
   start: { foodReserve: number };
 }
 
@@ -176,6 +193,11 @@ export function withChances(
     readonly reserve?: number;
     /** Whether the regions' people grow in number, as they do when shipped. */
     readonly growing?: boolean;
+    /**
+     * The chance each quarter of each world price shock named being announced, and none of
+     * any other. Left out, no shock ever comes.
+     */
+    readonly shocks?: Record<string, number>;
   },
 ): Country {
   const copy = (
@@ -189,6 +211,13 @@ export function withChances(
     };
   }
   if (chances.flood !== undefined) copy.formatVersion = Math.max(copy.formatVersion, 6);
+  // Saying how likely a world price shock is needs format 7 of the country file.
+  if (chances.shocks === undefined) {
+    delete copy.priceShockLikelihood;
+  } else {
+    copy.priceShockLikelihood = chances.shocks;
+    copy.formatVersion = Math.max(copy.formatVersion, 7);
+  }
   copy.dilemmaLikelihood = chances.dilemmas ?? {};
   if (chances.reserve !== undefined) copy.start.foodReserve = chances.reserve;
   return loadCountry(copy);

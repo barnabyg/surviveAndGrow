@@ -7,6 +7,7 @@ import type { Borrowing, Debt } from './debt';
 import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
+import type { PriceShock } from './priceShocks';
 import type { Project } from './projects';
 import type { VitalSigns } from './history';
 import type { ReportEntry } from './report';
@@ -122,6 +123,8 @@ export interface GameState {
    * price goods are bought at this quarter.
    */
   readonly worldPrices: WorldPrices;
+  /** The world price shocks announced and not yet ended: those to come and those in force. */
+  readonly priceShocks: readonly PriceShock[];
   /**
    * The vital signs as each quarter began, from the start of the game to the quarter now
    * being decided, in order. The last record is the position now.

@@ -1,5 +1,5 @@
 {
-  "formatVersion": 6,
+  "formatVersion": 7,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -552,6 +552,10 @@
     "strikeTalks": 0.4,
     "teachersPay": 0.08,
     "donorGrant": 0.3
+  },
+  "priceShockLikelihood": {
+    "failedHarvestsAbroad": 0.04,
+    "oreGlut": 0.05
   },
   "start": {
     "treasury": 42,

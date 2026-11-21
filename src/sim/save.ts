@@ -13,6 +13,7 @@ import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import { MIGRATIONS, SAVE_FORMAT_VERSION, toCurrentFormat, type SaveMigration } from './migrations';
+import type { PriceShock } from './priceShocks';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
@@ -46,6 +47,7 @@ import {
   FOOD_STAGES,
   GOODS,
   OUTCOME_STATUSES,
+  PRICE_SHOCK_TYPES,
   PROJECT_STATUSES,
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
@@ -119,6 +121,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       debts: game.debts,
       credit: game.credit,
       worldPrices: game.worldPrices,
+      priceShocks: game.priceShocks,
       history: game.history,
       dilemma: game.dilemma,
       dilemmasAnswered: game.dilemmasAnswered,
@@ -180,6 +183,7 @@ export function loadSave(
       record(state.worldPrices, 'state.worldPrices'),
       'state.worldPrices',
     ),
+    priceShocks: readPriceShocks(state.priceShocks, 'state.priceShocks'),
     history: readHistory(state.history, 'state.history'),
     dilemma:
       state.dilemma === null
@@ -375,6 +379,19 @@ function readWorldPrices(saved: Json, path: string): WorldPrices {
       ];
     }),
   ) as Record<string, readonly number[]> as WorldPrices;
+}
+
+/** The world price shocks announced and not yet ended, at most one of each kind. */
+function readPriceShocks(saved: unknown, path: string): PriceShock[] {
+  const shocks = list(saved, path, (item, itemPath): PriceShock => ({
+    type: oneOf(item.type, `${itemPath}.type`, PRICE_SHOCK_TYPES, 'a world price shock'),
+    announced: date(item.announced, `${itemPath}.announced`),
+    begins: date(item.begins, `${itemPath}.begins`),
+  }));
+  if (new Set(shocks.map((shock) => shock.type)).size !== shocks.length) {
+    fail(path, 'holds two shocks of one kind');
+  }
+  return shocks;
 }
 
 function readHistory(saved: unknown, path: string): VitalSigns[] {

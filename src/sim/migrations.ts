@@ -21,7 +21,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 8;
+export const SAVE_FORMAT_VERSION = 9;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -38,6 +38,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   5: fromFormat5,
   6: fromFormat6,
   7: fromFormat7,
+  8: fromFormat8,
 };
 
 /**
@@ -232,6 +233,16 @@ function fromFormat7(older: Json): Json {
     formatVersion: 8,
     state: { ...state, worldPrices: isRecord(prices) ? { ...prices, ore } : prices },
   };
+}
+
+/**
+ * Format 9 added world price shocks, announced ahead and in force for a set time. A game
+ * written in format 8 has none announced: its prices move as before until one is, and its
+ * country, of a file format that cannot say how likely they are, never sees one.
+ */
+function fromFormat8(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return { ...older, formatVersion: 9, state: { ...state, priceShocks: [] } };
 }
 
 /**

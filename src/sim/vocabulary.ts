@@ -98,6 +98,15 @@ export const ORDERED_GOODS: readonly Good[] = ['grain'];
 export const TRADE_DIRECTIONS = ['import', 'export'] as const;
 export type TradeDirection = (typeof TRADE_DIRECTIONS)[number];
 
+/**
+ * The world price shocks the engine knows: events abroad that push one good's world price up
+ * or down for a set time, announced ahead. A country file says how likely each is to be
+ * announced in a quarter. Each is drawn from the seed and the quarter alone, in this order, so
+ * a new kind goes at the end and leaves the others' draws as they were.
+ */
+export const PRICE_SHOCK_TYPES = ['failedHarvestsAbroad', 'oreGlut'] as const;
+export type PriceShockType = (typeof PRICE_SHOCK_TYPES)[number];
+
 /** The kinds of effect a dilemma's option can have on the country. */
 export const DILEMMA_EFFECT_KINDS = ['treasury', 'reserve', 'regionGrain', 'approval'] as const;
 
@@ -347,6 +356,7 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 export const RISK_KINDS = [
   'famine',
   'event',
+  'priceShock',
   'reserve',
   'treasury',
   'bailout',
@@ -391,6 +401,7 @@ export const REPORT_KINDS = [
   'loanTaken',
   'loanRepaid',
   'trade',
+  'priceShock',
   'bailout',
   'missedPayment',
   'austerity',
