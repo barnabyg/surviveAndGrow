@@ -1,7 +1,7 @@
 import { percentOff } from './arithmetic';
 import { balance, type SiteBalance } from './balance';
 import { formatMoney, formatPercent, formatPoints, formatTonnes } from './text';
-import type { Money } from './types';
+import { DOLLARS_PER_MONEY, type Money } from './types';
 import {
   CHAIN_ROLE_SENTENCES,
   POWER_ROLE_SENTENCES,
@@ -78,7 +78,7 @@ export function capacityOf(type: SiteType, decaying = false): Money | null {
  * at the usual world ore price (`balance.sites`).
  */
 export function oreTonnesOf(capacity: Money): number {
-  return Math.round((capacity * 100_000) / balance.trade.goods.ore.usualDollarsPerTonne);
+  return Math.round((capacity * DOLLARS_PER_MONEY) / balance.trade.goods.ore.usualDollarsPerTonne);
 }
 
 /** What power gives a region, in thousandths: of its output, and of infrastructure access. */

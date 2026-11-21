@@ -10,7 +10,7 @@ import type { GameState, RegionState } from './state';
 import { termBounds, termOfQuarter } from './terms';
 import { formatMoney, formatPoints, formatTonnes } from './text';
 import type { Contribution, GameDate, Money, Quarter } from './types';
-import { priceOf } from './trade';
+import { costOf, priceOf } from './trade';
 import {
   DILEMMA_TYPES,
   UNREST_LEVELS,
@@ -391,8 +391,8 @@ function workOut(
     case 'atWorldPrice': {
       const need = sum(regions.map((candidate) => quarterlyNeed(candidate.population)));
       const tonnes = Math.round((need * rule.needPermille) / 1000);
-      const price = priceOf(position.worldPrices, rule.good);
-      const amount = -Math.round((tonnes * price * rule.pricePermille) / 100_000_000);
+      const price = (priceOf(position.worldPrices, rule.good) * rule.pricePermille) / 1000;
+      const amount = -costOf(tonnes, price);
       return amount === 0 ? [] : [{ kind: 'treasury', amount }];
     }
     case 'reserve': {

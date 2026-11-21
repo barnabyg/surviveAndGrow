@@ -6,10 +6,7 @@ import type { Country } from './country';
 import { poweredOutput, regionPower, unpowered, type RegionPower } from './power';
 import { infrastructureFrom, sitesInUse, type Project } from './projects';
 import type { RegionState } from './state';
-import { MONEY_PER_MILLION, type Contribution, type Figure, type Money } from './types';
-
-/** How many dollars one Money unit is. */
-const DOLLARS_PER_MONEY = 1_000_000 / MONEY_PER_MILLION;
+import { DOLLARS_PER_MONEY, type Contribution, type Figure, type Money } from './types';
 import {
   LASTING_SERVICES,
   PROSPERITY_PART_NAMES,

@@ -9,7 +9,14 @@ import { drawAt } from './rng';
 import { capacityFault } from './tradeLinks';
 import type { RegionState } from './state';
 import { formatMoney, formatQuarters, formatTonnes } from './text';
-import type { Contribution, Figure, GameDate, Money, Range } from './types';
+import {
+  DOLLARS_PER_MONEY,
+  type Contribution,
+  type Figure,
+  type GameDate,
+  type Money,
+  type Range,
+} from './types';
 import {
   GOOD_NAMES,
   GOODS,
@@ -178,7 +185,7 @@ function forecastPrice(good: Good, price: number): Range {
 
 /** What a number of tonnes costs at a price in dollars a tonne, to the nearest $100,000. */
 export function costOf(tonnes: number, dollarsPerTonne: number): Money {
-  return Math.round((tonnes * dollarsPerTonne) / 100_000);
+  return Math.round((tonnes * dollarsPerTonne) / DOLLARS_PER_MONEY);
 }
 
 /** An import as the trade panel offers it, before it is ordered. */
