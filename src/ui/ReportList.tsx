@@ -24,7 +24,7 @@ interface ReportListProps {
 export function ReportList({ report, selectedEntry, onSelectEntry }: ReportListProps) {
   const count = report?.entries.length ?? 0;
   return (
-    <section className="reports" aria-labelledby="reports-title">
+    <section className="reports" aria-labelledby="reports-title" data-tour="reports">
       <div className="section-head">
         <h2 className="section-title" id="reports-title">
           This quarter

@@ -14,7 +14,7 @@ interface RegionListProps {
 export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionListProps) {
   const standards = livingStandards(game);
   return (
-    <section className="region-list" aria-labelledby="region-list-title">
+    <section className="region-list" aria-labelledby="region-list-title" data-tour="regions">
       <div className="section-head">
         <h2 className="section-title" id="region-list-title">
           Regions

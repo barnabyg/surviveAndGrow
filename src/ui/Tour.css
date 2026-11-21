@@ -1,0 +1,81 @@
+/* Guided tour. The dialog covers the whole window, so the screen under it cannot be used
+   while the tour is open. The part of the screen a step is about is left unshaded and drawn
+   round with a thick outline, so it stands out by shape and light as well as colour. */
+
+.tour {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  overflow: hidden;
+}
+
+.tour::backdrop {
+  background: transparent;
+}
+
+.tour__shade {
+  position: absolute;
+  inset: 0;
+  background: rgb(8 10 13 / 65%);
+}
+
+.tour__spotlight {
+  position: absolute;
+  border: 3px solid var(--amber);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgb(8 10 13 / 65%);
+  pointer-events: none;
+  transition:
+    left 0.2s,
+    top 0.2s,
+    width 0.2s,
+    height 0.2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour__spotlight {
+    transition: none;
+  }
+}
+
+.tour__card {
+  position: absolute;
+  width: 420px;
+  padding: 20px 22px;
+  background: var(--panel);
+  border: 1px solid var(--amber);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 45%);
+}
+
+.tour__count {
+  font-family: var(--font-condensed);
+  font-size: 13.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.tour__title {
+  margin-top: 6px;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.tour__text {
+  margin: 10px 0 18px;
+  font-size: 16px;
+  color: var(--muted);
+}
+
+.tour__actions .button {
+  white-space: nowrap;
+}

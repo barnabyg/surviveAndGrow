@@ -26,7 +26,7 @@ const SCALE_TITLES: Readonly<Record<Lens, string>> = {
 export function LensBar({ game, lens, onChange }: LensBarProps) {
   const palette = TIER_PALETTES[game.tier];
   return (
-    <div className="lens-bar">
+    <div className="lens-bar" data-tour="lenses">
       <div className="lens-bar__buttons" role="group" aria-label="Map lens">
         {LENSES.map((option) => (
           <button

@@ -37,6 +37,8 @@ import { Timeline } from './Timeline';
 import { TradePanel } from './TradePanel';
 import { TradeRouteCard } from './TradeRouteCard';
 import { TopBar } from './TopBar';
+import { Tour } from './Tour';
+import { TOUR_STEPS, TourTarget } from './tourSteps';
 import './GameScreen.css';
 
 interface GameScreenProps {
@@ -45,6 +47,8 @@ interface GameScreenProps {
   readonly initialReport: TurnReport | null;
   /** Why the game is not being saved, in words for the player, or null when it is. */
   readonly saveNotice: string | null;
+  /** Whether the game opens with the guided tour of the screen. */
+  readonly startTour: boolean;
   /** Called with the game and its report as each quarter ends, which is when it is saved. */
   readonly onQuarterEnded: (game: GameState, report: TurnReport) => void;
   /** Starts the same game again from its first quarter. */
@@ -59,8 +63,16 @@ interface GameScreenProps {
 }
 
 export function GameScreen(props: GameScreenProps) {
-  const { initialGame, initialReport, saveNotice, onQuarterEnded, onReplay, onNewGame, onRestart } =
-    props;
+  const {
+    initialGame,
+    initialReport,
+    saveNotice,
+    startTour,
+    onQuarterEnded,
+    onReplay,
+    onNewGame,
+    onRestart,
+  } = props;
   const [game, setGame] = useState(initialGame);
   const [report, setReport] = useState<TurnReport | null>(initialReport);
   // The committed budget is what the quarter will be resolved with. The pending budget is
@@ -99,8 +111,12 @@ export function GameScreen(props: GameScreenProps) {
   );
   // What the map shows. It is the player's choice and stays put from quarter to quarter.
   const [lens, setLens] = useState<Lens>('country');
+  // The step of the guided tour on screen, or null when the tour is not open.
+  const [tourStep, setTourStep] = useState<number | null>(startTour ? 0 : null);
 
   const playing = game.outcome.status === 'playing';
+  const touring = playing && tourStep !== null;
+  const tourTarget = touring ? (TOUR_STEPS[tourStep]?.target ?? null) : null;
   const decisions = {
     budget: committed,
     reliefRegionId,
@@ -225,214 +241,230 @@ export function GameScreen(props: GameScreenProps) {
   };
 
   return (
-    <div className="game">
-      <TopBar
-        game={game}
-        report={report}
-        onEndQuarter={endQuarter}
-        onRestart={() => {
-          setConfirmingRestart(true);
-        }}
-      />
-      <div className="columns">
-        <aside className="column column--situation" aria-label="Situation">
-          {saveNotice !== null && (
-            <p className="warning-note" role="status">
-              ▲ {saveNotice}
-            </p>
-          )}
-          <ReportList report={report} selectedEntry={selectedEntry} onSelectEntry={selectEntry} />
-          {playing && (
-            <RisksPanel risks={risks} selectedRisk={selectedRisk} onSelectRisk={selectRisk} />
-          )}
-          <RegionList
-            game={game}
-            selectedRegionId={selectedRegionId}
-            onSelectRegion={selectRegion}
-          />
-          <ApprovalChart game={game} />
-        </aside>
-        <main className="column column--country" aria-label="Country">
-          <LensBar game={game} lens={lens} onChange={setLens} />
-          <div className="map-frame">
-            <div className="map-stage">
-              <MapView
-                game={game}
-                lens={lens}
-                selectedRegionId={selectedRegionId}
-                reliefRegionId={reliefRegionId}
-                onSelectRegion={selectRegion}
-                selectedSiteId={selectedSiteId}
-                onSelectSite={selectSite}
-                plannedSiteIds={plannedSiteIds}
-                plannedTrade={plannedTrade}
-                selectedRouteId={selectedRouteId}
-                onSelectRoute={selectRoute}
-              />
-              {preview !== null && selectedRegionId !== null && (
-                <RegionCard
-                  game={game}
-                  report={report}
-                  regionId={selectedRegionId}
-                  preview={preview}
-                  reliefRegionId={reliefRegionId}
-                  onSendRelief={setReliefRegionId}
-                  onClose={() => {
-                    selectRegion(null);
-                  }}
-                />
-              )}
-              {selectedSiteId !== null && (
-                <SiteCard
-                  game={game}
-                  siteId={selectedSiteId}
-                  plannedSiteIds={plannedSiteIds}
-                  schedule={schedule}
-                  pausedSites={preview?.pausedSites ?? []}
-                  upkeepShort={preview?.upkeep.short ?? []}
-                  onPlan={planSite}
-                  onClose={() => {
-                    selectSite(null);
-                  }}
-                />
-              )}
-              {selectedRouteId !== null && (
-                <TradeRouteCard
-                  game={game}
-                  routeId={selectedRouteId}
-                  plannedTrade={plannedTrade}
-                  onClose={() => {
-                    selectRoute(null);
-                  }}
-                />
-              )}
-            </div>
-          </div>
-          <div className="map-footer">
-            <Timeline
-              game={game}
-              schedule={schedule}
-              considered={considered}
-              pausedSites={preview?.pausedSites ?? []}
-              maturities={bondMaturities(game, plannedLoans)}
-              onSelectSite={selectSite}
-            />
-            <MapLegend />
-          </div>
-        </main>
-        <aside className="column column--decisions" aria-label="Decisions">
-          {preview !== null && (
-            <>
-              {dilemma !== null && (
-                <DilemmaPanel
-                  dilemma={dilemma}
-                  chosen={dilemmaChoice}
-                  onOpen={() => {
-                    setDilemmaShown('yes');
-                  }}
-                />
-              )}
-              <BudgetPanel
-                game={game}
-                committed={committed}
-                pending={pending}
-                reliefRegionId={reliefRegionId}
-                startProjects={plannedSiteIds}
-                borrow={plannedLoans}
-                trade={plannedTrade}
-                dilemmaChoice={dilemmaChoice}
-                onChange={setPending}
-                onCommit={() => {
-                  setCommitted(pending);
-                }}
-                onReset={() => {
-                  setPending(committed);
-                }}
-              />
-              <ProjectsPanel
-                game={game}
-                preview={preview}
-                plannedSiteIds={plannedSiteIds}
-                onPlan={planSite}
-              />
-              <FinancePanel
-                game={game}
-                preview={preview}
-                planned={plannedLoans}
-                onPlan={setPlannedLoans}
-              />
-              <TradePanel
-                game={game}
-                preview={preview}
-                planned={plannedTrade}
-                onPlan={setPlannedTrade}
-              />
-              <ReliefPanel
-                game={game}
-                preview={preview}
-                reliefSpending={committed.spending.foodRelief}
-                reliefRegionId={reliefRegionId}
-                onSendRelief={setReliefRegionId}
-              />
-              <ElectionPanel game={game} preview={preview} />
-            </>
-          )}
-        </aside>
-      </div>
-
-      {confirmingEnd && (
-        <ConfirmDialog
-          title="You have changes you have not committed"
-          cancelLabel="Go back"
-          confirmLabel="End quarter anyway"
-          onCancel={() => {
-            setConfirmingEnd(false);
+    <TourTarget value={tourTarget}>
+      <div className="game">
+        <TopBar
+          game={game}
+          report={report}
+          onEndQuarter={endQuarter}
+          onRestart={() => {
+            setConfirmingRestart(true);
           }}
-          onConfirm={resolveQuarter}
-        >
-          The budget changes on screen have not been committed. If you end the quarter now, it is
-          resolved with the last budget you committed, and the changes stay pending.
-        </ConfirmDialog>
-      )}
-      {confirmingRestart && (
-        <ConfirmDialog
-          title="Restart this game?"
-          cancelLabel="Keep playing"
-          confirmLabel="Replay this game"
-          onCancel={() => {
-            setConfirmingRestart(false);
-          }}
-          onConfirm={() => {
-            onRestart('replay');
-          }}
-          alternative={{
-            label: 'New game',
-            onChoose: () => {
-              onRestart('new');
-            },
-          }}
-        >
-          Everything played so far is lost, and the saved game with it. Replaying starts this game
-          again from its first quarter, with the same weather and the same events. A new game goes
-          back to the start screen.
-        </ConfirmDialog>
-      )}
-      {dilemma !== null && dilemmaShown !== 'no' && (
-        <DilemmaDialog
-          dilemma={dilemma}
-          regionName={dilemma.regionId === null ? null : regionName(game.country, dilemma.regionId)}
-          chosen={dilemmaChoice}
-          pressed={dilemmaShown === 'pressed'}
-          onChoose={(optionId) => {
-            setDilemmaChoice(optionId);
-            setDilemmaShown('no');
-          }}
-          onLater={() => {
-            setDilemmaShown('no');
+          onTutorial={() => {
+            setTourStep(0);
           }}
         />
-      )}
-      {!playing && <GameSummary game={game} onReplay={onReplay} onNewGame={onNewGame} />}
-    </div>
+        <div className="columns">
+          <aside className="column column--situation" aria-label="Situation">
+            {saveNotice !== null && (
+              <p className="warning-note" role="status">
+                ▲ {saveNotice}
+              </p>
+            )}
+            <ReportList report={report} selectedEntry={selectedEntry} onSelectEntry={selectEntry} />
+            {playing && (
+              <RisksPanel risks={risks} selectedRisk={selectedRisk} onSelectRisk={selectRisk} />
+            )}
+            <RegionList
+              game={game}
+              selectedRegionId={selectedRegionId}
+              onSelectRegion={selectRegion}
+            />
+            <ApprovalChart game={game} />
+          </aside>
+          <main className="column column--country" aria-label="Country">
+            <LensBar game={game} lens={lens} onChange={setLens} />
+            <div className="map-frame" data-tour="map">
+              <div className="map-stage">
+                <MapView
+                  game={game}
+                  lens={lens}
+                  selectedRegionId={selectedRegionId}
+                  reliefRegionId={reliefRegionId}
+                  onSelectRegion={selectRegion}
+                  selectedSiteId={selectedSiteId}
+                  onSelectSite={selectSite}
+                  plannedSiteIds={plannedSiteIds}
+                  plannedTrade={plannedTrade}
+                  selectedRouteId={selectedRouteId}
+                  onSelectRoute={selectRoute}
+                />
+                {preview !== null && selectedRegionId !== null && (
+                  <RegionCard
+                    game={game}
+                    report={report}
+                    regionId={selectedRegionId}
+                    preview={preview}
+                    reliefRegionId={reliefRegionId}
+                    onSendRelief={setReliefRegionId}
+                    onClose={() => {
+                      selectRegion(null);
+                    }}
+                  />
+                )}
+                {selectedSiteId !== null && (
+                  <SiteCard
+                    game={game}
+                    siteId={selectedSiteId}
+                    plannedSiteIds={plannedSiteIds}
+                    schedule={schedule}
+                    pausedSites={preview?.pausedSites ?? []}
+                    upkeepShort={preview?.upkeep.short ?? []}
+                    onPlan={planSite}
+                    onClose={() => {
+                      selectSite(null);
+                    }}
+                  />
+                )}
+                {selectedRouteId !== null && (
+                  <TradeRouteCard
+                    game={game}
+                    routeId={selectedRouteId}
+                    plannedTrade={plannedTrade}
+                    onClose={() => {
+                      selectRoute(null);
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+            <div className="map-footer">
+              <Timeline
+                game={game}
+                schedule={schedule}
+                considered={considered}
+                pausedSites={preview?.pausedSites ?? []}
+                maturities={bondMaturities(game, plannedLoans)}
+                onSelectSite={selectSite}
+              />
+              <MapLegend />
+            </div>
+          </main>
+          <aside className="column column--decisions" aria-label="Decisions">
+            {preview !== null && (
+              <>
+                {dilemma !== null && (
+                  <DilemmaPanel
+                    dilemma={dilemma}
+                    chosen={dilemmaChoice}
+                    onOpen={() => {
+                      setDilemmaShown('yes');
+                    }}
+                  />
+                )}
+                <BudgetPanel
+                  game={game}
+                  committed={committed}
+                  pending={pending}
+                  reliefRegionId={reliefRegionId}
+                  startProjects={plannedSiteIds}
+                  borrow={plannedLoans}
+                  trade={plannedTrade}
+                  dilemmaChoice={dilemmaChoice}
+                  onChange={setPending}
+                  onCommit={() => {
+                    setCommitted(pending);
+                  }}
+                  onReset={() => {
+                    setPending(committed);
+                  }}
+                />
+                <ProjectsPanel
+                  game={game}
+                  preview={preview}
+                  plannedSiteIds={plannedSiteIds}
+                  onPlan={planSite}
+                />
+                <FinancePanel
+                  game={game}
+                  preview={preview}
+                  planned={plannedLoans}
+                  onPlan={setPlannedLoans}
+                />
+                <TradePanel
+                  game={game}
+                  preview={preview}
+                  planned={plannedTrade}
+                  onPlan={setPlannedTrade}
+                />
+                <ReliefPanel
+                  game={game}
+                  preview={preview}
+                  reliefSpending={committed.spending.foodRelief}
+                  reliefRegionId={reliefRegionId}
+                  onSendRelief={setReliefRegionId}
+                />
+                <ElectionPanel game={game} preview={preview} />
+              </>
+            )}
+          </aside>
+        </div>
+
+        {confirmingEnd && (
+          <ConfirmDialog
+            title="You have changes you have not committed"
+            cancelLabel="Go back"
+            confirmLabel="End quarter anyway"
+            onCancel={() => {
+              setConfirmingEnd(false);
+            }}
+            onConfirm={resolveQuarter}
+          >
+            The budget changes on screen have not been committed. If you end the quarter now, it is
+            resolved with the last budget you committed, and the changes stay pending.
+          </ConfirmDialog>
+        )}
+        {confirmingRestart && (
+          <ConfirmDialog
+            title="Restart this game?"
+            cancelLabel="Keep playing"
+            confirmLabel="Replay this game"
+            onCancel={() => {
+              setConfirmingRestart(false);
+            }}
+            onConfirm={() => {
+              onRestart('replay');
+            }}
+            alternative={{
+              label: 'New game',
+              onChoose: () => {
+                onRestart('new');
+              },
+            }}
+          >
+            Everything played so far is lost, and the saved game with it. Replaying starts this game
+            again from its first quarter, with the same weather and the same events. A new game goes
+            back to the start screen.
+          </ConfirmDialog>
+        )}
+        {dilemma !== null && dilemmaShown !== 'no' && (
+          <DilemmaDialog
+            dilemma={dilemma}
+            regionName={
+              dilemma.regionId === null ? null : regionName(game.country, dilemma.regionId)
+            }
+            chosen={dilemmaChoice}
+            pressed={dilemmaShown === 'pressed'}
+            onChoose={(optionId) => {
+              setDilemmaChoice(optionId);
+              setDilemmaShown('no');
+            }}
+            onLater={() => {
+              setDilemmaShown('no');
+            }}
+          />
+        )}
+        {!playing && <GameSummary game={game} onReplay={onReplay} onNewGame={onNewGame} />}
+        {touring && (
+          <Tour
+            step={tourStep}
+            onStep={setTourStep}
+            onEnd={() => {
+              setTourStep(null);
+            }}
+          />
+        )}
+      </div>
+    </TourTarget>
   );
 }

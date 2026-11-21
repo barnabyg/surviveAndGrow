@@ -1,5 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import { readClosedPanels, storePanelClosed } from './storage';
+import { TourTarget } from './tourSteps';
 import './DecisionPanel.css';
 
 interface DecisionPanelProps {
@@ -18,14 +19,17 @@ interface DecisionPanelProps {
  * A panel in the decisions column. Its heading is a button that collapses it to the heading
  * alone, so the column needs less scrolling. The heading keeps its note, which says where
  * the panel stands, such as changes not yet committed. The browser remembers which panels
- * are collapsed.
+ * are collapsed. A collapsed panel opens while the guided tour points at it, and closes
+ * again when the tour moves on.
  */
 export function DecisionPanel({ id, title, note, children }: DecisionPanelProps) {
-  const [open, setOpen] = useState(() => !readClosedPanels().includes(id));
+  const [chosenOpen, setOpen] = useState(() => !readClosedPanels().includes(id));
+  const toured = useContext(TourTarget) === id;
+  const open = chosenOpen || toured;
   const titleId = `${id}-title`;
   const bodyId = `${id}-body`;
   return (
-    <section className={id} aria-labelledby={titleId}>
+    <section className={id} aria-labelledby={titleId} data-tour={id}>
       <div className="section-head">
         <h2 className="section-title" id={titleId}>
           <button

@@ -132,6 +132,8 @@ export function App() {
 interface Play {
   readonly game: GameState;
   readonly report: TurnReport | null;
+  /** Whether the game opens with the guided tour of the screen. */
+  readonly tour?: boolean;
 }
 
 interface SessionProps {
@@ -168,6 +170,9 @@ function Session({ country, storageKey }: SessionProps) {
         onStart={() => {
           begin({ game: createGame(country, chooseSeed()), report: null });
         }}
+        onTutorial={() => {
+          begin({ game: createGame(country, chooseSeed()), report: null, tour: true });
+        }}
         onResume={() => {
           if (stored.status === 'ready') begin({ game: stored.game, report: stored.report });
         }}
@@ -201,6 +206,7 @@ function Session({ country, storageKey }: SessionProps) {
       initialGame={game}
       initialReport={play.report}
       saveNotice={saveNotice}
+      startTour={play.tour === true}
       onQuarterEnded={(ended, report) => {
         if (stored.status === 'refused') return;
         const kept = storeGame(storageKey, ended, report);
