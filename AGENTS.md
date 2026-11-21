@@ -1,7 +1,7 @@
 # Survive and Grow
 
 A turn-based economics and politics survival game. The design intent and phase plan are in
-`docs/design.md`; the rules as built are in the README's "What is in the game". Before changing
+`docs/design.md`; the rules as built, with their figures, are in `docs/rules.md`. Before changing
 the simulation, read `src/sim/README.md`: the order a quarter is resolved in, and the files a new
 mechanic touches.
 

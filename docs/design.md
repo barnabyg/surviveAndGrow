@@ -1,10 +1,10 @@
 # Survive and Grow: game design
 
 Status: Phase 1 is built, and Phase 2 (build) and Phase 3 (borrow) are built and balanced. Last
-updated 2026-11-20.
+updated 2026-11-21.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
-the README under "What is in the game", which is the one place they are stated in full.
+[rules.md](rules.md), which is the one place they are stated in full.
 
 Main screen mock-up (private): https://claude.ai/artifact/DWLBKBkoTSS8Er7gSTR6ct
 
@@ -64,15 +64,15 @@ Every system must feed this tension. A feature that does not is cut.
 
 Prosperity is divided into four tiers: Subsistence, where a game starts, then Developing,
 Industrialising and Prosperous, the win target. Passing a tier is reported and shifts the map's
-look. It also raises public expectations, so the approval baseline drops. Thresholds: README, What
-is in the game.
+look. It also raises public expectations, so the approval baseline drops. Thresholds: rules.md,
+Prosperity, tiers and people.
 
 ## 4. Systems
 
 - **Economy and budget.** A tax rate and a small set of spending areas (agriculture, food relief,
   health, education, security, upkeep). Revenue comes from tax on output. Underfunded upkeep makes
-  infrastructure decay, newest sites first, so standing still loses. Rules: README, What is in the
-  game.
+  infrastructure decay, newest sites first, so standing still loses. Rules: rules.md, The
+  quarter and the budget, and Building.
 - **Food.** Each region's harvest is moved by weather and drought and feeds a national reserve, with
   grain stores and relief sent to a region. A region short of food goes through the famine stages
   (adequate, tight, shortage, famine). Phase 4 adds crop yields and imports and exports at moving
@@ -85,7 +85,8 @@ is in the game.
 - **Finance.** Loans, and bonds once the credit rating is good enough, pull the mine's chain
   forward at the price of repayments that squeeze the budget before it pays off. The credit
   rating sets the rates and the most that may be owed. A missed payment brings a bailout with
-  forced austerity. Rules: README, What is in the game; balance: `docs/balance/phase-3.md`.
+  forced austerity. Rules: rules.md, Borrowing and the credit rating, and Bailout and austerity;
+  balance: `docs/balance/phase-3.md`.
 
 ### Still to come
 
@@ -104,7 +105,8 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
   mine, irrigation, a grain store, and possible road routes.
 - **Chains, not a checklist.** A mine earns nothing until a road links it to a port. The map shows
   these dependencies, and the player plans routes. A chain yields no more than its weakest link, and
-  large projects started late in a term open after the election. Rules: README, What is in the game.
+  large projects started late in a term open after the election. Rules: rules.md, Chains and
+  alternatives.
 - **More sites than money.** Some sites are alternatives, such as a cheap shallow port against a
   costly deep-water one. One game cannot build everything. Starting a project on one closes the
   others for good, and the site card says so before the player commits.
@@ -129,13 +131,16 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
 
 ## 6. Main screen
 
-Designed for 2560 x 1440 or larger, in three columns split by purpose. The top bar holds five vital
-signs, always visible, each with a short trend line: treasury, food reserve, approval, prosperity
-against target, and time to the election, beside the end-quarter button. The left column says what
-is happening: reports, risks ahead with likelihoods, living standards by region and an approval
-chart. The centre holds the map, its lenses and the selected site's card, over the term timeline of
-20 quarters to the election with harvests and projects marked. The right column is what you do:
-budget sliders with a live projection, then projects underway and affordable.
+Designed for 2560 x 1440 or larger, in three columns split by purpose. The top bar holds the vital
+signs, always visible: treasury, debt with its burden, credit rating, food reserve, approval,
+prosperity against target, and time to the election, beside the end-quarter button. Each figure
+but the rating and the election has a short trend line, and during austerity the bar also counts
+down the quarters it has left. The left column says what is happening: reports, risks ahead
+with likelihoods, living standards by region and an approval chart. The centre holds the map, its
+lenses and the selected site's card, over the term timeline of 20 quarters to the election with
+harvests, projects and bond maturities marked. The right column is what you do: any dilemma
+waiting, budget sliders with a live projection, projects underway and affordable, loans and
+bonds, food relief and the election forecast.
 
 Rules that apply everywhere:
 
