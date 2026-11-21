@@ -13,6 +13,7 @@ import {
   tradeCapacity,
   type Decisions,
   type GameState,
+  type Risk,
   type TradeOrder,
   type TurnReport,
   withinAusterity,
@@ -300,8 +301,9 @@ describe.each(lean)('a drought in a lean year in $name', (scenario) => {
       risksAhead(warned, decisions).filter((risk) => risk.kind === 'famine');
 
     const ordered = { ...decide(false)(warned), trade: [grain(tonnes * 4)] };
-    expect(famines(decide(false)(warned)).length).toBeGreaterThan(0);
-    expect(famines(ordered).length).toBeLessThan(famines(decide(false)(warned)).length);
+    const inDrought = (risk: Risk) => risk.regionId === regionId;
+    expect(famines(decide(false)(warned)).filter(inDrought)).toHaveLength(1);
+    expect(famines(ordered).filter(inDrought)).toEqual([]);
   });
 });
 
