@@ -127,3 +127,62 @@ export function storeTutorial(key: string, progress: TutorialProgress | null): v
     // Storage full, blocked, or a private window: a reload starts the lessons over.
   }
 }
+
+/** Where the first-time tips the player has seen are remembered, for every country. */
+const TIPS_SEEN_KEY = 'survive-and-grow/tips-seen';
+/** Where it is remembered that the player has turned the tips off. */
+const TIPS_OFF_KEY = 'survive-and-grow/tips-off';
+/**
+ * The tips seen in this visit. A browser that will not store them still shows each tip only
+ * once while the page stays open.
+ */
+const tipsSeenThisVisit = new Set<string>();
+
+/** The tips the player has seen, in this visit or before it. */
+export function readTipsSeen(): ReadonlySet<string> {
+  const seen = new Set(tipsSeenThisVisit);
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(TIPS_SEEN_KEY) ?? '[]') as unknown;
+    if (Array.isArray(parsed)) {
+      for (const id of parsed) if (typeof id === 'string') seen.add(id);
+    }
+  } catch {
+    // Storage that cannot be read holds nothing seen before this visit.
+  }
+  return seen;
+}
+
+/** Remembers that a tip has been seen. If the browser refuses, it is remembered for this visit. */
+export function storeTipSeen(tipId: string): void {
+  const seen = readTipsSeen();
+  tipsSeenThisVisit.add(tipId);
+  try {
+    window.localStorage.setItem(TIPS_SEEN_KEY, JSON.stringify([...seen, tipId]));
+  } catch {
+    // Storage full, blocked, or a private window: the visit's memory is enough.
+  }
+}
+
+/** Whether the player has turned the tips off. Storage that cannot be read leaves them on. */
+export function readTipsOff(): boolean {
+  try {
+    return window.localStorage.getItem(TIPS_OFF_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/** Turns the tips off, or on again, which forgets every tip seen so they show afresh. */
+export function storeTipsOff(off: boolean): void {
+  if (!off) tipsSeenThisVisit.clear();
+  try {
+    if (off) {
+      window.localStorage.setItem(TIPS_OFF_KEY, 'true');
+    } else {
+      window.localStorage.removeItem(TIPS_OFF_KEY);
+      window.localStorage.removeItem(TIPS_SEEN_KEY);
+    }
+  } catch {
+    // The choice holds for this visit only.
+  }
+}

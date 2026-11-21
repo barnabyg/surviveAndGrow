@@ -16,7 +16,7 @@ import {
 } from '../sim';
 import { ApprovalChart } from './ApprovalChart';
 import { BudgetPanel, countChanges } from './BudgetPanel';
-import { ConfirmDialog } from './ConfirmDialog';
+import { ConfirmDialog, RestartDialog } from './ConfirmDialog';
 import { DilemmaDialog } from './DilemmaDialog';
 import { DilemmaPanel } from './DilemmaPanel';
 import { ElectionPanel } from './ElectionPanel';
@@ -34,6 +34,7 @@ import { ReportList } from './ReportList';
 import { RisksPanel } from './RisksPanel';
 import { SiteCard } from './SiteCard';
 import { Timeline } from './Timeline';
+import { TipCard, useTips } from './TipCard';
 import { TradePanel } from './TradePanel';
 import { TradeRouteCard } from './TradeRouteCard';
 import { TopBar } from './TopBar';
@@ -167,6 +168,7 @@ export function GameScreen(props: GameScreenProps) {
     (risk) => risk.headline === riskPicked && risk.regionId === selectedRegionId,
   );
   const selectedRisk = pickedRisk === -1 ? null : pickedRisk;
+  const tips = useTips({ game, risks, plannedSiteIds, quiet: touring || learning });
   // The timeline shows every project, and the site picked out on the map if it is still
   // empty and unplanned, as if building there began now. A closed site can never begin.
   const schedule =
@@ -270,6 +272,7 @@ export function GameScreen(props: GameScreenProps) {
           onTutorial={() => {
             setTourStep(0);
           }}
+          tips={tips}
         />
         <div className="columns">
           <aside className="column column--situation" aria-label="Situation">
@@ -440,27 +443,12 @@ export function GameScreen(props: GameScreenProps) {
           </ConfirmDialog>
         )}
         {confirmingRestart && (
-          <ConfirmDialog
-            title="Restart this game?"
-            cancelLabel="Keep playing"
-            confirmLabel="Replay this game"
+          <RestartDialog
             onCancel={() => {
               setConfirmingRestart(false);
             }}
-            onConfirm={() => {
-              onRestart('replay');
-            }}
-            alternative={{
-              label: 'New game',
-              onChoose: () => {
-                onRestart('new');
-              },
-            }}
-          >
-            Everything played so far is lost, and the saved game with it. Replaying starts this game
-            again from its first quarter, with the same weather and the same events. A new game goes
-            back to the start screen.
-          </ConfirmDialog>
+            onRestart={onRestart}
+          />
         )}
         {dilemma !== null && dilemmaShown !== 'no' && (
           <DilemmaDialog
@@ -482,6 +470,7 @@ export function GameScreen(props: GameScreenProps) {
         )}
         {!playing && <GameSummary game={game} onReplay={onReplay} onNewGame={onNewGame} />}
         {learning && <Lessons progress={tutorial} />}
+        {playing && <TipCard tips={tips} />}
         {touring && (
           <Tour
             step={tourStep}

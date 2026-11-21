@@ -52,3 +52,34 @@ export function ConfirmDialog(props: ConfirmDialogProps) {
     </dialog>
   );
 }
+
+/** Asks before the game in play is given up, to be replayed or left for a new one. */
+export function RestartDialog({
+  onCancel,
+  onRestart,
+}: {
+  readonly onCancel: () => void;
+  readonly onRestart: (how: 'replay' | 'new') => void;
+}) {
+  return (
+    <ConfirmDialog
+      title="Restart this game?"
+      cancelLabel="Keep playing"
+      confirmLabel="Replay this game"
+      onCancel={onCancel}
+      onConfirm={() => {
+        onRestart('replay');
+      }}
+      alternative={{
+        label: 'New game',
+        onChoose: () => {
+          onRestart('new');
+        },
+      }}
+    >
+      Everything played so far is lost, and the saved game with it. Replaying starts this game again
+      from its first quarter, with the same weather and the same events. A new game goes back to the
+      start screen.
+    </ConfirmDialog>
+  );
+}

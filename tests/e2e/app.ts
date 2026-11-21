@@ -113,11 +113,21 @@ interface StartOptions {
    * and with no country file given, the game is served Tavara without its dilemmas.
    */
   readonly asShipped?: boolean;
+  /**
+   * Show the first-time tips, as a new player sees them. Left out, they are turned off: a tip's
+   * card stands beside the screen and could cover what a test means to click.
+   */
+  readonly tips?: boolean;
 }
 
 /** Opens the app, which loads the country and offers to start a game. */
 export async function openApp(page: Page, options: StartOptions = {}) {
-  const { seed = 1, asShipped = false } = options;
+  const { seed = 1, asShipped = false, tips = false } = options;
+  if (!tips) {
+    await page.addInitScript(() => {
+      window.localStorage.setItem('survive-and-grow/tips-off', 'true');
+    });
+  }
   if (asShipped) {
     await page.goto(`/?seed=${seed}`);
     return;

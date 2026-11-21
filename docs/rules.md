@@ -329,6 +329,14 @@ figure there must change it here in the same commit.
   tutorial leaves an ordinary game; either way the game is saved as usual. A saved tutorial game
   resumes at the lesson it was on. The tour's steps and the lessons are written in
   `src/ui/tourSteps.ts`, and the game's seed in `src/ui/tutorialGame.ts`.
+- In any game, a first-time tip explains a mechanic the first time it appears, drawn round the
+  part of the screen it concerns like a lesson: a dilemma, a bailout, a drought or flood warned of
+  in risks ahead, a strike or protest, a world price shock announced, a planned project whose
+  chain is missing a link, a site decaying, the election four quarters away, and a prosperity
+  tier passed. When several are due, the first in that order shows. Got it dismisses one, and the
+  browser remembers it was seen in every game and country, or for the visit if it will not store
+  it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
+  waits while the tour or a lesson is open. The tips are written in `src/ui/tips.ts`.
 - Click the treasury, the debt, the credit rating, the food reserve, approval or prosperity in the
   top bar to see what moved it. Approval, prosperity and the credit rating also list what they
   are made of.
