@@ -216,10 +216,22 @@ figure there must change it here in the same commit.
   thousands of tonnes it can, and the report says so. The cost is in the treasury's breakdown
   but not in the budget's balance, and the grain in the reserve's, in the outlook and in the
   risks ahead. Austerity does not bar imports: austerity starves no one.
+- Grain can also be sold from the national reserve in the trade panel, in thousands of tonnes,
+  at the world grain price less a 20% margin for shipping and the traders' cut, so selling
+  fetches less than buying costs. The income is shown before you order, and the sale can be
+  taken back until the quarter ends. The reserve must hold the grain, and the grain is set
+  aside at once, so it is neither eaten nor spoiled; it is shipped and paid for as the quarter
+  ends. If a dilemma's answer has taken some of the reserve first, the sale is cut to the
+  thousands of tonnes left, and the report says so. The income is in the treasury's breakdown
+  but not in the budget's balance, and the grain in the reserve's, in the outlook and in the
+  forecast reserve after the harvest. A sale that takes the reserve below its safe level is
+  allowed, but the panel warns of it before you order and the risks ahead list it. Grain cannot
+  be both bought and sold in one quarter, and austerity bars neither.
 
 ## Risks ahead
 
-- The left column lists the risks ahead: famine in a region, strikes, a treasury that runs out,
+- The left column lists the risks ahead: famine in a region, grain sold below the reserve's
+  safe level, strikes, a treasury that runs out,
   a bailout from a missed payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
   for each course the weather could take and each drought that could still begin, and lists each
   danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
@@ -233,7 +245,8 @@ figure there must change it here in the same commit.
 - Some quarters open with a dilemma: a neighbour offering grain, merchants wanting to buy from
   the reserve, a region in drought asking for emergency works, strikers asking for talks,
   teachers demanding a pay rise, a donor offering a grant with conditions. The neighbour's grain
-  is priced at the world grain price. Each has two or three
+  is priced at the world grain price, and the merchants pay the world grain price, with no
+  export margin, since they fetch the grain themselves. Each has two or three
   options, and each option states everything it will do, in money, food and approval, before you
   choose. You can put the dilemma aside to look at the country, but the quarter cannot end until
   you choose, and you can change your choice until it does. An option the treasury or the reserve

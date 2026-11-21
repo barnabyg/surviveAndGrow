@@ -61,6 +61,9 @@ drought does not starve a region first.
 - **Buy grain when the harvest fails.** The trade panel in the right column orders grain for the
   national reserve at the world price, which moves every quarter. Money can stand in for a bad
   season, and austerity does not stop it.
+- **Sell a surplus after a good harvest.** The same panel sells grain from the reserve at the
+  world price less a margin. Keep the reserve above its safe level: the panel and the risks
+  ahead warn when a sale would take it below.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
