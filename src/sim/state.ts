@@ -12,6 +12,7 @@ import type { VitalSigns } from './history';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import type { SiteSchedule } from './timeline';
+import type { TradeOrder, WorldPrices } from './trade';
 import type { Figure, GameDate, Money, Range } from './types';
 import type { CreditRating, FoodStage, Tier, Unrest } from './vocabulary';
 
@@ -117,6 +118,11 @@ export interface GameState {
   /** The credit rating in force and what it is reassessed from as each quarter ends. */
   readonly credit: Credit;
   /**
+   * The world price of each good, in dollars a tonne, as each quarter began. The last is the
+   * price goods are bought at this quarter.
+   */
+  readonly worldPrices: WorldPrices;
+  /**
    * The vital signs as each quarter began, from the start of the game to the quarter now
    * being decided, in order. The last record is the position now.
    */
@@ -170,6 +176,14 @@ export interface Decisions {
    * stay within the most that may be owed. Nothing may be borrowed during austerity.
    */
   readonly borrow?: readonly Borrowing[];
+  /**
+   * What to buy or sell abroad this quarter, at this quarter's world price, less the export
+   * margin for what is sold. Goods bought arrive, and are paid for, as the quarter ends; the
+   * treasury must hold the cost as the quarter begins. Grain sold is set aside from the
+   * national reserve, which must hold it as the quarter begins, and is paid for as the quarter
+   * ends. A good may not be both bought and sold in one quarter. Austerity bars neither.
+   */
+  readonly trade?: readonly TradeOrder[];
   /**
    * The answer to the dilemma put to the player this quarter: the id of one of its options.
    * A quarter with a dilemma pending cannot be resolved without one, though it can be
@@ -266,9 +280,18 @@ export interface Preview {
   readonly missedPayment: Money;
   /** What borrowing brings into the treasury as the quarter ends. */
   readonly borrowed: Money;
+  /**
+   * What trade does as the quarter ends: the grain that reaches the reserve and its cost, and
+   * the grain that leaves it and what it brings in.
+   */
+  readonly trade: TradePreview;
   /** What the nation will owe once the quarter is over. */
   readonly debt: Range;
-  /** The debt burden once the quarter is over: debt against a year's revenue, in thousandths. */
+  /**
+   * The debt burden once the quarter is over: debt against a year's revenue, in thousandths.
+   * What a mine's chain earns, and so pays in tax, follows the world ore price, which world
+   * markets move as the quarter ends: the range is what their limits allow.
+   */
   readonly debtBurden: Range;
   /** The credit rating once the quarter is over, which sets the terms of the next loan. */
   readonly creditRating: CreditRating;
@@ -312,8 +335,9 @@ export interface Preview {
    */
   readonly approvalHeading: Range;
   /**
-   * National prosperity once the quarter is over, in thousandths. Nothing left to chance
-   * this quarter bears on it, so the two ends are equal.
+   * National prosperity once the quarter is over, in thousandths. Only the world ore price,
+   * which world markets move as the quarter ends, is left to chance: with no mine's chain
+   * earning, the two ends are equal.
    */
   readonly prosperity: Range;
   /** The regions that will be striking or protesting once the quarter is over. */
@@ -323,6 +347,18 @@ export interface Preview {
    * approval as this quarter will leave it. The campaign's swing makes it a range.
    */
   readonly voteShare: Range;
+}
+
+/** A quarter's trade as the preview sees it. */
+export interface TradePreview {
+  /** The grain that reaches the national reserve as the quarter ends, in tonnes. */
+  readonly imported: number;
+  /** What is paid for it out of the treasury. */
+  readonly paid: Money;
+  /** The grain sold abroad that leaves the national reserve, in tonnes. */
+  readonly exported: number;
+  /** What it brings into the treasury. */
+  readonly earned: Money;
 }
 
 /** A quarter's upkeep as the preview sees it. */

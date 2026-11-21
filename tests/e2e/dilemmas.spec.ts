@@ -137,16 +137,17 @@ test('in the country as it ships, the seed decides which dilemma arises and when
   await expect(decision(page)).toHaveCount(0);
 
   // Seed 3 opens it with a neighbour's offer of grain, the reserve being below its safe level.
-  // What it offers is reckoned on the people there are, who have grown by a quarter's 0.3%.
+  // What it offers is reckoned on the people there are, who have grown by a quarter's 0.3%,
+  // at the world grain price as the quarter begins.
   await startGame(page, { seed: 3, asShipped: true });
   await endQuarters(page, 1);
   const offer = dilemma(page, 'A neighbour offers grain');
   await expect(offer).toBeVisible();
   await expect(offer.getByRole('button', { name: /^Buy the whole shipment/ })).toContainText(
-    'Costs $12.5m.',
+    'Costs $13.8m.',
   );
   const half = offer.getByRole('button', { name: /^Buy half of it/ });
-  await expect(half).toContainText('Costs $6.3m.');
+  await expect(half).toContainText('Costs $6.9m.');
   await expect(half).toContainText('Adds 26,078 t to the national reserve.');
 
   await half.click();
@@ -160,13 +161,13 @@ test('in the country as it ships, the seed decides which dilemma arises and when
 
   // What the option said is what the quarter then did.
   const entry = reports(page).getByRole('listitem').filter({ hasText: 'A neighbour offers grain' });
-  await expect(entry).toContainText('You chose “Buy half of it”. Costs $6.3m.');
+  await expect(entry).toContainText('You chose “Buy half of it”. Costs $6.9m.');
   await treasury(page).getByRole('button').click();
   await expect(
     page
       .getByRole('region', { name: 'What moved the treasury' })
       .getByRole('row', { name: 'Grain from a neighbour' }),
-  ).toContainText('−$6.3m');
+  ).toContainText('−$6.9m');
   await foodReserve(page).getByRole('button').click();
   await expect(
     page

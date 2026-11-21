@@ -66,6 +66,33 @@ export type DilemmaType = (typeof DILEMMA_TYPES)[number];
 export const DILEMMA_PLACES = ['struckByEvent', 'inUnrest'] as const;
 export type DilemmaPlace = (typeof DILEMMA_PLACES)[number];
 
+/**
+ * The goods the world trades in, each with a price that moves every quarter. A country file
+ * cannot add one: what each costs and how its price moves are balance values
+ * (`balance.trade.goods`). Their order is the order their prices are drawn in, so a new good
+ * goes at the end and leaves the others' draws as they were.
+ */
+export const GOODS = ['grain', 'ore'] as const;
+export type Good = (typeof GOODS)[number];
+
+export const GOOD_NAMES: Readonly<Record<Good, string>> = {
+  grain: 'Grain',
+  ore: 'Ore',
+};
+
+/**
+ * The goods the player can order across the border. Ore is not among them: it is sold abroad
+ * only by a mine's chain, at the world ore price.
+ */
+export const ORDERED_GOODS: readonly Good[] = ['grain'];
+
+/**
+ * Which way an order sends a good across the border. Bought abroad, it is imported; sold
+ * abroad, it is exported.
+ */
+export const TRADE_DIRECTIONS = ['import', 'export'] as const;
+export type TradeDirection = (typeof TRADE_DIRECTIONS)[number];
+
 /** The kinds of effect a dilemma's option can have on the country. */
 export const DILEMMA_EFFECT_KINDS = ['treasury', 'reserve', 'regionGrain', 'approval'] as const;
 
@@ -138,13 +165,15 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
 
 /**
  * What a site in each part of a chain does, in a sentence the player can be shown.
- * `{money}` is what it produces or carries a quarter.
+ * `{tonnes}` is the ore it produces or carries a quarter, and `{money}` what that ore is worth
+ * at the usual world ore price.
  */
 export const CHAIN_ROLE_SENTENCES: Readonly<Record<ChainRole, string>> = {
   source:
-    'Adds {money} a quarter to its region’s output, but only while its chain to a port is complete.',
-  link: 'Carries up to {money} a quarter of a mine’s output along its chain.',
-  outlet: 'Ships up to {money} a quarter of a mine’s output.',
+    'Ships {tonnes} of ore a quarter, worth {money} at the usual world ore price, to add to its region’s output, but only while its chain to a port is complete.',
+  link: 'Carries up to {tonnes} of a mine’s ore a quarter along its chain.',
+  outlet:
+    'Ships up to {tonnes} a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
 };
 
 /**
@@ -312,6 +341,7 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 /** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
 export const RISK_KINDS = [
   'famine',
+  'reserve',
   'treasury',
   'bailout',
   'bondMaturity',
@@ -354,6 +384,7 @@ export const REPORT_KINDS = [
   'siteRestored',
   'loanTaken',
   'loanRepaid',
+  'trade',
   'bailout',
   'missedPayment',
   'austerity',

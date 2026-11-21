@@ -12,6 +12,7 @@ export {
   loadCountry,
   regionName,
   type Country,
+  type Crossing,
   type Decoration,
   type Neighbour,
   type Point,
@@ -90,7 +91,16 @@ export { dateOfQuarter, seasonOf } from './calendar';
 export { drawAt } from './rng';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
-export { chainOf, chains, chainsThrough, type Chain, type ChainLink } from './chains';
+export {
+  chainOf,
+  chains,
+  chainsThrough,
+  oreEarnings,
+  type Chain,
+  type ChainLink,
+  type OreEarnings,
+} from './chains';
+export { oreTonnesOf } from './sites';
 export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
 export { regionPower, type RegionPower } from './power';
 export {
@@ -119,6 +129,25 @@ export {
   type TermCalendar,
   type TermQuarter,
 } from './timeline';
+export {
+  belowSafeAfterExport,
+  costOf,
+  EXPORT_MARGIN_PERMILLE,
+  exportTerms,
+  forecastSpan,
+  formatPrice,
+  importTerms,
+  ORDER_STEP_TONNES,
+  plannedExport,
+  plannedImport,
+  priceStatus,
+  type ExportTerms,
+  type ImportTerms,
+  type PriceStatus,
+  type TradeOrder,
+  type WorldPrices,
+} from './trade';
+export { portTonnesOf, tradeCapacity, type TradeCapacity, type TradeLink } from './tradeLinks';
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,
@@ -129,6 +158,7 @@ export {
   type RegionShortfall,
   type RegionState,
   type ReliefDelivery,
+  type TradePreview,
   type TurnReport,
   type TurnResult,
   type UpkeepPreview,
@@ -165,6 +195,9 @@ export {
   DILEMMA_TYPES,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
+  GOOD_NAMES,
+  GOODS,
+  ORDERED_GOODS,
   LIKELIHOOD_NAMES,
   LIKELIHOODS,
   MAP_FRAME,
@@ -192,6 +225,7 @@ export {
   type DilemmaType,
   type EventType,
   type FoodStage,
+  type Good,
   type LabelSide,
   type Likelihood,
   type PowerRole,
@@ -207,5 +241,6 @@ export {
   type SpendingArea,
   type Terrain,
   type Tier,
+  type TradeDirection,
   type Unrest,
 } from './vocabulary';

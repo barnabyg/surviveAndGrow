@@ -244,7 +244,7 @@ describe('a site that depends on power', () => {
       { budget, startProjects: [line.id, station.id] },
       ...quarters(5, { budget }),
     ]);
-    expect(chainOf(state, mine.id)).toMatchObject({ complete: true, output: 600 });
+    expect(chainOf(state, mine.id)).toMatchObject({ complete: true, atUsualPrice: 600 });
   });
 });
 

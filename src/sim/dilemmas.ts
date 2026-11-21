@@ -10,7 +10,14 @@ import type { GameState, RegionState } from './state';
 import { termBounds, termOfQuarter } from './terms';
 import { formatMoney, formatPoints, formatTonnes } from './text';
 import type { Contribution, GameDate, Money, Quarter } from './types';
-import { DILEMMA_TYPES, UNREST_LEVELS, type DilemmaPlace, type DilemmaType } from './vocabulary';
+import { costOf, priceOf } from './trade';
+import {
+  DILEMMA_TYPES,
+  UNREST_LEVELS,
+  type DilemmaPlace,
+  type DilemmaType,
+  type Good,
+} from './vocabulary';
 
 /**
  * What a dilemma is, as data: the story put to the player, the conditions under which it
@@ -60,6 +67,17 @@ export interface DilemmaOptionDefinition {
 export type DilemmaEffectRule =
   /** Money into the treasury, or out of it when negative, in Money units per million people. */
   | { readonly kind: 'treasury'; readonly perMillionPeople: number }
+  /**
+   * Money for a share of what the country eats of a good, at its world price this quarter
+   * times `pricePermille` thousandths: out of the treasury when the share is positive, since
+   * the grain is bought, and into it when negative, since it is sold.
+   */
+  | {
+      readonly kind: 'atWorldPrice';
+      readonly good: Good;
+      readonly needPermille: number;
+      readonly pricePermille: number;
+    }
   /** Food into the national reserve, or out of it when negative: a share of what the country eats. */
   | { readonly kind: 'reserve'; readonly needPermille: number }
   /** Food moved from the national reserve to the region's own stock: a share of what the region eats. */
@@ -268,7 +286,14 @@ export function rollDilemmas(seed: number, date: GameDate): number[] {
 /** The position a dilemma arises from: the game as the new quarter begins. */
 type Position = Pick<
   GameState,
-  'country' | 'date' | 'treasury' | 'foodReserve' | 'regions' | 'events' | 'dilemmasAnswered'
+  | 'country'
+  | 'date'
+  | 'treasury'
+  | 'foodReserve'
+  | 'regions'
+  | 'events'
+  | 'dilemmasAnswered'
+  | 'worldPrices'
 >;
 
 /**
@@ -361,6 +386,13 @@ function workOut(
     case 'treasury': {
       const people = sum(regions.map((candidate) => candidate.population));
       const amount = Math.round((rule.perMillionPeople * people) / 1_000_000);
+      return amount === 0 ? [] : [{ kind: 'treasury', amount }];
+    }
+    case 'atWorldPrice': {
+      const need = sum(regions.map((candidate) => quarterlyNeed(candidate.population)));
+      const tonnes = Math.round((need * rule.needPermille) / 1000);
+      const price = (priceOf(position.worldPrices, rule.good) * rule.pricePermille) / 1000;
+      const amount = -costOf(tonnes, price);
       return amount === 0 ? [] : [{ kind: 'treasury', amount }];
     }
     case 'reserve': {

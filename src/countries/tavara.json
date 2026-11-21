@@ -1,5 +1,5 @@
 {
-  "formatVersion": 3,
+  "formatVersion": 5,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -538,6 +538,10 @@
       ],
       "dependsOn": ["korr-falls-station"]
     }
+  ],
+  "crossings": [
+    { "id": "korr-pass", "name": "Korr Pass", "neighbour": "voskar", "tonnes": 50000 },
+    { "id": "selama-bridge", "name": "Selama bridge", "neighbour": "selama", "tonnes": 40000 }
   ],
   "dilemmaLikelihood": {
     "grainOffer": 0.35,

@@ -135,7 +135,7 @@ describe.each(countries)('two alternative ports in %s', (_name, country) => {
       complete: true,
       missing: [],
       // The shallow port ships $36.0m of the $60.0m the mine could produce.
-      output: 360,
+      atUsualPrice: 360,
       bottleneck: shallow.id,
     });
     expect(chainOf(built, mine.id)?.links.map((link) => link.siteId)).toEqual([

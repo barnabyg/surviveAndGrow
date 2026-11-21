@@ -32,6 +32,7 @@ import {
 import { siteTerms } from './sites';
 import type { ElectionResult, GameState, Outcome, RegionState, TurnReport } from './state';
 import { formatQuarters } from './text';
+import type { WorldPrices } from './trade';
 import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVERS,
@@ -43,6 +44,7 @@ import {
   ENDING_CAUSES,
   EVENT_TYPES,
   FOOD_STAGES,
+  GOODS,
   OUTCOME_STATUSES,
   PROJECT_STATUSES,
   REPORT_KINDS,
@@ -116,6 +118,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       projects: game.projects,
       debts: game.debts,
       credit: game.credit,
+      worldPrices: game.worldPrices,
       history: game.history,
       dilemma: game.dilemma,
       dilemmasAnswered: game.dilemmasAnswered,
@@ -173,6 +176,10 @@ export function loadSave(
     projects: readProjects(state.projects, 'state.projects', country),
     debts: readDebts(state.debts, 'state.debts'),
     credit: readCredit(record(state.credit, 'state.credit'), 'state.credit'),
+    worldPrices: readWorldPrices(
+      record(state.worldPrices, 'state.worldPrices'),
+      'state.worldPrices',
+    ),
     history: readHistory(state.history, 'state.history'),
     dilemma:
       state.dilemma === null
@@ -347,6 +354,27 @@ function readCredit(saved: Json, path: string): Credit {
     record: whole(saved.record, `${path}.record`, 0),
     deficit: whole(saved.deficit, `${path}.deficit`, 0),
   };
+}
+
+/**
+ * The path of each good's world price: at least the price now, each a whole number of dollars
+ * a tonne of at least one. A price outside this release's limits is still read as saved, and
+ * the next quarter's move brings it within them.
+ */
+function readWorldPrices(saved: Json, path: string): WorldPrices {
+  return Object.fromEntries(
+    GOODS.map((good) => {
+      const pricePath = `${path}.${good}`;
+      const prices = saved[good];
+      if (!Array.isArray(prices) || prices.length === 0) {
+        return fail(pricePath, 'is missing or does not hold the price now');
+      }
+      return [
+        good,
+        prices.map((price: unknown, index) => whole(price, `${pricePath}[${index}]`, 1)),
+      ];
+    }),
+  ) as Record<string, readonly number[]> as WorldPrices;
 }
 
 function readHistory(saved: unknown, path: string): VitalSigns[] {

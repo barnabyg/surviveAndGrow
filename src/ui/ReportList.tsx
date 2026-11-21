@@ -175,6 +175,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Repaid loan report',
     path: 'M2,6 H18 V14 H2 Z M6.5,10 L9,12.5 L13.5,7.5',
   },
+  // A ship under sail.
+  trade: {
+    label: 'Trade report',
+    path: 'M2,12 H18 L15,17 H5 Z M10,12 V3 M10,4 L15,10 H10',
+  },
   // A lifebuoy.
   bailout: {
     label: 'Bailout report',

@@ -6,6 +6,7 @@ import { foodStatus } from './food';
 import type { Project } from './projects';
 import { prosperityStatus } from './prosperity';
 import type { RegionState } from './state';
+import type { WorldPrices } from './trade';
 import type { GameDate, Money } from './types';
 
 /**
@@ -44,6 +45,7 @@ export function vitalSigns(position: {
   readonly regions: readonly RegionState[];
   readonly budget: Budget;
   readonly debts: readonly Debt[];
+  readonly worldPrices: WorldPrices;
   /** National prosperity, when it has already been worked out for this position. */
   readonly prosperity?: number;
   /** The debt burden, when it has already been worked out for this position. */

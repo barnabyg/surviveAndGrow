@@ -31,6 +31,12 @@ export interface Scope {
   readonly courses: readonly { readonly weight: number; readonly paths: readonly Path[] }[];
   /** Every bond owed or about to be issued that is still to fall due in one payment. */
   readonly bonds: readonly BondAhead[];
+  /**
+   * The course with ordinary weather and no new event, played with the world ore price
+   * slumping as far as its forecast allows: down by the most world markets can move it in each
+   * quarter the forecast looks ahead. What a mine's chain earns falls with it.
+   */
+  readonly oreSlump: Path;
 }
 
 /** A bond whose whole sum is still to fall due. */

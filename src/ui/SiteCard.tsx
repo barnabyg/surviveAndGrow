@@ -1,9 +1,17 @@
 import {
   chainsThrough,
   DECAYING_SHARE,
+  forecastSpan,
   formatMoney,
+  formatPrice,
+  formatTonnes,
+  oreEarnings,
+  oreTonnesOf,
+  portTonnesOf,
+  priceStatus,
   regionName,
   regionPower,
+  SITE_CHAIN_ROLES,
   SITE_POWER_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
@@ -11,6 +19,7 @@ import {
   siteTerms,
   startFault,
   termCalendar,
+  tradeCapacity,
   UPKEEP_ORDER_RULE,
   type Chain,
   type GameState,
@@ -20,6 +29,7 @@ import {
 import { formatDate } from './format';
 import { opening } from './schedule';
 import { progressOf, siteStateName } from './SiteMark';
+import { WorldPriceSign } from './WorldPriceSign';
 import './map-card.css';
 
 interface SiteCardProps {
@@ -142,6 +152,9 @@ export function SiteCard(props: SiteCardProps) {
           {UPKEEP_ORDER_RULE}
         </p>
       )}
+      {SITE_CHAIN_ROLES[site.type] === 'outlet' && status.closedBy === null && (
+        <TradeLinkNote game={game} siteId={site.id} />
+      )}
       {chainsThrough(game, site.id).map((chain) => (
         <ChainList key={chain.sourceId} game={game} chain={chain} siteId={site.id} />
       ))}
@@ -176,9 +189,10 @@ interface ChainListProps {
 }
 
 /**
- * A chain the site is part of: what its source earns, every site the chain runs through
- * with how it stands, the missing links and the bottleneck. Each mark is spelt out in
- * words, so none of it rests on colour.
+ * A chain the site is part of: what its source earns at the world ore price, every site the
+ * chain runs through with how it stands, the missing links and the bottleneck. Each mark is
+ * spelt out in words, so none of it rests on colour. The source's own card shows the ore
+ * price, its trend and forecast, and what the source earns at it.
  */
 function ChainList({ game, chain, siteId }: ChainListProps) {
   const nameOf = (id: string) =>
@@ -190,9 +204,10 @@ function ChainList({ game, chain, siteId }: ChainListProps) {
   return (
     <section className="map-card__chain" aria-label={title}>
       <div className="map-card__term">{title}</div>
-      {chain.output > 0 ? (
+      {chain.shipped > 0 ? (
         <p className="map-card__note" role="status">
-          Earning: {source} adds {formatMoney(chain.output)} a quarter to its region’s output.
+          Earning: {source} ships {formatTonnes(chain.shipped)} of ore a quarter, which at{' '}
+          {formatPrice(chain.orePrice)} adds {formatMoney(chain.output)} to its region’s output.
         </p>
       ) : (
         <p className="warning-note" role="status">
@@ -218,7 +233,7 @@ function ChainList({ game, chain, siteId }: ChainListProps) {
                 {[
                   SITE_STATE_NAMES[link.state],
                   ...(inUse && link.carries !== null
-                    ? [`carries ${formatMoney(link.carries)}`]
+                    ? [`carries ${formatTonnes(oreTonnesOf(link.carries))}`]
                     : []),
                   ...marks,
                 ].join(' · ')}
@@ -232,12 +247,62 @@ function ChainList({ game, chain, siteId }: ChainListProps) {
           Bottleneck: {nameOf(chain.bottleneck)}
           {chain.missing.includes(chain.bottleneck)
             ? ', which is missing.'
-            : chain.output > 0
-              ? `, which holds the chain to ${formatMoney(chain.output)} a quarter.`
+            : chain.shipped > 0
+              ? `, which holds the chain to ${formatTonnes(chain.shipped)} of ore a quarter.`
               : ', which is not yet built.'}
         </p>
       )}
+      {own && <OrePrice game={game} siteId={siteId} />}
     </section>
+  );
+}
+
+/**
+ * The world ore price a mine sells at, and what the mine earns, or would earn once its chain is
+ * complete, at the price now and within the price's forecast.
+ */
+function OrePrice({ game, siteId }: { readonly game: GameState; readonly siteId: string }) {
+  const earnings = oreEarnings(game, siteId);
+  if (earnings === null) return null;
+  const { tonnes, shipping, price, earns, forecast } = earnings;
+  return (
+    <section className="map-card__ore" aria-label="Earnings at the world ore price">
+      <WorldPriceSign status={priceStatus(game, 'ore')} goodWhen="rising" />
+      <p className="map-card__note" role="status">
+        {shipping ? 'Its' : 'Once its chain is complete, its'} {formatTonnes(tonnes)} of ore a
+        quarter {shipping ? 'earn' : 'would earn'} {formatMoney(earns)} at {formatPrice(price)}, and
+        from {formatMoney(forecast.min)} to {formatMoney(forecast.max)} within the forecast{' '}
+        {forecastSpan()}.
+      </p>
+    </section>
+  );
+}
+
+/**
+ * What a port carries across the border, and how what all the trade links carry is shared;
+ * or, before it is in use, what it would add to them.
+ */
+function TradeLinkNote({ game, siteId }: { readonly game: GameState; readonly siteId: string }) {
+  const site = game.country.sites.find((candidate) => candidate.id === siteId);
+  if (site === undefined) return null;
+  const capacity = tradeCapacity(game);
+  const link = capacity.links.find((candidate) => candidate.id === siteId);
+  if (link === undefined) {
+    return (
+      <p className="map-card__note">
+        Once in use, it adds {formatTonnes(portTonnesOf(site.type))} a quarter to the{' '}
+        {formatTonnes(capacity.total)} the trade links carry now.
+      </p>
+    );
+  }
+  return (
+    <p className="map-card__note" role="status">
+      Trade link: it carries {formatTonnes(link.tonnes)} a quarter across the border
+      {link.decaying ? ', half its capacity while it decays' : ''}. Of the{' '}
+      {formatTonnes(capacity.total)} all the trade links carry, the mines’ ore takes{' '}
+      {formatTonnes(capacity.ore)}, leaving {formatTonnes(capacity.total - capacity.ore)} for grain
+      bought and sold abroad.
+    </p>
   );
 }
 

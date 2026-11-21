@@ -110,16 +110,22 @@ figure there must change it here in the same commit.
 
 ## Chains and alternatives
 
-- Some sites form a chain. A mine adds $60.0m a quarter to its region's output, which is taxed and
-  raises its people's income, but only while a trunk road links it to a port and both are in
-  use. Each link carries only so much: a trunk road $72.0m a quarter and a port $90.0m, and a
-  decaying link half as much, so the chain yields no more than its weakest link. These are large
-  projects ($40.0m, $30.0m and $50.0m; 6, 5 and 8 quarters to build; $0.6m, $0.5m and $0.8m
-  upkeep), and one started late in a term opens after the vote. A mine's card lists every site
-  of its chain with how it stands, marks the missing links and the bottleneck, and says what the
-  mine earns. Picking out a mine, or any site of its chain, draws the missing links on the map:
-  a dotted route or a crossed marker, each tagged "✕ Missing link". A mine in use that earns
-  nothing is tagged "▲ Earning nothing", and what a mine earns is taxed as a line of its own.
+- Some sites form a chain. A mine ships 600,000 tonnes of ore a quarter abroad, but only while a
+  trunk road links it to a port and both are in use. What it ships is sold at the world ore price
+  (see Trade) and added to its region's output, which is taxed and raises its people's income: at
+  the usual $100 a tonne that is $60.0m a quarter, at $80 it is $48.0m. Capacities are given as
+  what their ore is worth at the usual price. Each link carries only so much: a trunk road $72.0m
+  a quarter (720,000 tonnes) and a port $90.0m (900,000 tonnes), and a decaying link half as much,
+  so the chain ships no more than its weakest link. These are large projects ($40.0m, $30.0m and
+  $50.0m; 6, 5 and 8 quarters to build; $0.6m, $0.5m and $0.8m upkeep), and one started late in a
+  term opens after the vote. A mine's card lists every site of its chain with how it stands, marks
+  the missing links and the bottleneck, and says what the mine earns at the world ore price, with
+  that price, its trend, its forecast range and what the mine would earn at the low and high ends
+  of it. Picking out a mine, or any site of its chain, draws the missing links on the map: a
+  dotted route or a crossed marker, each tagged "✕ Missing link". A mine in use that earns nothing
+  is tagged "▲ Earning nothing", and what a mine earns is taxed as a line of its own. While the
+  ore price is away from its usual level, the region's output and the treasury's breakdowns show
+  its effect as a line beside the mine's: "Korrgate mine: ore at $85 a tonne".
 - Some sites are alternatives: one game cannot build everything. Next to Saltmouth port, Tavara's
   deep-water port, is Saltmouth quay, a shallow port at half the cost ($25.0m, 5 quarters to
   build, $0.4m upkeep) that ships only $36.0m a quarter, less than the mine produces. Either
@@ -203,9 +209,53 @@ figure there must change it here in the same commit.
   austerity is extended and when it ends, and the risks ahead warn of a bailout, or of austerity
   extended, on the current course.
 
+## Trade
+
+- Grain has a world price, which moves every quarter: world markets move it by up to $30 a tonne
+  either way, and it is pulled a quarter of the way back towards its usual $240, never leaving
+  $150 to $420. The trade panel in the right column shows the price with its trend over the last
+  eight quarters and a forecast range over the next four; click it to see what moved it. Order
+  grain for the national reserve there, in thousands of tonnes, with the cost at this quarter's
+  price shown before you order. The treasury must hold the cost, and the order can be taken back
+  until the quarter ends. The grain arrives and is paid for as the quarter ends, after anything
+  borrowed arrives; if the treasury can no longer pay for all of it by then, it buys the
+  thousands of tonnes it can, and the report says so. The cost is in the treasury's breakdown
+  but not in the budget's balance, and the grain in the reserve's, in the outlook and in the
+  risks ahead. Austerity does not bar imports: austerity starves no one.
+- Grain can also be sold from the national reserve in the trade panel, in thousands of tonnes,
+  at the world grain price less a 20% margin for shipping and the traders' cut, so selling
+  fetches less than buying costs. The income is shown before you order, and the sale can be
+  taken back until the quarter ends. The reserve must hold the grain, and the grain is set
+  aside at once, so it is neither eaten nor spoiled; it is shipped and paid for as the quarter
+  ends. If a dilemma's answer has taken some of the reserve first, the sale is cut to the
+  thousands of tonnes left, and the report says so. The income is in the treasury's breakdown
+  but not in the budget's balance, and the grain in the reserve's, in the outlook and in the
+  forecast reserve after the harvest. A sale that takes the reserve below its safe level is
+  allowed, but the panel warns of it before you order and the risks ahead list it. Grain cannot
+  be both bought and sold in one quarter, and austerity bars neither.
+- Ore has a world price too, drawn after grain's each quarter, so it never changes grain's: world
+  markets move it by up to $15 a tonne either way, and it is pulled a fifth of the way back
+  towards its usual $100, never leaving $45 to $190. It swings further than grain, so a country
+  that lives on its mine lives with a riskier income. Ore is not ordered: a mine's chain sells
+  what it ships at the ore price, and the mine's card shows the price, its trend and forecast.
+  The price moves as the quarter ends, so prosperity and the debt burden the quarter leaves are
+  judged at the new price, and the outlook gives prosperity next quarter as a range while a mine
+  earns.
+- Everything that crosses the border moves through a trade link. Border crossings are named in
+  the country file, each carrying so many tonnes a quarter from the start: Tavara's Korr Pass to
+  Voskar carries 50,000 t and Selama bridge 40,000 t. A port in use adds what it ships for a
+  chain: 900,000 t for a port and 360,000 t for a shallow port, half while it decays. The ore
+  the mines' chains ship takes its share first, and grain bought and sold abroad together is
+  limited to what is left, so a mine that fills its port leaves grain the crossings alone. The
+  trade panel shows what the links carry, the ore's share, the grain ordered and what is free,
+  and refuses an order beyond it. What the links carry is fixed as the quarter begins, so an
+  order the panel accepts is never cut for want of room. A port's card says what it carries and
+  how it is shared. The grain a dilemma's offer brings or takes is outside this limit.
+
 ## Risks ahead
 
-- The left column lists the risks ahead: famine in a region, strikes, a treasury that runs out,
+- The left column lists the risks ahead: famine in a region, grain sold below the reserve's
+  safe level, strikes, a treasury that runs out,
   a bailout from a missed payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
   for each course the weather could take and each drought that could still begin, and lists each
   danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
@@ -213,12 +263,18 @@ figure there must change it here in the same commit.
   further. A danger too unlikely to matter is left out, unless it would end the game, and a risk
   to one region picks that region out on the map. Neither famine nor a lost election can end the
   game without having been listed first.
+- While a mine earns, the game also plays the quarters ahead with ordinary weather and the world
+  ore price slumping to the low end of its forecast. A treasury that would run out, or a
+  repayment that would be missed, only in that slump is listed as unlikely, with the price it
+  would take.
 
 ## Dilemmas
 
 - Some quarters open with a dilemma: a neighbour offering grain, merchants wanting to buy from
   the reserve, a region in drought asking for emergency works, strikers asking for talks,
-  teachers demanding a pay rise, a donor offering a grant with conditions. Each has two or three
+  teachers demanding a pay rise, a donor offering a grant with conditions. The neighbour's grain
+  is priced at the world grain price, and the merchants pay the world grain price, with no
+  export margin, since they fetch the grain themselves. Each has two or three
   options, and each option states everything it will do, in money, food and approval, before you
   choose. You can put the dilemma aside to look at the country, but the quarter cannot end until
   you choose, and you can change your choice until it does. An option the treasury or the reserve

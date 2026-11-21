@@ -1,0 +1,51 @@
+/* Trade: the world grain price, and grain ordered for the national reserve */
+
+.trade {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.trade .loan__choice input {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+}
+
+.trade .button {
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.trade__capacity {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trade__links {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14.5px;
+}
+
+.trade__links li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+}
+
+.trade__capacity caption {
+  text-align: left;
+}

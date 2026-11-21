@@ -4,6 +4,9 @@ export type Money = number;
 /** How many Money units make one million dollars. */
 export const MONEY_PER_MILLION = 10;
 
+/** How many dollars one Money unit is. */
+export const DOLLARS_PER_MONEY = 1_000_000 / MONEY_PER_MILLION;
+
 export type Quarter = 1 | 2 | 3 | 4;
 
 /** The quarter the player is deciding in. One turn is one quarter. */

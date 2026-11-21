@@ -22,9 +22,11 @@ import type { Decisions, GameState, RegionState } from './state';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
+import { belowSafeAfterExport, FULL_SWING_PERMILLE } from './trade';
 import { UPKEEP_ORDER_RULE } from './upkeep';
 import {
   FOOD_STAGES,
+  GOODS,
   LIKELIHOODS,
   RISK_KINDS,
   TIER_NAMES,
@@ -52,13 +54,13 @@ export interface Risk {
 export const riskHorizonQuarters = balance.risks.horizonQuarters;
 
 /**
- * The dangers of the coming quarters: famine in a region, strikes, a treasury that runs
- * out, a missed payment on a debt that brings a bailout, a bond's maturity that cannot be
- * met, and a lost election. It plays the quarters ahead with the real rules, holding the decisions as they are,
- * once for each course the weather could take and each event that could still begin, and
- * weighs how many of those lead to each danger. The most likely comes first, and a danger
- * too unlikely to matter is left out, unless it would end the game. It changes nothing and draws nothing from the random
- * generator.
+ * The dangers of the coming quarters: famine in a region, grain sold below the reserve's safe
+ * level, strikes, a treasury that runs out, a missed payment on a debt that brings a bailout, a
+ * bond's maturity that cannot be met, and a lost election. It plays the quarters ahead with the
+ * real rules, holding the decisions as they are, once for each course the weather could take and
+ * each event that could still begin, and weighs how many of those lead to each danger. The most
+ * likely comes first, and a danger too unlikely to matter is left out, unless it would end the
+ * game. It changes nothing and draws nothing from the random generator.
  * @throws RangeError when a decision is outside what the game allows.
  * @throws Error when the game is already over.
  */
@@ -82,10 +84,18 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
       play(state, decisions, played, outlook.swingSharePermille, events),
     ),
   }));
-  const whole: Scope = { state, watched, possible, courses, bonds: bondsAhead(state, courses) };
+  const whole: Scope = {
+    state,
+    watched,
+    possible,
+    courses,
+    bonds: bondsAhead(state, courses),
+    oreSlump: play(state, decisions, played, 0, [], ORE_SLUMP),
+  };
 
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
+    ...reserveRisk(state, decisions),
     ...treasuryRisk(whole),
     ...bailoutRisk(whole),
     ...whole.bonds.flatMap((bond) => maturityRisk(whole, bond)),
@@ -118,6 +128,21 @@ function eventsAhead(state: GameState, played: number): Supposed[] {
   return possible;
 }
 
+/**
+ * How far world markets move each good's price in a quarter played, in thousandths of its
+ * swing. Unless supposed otherwise they leave the prices be: the pull towards the usual
+ * price alone moves them.
+ */
+type PriceCourse = (quarter: number) => readonly number[];
+
+const STEADY: PriceCourse = () => [];
+
+/** The world ore price slumping as far as its forecast allows, and then left be. */
+const ORE_SLUMP: PriceCourse = (quarter) =>
+  quarter < balance.trade.forecastQuarters
+    ? GOODS.map((good) => (good === 'ore' ? -FULL_SWING_PERMILLE : 0))
+    : [];
+
 /** Plays the quarters ahead with the weather at one share of its swing throughout. */
 function play(
   start: GameState,
@@ -125,6 +150,7 @@ function play(
   quarters: number,
   swingSharePermille: number,
   events: readonly Supposed[],
+  prices: PriceCourse = STEADY,
 ): Path {
   const shock = Math.trunc(
     (balance.food.weatherSwingPermillePerQuarter * swingSharePermille) / 1000,
@@ -134,8 +160,9 @@ function play(
   for (let quarter = 0; quarter < quarters && state.outcome.status === 'playing'; quarter += 1) {
     const resolved = resolveQuarter(
       state,
-      // Projects are started, money borrowed and a dilemma answered in the quarter being
-      // decided alone. A bailout on the way holds the budget within the austerity it brings.
+      // Projects are started, money borrowed, goods bought and a dilemma answered in the
+      // quarter being decided alone. A bailout on the way holds the budget within the
+      // austerity it brings.
       quarter === 0
         ? decisions
         : {
@@ -143,12 +170,17 @@ function play(
             budget: withinAusterity(state, decisions.budget),
             startProjects: [],
             borrow: [],
+            trade: [],
             dilemmaChoice: null,
           },
       {
         weatherShocks: state.regions.map(() => shock),
         struck: events.filter((event) => event.afterQuarters === quarter + 1),
         swing: 0,
+        // Markets are supposed to leave the world prices be, unless the course says otherwise.
+        // Nothing is bought after the quarter being decided, but a mine's chain earns at the
+        // world ore price every quarter.
+        priceShocks: prices(quarter),
         // No dilemma is supposed to arise: what one does is the player's to choose.
         dilemmaRolls: [],
       },
@@ -211,6 +243,24 @@ function famineReason(state: GameState, region: RegionState, finding: Finding): 
         ? 'It has too little food to last until the harvest.'
         : 'Its harvest will be too small to last the year.';
   return `${cause} It runs ${short}, and left alone that is famine ${formatQuarters(stagesToFamine - 1)} later.`;
+}
+
+/**
+ * Grain sold abroad that takes the national reserve below its safe level leaves less to fall
+ * back on. The sale is the player's own, so it is certain once ordered.
+ */
+function reserveRisk(state: GameState, decisions: Decisions): Risk[] {
+  const reason = belowSafeAfterExport(state, decisions.trade ?? []);
+  if (reason === null) return [];
+  return [
+    {
+      kind: 'reserve',
+      likelihood: 'almostCertain',
+      headline: 'Grain sold below the safe reserve',
+      reason,
+      withinQuarters: 1,
+    },
+  ];
 }
 
 /**

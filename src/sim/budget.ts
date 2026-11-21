@@ -1,12 +1,13 @@
 import { outputPermille } from './approval';
 import { balance } from './balance';
 import { clamp, sum } from './arithmetic';
-import { chainEarnings } from './chains';
+import { chainEarnings, earningLines } from './chains';
 import { poweredOutput, regionPower } from './power';
 import { regionName, type Country } from './country';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RegionState } from './state';
+import type { WorldPrices } from './trade';
 import { formatMoney, formatQuarters } from './text';
 import type { Contribution, Money } from './types';
 import { payUpkeep, upkeepNeeded, type UpkeepOutcome } from './upkeep';
@@ -93,6 +94,8 @@ interface Finances {
   readonly treasury: Money;
   readonly regions: readonly RegionState[];
   readonly projects: readonly Project[];
+  /** The world prices, which set what a mine's chain earns and so pays in tax. */
+  readonly worldPrices: WorldPrices;
 }
 
 /** What is paid before the budget's own spending: the repayments on debts. */
@@ -121,11 +124,11 @@ export function revenueOf(
  * the budget's own spending, and counts as a fixed cost.
  */
 export function resolveBudget(
-  { country, treasury, regions, projects }: Finances,
+  { country, treasury, regions, projects, worldPrices }: Finances,
   budget: Budget,
   first: PaidFirst = NOTHING_FIRST,
 ): BudgetOutcome {
-  const taxes = collectTaxes({ country, regions, projects }, budget);
+  const taxes = collectTaxes({ country, regions, projects, worldPrices }, budget);
   const revenue = sum(taxes.map((tax) => tax.amount));
   const needed = upkeepNeeded({ country, projects });
   const wanted = (area: SpendingArea) =>
@@ -167,22 +170,30 @@ export function resolveBudget(
 
 /** What the tax rate raises in a quarter, line by line, as the quarter begins. */
 function collectTaxes(
-  { country, regions, projects }: Omit<Finances, 'treasury'>,
+  { country, regions, projects, worldPrices }: Omit<Finances, 'treasury'>,
   budget: Pick<Budget, 'taxRatePercent'>,
 ): Contribution[] {
-  const earnings = chainEarnings({ country, projects });
+  const earnings = chainEarnings({ country, projects, worldPrices });
   const powers = regionPower({ country, projects });
   return regions.flatMap((region): Contribution[] => {
     const name = regionName(country, region.id);
     const power = powers.find((entry) => entry.regionId === region.id);
     const fromPower = power === undefined ? 0 : poweredOutput(region.output, power);
-    // What a chain or power adds to the region's output is taxed as a line of its own.
+    // What a chain or power adds to the region's output is taxed as a line of its own. What a
+    // chain earns is taxed at the world ore price, and the price's effect is a line beside it.
+    const tax = (output: Money) => percentOf(output, budget.taxRatePercent);
     const sources = [
-      { label: `Tax from ${name}`, output: region.output },
+      { label: `Tax from ${name}`, output: region.output, lines: null },
       ...earnings
         .filter(({ site }) => site.regionId === region.id)
-        .map(({ site, output }) => ({ label: `Tax from ${site.name}`, output })),
-      ...(fromPower > 0 ? [{ label: `Tax from power in ${name}`, output: fromPower }] : []),
+        .map((earning) => ({
+          label: `Tax from ${earning.site.name}`,
+          output: earning.output,
+          lines: earningLines(`Tax from ${earning.site.name}`, earning, tax),
+        })),
+      ...(fromPower > 0
+        ? [{ label: `Tax from power in ${name}`, output: fromPower, lines: null }]
+        : []),
     ];
     const kept = outputPermille(region.unrest);
     const lost = sum(
@@ -193,11 +204,12 @@ function collectTaxes(
       ),
     );
     return [
-      ...sources.map(({ label, output }) => ({
-        label,
-        amount: percentOf(output, budget.taxRatePercent),
-        regionId: region.id,
-      })),
+      ...sources.flatMap(({ label, output, lines }) =>
+        (lines ?? [{ label, amount: tax(output) }]).map((line) => ({
+          ...line,
+          regionId: region.id,
+        })),
+      ),
       ...(lost > 0
         ? [
             {

@@ -41,7 +41,7 @@ export const bothCountries: [name: string, country: () => Country][] = [
  * port, since a mine must say what it depends on and that needs format 2.
  */
 export function testlandFormat1File(): unknown {
-  const file = withoutStartingDebt(testlandFile) as { formatVersion: number; sites: unknown[] };
+  const file = testlandFormat3File() as { formatVersion: number; sites: unknown[] };
   file.formatVersion = 1;
   file.sites = file.sites.slice(0, 3);
   return file;
@@ -63,8 +63,17 @@ export function testlandFormat2File(): unknown {
 
 /** Testland's file as format 3 could write it: it starts owing nothing. */
 export function testlandFormat3File(): unknown {
-  const file = withoutStartingDebt(testlandFile) as { formatVersion: number };
+  const file = testlandFormat4File() as { formatVersion: number; start: { loans?: unknown } };
+  delete file.start.loans;
   file.formatVersion = 3;
+  return file;
+}
+
+/** Testland's file as format 4 could write it: it names no border crossings. */
+export function testlandFormat4File(): unknown {
+  const file = structuredClone(testlandFile) as { formatVersion: number; crossings?: unknown };
+  delete file.crossings;
+  file.formatVersion = 4;
   return file;
 }
 

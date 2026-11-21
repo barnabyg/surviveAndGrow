@@ -1,6 +1,8 @@
+import { balance } from './balance';
 import type { Country, Site } from './country';
 import { siteStatus, type Project } from './projects';
-import { capacityOf } from './sites';
+import { capacityOf, oreTonnesOf } from './sites';
+import { costOf, formatPrice, priceOf, priceStatus, type WorldPrices } from './trade';
 import type { Money } from './types';
 import { inUse } from './upkeep';
 import { SITE_CHAIN_ROLES, type SiteState } from './vocabulary';
@@ -8,6 +10,8 @@ import { SITE_CHAIN_ROLES, type SiteState } from './vocabulary';
 interface Building {
   readonly country: Country;
   readonly projects: readonly Project[];
+  /** The world prices now: what the ore a chain ships is worth. */
+  readonly worldPrices: WorldPrices;
 }
 
 /** One site of a chain, as it stands. */
@@ -37,10 +41,22 @@ export interface Chain {
   /** Whether every site the source depends on is in use. */
   readonly complete: boolean;
   /**
-   * What the chain adds to its source's region's output this quarter. It is nothing unless
-   * the source is in use and the chain complete, and then what its weakest link carries.
+   * The ore the chain ships abroad this quarter, in tonnes. It is nothing unless the source is
+   * in use and the chain complete, and then what its weakest link carries.
+   */
+  readonly shipped: number;
+  /** The world ore price the ore is sold at this quarter, in dollars a tonne. */
+  readonly orePrice: number;
+  /**
+   * What the chain adds to its source's region's output this quarter: the ore it ships at the
+   * world ore price.
    */
   readonly output: Money;
+  /**
+   * What the ore it ships would earn at the usual world ore price. The difference from
+   * `output` is the world ore price's effect.
+   */
+  readonly atUsualPrice: Money;
   /**
    * The link that holds the chain back: the first missing one while it is incomplete, the
    * source while it is not in use, and otherwise the one that carries least (the first of
@@ -67,12 +83,17 @@ export function chainOf(building: Building, siteId: string): Chain | null {
     (least, link) => (least === null || link.carries < least.carries ? link : least),
     null,
   );
+  const shipped = oreTonnesOf(working ? (weakest?.carries ?? 0) : 0);
+  const orePrice = priceOf(building.worldPrices, 'ore');
   return {
     sourceId: source.id,
     links,
     missing,
     complete,
-    output: working ? (weakest?.carries ?? 0) : 0,
+    shipped,
+    orePrice,
+    output: costOf(shipped, orePrice),
+    atUsualPrice: costOf(shipped, balance.trade.goods.ore.usualDollarsPerTonne),
     bottleneck: !complete ? (missing[0] ?? null) : !working ? source.id : (weakest?.siteId ?? null),
   };
 }
@@ -93,15 +114,76 @@ export function chains(building: Building): Chain[] {
 /** What a source in use earns this quarter, with the site it stands on. */
 export interface ChainEarning {
   readonly site: Site;
+  /** What it earns at the world ore price. */
   readonly output: Money;
+  /** What it would earn at the usual world ore price. */
+  readonly atUsualPrice: Money;
+  /** The world ore price, in dollars a tonne. */
+  readonly orePrice: number;
 }
 
-/** The sources that earn this quarter, in the country file's order. */
+/** The sources that ship ore this quarter, in the country file's order. */
 export function chainEarnings(building: Building): ChainEarning[] {
   return chains(building).flatMap((chain) => {
     const site = building.country.sites.find((candidate) => candidate.id === chain.sourceId);
-    return site !== undefined && chain.output > 0 ? [{ site, output: chain.output }] : [];
+    if (site === undefined || chain.shipped === 0) return [];
+    const { output, atUsualPrice, orePrice } = chain;
+    return [{ site, output, atUsualPrice, orePrice }];
   });
+}
+
+/** What a mine earns at the world ore price, and could earn within the price's forecast. */
+export interface OreEarnings {
+  /**
+   * The ore it ships a quarter, in tonnes: what its chain ships while it earns, and otherwise
+   * what the mine itself could produce once its chain is complete.
+   */
+  readonly tonnes: number;
+  /** Whether its chain ships ore this quarter. */
+  readonly shipping: boolean;
+  /** The world ore price now, in dollars a tonne. */
+  readonly price: number;
+  /** What the ore earns a quarter at the price now. */
+  readonly earns: Money;
+  /** What it would earn at the low and the high end of the price's forecast. */
+  readonly forecast: { readonly min: Money; readonly max: Money };
+}
+
+/** What a source earns, or could earn, at the world ore price; null for any other site. */
+export function oreEarnings(building: Building, siteId: string): OreEarnings | null {
+  const chain = chainOf(building, siteId);
+  const source = building.country.sites.find((site) => site.id === siteId);
+  if (chain === null || source === undefined) return null;
+  const shipping = chain.shipped > 0;
+  const tonnes = shipping ? chain.shipped : oreTonnesOf(capacityOf(source.type) ?? 0);
+  const { price, forecast } = priceStatus(building, 'ore');
+  return {
+    tonnes,
+    shipping,
+    price,
+    earns: costOf(tonnes, price),
+    forecast: { min: costOf(tonnes, forecast.min), max: costOf(tonnes, forecast.max) },
+  };
+}
+
+/**
+ * A source's earnings as a breakdown lists them: what its ore would earn at the usual price,
+ * under the label given, and beside it, while the price is not at its usual level, the world
+ * ore price's effect: "Korrgate mine: ore at $85 a tonne".
+ */
+export function earningLines(
+  label: string,
+  earning: Pick<ChainEarning, 'output' | 'atUsualPrice' | 'orePrice'>,
+  value: (output: Money) => Money = (output) => output,
+): { readonly label: string; readonly amount: Money }[] {
+  const usual = value(earning.atUsualPrice);
+  const effect = value(earning.output) - usual;
+  return [
+    { label, amount: usual },
+    ...(effect === 0
+      ? []
+      : [{ label: `${label}: ore at ${formatPrice(earning.orePrice)}`, amount: effect }]),
+  ];
 }
 
 /**

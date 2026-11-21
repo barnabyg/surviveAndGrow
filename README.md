@@ -58,6 +58,18 @@ drought does not starve a region first.
 - **Earn the vote over the whole term.** Approval moves slowly towards where your tax and
   spending would settle it, and the election forecast in the right column says where you stand.
   Below 40% a region strikes, which costs far more revenue than the tax that provoked it.
+- **Buy grain when the harvest fails.** The trade panel in the right column orders grain for the
+  national reserve at the world price, which moves every quarter. Money can stand in for a bad
+  season, and austerity does not stop it.
+- **Sell a surplus after a good harvest.** The same panel sells grain from the reserve at the
+  world price less a margin. Keep the reserve above its safe level: the panel and the risks
+  ahead warn when a sale would take it below.
+- **Trade needs links.** Grain crosses the border only as far as the crossings and ports carry,
+  after the mine's ore. The trade panel shows what is free; a port widens it, and one left to
+  decay carries half.
+- **Don't bank on the mine.** A mine's ore sells at a world ore price that swings further than
+  grain's. Its card shows the price, its forecast and what the mine earns across it, and the
+  risks ahead warn when a slump would empty the treasury or miss a repayment.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
@@ -191,6 +203,21 @@ year's output from its regions, and their first repayments must be payable from 
 treasury and the first quarter's tax, so that the game cannot open on a missed payment. Testland,
 the test country, starts owing $11.0m, which opens it at BBB. A file of an earlier format starts
 owing nothing, and still loads as it is.
+
+In a file of `"formatVersion": 5`, `crossings` names the border crossings, the trade links open
+from the start. Each has an `id`, a `name`, the `neighbour` it leads to (the `id` of one of
+`map.neighbours`) and the `tonnes` it carries across the border a quarter, in whole thousands from
+1,000 to 100,000:
+
+```json
+"crossings": [
+  { "id": "korr-pass", "name": "Korr Pass", "neighbour": "voskar", "tonnes": 50000 }
+]
+```
+
+Ports in use add their own capacity. A file of format 5 that lists no crossings trades only
+through its ports. A file of an earlier format cannot name crossings, and is read as having one on
+each neighbour carrying 45,000 tonnes; it still loads as it is.
 
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:

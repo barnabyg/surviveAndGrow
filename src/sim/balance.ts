@@ -5,6 +5,7 @@ import type {
   DilemmaType,
   EventType,
   FoodStage,
+  Good,
   LastingService,
   Likelihood,
   ProsperityPart,
@@ -46,11 +47,27 @@ export interface SiteBalance {
    */
   readonly infrastructurePermille: number;
   /**
-   * For a site that plays a part in a chain (`SITE_TYPE_DEFINITIONS`), what it produces or
-   * carries in a quarter, in Money units, while in good repair. A chain yields the least of
-   * its sites' capacities, and a decaying site has only part of its capacity.
+   * For a site that plays a part in a chain (`SITE_TYPE_DEFINITIONS`), how much ore it
+   * produces or carries in a quarter while in good repair, counted as what that ore is worth at
+   * the usual world ore price, in Money units: at $100 a tonne, 600 is 600,000 tonnes. A chain
+   * ships the least of its sites' capacities, and a decaying site has only part of its
+   * capacity. What the ore shipped earns follows the world ore price.
    */
   readonly capacity?: number;
+}
+
+/**
+ * How the world price of one good moves. Prices are in whole dollars a tonne. Each quarter the
+ * price closes `revertPermillePerQuarter` thousandths of the gap to its usual level, and world
+ * markets then move it by up to `swingPermillePerQuarter` thousandths of the usual level either
+ * way, by the seed; it never leaves the range from `lowest` to `highest`.
+ */
+export interface GoodBalance {
+  readonly usualDollarsPerTonne: number;
+  readonly lowestDollarsPerTonne: number;
+  readonly highestDollarsPerTonne: number;
+  readonly swingPermillePerQuarter: number;
+  readonly revertPermillePerQuarter: number;
 }
 
 /**
@@ -210,6 +227,12 @@ export const balance = {
      * A risk is given a likelihood when its chance, in thousandths, is at least this much.
      * A chance below the first is negligible, and the risk is not listed.
      */
+    /**
+     * The chance, in thousandths, given to a danger that only a slump in the world ore price
+     * to the low end of its forecast would bring. A slump that deep is rare, but it is what a
+     * country that lives on its mine must be ready for, so it errs towards warning.
+     */
+    oreSlumpChancePermille: 100,
     likelihoodFromPermille: {
       remote: 20,
       unlikely: 100,
@@ -561,6 +584,55 @@ export const balance = {
       } satisfies Record<CreditRating, CreditStepBalance>,
     },
   },
+  /**
+   * Trade with the world. Each good has a world price that moves every quarter. Grain can be
+   * ordered for the national reserve: it arrives, and is paid for at the price of the quarter
+   * it was ordered in, as that quarter ends. Grain can be sold from the reserve at that price
+   * less the export margin. Ore is sold abroad by a mine's chain, at the world ore price.
+   */
+  trade: {
+    goods: {
+      // The usual price is what the neighbour's grain cost when its price was fixed: $2.4m for
+      // a fifth of what a million people eat in a quarter.
+      grain: {
+        usualDollarsPerTonne: 240,
+        lowestDollarsPerTonne: 150,
+        highestDollarsPerTonne: 420,
+        swingPermillePerQuarter: 125,
+        revertPermillePerQuarter: 250,
+      },
+      // Ore is what a mine's chain ships abroad. Its usual price makes a chain's capacities,
+      // which are counted in Money at that price, a round number of tonnes. It swings further
+      // than grain, so a country that lives on its mine lives with a riskier income.
+      ore: {
+        usualDollarsPerTonne: 100,
+        lowestDollarsPerTonne: 45,
+        highestDollarsPerTonne: 190,
+        swingPermillePerQuarter: 150,
+        revertPermillePerQuarter: 200,
+      },
+    } satisfies Record<Good, GoodBalance>,
+    /** An order is for a whole number of these tonnes. */
+    orderStepTonnes: 1000,
+    /**
+     * Grain sold abroad fetches the world price less this many thousandths of it, for the
+     * shipping and the traders' cut, so that selling fetches less than buying costs.
+     */
+    exportMarginPermille: 200,
+    /** How many quarters ahead the forecast range of a price looks, counting the next. */
+    forecastQuarters: 4,
+    /**
+     * Border crossings, which a country file names, each with the grain it carries across the
+     * border in a quarter: a whole number of order steps from `leastTonnes` to `mostTonnes`,
+     * small beside a port. A file of a format older than 5 cannot name them, and is read as
+     * having one crossing on each neighbour carrying `unlistedTonnes`.
+     */
+    crossings: {
+      leastTonnes: 1000,
+      mostTonnes: 100_000,
+      unlistedTonnes: 45_000,
+    },
+  },
   /** How the game is won. */
   victory: {
     /**
@@ -593,14 +665,14 @@ export const balance = {
       name: 'Grain from a neighbour',
       title: 'A neighbour offers grain',
       story:
-        'The national reserve is below its safe level, and a neighbouring government has noticed. It offers a shipment of grain at its own price, to be paid for at once.',
+        'The national reserve is below its safe level, and a neighbouring government has noticed. It offers a shipment of grain at the world price, to be paid for at once.',
       conditions: { reserve: 'belowSafe', restQuarters: 4 },
       options: [
         {
           id: 'buy',
           label: 'Buy the whole shipment',
           effects: [
-            { kind: 'treasury', perMillionPeople: -24 },
+            { kind: 'atWorldPrice', good: 'grain', needPermille: 200, pricePermille: 1000 },
             { kind: 'reserve', needPermille: 200 },
           ],
         },
@@ -608,7 +680,7 @@ export const balance = {
           id: 'half',
           label: 'Buy half of it',
           effects: [
-            { kind: 'treasury', perMillionPeople: -12 },
+            { kind: 'atWorldPrice', good: 'grain', needPermille: 100, pricePermille: 1000 },
             { kind: 'reserve', needPermille: 100 },
           ],
         },
@@ -619,7 +691,7 @@ export const balance = {
       name: 'Grain sold to merchants',
       title: 'Merchants offer to buy grain',
       story:
-        'The harvest is in and the national reserve is above its safe level. Grain merchants offer to buy a part of it for export. The money is good, and the grain will be gone before the next harvest is known.',
+        'The harvest is in and the national reserve is above its safe level. Grain merchants offer to buy a part of it at the world price, and to fetch it themselves. The money is good, and the grain will be gone before the next harvest is known.',
       // It comes with the new year, when the harvest has just reached the reserve.
       conditions: { inQuarters: [1], reserve: 'aboveSafe', restQuarters: 4 },
       options: [
@@ -628,7 +700,7 @@ export const balance = {
           label: 'Sell them a large part',
           effects: [
             { kind: 'reserve', needPermille: -300 },
-            { kind: 'treasury', perMillionPeople: 24 },
+            { kind: 'atWorldPrice', good: 'grain', needPermille: -300, pricePermille: 1000 },
           ],
         },
         {
@@ -636,7 +708,7 @@ export const balance = {
           label: 'Sell them a little',
           effects: [
             { kind: 'reserve', needPermille: -150 },
-            { kind: 'treasury', perMillionPeople: 12 },
+            { kind: 'atWorldPrice', good: 'grain', needPermille: -150, pricePermille: 1000 },
           ],
         },
         { id: 'keep', label: 'Keep the grain', effects: [] },

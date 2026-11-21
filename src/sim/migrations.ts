@@ -11,6 +11,7 @@ import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { damaged, isRecord, SaveError, type Json } from './saveChecks';
 import type { RegionState } from './state';
 import { tierAt } from './tiers';
+import { openingPrices } from './trade';
 import type { Money } from './types';
 import { upkeepForEvery } from './upkeep';
 import { TIERS, type LastingService, type Tier } from './vocabulary';
@@ -20,7 +21,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 6;
+export const SAVE_FORMAT_VERSION = 8;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -35,6 +36,8 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   3: fromFormat3,
   4: fromFormat4,
   5: fromFormat5,
+  6: fromFormat6,
+  7: fromFormat7,
 };
 
 /**
@@ -96,6 +99,9 @@ function tierOfOldSave(older: Json, regions: readonly unknown[], projects: unkno
       country: loadCountry(carried),
       regions: regions as RegionState[],
       projects: Array.isArray(projects) ? (projects as Project[]) : [],
+      // Before format 7 there were no world prices: a mine earned what it earns at the usual
+      // ore price.
+      worldPrices: openingPrices(),
     });
     return Number.isFinite(value) ? tierAt(value) : TIERS[0];
   } catch {
@@ -197,6 +203,35 @@ function fromFormat4(older: Json): Json {
 function fromFormat5(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
   return { ...older, formatVersion: 6, state: { ...state, austerity: null } };
+}
+
+/**
+ * Format 7 added trade: a world price for each good, which moves every quarter. A game written
+ * in format 6 never saw one, so its path begins where a new game's does, at the usual price,
+ * in the quarter it is opened in. Grain was the only good format 7 knew. Its last report has
+ * nothing of trade in it.
+ */
+function fromFormat6(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const grain = [balance.trade.goods.grain.usualDollarsPerTonne];
+  return { ...older, formatVersion: 7, state: { ...state, worldPrices: { grain } } };
+}
+
+/**
+ * Format 8 added ore to the goods: a mine's chain earns at the world ore price. A game written
+ * in format 7 earned as if ore stood at its usual price, so the ore price's path begins there,
+ * in the quarter it is opened in, and the game earns from it exactly what it earned before
+ * until the price first moves. Its grain price is carried as it was.
+ */
+function fromFormat7(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const prices = state.worldPrices;
+  const ore = [balance.trade.goods.ore.usualDollarsPerTonne];
+  return {
+    ...older,
+    formatVersion: 8,
+    state: { ...state, worldPrices: isRecord(prices) ? { ...prices, ore } : prices },
+  };
 }
 
 /**
