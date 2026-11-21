@@ -148,7 +148,7 @@ test('a save from a newer release is refused, left untouched and never written o
     for (const [key, text] of Object.entries(window.localStorage)) {
       if (!key.startsWith('survive-and-grow/save/')) continue;
       const save = JSON.parse(text as string) as { formatVersion: number };
-      window.localStorage.setItem(key, JSON.stringify({ ...save, formatVersion: 9 }));
+      window.localStorage.setItem(key, JSON.stringify({ ...save, formatVersion: 10 }));
     }
   });
   const newer = await storedSaves(page);
@@ -156,7 +156,7 @@ test('a save from a newer release is refused, left untouched and never written o
   await page.reload();
 
   await expect(savedGame(page)).toContainText(
-    'The saved game was written by a newer release of the game (save format 9; this release reads format 8). Open it with that release.',
+    'The saved game was written by a newer release of the game (save format 10; this release reads format 9). Open it with that release.',
   );
   await expect(savedGame(page)).toContainText('It has been left as it is');
   await expect(resume(page)).toHaveCount(0);
