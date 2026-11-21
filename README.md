@@ -70,6 +70,10 @@ drought or a flood does not starve a region first.
 - **Don't bank on the mine.** A mine's ore sells at a world ore price that swings further than
   grain's. Its card shows the price, its forecast and what the mine earns across it, and the
   risks ahead warn when a slump would empty the treasury or miss a repayment.
+- **Prepare for shocks abroad.** Failed harvests abroad push the grain price up, and an ore glut
+  pushes the ore price down, for three quarters. Each is announced two quarters ahead, in the
+  report, under the price and among the risks: stock the reserve before grain grows dear, and don't
+  borrow against the mine before its ore cheapens.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
@@ -235,6 +239,19 @@ is, with none:
 
 ```json
 "eventLikelihood": { "drought": 0, "flood": 0.1 }
+```
+
+In a file of `"formatVersion": 7`, `priceShockLikelihood` says how likely each world price shock
+is: the chance, from 0 to 1, that it is announced as a quarter begins, unless one of its kind is
+already announced or in force. The shocks are the game's own: `failedHarvestsAbroad` (the world
+grain price pushed up by $36 a tonne a quarter) and `oreGlut` (the world ore price pushed down by
+$20 a tonne a quarter), each announced two quarters before it first moves the price and in force
+for three. One the file leaves out never comes, and the whole entry may be left out. A file of an
+earlier format cannot name them, and still loads as it is, with none. Tavara gives failed harvests
+abroad 4% a quarter and an ore glut 5%:
+
+```json
+"priceShockLikelihood": { "failedHarvestsAbroad": 0.04, "oreGlut": 0.05 }
 ```
 
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a

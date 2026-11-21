@@ -257,11 +257,23 @@ figure there must change it here in the same commit.
   and refuses an order beyond it. What the links carry is fixed as the quarter begins, so an
   order the panel accepts is never cut for want of room. A port's card says what it carries and
   how it is shared. The grain a dilemma's offer brings or takes is outside this limit.
+- World price shocks are events abroad that push one good's world price, on top of what markets
+  do, for three quarters: failed harvests abroad push the grain price up by $36 a tonne a quarter,
+  and an ore glut pushes the ore price down by $20 a tonne a quarter. The country file says how
+  likely each is to be announced as a quarter begins (Tavara: 4% and 5%), and one of a kind is
+  not announced while another of its kind is announced or in force. Each is announced two
+  quarters before it first moves the price, so there are two quarters to buy grain, or to hold
+  off borrowing against the mine, at the price as it stands. The report says when one is
+  announced, when it first pushes the price and when it ends. While one is announced or in force
+  it is listed under the price it moves, the price's forecast takes in what it will push, and
+  the price's breakdown shows its push as a line of its own. Like the prices, the shocks a seed
+  brings are drawn from the seed and the quarter alone, so they leave its weather and events as
+  they were.
 
 ## Risks ahead
 
-- The left column lists the risks ahead: famine in a region, a flood that could begin, grain sold
-  below the reserve's safe level, strikes, a treasury that runs out, a bailout from a missed
+- The left column lists the risks ahead: famine in a region, a flood that could begin, a world
+  price shock announced or that could be, grain sold below the reserve's safe level, strikes, a treasury that runs out, a bailout from a missed
   payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and,
   in the term's last four quarters, losing the vote. The game plays the next four quarters with
   your committed decisions held as they are, once for each course the weather could take and each
@@ -271,7 +283,12 @@ figure there must change it here in the same commit.
   to one region picks that region out on the map. Neither famine nor a lost election can end the
   game without having been listed first. A flood is listed while it could begin within the four
   quarters, however unlikely, with the share of the harvest it would take and the sites it would
-  damage, so none comes without warning.
+  damage, so none comes without warning. A world price shock is listed as almost certain once it
+  is announced, and while it has quarters to run, and before that whenever it could be announced
+  in time to move its price within the four quarters, however unlikely, with the chance of it and
+  what it would do. The quarters ahead are played with the shocks announced pushing the prices,
+  so the dangers one brings, such as a treasury a glut would empty, are weighed from the quarter
+  it is announced.
 - While a mine earns, the game also plays the quarters ahead with ordinary weather and the world
   ore price slumping to the low end of its forecast. A treasury that would run out, or a
   repayment that would be missed, only in that slump is listed as unlikely, with the price it
