@@ -718,7 +718,7 @@ export const balance = {
       name: 'Emergency works',
       title: '{region} asks for emergency works',
       story:
-        'The failed rains have left {region} without work in its fields. Its council asks for public works to carry families through to the harvest, or failing that for grain from the national reserve.',
+        'Drought or flood has left {region} without work in its fields. Its council asks for public works to carry families through to the harvest, or failing that for grain from the national reserve.',
       conditions: { place: 'struckByEvent', restQuarters: 3 },
       options: [
         {
@@ -813,9 +813,25 @@ export const balance = {
       // It begins in the planting season, two quarters before the harvest it spoils.
       conditions: { beginsInQuarters: [2] },
       endsAfterHarvest: true,
-      effects: { harvestPermille: 600 },
+      effects: { harvestPermille: 600, decaysSites: false },
       announcement: {
         begins: 'The rains have failed.',
+        ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',
+      },
+    },
+    flood: {
+      name: 'Flood',
+      // The rivers rise with the planting rains, two quarters before the harvest it spoils.
+      // It begins in the same quarter as drought, so the two share the region's roll and never
+      // strike one region in the same year.
+      conditions: { beginsInQuarters: [2] },
+      endsAfterHarvest: true,
+      // It takes less of the harvest than a drought, but the water damages every site in use
+      // in the region: each decays until its upkeep is paid again. Irrigation softens what it
+      // does to the harvest as it softens the weather (`sites.irrigation.effects`).
+      effects: { harvestPermille: 700, decaysSites: true },
+      announcement: {
+        begins: 'The rivers have burst their banks.',
         ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',
       },
     },

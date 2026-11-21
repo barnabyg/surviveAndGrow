@@ -112,6 +112,34 @@ export function resolveUpkeep(
   return { projects: after, entries };
 }
 
+/** Damage done to the sites in use in one region, and what did it: "The flood in Lowmere Plains". */
+export interface SiteDamage {
+  readonly regionId: string;
+  readonly cause: string;
+}
+
+/**
+ * The projects once damage has told on the sites in use in the regions it struck: each in good
+ * repair is decaying from the quarter now beginning, until a quarter in which its upkeep is
+ * paid restores it. Each is reported.
+ */
+export function damageSites(
+  { country, projects }: Building,
+  damage: readonly SiteDamage[],
+): { readonly projects: readonly Project[]; readonly entries: readonly ReportEntry[] } {
+  const entries: ReportEntry[] = [];
+  const after = projects.map((project): Project => {
+    const site = country.sites.find((candidate) => candidate.id === project.siteId);
+    const struck = damage.find((done) => done.regionId === site?.regionId);
+    if (site === undefined || struck === undefined || project.status !== 'operating') {
+      return project;
+    }
+    entries.push(damagedEntry(site, struck));
+    return { ...project, status: 'decaying' };
+  });
+  return { projects: after, entries };
+}
+
 /** Whether a project is built and in use, in good repair or decaying. */
 export function inUse(project: Pick<Project, 'status'>): boolean {
   return isInUseState(project.status);
@@ -129,6 +157,16 @@ function decayingEntry(site: Site, upkeep: UpkeepOutcome): ReportEntry {
     seriousness: 'warning',
     headline: `Decaying: ${site.name}`,
     cause: `Upkeep of ${formatMoney(upkeep.spent)} fell short of the ${formatMoney(upkeep.needed)} the sites in use need, and the newest decay first. From next quarter it does only ${DECAYING_SHARE} of what it does in good repair, until its ${formatMoney(due)} upkeep is paid.`,
+    regionId: site.regionId,
+  };
+}
+
+function damagedEntry(site: Site, damage: SiteDamage): ReportEntry {
+  return {
+    kind: 'siteDecaying',
+    seriousness: 'warning',
+    headline: `Decaying: ${site.name}`,
+    cause: `${damage.cause} has damaged it. This quarter it does only ${DECAYING_SHARE} of what it does in good repair, and paying its ${formatMoney(siteTerms(site.type).upkeep)} upkeep restores it from the next.`,
     regionId: site.regionId,
   };
 }

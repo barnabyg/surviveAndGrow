@@ -340,7 +340,7 @@ describe('event likelihoods in a country file', () => {
     );
 
     expect(faults).toEqual([
-      'regions[0].eventLikelihood.locusts is not an event this game has (drought).',
+      'regions[0].eventLikelihood.locusts is not an event this game has (drought, flood).',
     ]);
   });
 

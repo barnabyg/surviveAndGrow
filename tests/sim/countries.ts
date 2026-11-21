@@ -150,15 +150,16 @@ export function withDroughtChance(
 
 /**
  * A country file with chance pinned down: the chance each quarter of each dilemma named,
- * and none of any other; the yearly chance of drought in each region named, and none
- * elsewhere; and, if given, the food reserve the country starts with. It starts owing
- * nothing, so that what debt does to the treasury and the rating stays out of the way.
+ * and none of any other; the yearly chance of drought and of flood in each region named,
+ * and none elsewhere; and, if given, the food reserve the country starts with. It starts
+ * owing nothing, so that what debt does to the treasury and the rating stays out of the way.
  */
 export function withChances(
   file: unknown,
   chances: {
     readonly dilemmas?: Record<string, number>;
     readonly drought?: Record<string, number>;
+    readonly flood?: Record<string, number>;
     readonly reserve?: number;
     /** Whether the regions' people grow in number, as they do when shipped. */
     readonly growing?: boolean;
@@ -168,8 +169,13 @@ export function withChances(
     chances.growing === true ? withoutStartingDebt(file) : withoutGrowth(withoutStartingDebt(file))
   ) as Chances;
   for (const region of copy.regions) {
-    region.eventLikelihood = { drought: chances.drought?.[region.id] ?? 0 };
+    region.eventLikelihood = {
+      drought: chances.drought?.[region.id] ?? 0,
+      // Saying how likely a flood is needs format 6 of the country file.
+      ...(chances.flood === undefined ? {} : { flood: chances.flood[region.id] ?? 0 }),
+    };
   }
+  if (chances.flood !== undefined) copy.formatVersion = Math.max(copy.formatVersion, 6);
   copy.dilemmaLikelihood = chances.dilemmas ?? {};
   if (chances.reserve !== undefined) copy.start.foodReserve = chances.reserve;
   return loadCountry(copy);

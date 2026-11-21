@@ -41,8 +41,13 @@ export const SPENDING_AREA_NAMES: Readonly<Record<SpendingArea, string>> = {
   upkeep: 'Upkeep',
 };
 
-/** The kinds of event the engine knows. A country file says how likely each is, region by region. */
-export const EVENT_TYPES = ['drought'] as const;
+/**
+ * The kinds of event the engine knows. A country file says how likely each is, region by
+ * region. The events that begin in the same quarter share one roll in each region, taken in
+ * this order (`rollEvents`), so a new kind goes at the end and leaves the others' strikes as
+ * they were.
+ */
+export const EVENT_TYPES = ['drought', 'flood'] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
 /**
@@ -219,7 +224,7 @@ export const SITE_EFFECT_DEFINITIONS: Readonly<
 > = {
   harvestWeather: {
     reach: 'region',
-    sentence: 'Weather and drought move its region’s harvest {percent}% less.',
+    sentence: 'Weather, drought and flood move its region’s harvest {percent}% less.',
   },
   transportLoss: {
     reach: 'region',

@@ -41,6 +41,7 @@ import {
   endEventsAfterHarvest,
   harvestPermille,
   rollEvents,
+  siteDamageOf,
   worstHarvestPermille,
   type ActiveEvent,
   type EventStrike,
@@ -87,7 +88,7 @@ import {
 } from './trade';
 import { GOODS } from './vocabulary';
 import { exactly, type Contribution, type Money } from './types';
-import { resolveUpkeep } from './upkeep';
+import { damageSites, resolveUpkeep } from './upkeep';
 
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
@@ -242,6 +243,11 @@ export function resolveQuarter(
       ? { ended: [], remaining: state.events }
       : endEventsAfterHarvest(state.events);
   const begun = beginStruck(remaining, chance.struck, date);
+  // An event that damages sites sets those in use in its region decaying as it begins.
+  const damaged = damageSites(
+    { country: state.country, projects: upkept.projects },
+    siteDamageOf(state.country, begun),
+  );
   const collapse = collapseOf(state.country, approval.regions);
   // The vote is held as each term's last quarter ends, unless the state has already fallen.
   const election =
@@ -296,6 +302,7 @@ export function resolveQuarter(
     ...begun.map((event) =>
       beginEntry(state.country, event, holdOn(state.country, upkept.projects, event.regionId)),
     ),
+    ...damaged.entries,
     budgetEntry(finances),
   ];
 
@@ -312,7 +319,7 @@ export function resolveQuarter(
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
       regions: approval.regions,
       events,
-      projects: upkept.projects,
+      projects: damaged.projects,
       debts: taken.debts,
       credit: credit.credit,
       worldPrices,

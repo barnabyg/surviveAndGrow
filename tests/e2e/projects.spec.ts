@@ -71,7 +71,7 @@ test('a project planned from the affordable list can be taken back before the qu
   const site = map(page).getByRole('button', { name: /^Lowmere irrigation/ });
   const offer = affordable(page).getByRole('listitem').filter({ hasText: 'Lowmere irrigation' });
   await expect(offer).toContainText(
-    '$12.0m · 3 quarters · Weather and drought move its region’s harvest 50% less.',
+    '$12.0m · 3 quarters · Weather, drought and flood move its region’s harvest 50% less.',
   );
 
   await offer.getByRole('button', { name: 'Plan Lowmere irrigation' }).click();

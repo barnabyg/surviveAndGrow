@@ -203,8 +203,8 @@ describe('the types of site', () => {
       cost: 120,
       buildQuarters: 3,
       upkeep: 4,
-      effect: 'Weather and drought move its region’s harvest 50% less.',
-      decayingEffect: 'Weather and drought move its region’s harvest 25% less.',
+      effect: 'Weather, drought and flood move its region’s harvest 50% less.',
+      decayingEffect: 'Weather, drought and flood move its region’s harvest 25% less.',
     });
     expect(siteTerms('farmRoad')).toEqual({
       cost: 100,
@@ -655,9 +655,9 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it is written for another version of the format', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 6);
+    const file = withValue(testlandFile, ['formatVersion'], 7);
 
-    expect(faultsOf(file)).toEqual(['formatVersion is 6, but this game reads versions 1 to 5.']);
+    expect(faultsOf(file)).toEqual(['formatVersion is 7, but this game reads versions 1 to 6.']);
   });
 
   it('when its format version is not a number', () => {
