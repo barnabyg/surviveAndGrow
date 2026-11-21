@@ -38,12 +38,14 @@ export function testlandFile(): Record<string, unknown> {
  * says: drought, and flood, strike the named regions every year and no other region ever,
  * and each dilemma named arises with the chance given, each quarter that it can, and no other
  * dilemma ever. Events left unsaid stay as the country file has them; once either is named,
- * the other strikes nowhere unless it is named too.
+ * the other strikes nowhere unless it is named too. Each world price shock named is announced
+ * with the chance given, each quarter that it can be, and no other ever.
  */
 export function tavaraWith(chances: {
   readonly drought?: readonly string[];
   readonly flood?: readonly string[];
   readonly dilemmas?: Record<string, number>;
+  readonly shocks?: Record<string, number>;
   /** Whether its people grow in number, as they do in the country that ships. */
   readonly growing?: boolean;
 }): CountryFile {
@@ -61,6 +63,7 @@ export function tavaraWith(chances: {
     }
   }
   country.dilemmaLikelihood = chances.dilemmas ?? {};
+  country.priceShockLikelihood = chances.shocks ?? {};
   return country;
 }
 

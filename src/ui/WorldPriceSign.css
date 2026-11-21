@@ -4,6 +4,18 @@
   flex-wrap: wrap;
 }
 
+/* A world price shock announced or in force, under the price it moves. */
+.world-price__shocks {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.world-price__shock {
+  font-size: 14px;
+  color: var(--label);
+}
+
 /* In a column or a card the breakdown opens in place, under the price, rather than over the map. */
 .world-price .breakdown {
   position: static;

@@ -17,8 +17,9 @@ interface WorldPriceSignProps {
 }
 
 /**
- * A good's world price, with its trend over the quarters just gone, what moved it last quarter
- * and the range it could reach within the forecast.
+ * A good's world price, with its trend over the quarters just gone, what moved it last quarter,
+ * the range it could reach within the forecast, and any world price shock announced or in
+ * force on it.
  */
 export function WorldPriceSign({ status, goodWhen }: WorldPriceSignProps) {
   const name = `World ${status.name.toLowerCase()} price`;
@@ -49,10 +50,24 @@ export function WorldPriceSign({ status, goodWhen }: WorldPriceSignProps) {
       >
         <p className="breakdown__empty">
           World markets move the price each quarter, and it is pulled part of the way back towards
-          its usual {formatPrice(status.usual)}. The forecast is the range it could reach if markets
-          moved it the same way every quarter.
+          its usual {formatPrice(status.usual)}. A world price shock pushes it further each quarter
+          it is in force. The forecast is the range it could reach if markets moved it the same way
+          every quarter, with the shocks announced pushing it as they will.
         </p>
       </VitalSign>
+      {status.shocks.length > 0 && (
+        <ul
+          className="world-price__shocks"
+          aria-label={`World price shocks on ${name.toLowerCase()}`}
+        >
+          {status.shocks.map((shock) => (
+            <li key={shock.type} className="world-price__shock">
+              <strong>{shock.inForce ? shock.name : `${shock.name} ahead`}:</strong>{' '}
+              {shock.description}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
