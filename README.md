@@ -26,7 +26,8 @@ This starts the game at http://localhost:41730 and opens it in your browser. It 
 New to the game? Choose **Tutorial** on the start screen. It plays your first year with you, a
 lesson at a time, each asking you to do one thing: set the budget, change the map's lens, plan a
 project, end a quarter, answer a dilemma. The **Tour** button in the top bar shows what every part
-of the screen is for, at any time.
+of the screen is for, at any time. In any game, a short tip explains each mechanic the first time it
+appears; **Tips on** in the top bar turns them off, and back on to see them again.
 
 Add `?seed=7` to the address to replay a known game: the same seed and the same decisions
 always give the same game. The summary at the end of a game gives its seed and offers to replay it.

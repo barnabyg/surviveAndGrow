@@ -1,0 +1,127 @@
+import { chainsThrough, electionStatus, TIERS, type GameState, type Risk } from '../sim';
+
+/**
+ * What a first-time tip waits for. Each is read from the game as it stands, the risks ahead
+ * and the projects the player has planned, by `tipsDue`.
+ */
+export type TipCondition =
+  | 'dilemma'
+  | 'weather-warning'
+  | 'unrest'
+  | 'decay'
+  | 'price-shock'
+  | 'missing-link'
+  | 'bailout'
+  | 'election-near'
+  | 'tier-passed';
+
+/** A note shown once, the first time what it explains appears in a game. */
+export interface Tip {
+  /** Names the tip in storage, which remembers it was seen. Renaming one shows it again. */
+  readonly id: string;
+  readonly when: TipCondition;
+  /** The part of the screen it points at, as a tour step does. */
+  readonly target: string | null;
+  readonly title: string;
+  readonly text: string;
+}
+
+/** The tips, in the order they are shown when several are due at once. */
+export const TIPS: readonly Tip[] = [
+  {
+    id: 'dilemma',
+    when: 'dilemma',
+    target: 'dilemma-panel',
+    title: 'A dilemma',
+    text: 'Now and then a quarter puts a decision to you. Each answer says what it will do before you choose it. The quarter cannot end until you have answered, and you can change your answer here until it does.',
+  },
+  {
+    id: 'bailout',
+    when: 'bailout',
+    target: 'vitals',
+    title: 'Bailout and austerity',
+    text: 'A payment was missed, so everything owed has been rolled into one bailout loan, the credit rating is at its lowest, and austerity holds for a time: a floor on tax, caps on spending, and no new borrowing or projects. The top bar counts down the quarters it has left.',
+  },
+  {
+    id: 'weather-warning',
+    when: 'weather-warning',
+    target: 'risks',
+    title: 'Drought and flood',
+    text: 'Risks ahead warns of a drought or flood that could strike, and what it would cost. Weather cuts a region’s harvest, and a flood also sets its sites decaying. Grain stores, irrigation, a healthy reserve and relief are how a region rides one out.',
+  },
+  {
+    id: 'unrest',
+    when: 'unrest',
+    target: 'regions',
+    title: 'Strikes and protests',
+    text: 'Where approval falls below the strike threshold a region strikes, and its output falls, which costs far more revenue than the tax that provoked it. Lower down it protests. The approval lens shows where.',
+  },
+  {
+    id: 'price-shock',
+    when: 'price-shock',
+    target: 'trade',
+    title: 'A world price shock',
+    text: 'A shock abroad has been announced: it will push a world price for three quarters, two quarters from when it was announced. Trade and the mines’ earnings feel it. Buy or sell before it lands if that helps.',
+  },
+  {
+    id: 'missing-link',
+    when: 'missing-link',
+    target: 'map',
+    title: 'Chains need every link',
+    text: 'The project you have planned is part of a chain, and a link of it is missing. A mine earns nothing until a road links it to a port, and a chain yields no more than its weakest link. The infrastructure lens marks every missing link.',
+  },
+  {
+    id: 'decay',
+    when: 'decay',
+    target: 'budget',
+    title: 'Decay',
+    text: 'A site is decaying. When upkeep spending is short of what the sites in use need, the newest decay first, and a decaying site does only part of its work. Raise upkeep in the budget to repair it.',
+  },
+  {
+    id: 'election-near',
+    when: 'election-near',
+    target: 'election',
+    title: 'The election is near',
+    text: 'The vote is a year away. Approval at the end of the term becomes your share of the vote, and below 50% you are out. Projects that open after the vote do nothing to win it.',
+  },
+  {
+    id: 'tier-passed',
+    when: 'tier-passed',
+    target: 'vitals',
+    title: 'A new tier',
+    text: 'The country has passed into a higher tier of prosperity, and the map shows it. People now expect more, so approval settles lower for the same budget. Hold the top tier for a year, with debt in check, to win.',
+  },
+];
+
+/** What a tip may be shown for: the game as it stands and what the player has planned. */
+export interface TipView {
+  readonly game: GameState;
+  /** The risks ahead under the decisions in force. */
+  readonly risks: readonly Risk[];
+  /** The sites the player has planned to build on this quarter. */
+  readonly plannedSiteIds: readonly string[];
+}
+
+/** How many quarters before the election quarter its tip is shown: a year ahead. */
+const ELECTION_NOTICE_QUARTERS = 3;
+
+/** The tip conditions that hold now. */
+export function tipsDue({ game, risks, plannedSiteIds }: TipView): ReadonlySet<TipCondition> {
+  const due = new Set<TipCondition>();
+  if (game.outcome.status !== 'playing') return due;
+  if (game.dilemma !== null) due.add('dilemma');
+  if (risks.some((risk) => risk.kind === 'event')) due.add('weather-warning');
+  if (game.regions.some((region) => region.unrest !== 'calm')) due.add('unrest');
+  if (game.projects.some((project) => project.status === 'decaying')) due.add('decay');
+  if (game.priceShocks.length > 0) due.add('price-shock');
+  const missingLink = plannedSiteIds.some((siteId) =>
+    chainsThrough(game, siteId).some((chain) =>
+      chain.missing.some((missing) => !plannedSiteIds.includes(missing)),
+    ),
+  );
+  if (missingLink) due.add('missing-link');
+  if (game.austerity !== null) due.add('bailout');
+  if (electionStatus(game).quartersAway <= ELECTION_NOTICE_QUARTERS) due.add('election-near');
+  if (TIERS.indexOf(game.tier) > TIERS.indexOf(game.startingTier)) due.add('tier-passed');
+  return due;
+}

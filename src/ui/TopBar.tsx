@@ -40,6 +40,8 @@ import { formatDate, formatSigned, formatSignedCount, formatSignedTonnes } from 
 import { recent, type Mark } from './trend';
 import { TrendLine } from './TrendLine';
 import { VitalSign } from './VitalSign';
+import type { TipsState } from './TipCard';
+import { TopBarActions } from './TopBarActions';
 import './TopBar.css';
 
 interface TopBarProps {
@@ -51,6 +53,8 @@ interface TopBarProps {
   readonly onRestart: () => void;
   /** Opens the guided tour of the screen. */
   readonly onTutorial: () => void;
+  /** The first-time tips, which the top bar turns on and off. */
+  readonly tips: TipsState;
 }
 
 /** How the debt stands against the win's debt test, shown while the nation is in the top tier. */
@@ -100,7 +104,8 @@ function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
   return { text, tone } as const;
 }
 
-export function TopBar({ game, report, onEndQuarter, onRestart, onTutorial }: TopBarProps) {
+export function TopBar(props: TopBarProps) {
+  const { game, report, onEndQuarter, onRestart, onTutorial, tips } = props;
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
@@ -477,28 +482,13 @@ export function TopBar({ game, report, onEndQuarter, onRestart, onTutorial }: To
         )}
       </div>
 
-      <div className="topbar__actions">
-        {/* A finished game offers its own replay on the summary, so this is for one in play. */}
-        {game.outcome.status === 'playing' && (
-          <>
-            <button type="button" className="button" data-tour="tutorial" onClick={onTutorial}>
-              Tour
-            </button>
-            <button type="button" className="button" onClick={onRestart}>
-              Restart
-            </button>
-          </>
-        )}
-        <button
-          type="button"
-          className="button button--primary"
-          data-tour="end-quarter"
-          disabled={game.outcome.status !== 'playing'}
-          onClick={onEndQuarter}
-        >
-          End quarter
-        </button>
-      </div>
+      <TopBarActions
+        playing={game.outcome.status === 'playing'}
+        onEndQuarter={onEndQuarter}
+        onRestart={onRestart}
+        onTutorial={onTutorial}
+        tips={tips}
+      />
     </header>
   );
 }
