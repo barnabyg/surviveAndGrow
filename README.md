@@ -201,6 +201,21 @@ treasury and the first quarter's tax, so that the game cannot open on a missed p
 the test country, starts owing $11.0m, which opens it at BBB. A file of an earlier format starts
 owing nothing, and still loads as it is.
 
+In a file of `"formatVersion": 5`, `crossings` names the border crossings, the trade links open
+from the start. Each has an `id`, a `name`, the `neighbour` it leads to (the `id` of one of
+`map.neighbours`) and the `tonnes` it carries across the border a quarter, in whole thousands from
+1,000 to 100,000:
+
+```json
+"crossings": [
+  { "id": "korr-pass", "name": "Korr Pass", "neighbour": "voskar", "tonnes": 50000 }
+]
+```
+
+Ports in use add their own capacity. A file of format 5 that lists no crossings trades only
+through its ports. A file of an earlier format cannot name crossings, and is read as having one on
+each neighbour carrying 45,000 tonnes; it still loads as it is.
+
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:
 `grainOffer` (the reserve is below its safe level), `merchantOffer` (the first quarter of a year,

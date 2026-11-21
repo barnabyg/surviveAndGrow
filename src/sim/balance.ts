@@ -621,6 +621,17 @@ export const balance = {
     exportMarginPermille: 200,
     /** How many quarters ahead the forecast range of a price looks, counting the next. */
     forecastQuarters: 4,
+    /**
+     * Border crossings, which a country file names, each with the grain it carries across the
+     * border in a quarter: a whole number of order steps from `leastTonnes` to `mostTonnes`,
+     * small beside a port. A file of a format older than 5 cannot name them, and is read as
+     * having one crossing on each neighbour carrying `unlistedTonnes`.
+     */
+    crossings: {
+      leastTonnes: 1000,
+      mostTonnes: 100_000,
+      unlistedTonnes: 45_000,
+    },
   },
   /** How the game is won. */
   victory: {

@@ -1,5 +1,5 @@
 {
-  "formatVersion": 4,
+  "formatVersion": 5,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -173,6 +173,9 @@
       ],
       "dependsOn": ["north-station"]
     }
+  ],
+  "crossings": [
+    { "id": "elsewhere-gate", "name": "Elsewhere gate", "neighbour": "elsewhere", "tonnes": 15000 }
   ],
   "dilemmaLikelihood": {
     "grainOffer": 0.3,

@@ -12,6 +12,7 @@ export {
   loadCountry,
   regionName,
   type Country,
+  type Crossing,
   type Decoration,
   type Neighbour,
   type Point,

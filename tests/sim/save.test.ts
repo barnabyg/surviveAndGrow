@@ -245,7 +245,7 @@ describe('a game on a country that starts in debt', () => {
 
     const resumed = loadSave(save);
     expect(resumed).toEqual({ game: state, report });
-    expect(resumed.game.country.formatVersion).toBe(4);
+    expect(resumed.game.country.formatVersion).toBe(5);
     expect(resumed.game.country.start.loans).toEqual(start.country.start.loans);
     expect(resumed.game.debts.map((debt) => debt.number)).toEqual([1, 2]);
     expect(advanceQuarter(resumed.game, steward(resumed.game))).toEqual(
@@ -329,8 +329,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when the country it carries will not load', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 5))).toBe(
-      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 5, but this game reads versions 1 to 4.',
+    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 6))).toBe(
+      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 6, but this game reads versions 1 to 5.',
     );
     expect(refusal(without(save, ['country', 'file']))).toMatch(/country cannot be loaded/);
     expect(refusal(without(save, ['country']))).toBe(

@@ -13,6 +13,7 @@ import { readStart } from './countryStart';
 import type { StartingLoan } from './debt';
 import { contains } from './geometry';
 import { checkAlternatives, checkDependencies } from './siteChecks';
+import { formatTonnes } from './text';
 import type { Money } from './types';
 import {
   DECORATION_KINDS,
@@ -37,10 +38,10 @@ import {
  * The newest version of the country file format this game reads. It still reads every
  * earlier version: format 2 added the sites a site depends on and a region's own population
  * growth, which format 1 cannot say, and format 3 added sites that are alternatives to each
- * other, which format 2 cannot, and format 4 added debt the game starts with, which format 3
- * cannot.
+ * other, which format 2 cannot, format 4 added debt the game starts with, which format 3
+ * cannot, and format 5 added border crossings, which format 4 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 4;
+export const COUNTRY_FORMAT_VERSION = 5;
 
 /** The oldest country file format this game still reads. */
 const OLDEST_COUNTRY_FORMAT_VERSION = 1;
@@ -117,6 +118,19 @@ export interface Neighbour {
   readonly label: Point;
 }
 
+/**
+ * A border crossing: a trade link to a neighbour, open from the start, that carries so many
+ * tonnes across the border a quarter.
+ */
+export interface Crossing {
+  readonly id: string;
+  readonly name: string;
+  /** The neighbour it leads to. */
+  readonly neighbourId: string;
+  /** What it carries across the border in a quarter, in tonnes. */
+  readonly tonnes: number;
+}
+
 /** Sea is whatever the regions and neighbours leave uncovered. A sea entry only names it. */
 export interface Sea {
   readonly name: string;
@@ -150,6 +164,8 @@ export interface Country {
   readonly settlements: readonly Settlement[];
   /** Where things can be built, in the country file's order. */
   readonly sites: readonly Site[];
+  /** The border crossings, in the country file's order. */
+  readonly crossings: readonly Crossing[];
   /**
    * The chance, from 0 to 1, that each dilemma arises as a quarter begins, when the
    * conditions it needs hold. One the file does not mention never arises.
@@ -320,6 +336,63 @@ function readSiteIds(
 }
 
 /**
+ * The border crossings a file of format 5 or later names in `crossings`, each leading to one
+ * of the file's neighbours and carrying a whole number of order steps a quarter. A file of an
+ * earlier format could not name them, and is read as having one on each neighbour.
+ */
+function readCrossings(
+  reader: Reader,
+  file: Json,
+  formatVersion: number,
+  neighbours: readonly Neighbour[],
+): Crossing[] {
+  const { leastTonnes, mostTonnes, unlistedTonnes } = balance.trade.crossings;
+  if (formatVersion < 5) {
+    if (file.crossings !== undefined) {
+      reader.fault('crossings', 'needs country file format 5 or later');
+    }
+    return neighbours.map((neighbour) => ({
+      id: neighbour.id,
+      name: `${neighbour.name} border`,
+      neighbourId: neighbour.id,
+      tonnes: unlistedTonnes,
+    }));
+  }
+  if (file.crossings === undefined) return [];
+  const ids = new Map<string, string>();
+  const names = new Map<string, string>();
+  const step = balance.trade.orderStepTonnes;
+  return reader.list(file, 'crossings', '', (item, path): Crossing => {
+    const crossing = {
+      id: reader.unique(item, 'id', path, ids),
+      name: reader.unique(item, 'name', path, names),
+      neighbourId: reader.text(item, 'neighbour', path),
+      tonnes: 0,
+    };
+    if (
+      crossing.neighbourId !== '' &&
+      !neighbours.some((neighbour) => neighbour.id === crossing.neighbourId)
+    ) {
+      reader.fault(
+        join(path, 'neighbour'),
+        `is "${crossing.neighbourId}", which is not the id of a neighbour`,
+      );
+    }
+    const before = reader.faults.length;
+    const tonnes = reader.number(item, 'tonnes', path);
+    if (reader.faults.length > before) return crossing;
+    if (tonnes < leastTonnes || tonnes > mostTonnes || tonnes % step !== 0) {
+      reader.fault(
+        join(path, 'tonnes'),
+        `is ${tonnes}, but must be a whole number of ${formatTonnes(step)} from ${formatTonnes(leastTonnes)} to ${formatTonnes(mostTonnes)}`,
+      );
+      return crossing;
+    }
+    return { ...crossing, tonnes };
+  });
+}
+
+/**
  * Checks a country file and returns the country it describes.
  * @throws CountryFileError naming every fault found.
  */
@@ -403,34 +476,39 @@ export function loadCountry(file: unknown): Country {
   const riverIds = new Map<string, string>();
   const start = reader.object(file, 'start', '');
 
+  const id = reader.text(file, 'id', '');
+  const name = reader.text(file, 'name', '');
+  const countryMap: Country['map'] = {
+    seas: reader.list(map, 'seas', 'map', (item, path): Sea => ({
+      name: reader.text(item, 'name', path),
+      label: reader.point(item, 'label', path),
+    })),
+    neighbours: reader.list(map, 'neighbours', 'map', (item, path): Neighbour => ({
+      id: reader.unique(item, 'id', path, neighbourIds),
+      name: reader.text(item, 'name', path),
+      shape: reader.points(item, 'shape', path, 3),
+      label: reader.point(item, 'label', path),
+    })),
+    rivers: reader.list(map, 'rivers', 'map', (item, path): River => ({
+      id: reader.unique(item, 'id', path, riverIds),
+      name: reader.text(item, 'name', path),
+      course: reader.points(item, 'course', path, 2),
+    })),
+    decorations: reader.list(map, 'decorations', 'map', (item, path): Decoration => ({
+      kind: reader.oneOf(item, 'kind', path, DECORATION_KINDS),
+      at: reader.point(item, 'at', path),
+    })),
+  };
+
   const country: Country = {
     formatVersion,
-    id: reader.text(file, 'id', ''),
-    name: reader.text(file, 'name', ''),
-    map: {
-      seas: reader.list(map, 'seas', 'map', (item, path): Sea => ({
-        name: reader.text(item, 'name', path),
-        label: reader.point(item, 'label', path),
-      })),
-      neighbours: reader.list(map, 'neighbours', 'map', (item, path): Neighbour => ({
-        id: reader.unique(item, 'id', path, neighbourIds),
-        name: reader.text(item, 'name', path),
-        shape: reader.points(item, 'shape', path, 3),
-        label: reader.point(item, 'label', path),
-      })),
-      rivers: reader.list(map, 'rivers', 'map', (item, path): River => ({
-        id: reader.unique(item, 'id', path, riverIds),
-        name: reader.text(item, 'name', path),
-        course: reader.points(item, 'course', path, 2),
-      })),
-      decorations: reader.list(map, 'decorations', 'map', (item, path): Decoration => ({
-        kind: reader.oneOf(item, 'kind', path, DECORATION_KINDS),
-        at: reader.point(item, 'at', path),
-      })),
-    },
+    id,
+    name,
+    map: countryMap,
     regions,
     settlements,
     sites,
+    crossings: readCrossings(reader, file, formatVersion, countryMap.neighbours),
     dilemmaLikelihood: readChances(
       reader,
       file,

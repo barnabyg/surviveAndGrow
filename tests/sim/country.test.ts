@@ -16,6 +16,7 @@ import {
   testland,
   testlandFormat1File,
   testlandFormat3File,
+  testlandFormat4File,
   testlandInDebt,
 } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
@@ -24,7 +25,7 @@ describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
     const country = tavara();
 
-    expect(tavaraAsShipped().formatVersion).toBe(3);
+    expect(tavaraAsShipped().formatVersion).toBe(5);
     expect(country.regions.map((region) => [region.name, region.terrain])).toEqual([
       ['Korr Highlands', 'highlands'],
       ['Salt Coast', 'coast'],
@@ -359,7 +360,7 @@ describe('a country file in format 3', () => {
   it('may mark sites as alternatives, each ruling out the other whichever side says so', () => {
     const country = testland();
 
-    expect(country.formatVersion).toBe(4);
+    expect(country.formatVersion).toBe(5);
     expect(valueAt(testlandFile, ['sites', 5, 'alternatives'])).toBeUndefined();
     expect(country.sites.map((site) => [site.id, site.alternatives])).toEqual([
       ['north-irrigation', []],
@@ -441,7 +442,7 @@ describe('a country file in format 4', () => {
   it('may say the loans the game starts with, each with its own terms', () => {
     const country = testlandInDebt();
 
-    expect(country.formatVersion).toBe(4);
+    expect(country.formatVersion).toBe(5);
     expect(country.start.loans).toEqual([
       { owed: 70, annualRateBasisPoints: 700, quarters: 8 },
       { owed: 40, annualRateBasisPoints: 950, quarters: 12 },
@@ -500,7 +501,7 @@ describe('a country file in format 4', () => {
   });
 
   it('cannot be given loans in a format 3 file', () => {
-    expect(faultsOf(withValue(testlandFile, ['formatVersion'], 3))).toEqual([
+    expect(faultsOf(withValue(testlandFormat4File(), ['formatVersion'], 3))).toEqual([
       'start.loans needs country file format 4 or later.',
     ]);
   });
@@ -567,6 +568,71 @@ describe('a country file in format 4', () => {
   });
 });
 
+describe('a country file in format 5', () => {
+  /** Testland with the border crossings given in place of its own. */
+  const crossing = (crossings: unknown) => withValue(testlandFile, ['crossings'], crossings);
+
+  it('names its border crossings, each with what it carries a quarter', () => {
+    expect(tavara().crossings).toEqual([
+      { id: 'korr-pass', name: 'Korr Pass', neighbourId: 'voskar', tonnes: 50_000 },
+      { id: 'selama-bridge', name: 'Selama bridge', neighbourId: 'selama', tonnes: 40_000 },
+    ]);
+    expect(testland().crossings).toEqual([
+      { id: 'elsewhere-gate', name: 'Elsewhere gate', neighbourId: 'elsewhere', tonnes: 15_000 },
+    ]);
+  });
+
+  it('may name none, and then trades only through its ports', () => {
+    expect(loadCountry(crossing([])).crossings).toEqual([]);
+  });
+
+  it('is read by a file of an earlier format as a crossing on each neighbour', () => {
+    expect(loadCountry(testlandFormat4File()).crossings).toEqual([
+      { id: 'elsewhere', name: 'Elsewhere border', neighbourId: 'elsewhere', tonnes: 45_000 },
+    ]);
+    expect(loadCountry(testlandFormat3File()).crossings).toHaveLength(1);
+  });
+
+  it('cannot be given crossings in a format 4 file', () => {
+    expect(faultsOf(withValue(testlandFile, ['formatVersion'], 4))).toEqual([
+      'crossings needs country file format 5 or later.',
+    ]);
+  });
+
+  it('is rejected when a crossing is not one the game allows', () => {
+    const gate = valueAt(testlandFile, ['crossings', 0]) as Record<string, unknown>;
+
+    expect(
+      faultsOf(
+        crossing([
+          { ...gate, neighbour: 'atlantis' },
+          { ...gate, name: 'Second gate', tonnes: 1500 },
+          { ...gate, id: 'third', name: 'Third gate', tonnes: 0 },
+          { id: 'fourth', name: 'Elsewhere gate', neighbour: 'elsewhere', tonnes: 101_000 },
+          { id: 'fifth' },
+          'a road',
+        ]),
+      ),
+    ).toEqual([
+      'crossings[0].neighbour is "atlantis", which is not the id of a neighbour.',
+      'crossings[1].id repeats "elsewhere-gate", already used by crossings[0].',
+      'crossings[1].tonnes is 1500, but must be a whole number of 1,000 t from 1,000 t to 100,000 t.',
+      'crossings[2].tonnes is 0, but must be a whole number of 1,000 t from 1,000 t to 100,000 t.',
+      'crossings[3].name repeats "Elsewhere gate", already used by crossings[0].',
+      'crossings[3].tonnes is 101000, but must be a whole number of 1,000 t from 1,000 t to 100,000 t.',
+      'crossings[4].name is missing.',
+      'crossings[4].neighbour is missing.',
+      'crossings[4].tonnes is missing.',
+      'crossings[5] must be an object, but is text.',
+      'crossings[5].id is missing.',
+      'crossings[5].name is missing.',
+      'crossings[5].neighbour is missing.',
+      'crossings[5].tonnes is missing.',
+    ]);
+    expect(faultsOf(crossing('a road'))).toEqual(['crossings must be a list, but is text.']);
+  });
+});
+
 describe('an invalid country file is rejected with a message naming the fault', () => {
   it('when it is not an object', () => {
     expect(faultsOf('tavara')).toEqual(['The file must be an object, but is text.']);
@@ -585,9 +651,9 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it is written for another version of the format', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 5);
+    const file = withValue(testlandFile, ['formatVersion'], 6);
 
-    expect(faultsOf(file)).toEqual(['formatVersion is 5, but this game reads versions 1 to 4.']);
+    expect(faultsOf(file)).toEqual(['formatVersion is 6, but this game reads versions 1 to 5.']);
   });
 
   it('when its format version is not a number', () => {
