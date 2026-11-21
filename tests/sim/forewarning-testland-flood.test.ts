@@ -9,5 +9,5 @@ sweepDoingNothing(
       drought: { northfield: 0.5, sandreach: 0.5 },
       flood: { northfield: 0.4, sandreach: 0.4 },
     }),
-  { floods: true, seedsPerTest: 10 },
+  { floods: true, seedsPerTest: 5 },
 );

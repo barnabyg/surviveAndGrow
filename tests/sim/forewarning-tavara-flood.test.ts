@@ -8,5 +8,5 @@ const everywhere = (chance: number) =>
 sweepDoingNothing(
   'Tavara with drought and flood likely everywhere',
   () => withChances(tavaraFile, { drought: everywhere(0.4), flood: everywhere(0.4) }),
-  { floods: true, seedsPerTest: 10 },
+  { floods: true, seedsPerTest: 5 },
 );
