@@ -82,7 +82,8 @@ interface SiteMarkProps {
  * One site on the map. It is a button: picking it opens the site's card. Each state has
  * its own shape as well as its own colour: an empty site is a dashed marker, one being
  * built wears a ring and says how far it has got, and one in use is solid. One in use that
- * is decaying for want of upkeep also wears the warning triangle and a tag that says so.
+ * is decaying, for want of upkeep or from a flood, also wears the warning triangle and a tag
+ * that says so.
  * A missing link in the chain picked out wears a cross and a tag, and its route is dotted;
  * ringed, it also wears a broken ring, and its route's dots are larger.
  * A site closed by building on one of its alternatives is faded and struck through.

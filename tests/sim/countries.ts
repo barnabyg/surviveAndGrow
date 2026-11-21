@@ -21,10 +21,13 @@ export const testland = (): Country =>
 /** Testland with its dilemmas left out and no growth, but owing the loans it starts with. */
 export const testlandInDebt = (): Country => loadCountry(withoutDilemmas(testlandFile));
 
-/** The two countries with their dilemmas left out, but growing as they do when shipped. */
+/**
+ * The two countries with their dilemmas left out, but growing as they do when shipped.
+ * Testland has neither drought nor flood: it spends nothing on relief, so either would bring
+ * famine, and famine stops its people growing.
+ */
 export const tavaraGrowing = (): Country => loadCountry(withGrowth(withoutDilemmas(tavaraFile)));
-export const testlandGrowing = (): Country =>
-  loadCountry(withoutStartingDebt(withGrowth(withoutDilemmas(testlandFile))));
+export const testlandGrowing = (): Country => withChances(testlandFile, { growing: true });
 
 /** The two countries exactly as their files are written, dilemmas and all. */
 export const tavaraAsShipped = (): Country => loadCountry(tavaraFile);
@@ -71,10 +74,36 @@ export function testlandFormat3File(): unknown {
 
 /** Testland's file as format 4 could write it: it names no border crossings. */
 export function testlandFormat4File(): unknown {
-  const file = structuredClone(testlandFile) as { formatVersion: number; crossings?: unknown };
+  const file = testlandFormat5File() as { formatVersion: number; crossings?: unknown };
   delete file.crossings;
   file.formatVersion = 4;
   return file;
+}
+
+/** Testland's file as format 5 could write it: no flood ever comes. */
+export function testlandFormat5File(): unknown {
+  const file = testlandFormat6File() as Chances;
+  for (const region of file.regions) {
+    if (region.eventLikelihood !== undefined) delete region.eventLikelihood.flood;
+  }
+  file.formatVersion = 5;
+  return file;
+}
+
+/** Testland's file as format 6 could write it: no world price shock ever comes. */
+export function testlandFormat6File(): unknown {
+  const file = structuredClone(testlandFile) as Chances;
+  delete file.priceShockLikelihood;
+  file.formatVersion = 6;
+  return file;
+}
+
+/**
+ * A country as it is, but with no world price shock ever coming: for a test that pins down
+ * how prices move from the seed alone.
+ */
+export function withoutPriceShocks(country: Country): Country {
+  return loadCountry({ ...(country.source as object), priceShockLikelihood: {} });
 }
 
 /** A copy of a country file that starts the game owing nothing. */
@@ -108,6 +137,7 @@ interface Chances {
   formatVersion: number;
   regions: { id: string; eventLikelihood?: Record<string, number>; populationGrowth?: number }[];
   dilemmaLikelihood?: Record<string, number>;
+  priceShockLikelihood?: Record<string, number>;
   start: { foodReserve: number };
 }
 
@@ -150,25 +180,43 @@ export function withDroughtChance(
 
 /**
  * A country file with chance pinned down: the chance each quarter of each dilemma named,
- * and none of any other; the yearly chance of drought in each region named, and none
- * elsewhere; and, if given, the food reserve the country starts with. It starts owing
- * nothing, so that what debt does to the treasury and the rating stays out of the way.
+ * and none of any other; the yearly chance of drought and of flood in each region named,
+ * and none elsewhere; and, if given, the food reserve the country starts with. It starts
+ * owing nothing, so that what debt does to the treasury and the rating stays out of the way.
  */
 export function withChances(
   file: unknown,
   chances: {
     readonly dilemmas?: Record<string, number>;
     readonly drought?: Record<string, number>;
+    readonly flood?: Record<string, number>;
     readonly reserve?: number;
     /** Whether the regions' people grow in number, as they do when shipped. */
     readonly growing?: boolean;
+    /**
+     * The chance each quarter of each world price shock named being announced, and none of
+     * any other. Left out, no shock ever comes.
+     */
+    readonly shocks?: Record<string, number>;
   },
 ): Country {
   const copy = (
     chances.growing === true ? withoutStartingDebt(file) : withoutGrowth(withoutStartingDebt(file))
   ) as Chances;
   for (const region of copy.regions) {
-    region.eventLikelihood = { drought: chances.drought?.[region.id] ?? 0 };
+    region.eventLikelihood = {
+      drought: chances.drought?.[region.id] ?? 0,
+      // Saying how likely a flood is needs format 6 of the country file.
+      ...(chances.flood === undefined ? {} : { flood: chances.flood[region.id] ?? 0 }),
+    };
+  }
+  if (chances.flood !== undefined) copy.formatVersion = Math.max(copy.formatVersion, 6);
+  // Saying how likely a world price shock is needs format 7 of the country file.
+  if (chances.shocks === undefined) {
+    delete copy.priceShockLikelihood;
+  } else {
+    copy.priceShockLikelihood = chances.shocks;
+    copy.formatVersion = Math.max(copy.formatVersion, 7);
   }
   copy.dilemmaLikelihood = chances.dilemmas ?? {};
   if (chances.reserve !== undefined) copy.start.foodReserve = chances.reserve;

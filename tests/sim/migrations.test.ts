@@ -19,6 +19,7 @@ import format4Save from '../saves/format-4.json';
 import format5Save from '../saves/format-5.json';
 import format6Save from '../saves/format-6.json';
 import format7Save from '../saves/format-7.json';
+import format8Save from '../saves/format-8.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './players';
 
@@ -442,5 +443,52 @@ describe('the save kept from save format 7', () => {
     const { game } = loadSave(format7Save);
 
     expect(game.worldPrices).toEqual({ grain: [240, 223, 209, 247], ore: [100] });
+  });
+});
+
+describe('the save kept from save format 8', () => {
+  it('still opens on the game it was written from, with the ore price moving beside grain', () => {
+    const { game, report } = loadSave(format8Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(game.worldPrices).toEqual({ grain: [240, 223, 209, 247], ore: [100, 107, 96, 99] });
+    expect(game.projects.map((project) => [project.siteId, project.status])).toEqual([
+      ['korr-mine', 'building'],
+    ]);
+    expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
+  });
+
+  it('plays on, each world price moving on from where it was', () => {
+    const { game } = loadSave(format8Save);
+
+    const { state } = advanceQuarter(game, answering(game, steward(game)));
+
+    expect(state.worldPrices.grain.slice(0, 4)).toEqual([240, 223, 209, 247]);
+    expect(state.worldPrices.ore.slice(0, 4)).toEqual([100, 107, 96, 99]);
+    expect(state.worldPrices.ore).toHaveLength(5);
+  });
+
+  it('refuses an ore price that is not a whole number of dollars', () => {
+    const damaged = withValue(format8Save, ['state', 'worldPrices', 'ore', 1], 10.5);
+
+    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.ore\[1\]/);
+  });
+
+  it('refuses a save with no ore price', () => {
+    const damaged = withValue(format8Save, ['state', 'worldPrices', 'ore'], []);
+
+    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.ore/);
+  });
+
+  it('is lifted to format 9 with no world price shock announced', () => {
+    const { game } = loadSave(format8Save);
+
+    expect(game.priceShocks).toEqual([]);
+  });
+
+  it('is lifted to format 9 having carried nothing by its trade links, which it did not keep', () => {
+    const { game } = loadSave(format8Save);
+
+    expect(game.tradeCarried).toEqual([]);
   });
 });

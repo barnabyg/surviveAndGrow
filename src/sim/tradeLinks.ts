@@ -53,6 +53,18 @@ export interface TradeCapacity {
  * chain: half while it decays.
  */
 export function tradeCapacity(game: Trading, orders: readonly TradeOrder[] = []): TradeCapacity {
+  const links = tradeLinks(game);
+  const total = sum(links.map((link) => link.tonnes));
+  const ore = Math.min(total, sum(chains(game).map((chain) => chain.shipped)));
+  const grain = sum(orders.map((order) => order.tonnes));
+  return { links, total, ore, grain, free: total - ore - grain };
+}
+
+/**
+ * The trade links this quarter: the crossings in the country file's order, then the ports in
+ * use in the same order, each with what it carries.
+ */
+export function tradeLinks(game: Omit<Trading, 'worldPrices'>): TradeLink[] {
   const crossings = game.country.crossings.map((crossing): TradeLink => ({
     id: crossing.id,
     name: crossing.name,
@@ -69,11 +81,7 @@ export function tradeCapacity(game: Trading, orders: readonly TradeOrder[] = [])
     const tonnes = portTonnesOf(site.type, decaying);
     return [{ id: site.id, name: site.name, kind: 'port', tonnes, decaying }];
   });
-  const links = [...crossings, ...ports];
-  const total = sum(links.map((link) => link.tonnes));
-  const ore = Math.min(total, sum(chains(game).map((chain) => chain.shipped)));
-  const grain = sum(orders.map((order) => order.tonnes));
-  return { links, total, ore, grain, free: total - ore - grain };
+  return [...crossings, ...ports];
 }
 
 /**

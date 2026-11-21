@@ -7,12 +7,14 @@ import type { Borrowing, Debt } from './debt';
 import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
+import type { PriceShock } from './priceShocks';
 import type { Project } from './projects';
 import type { VitalSigns } from './history';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import type { SiteSchedule } from './timeline';
 import type { TradeOrder, WorldPrices } from './trade';
+import type { RouteCarriage } from './tradeRoutes';
 import type { Figure, GameDate, Money, Range } from './types';
 import type { CreditRating, FoodStage, Tier, Unrest } from './vocabulary';
 
@@ -122,6 +124,14 @@ export interface GameState {
    * price goods are bought at this quarter.
    */
   readonly worldPrices: WorldPrices;
+  /** The world price shocks announced and not yet ended: those to come and those in force. */
+  readonly priceShocks: readonly PriceShock[];
+  /**
+   * What each trade link carried across the border in the quarter last played: the mines' ore
+   * and the grain that was really bought and sold, by the links that carried any. None before
+   * the first quarter is played.
+   */
+  readonly tradeCarried: readonly RouteCarriage[];
   /**
    * The vital signs as each quarter began, from the start of the game to the quarter now
    * being decided, in order. The last record is the position now.

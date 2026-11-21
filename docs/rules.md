@@ -17,9 +17,14 @@ figure there must change it here in the same commit.
 
 - Each region feeds itself from its own harvest, which comes in quarter 4, and sends its surplus
   to the national food reserve. The harvest forecast is a range that narrows through the year.
-- A drought cuts a region's harvest and is announced two quarters ahead. A region that runs short
-  goes from adequate to tight, to shortage, to famine. Pick the region on the map, or in the food
+- A drought cuts a region's harvest by 40% and is announced two quarters ahead. A region that runs
+  short goes from adequate to tight, to shortage, to famine. Pick the region on the map, or in the food
   relief panel, to send it relief from the national reserve.
+- A flood also comes with the planting season, two quarters before the harvest it spoils, and cuts
+  the region's harvest by 30%. It damages every site in use in the region as it begins: each is
+  decaying from that quarter, doing half of what it does in good repair, and a quarter in which
+  its upkeep is paid restores it from the next. A region has at most one of drought and flood in a
+  year. Both are drawn on the map the same way, and last until the harvest is in.
 - A famine that lasts two quarters running collapses the state and ends the game.
 
 ## Elections, winning and the end of a game
@@ -91,8 +96,8 @@ figure there must change it here in the same commit.
 - The budget's own spending is paid first and instalments out of what is left, the oldest project
   first. A project the treasury cannot pay for pauses for the quarter and carries on when it can
   be paid. The map shows how far each has got, and a road is drawn along the part that is built.
-- A finished site is in use from the next quarter. Irrigation halves how far the weather and
-  drought move its region's harvest; a farm road halves the share of its region's surplus lost on
+- A finished site is in use from the next quarter. Irrigation halves how far the weather, drought
+  and flood move its region's harvest; a farm road halves the share of its region's surplus lost on
   the way to the reserve; a grain store cuts what spoils in the national reserve by a quarter.
   Several of one type multiply together.
 - Every site in use needs upkeep each quarter: $0.4m for an irrigation scheme, $0.3m for a farm
@@ -103,8 +108,9 @@ figure there must change it here in the same commit.
 - When upkeep falls short, by a cut to the slider or because the treasury cuts every area, sites
   decay. Upkeep keeps sites in good repair in the order building began on them, so the newest
   decay first. A decaying site does half of what it does in good repair, and adds half as much to
-  its region's infrastructure access, from the quarter after its upkeep went unpaid. It wears the
-  warning triangle on the map, and its card says why and what restores it. A quarter in which its
+  its region's infrastructure access, from the quarter after its upkeep went unpaid. A flood
+  sets the sites in its region decaying in the same way. A decaying site wears the warning
+  triangle on the map, and its card says why and what restores it. A quarter in which its
   upkeep is paid restores it from the next. Decay and recovery are reported, and the risks ahead
   warn when upkeep will fall short.
 
@@ -251,18 +257,38 @@ figure there must change it here in the same commit.
   and refuses an order beyond it. What the links carry is fixed as the quarter begins, so an
   order the panel accepts is never cut for want of room. A port's card says what it carries and
   how it is shared. The grain a dilemma's offer brings or takes is outside this limit.
+- World price shocks are events abroad that push one good's world price, on top of what markets
+  do, for three quarters: failed harvests abroad push the grain price up by $36 a tonne a quarter,
+  and an ore glut pushes the ore price down by $20 a tonne a quarter. The country file says how
+  likely each is to be announced as a quarter begins (Tavara: 4% and 5%), and one of a kind is
+  not announced while another of its kind is announced or in force. Each is announced two
+  quarters before it first moves the price, so there are two quarters to buy grain, or to hold
+  off borrowing against the mine, at the price as it stands. The report says when one is
+  announced, when it first pushes the price and when it ends. While one is announced or in force
+  it is listed under the price it moves, the price's forecast takes in what it will push, and
+  the price's breakdown shows its push as a line of its own. Like the prices, the shocks a seed
+  brings are drawn from the seed and the quarter alone, so they leave its weather and events as
+  they were.
 
 ## Risks ahead
 
-- The left column lists the risks ahead: famine in a region, grain sold below the reserve's
-  safe level, strikes, a treasury that runs out,
-  a bailout from a missed payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with your committed decisions held as they are, once
-  for each course the weather could take and each drought that could still begin, and lists each
-  danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
+- The left column lists the risks ahead: famine in a region, a flood that could begin, a world
+  price shock announced or that could be, grain sold below the reserve's safe level, strikes, a treasury that runs out, a bailout from a missed
+  payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and,
+  in the term's last four quarters, losing the vote. The game plays the next four quarters with
+  your committed decisions held as they are, once for each course the weather could take and each
+  drought or flood that could still begin, and lists each danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
   further. A danger too unlikely to matter is left out, unless it would end the game, and a risk
   to one region picks that region out on the map. Neither famine nor a lost election can end the
-  game without having been listed first.
+  game without having been listed first. A flood is listed while it could begin within the four
+  quarters, however unlikely, with the share of the harvest it would take and the sites it would
+  damage, so none comes without warning. A world price shock is listed as almost certain once it
+  is announced, and while it has quarters to run, and before that whenever it could be announced
+  in time to move its price within the four quarters, however unlikely, with the chance of it and
+  what it would do. The quarters ahead are played with the shocks announced pushing the prices,
+  so the dangers one brings, such as a treasury a glut would empty, are weighed from the quarter
+  it is announced.
 - While a mine earns, the game also plays the quarters ahead with ordinary weather and the world
   ore price slumping to the low end of its forecast. A treasury that would run out, or a
   repayment that would be missed, only in that slump is listed as unlikely, with the price it
@@ -271,7 +297,7 @@ figure there must change it here in the same commit.
 ## Dilemmas
 
 - Some quarters open with a dilemma: a neighbour offering grain, merchants wanting to buy from
-  the reserve, a region in drought asking for emergency works, strikers asking for talks,
+  the reserve, a region in drought or flood asking for emergency works, strikers asking for talks,
   teachers demanding a pay rise, a donor offering a grant with conditions. The neighbour's grain
   is priced at the world grain price, and the merchants pay the world grain price, with no
   export margin, since they fetch the grain themselves. Each has two or three
@@ -309,9 +335,21 @@ figure there must change it here in the same commit.
   lens colours each region by its living standard, and the infrastructure lens by its
   infrastructure access, from none upwards; one site in use moves a region up a step. The
   infrastructure lens also marks every link missing from a chain, ringed, with no site picked
-  out, so you can see what each region has built and what it still lacks. Each lens has a scale
-  beside the buttons, its steps differ in lightness, and every region also carries its value as
-  text. The lens stays as you chose it from quarter to quarter, and sites, routes, events and
+  out, so you can see what each region has built and what it still lacks. It marks the trade
+  links too: every port not yet in use has a dotted shipping lane tagged "✕ Missing trade link",
+  and a decaying port's lane is tagged "▲ Weak trade link". Each lens has a scale beside the
+  buttons, its steps differ in lightness, and every region also carries its value as text. The
+  lens stays as you chose it from quarter to quarter, and sites, routes, trade routes, events and
   relief are drawn under all of them.
+- The trade routes are drawn on the map from the country file: a bar where each border crossing
+  meets its neighbour, and a shipping lane from each port in use to the edge of the map. Each
+  route is as wide as what it can carry, with a pale core as wide as what it carried last
+  quarter, and a tag gives both in tonnes: "600,000 t of 900,000 t". The mines' ore goes by the
+  port its chain runs to, and grain bought and sold abroad over the border crossings first, then
+  by sea; grain an order could not pay for, or a dilemma's answer left the reserve without, never
+  crossed. A port that has just come into use has carried nothing yet. A decaying port's lane is
+  dashed. Select a route to open its card: the mines' ore and the grain it carried last quarter
+  and is to carry this quarter with the grain ordered so far, and how much of its capacity is
+  free.
 - The side columns scroll on their own when they run long, and the map gives up height to the
   timeline, so the whole screen stays in view.

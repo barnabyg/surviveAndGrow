@@ -79,7 +79,7 @@ export {
   type StartingLoan,
 } from './debt';
 export { electionStatus, type ElectionStatus } from './election';
-export { type ActiveEvent } from './events';
+export { damageTo, type ActiveEvent } from './events';
 export {
   foodStatus,
   monthsOfFood,
@@ -87,7 +87,7 @@ export {
   type Harvest,
   type RegionHarvest,
 } from './food';
-export { dateOfQuarter, seasonOf } from './calendar';
+export { dateOfQuarter, quarterNumber, seasonOf } from './calendar';
 export { drawAt } from './rng';
 export { type VitalSigns } from './history';
 export { type ReportEntry } from './report';
@@ -148,6 +148,14 @@ export {
   type WorldPrices,
 } from './trade';
 export { portTonnesOf, tradeCapacity, type TradeCapacity, type TradeLink } from './tradeLinks';
+export { tradeRoutes, type Carriage, type RouteCarriage, type TradeRoute } from './tradeRoutes';
+export {
+  shockName,
+  type PriceShock,
+  type PriceShockDefinition,
+  type ShockStatus,
+} from './priceShocks';
+export { contains } from './geometry';
 export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
 export {
   type Decisions,

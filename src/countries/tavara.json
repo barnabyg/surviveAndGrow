@@ -1,5 +1,5 @@
 {
-  "formatVersion": 5,
+  "formatVersion": 7,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -256,7 +256,8 @@
       "output": 38,
       "farmland": 320,
       "eventLikelihood": {
-        "drought": 0
+        "drought": 0,
+        "flood": 0.1
       }
     },
     {
@@ -320,7 +321,8 @@
       "output": 26,
       "farmland": 200,
       "eventLikelihood": {
-        "drought": 0
+        "drought": 0,
+        "flood": 0.2
       }
     },
     {
@@ -550,6 +552,10 @@
     "strikeTalks": 0.4,
     "teachersPay": 0.08,
     "donorGrant": 0.3
+  },
+  "priceShockLikelihood": {
+    "failedHarvestsAbroad": 0.04,
+    "oreGlut": 0.05
   },
   "start": {
     "treasury": 42,

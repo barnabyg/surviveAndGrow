@@ -5,17 +5,31 @@ import type { GameResult } from './batch';
 import { DEGENERATE_PLAYERS, SCRIPTED_PLAYERS, type ScriptedPlayer } from './players';
 
 /** The countries the balance run can play, by the name `BALANCE_COUNTRY` gives them. */
-export const COUNTRIES: Readonly<Record<string, () => Country>> = {
-  tavara: () => loadCountry(tavaraFile),
-  testland: () => loadCountry(testlandFile),
+export const COUNTRIES: Readonly<Record<string, object>> = {
+  tavara: tavaraFile,
+  testland: testlandFile,
 };
 
-export function countryNamed(name: string): Country {
-  const load = COUNTRIES[name];
-  if (load === undefined) {
+/**
+ * Whether the world price shocks come as the country file says (`shipped`), or never
+ * (`none`): the same games with no shock in them, since the shocks have draws of their own
+ * and leave the weather and events of a seed as they were. `BALANCE_SHOCKS` chooses.
+ */
+export type ShockSetting = 'shipped' | 'none';
+
+export function shockSetting(value: string | undefined): ShockSetting {
+  if (value === undefined || value === '' || value === 'shipped') return 'shipped';
+  if (value === 'none') return 'none';
+  throw new Error(`BALANCE_SHOCKS must be shipped or none, but is "${value}".`);
+}
+
+export function countryNamed(name: string, shocks: ShockSetting = 'shipped'): Country {
+  const file = COUNTRIES[name];
+  if (file === undefined) {
     throw new Error(`BALANCE_COUNTRY must be tavara, testland or both, but is "${name}".`);
   }
-  return load();
+  if (shocks === 'shipped') return loadCountry(file);
+  return loadCountry({ ...file, priceShockLikelihood: { failedHarvestsAbroad: 0, oreGlut: 0 } });
 }
 
 /**
@@ -44,6 +58,7 @@ export interface Job {
   readonly players: readonly string[];
   readonly seeds: readonly number[];
   readonly terms: number;
+  readonly shocks: ShockSetting;
   /** The file the worker writes its results to. */
   readonly out: string;
 }

@@ -1,7 +1,8 @@
 # Survive and Grow: game design
 
-Status: Phase 1 is built, and Phase 2 (build) and Phase 3 (borrow) are built and balanced. Last
-updated 2026-11-21.
+Status: Phase 1 is built, and Phase 2 (build), Phase 3 (borrow) and Phase 4 (feed and trade) are
+built and balanced, except Phase 4's two targets for world price shocks, which values alone did
+not meet and which the owner accepted as unmet on 2026-11-21 (see `docs/balance/phase-4.md`). Last updated 2026-11-21.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
 [rules.md](rules.md), which is the one place they are stated in full.
@@ -75,8 +76,11 @@ Prosperity, tiers and people.
   quarter and the budget, and Building.
 - **Food.** Each region's harvest is moved by weather and drought and feeds a national reserve, with
   grain stores and relief sent to a region. A region short of food goes through the famine stages
-  (adequate, tight, shortage, famine). Phase 4 adds crop yields and imports and exports at moving
-  world prices.
+  (adequate, tight, shortage, famine). Floods join droughts in Phase 4.
+- **Trade.** Since Phase 4 grain is bought and sold abroad at a world price that moves every
+  quarter, within what the border crossings and ports carry, and a mine's ore sells at a world
+  ore price of its own. World price shocks, announced two quarters ahead, push a price for three
+  quarters. Rules: rules.md, Trade; balance: `docs/balance/phase-4.md`.
 - **Approval and elections.** One approval number with a visible breakdown. Strikes and protests
   begin below set thresholds. An election every 20 quarters turns approval into a vote share; below
   50% the game is lost. Factions (farmers, workers, business, army) arrive in Phase 6.

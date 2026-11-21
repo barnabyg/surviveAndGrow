@@ -13,6 +13,7 @@ import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import { MIGRATIONS, SAVE_FORMAT_VERSION, toCurrentFormat, type SaveMigration } from './migrations';
+import type { PriceShock } from './priceShocks';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
@@ -33,6 +34,7 @@ import { siteTerms } from './sites';
 import type { ElectionResult, GameState, Outcome, RegionState, TurnReport } from './state';
 import { formatQuarters } from './text';
 import type { WorldPrices } from './trade';
+import type { RouteCarriage } from './tradeRoutes';
 import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVERS,
@@ -46,9 +48,11 @@ import {
   FOOD_STAGES,
   GOODS,
   OUTCOME_STATUSES,
+  PRICE_SHOCK_TYPES,
   PROJECT_STATUSES,
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
+  SITE_CHAIN_ROLES,
   SPENDING_AREAS,
   TIERS,
   UNREST_LEVELS,
@@ -119,6 +123,8 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       debts: game.debts,
       credit: game.credit,
       worldPrices: game.worldPrices,
+      priceShocks: game.priceShocks,
+      tradeCarried: game.tradeCarried,
       history: game.history,
       dilemma: game.dilemma,
       dilemmasAnswered: game.dilemmasAnswered,
@@ -180,6 +186,8 @@ export function loadSave(
       record(state.worldPrices, 'state.worldPrices'),
       'state.worldPrices',
     ),
+    priceShocks: readPriceShocks(state.priceShocks, 'state.priceShocks'),
+    tradeCarried: readTradeCarried(state.tradeCarried, 'state.tradeCarried', country),
     history: readHistory(state.history, 'state.history'),
     dilemma:
       state.dilemma === null
@@ -375,6 +383,46 @@ function readWorldPrices(saved: Json, path: string): WorldPrices {
       ];
     }),
   ) as Record<string, readonly number[]> as WorldPrices;
+}
+
+/** The world price shocks announced and not yet ended, at most one of each kind. */
+function readPriceShocks(saved: unknown, path: string): PriceShock[] {
+  const shocks = list(saved, path, (item, itemPath): PriceShock => ({
+    type: oneOf(item.type, `${itemPath}.type`, PRICE_SHOCK_TYPES, 'a world price shock'),
+    announced: date(item.announced, `${itemPath}.announced`),
+    begins: date(item.begins, `${itemPath}.begins`),
+  }));
+  if (new Set(shocks.map((shock) => shock.type)).size !== shocks.length) {
+    fail(path, 'holds two shocks of one kind');
+  }
+  return shocks;
+}
+
+/**
+ * What each trade link carried in the quarter last played: each a crossing or a port of the
+ * country, listed once, with whole tonnes of ore and grain.
+ */
+function readTradeCarried(saved: unknown, path: string, country: Country): RouteCarriage[] {
+  const links = new Set([
+    ...country.crossings.map((crossing) => crossing.id),
+    ...country.sites
+      .filter((site) => SITE_CHAIN_ROLES[site.type] === 'outlet')
+      .map((site) => site.id),
+  ]);
+  const carried = list(saved, path, (item, itemPath): RouteCarriage => {
+    const routeId = text(item.routeId, `${itemPath}.routeId`);
+    if (!links.has(routeId))
+      fail(`${itemPath}.routeId`, `is "${routeId}", which is not a trade link`);
+    return {
+      routeId,
+      ore: whole(item.ore, `${itemPath}.ore`, 0),
+      grain: whole(item.grain, `${itemPath}.grain`, 0),
+    };
+  });
+  if (new Set(carried.map((each) => each.routeId)).size !== carried.length) {
+    fail(path, 'lists one trade link twice');
+  }
+  return carried;
 }
 
 function readHistory(saved: unknown, path: string): VitalSigns[] {

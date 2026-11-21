@@ -4,7 +4,7 @@ import { availableParallelism, constants, setPriority, tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, it } from 'vitest';
 import { DEFAULT_TERMS, summarise } from './batch';
-import { COUNTRIES, countryNamed, playersFor, type Job, type Played } from './jobs';
+import { COUNTRIES, countryNamed, playersFor, shockSetting, type Job, type Played } from './jobs';
 import { writeUp, type Row } from './report';
 
 /**
@@ -18,6 +18,7 @@ import { writeUp, type Row } from './report';
  *   BALANCE_PLAYERS  `all` adds the one-lever players that probe for a winning trick; or the
  *                    names of the players to play, separated by commas
  *   BALANCE_TERMS    the most terms each game is played for (default 4; 1 is Phase 1's single term)
+ *   BALANCE_SHOCKS   `none` plays the same games without world price shocks (default `shipped`)
  *   BALANCE_WORKERS  how many workers play games at once (default: half the processors)
  *
  * The games are shared out among workers (`worker.ts`), each a process of its own, and every
@@ -102,6 +103,7 @@ it('plays the scripted players and reports the balance', async () => {
   const seeds = seedsFrom(range);
   const names = wanted === 'both' ? Object.keys(COUNTRIES) : [wanted];
   const players = playersFor(process.env.BALANCE_PLAYERS);
+  const shocks = shockSetting(process.env.BALANCE_SHOCKS);
   const scratch = mkdtempSync(path.join(tmpdir(), 'balance-'));
 
   try {
@@ -113,6 +115,7 @@ it('plays the scripted players and reports the balance', async () => {
           players: [player.name],
           seeds: seeds.slice(index * SEEDS_PER_JOB, (index + 1) * SEEDS_PER_JOB),
           terms,
+          shocks,
           out: path.join(scratch, `${country}-${player.name}-${index}.json`),
         })),
       );
@@ -132,7 +135,7 @@ it('plays the scripted players and reports the balance', async () => {
       }));
       // Every game must reach an ending: a game that throws fails its worker and the run.
       for (const row of rows) expect(row.summary.games).toBe(seeds.length);
-      return writeUp(countryNamed(name), range, terms, rows);
+      return writeUp(countryNamed(name, shocks), range, terms, rows, shocks);
     });
 
     const report = sections.join('\n');

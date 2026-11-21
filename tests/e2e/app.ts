@@ -34,14 +34,18 @@ export function testlandFile(): Record<string, unknown> {
 }
 
 /**
- * Tavara as it ships, with its people not growing and chance pinned down where the test says: drought strikes the
- * named regions every year and no other region ever, and each dilemma named arises with
- * the chance given, each quarter that it can, and no other dilemma ever. Drought left
- * unsaid stays as the country file has it.
+ * Tavara as it ships, with its people not growing and chance pinned down where the test
+ * says: drought, and flood, strike the named regions every year and no other region ever,
+ * and each dilemma named arises with the chance given, each quarter that it can, and no other
+ * dilemma ever. Events left unsaid stay as the country file has them; once either is named,
+ * the other strikes nowhere unless it is named too. Each world price shock named is announced
+ * with the chance given, each quarter that it can be, and no other ever.
  */
 export function tavaraWith(chances: {
   readonly drought?: readonly string[];
+  readonly flood?: readonly string[];
   readonly dilemmas?: Record<string, number>;
+  readonly shocks?: Record<string, number>;
   /** Whether its people grow in number, as they do in the country that ships. */
   readonly growing?: boolean;
 }): CountryFile {
@@ -49,13 +53,17 @@ export function tavaraWith(chances: {
     read('..', '..', 'src', 'countries', 'tavara.json'),
     chances.growing,
   );
-  const { drought } = chances;
-  if (drought !== undefined) {
+  const { drought, flood } = chances;
+  if (drought !== undefined || flood !== undefined) {
     for (const region of country.regions) {
-      region.eventLikelihood = { drought: drought.includes(region.id) ? 1 : 0 };
+      region.eventLikelihood = {
+        drought: drought?.includes(region.id) === true ? 1 : 0,
+        flood: flood?.includes(region.id) === true ? 1 : 0,
+      };
     }
   }
   country.dilemmaLikelihood = chances.dilemmas ?? {};
+  country.priceShockLikelihood = chances.shocks ?? {};
   return country;
 }
 

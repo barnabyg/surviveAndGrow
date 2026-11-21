@@ -4,11 +4,14 @@ import {
   createGame,
   debtStatus,
   electionStatus,
+  GOOD_NAMES,
   prosperityStatus,
   TIERS,
   victoryStatus,
   type Country,
   type Decisions,
+  type Figure,
+  type GameDate,
   type GameState,
   type Tier,
 } from '../../src/sim';
@@ -64,6 +67,66 @@ export interface GameResult {
   readonly debtBurden: number;
   /** The highest debt burden any quarter of the game ended on, in thousandths. */
   readonly peakDebtBurden: number;
+  /** The grain bought abroad over the game, in tonnes. */
+  readonly imported: number;
+  /** The grain sold abroad over the game, in tonnes. */
+  readonly exported: number;
+  /** What the grain sold abroad brought in over the game, in Money units. */
+  readonly tradeIncome: number;
+  /** What the grain bought abroad cost over the game, in Money units. */
+  readonly tradeSpending: number;
+  /** The shocks the game met: those that struck while it was played. */
+  readonly shocks: Shocks;
+}
+
+/**
+ * The shocks a game met: the world price shocks that moved a price while it was played, and
+ * the droughts and floods that began in a region.
+ */
+export interface Shocks {
+  readonly failedHarvestsAbroad: number;
+  readonly oreGlut: number;
+  readonly drought: number;
+  readonly flood: number;
+}
+
+export const SHOCK_KINDS: readonly (keyof Shocks)[] = [
+  'failedHarvestsAbroad',
+  'oreGlut',
+  'drought',
+  'flood',
+];
+
+/** A quarter as a number counted from the start of time, so that dates can be compared. */
+const ordinal = (date: GameDate) => date.year * 4 + date.quarter;
+
+/** What a figure's contributions of a label add up to. */
+function partOf(figure: Figure | null, label: string): number {
+  return (figure?.contributions ?? [])
+    .filter((contribution) => contribution.label === label)
+    .reduce((total, contribution) => total + contribution.amount, 0);
+}
+
+/** The shocks met so far: each kept once, by what it is, where and when it began. */
+function meeting(game: GameState, met: Set<string>): void {
+  for (const shock of game.priceShocks) {
+    if (ordinal(shock.begins) <= ordinal(game.date)) {
+      met.add(`${shock.type} ${ordinal(shock.begins)}`);
+    }
+  }
+  for (const event of game.events) {
+    met.add(`${event.type} ${event.regionId} ${ordinal(event.began)}`);
+  }
+}
+
+function countShocks(met: ReadonlySet<string>): Shocks {
+  const count = (kind: keyof Shocks) => [...met].filter((key) => key.split(' ')[0] === kind).length;
+  return {
+    failedHarvestsAbroad: count('failedHarvestsAbroad'),
+    oreGlut: count('oreGlut'),
+    drought: count('drought'),
+    flood: count('flood'),
+  };
 }
 
 const rankOf = (tier: Tier) => TIERS.indexOf(tier);
@@ -89,6 +152,10 @@ export function playGame(
   let borrowed = 0;
   let bailouts = 0;
   let heldByDebt = 0;
+  const traded = { imported: 0, exported: 0, tradeIncome: 0, tradeSpending: 0 };
+  const sold = `${GOOD_NAMES.grain} exported`;
+  const bought = `${GOOD_NAMES.grain} imported`;
+  const met = new Set<string>();
   while (game.outcome.status === 'playing' && quarters < limit) {
     const decisions = withinRules(game, decide(game));
     const result = advanceQuarter(game, decisions);
@@ -99,7 +166,12 @@ export function playGame(
       borrowed += (decisions.borrow ?? []).reduce((total, each) => total + each.amount, 0);
     }
     if (kinds.includes('bailout')) bailouts += 1;
+    traded.imported += partOf(result.report.food, bought);
+    traded.exported -= partOf(result.report.food, sold);
+    traded.tradeIncome += partOf(result.report.treasury, sold);
+    traded.tradeSpending -= partOf(result.report.treasury, bought);
     game = result.state;
+    meeting(game, met);
     quarters += 1;
     if (game.outcome.status === 'playing' && victoryStatus(game).waitingOnDebt) heldByDebt += 1;
     if (rankOf(game.tier) > rankOf(peakTier)) peakTier = game.tier;
@@ -122,6 +194,8 @@ export function playGame(
     heldByDebt,
     debtBurden: debtStatus(game).burden,
     peakDebtBurden,
+    ...traded,
+    shocks: countShocks(met),
   };
   const ended = { regionId: null, winQuarter: null };
   if (outcome.status === 'playing') return { ...figures, ...ended, ending: 'inOffice' };
@@ -185,6 +259,16 @@ export interface Summary {
   readonly debtBurden: Spread;
   /** The highest debt burden each game reached, in thousandths. */
   readonly peakDebtBurden: Spread;
+  /** The grain each game bought and sold abroad, in tonnes. */
+  readonly imported: Spread;
+  readonly exported: Spread;
+  /** What each game's trade brought in and cost, in Money units. */
+  readonly tradeIncome: Spread;
+  readonly tradeSpending: Spread;
+  /** How many of each shock each game met. */
+  readonly shocks: Readonly<Record<keyof Shocks, Spread>>;
+  /** The games that met at least one of each shock. */
+  readonly gamesMeeting: Readonly<Record<keyof Shocks, number>>;
 }
 
 export function summarise(results: readonly GameResult[]): Summary {
@@ -233,6 +317,21 @@ export function summarise(results: readonly GameResult[]): Summary {
     heldQuarters: spreadOf(held.map((result) => result.heldByDebt)),
     debtBurden: spreadOf(results.map((result) => result.debtBurden)) ?? zero,
     peakDebtBurden: spreadOf(results.map((result) => result.peakDebtBurden)) ?? zero,
+    imported: spreadOf(results.map((result) => result.imported)) ?? zero,
+    exported: spreadOf(results.map((result) => result.exported)) ?? zero,
+    tradeIncome: spreadOf(results.map((result) => result.tradeIncome)) ?? zero,
+    tradeSpending: spreadOf(results.map((result) => result.tradeSpending)) ?? zero,
+    shocks: byShock((kind) => spreadOf(results.map((result) => result.shocks[kind])) ?? zero),
+    gamesMeeting: byShock((kind) => results.filter((result) => result.shocks[kind] > 0).length),
+  };
+}
+
+function byShock<Value>(value: (kind: keyof Shocks) => Value): Record<keyof Shocks, Value> {
+  return {
+    failedHarvestsAbroad: value('failedHarvestsAbroad'),
+    oreGlut: value('oreGlut'),
+    drought: value('drought'),
+    flood: value('flood'),
   };
 }
 

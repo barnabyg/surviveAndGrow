@@ -8,9 +8,12 @@ every file it needs.
 ## How a quarter is resolved
 
 `advanceQuarter` in `game.ts` draws everything chance decides, in this fixed order and nowhere
-else: the weather, the world prices (`trade.ts`), the events that strike and the campaign swing
-in an election quarter. The world prices and the dilemma rolls come from the seed and the quarter
-alone, and leave the generator untouched. Each good's price has its own draw, in the order of
+else: the weather, the world prices (`trade.ts`), the world price shocks announced
+(`priceShocks.ts`), the events that strike and the campaign swing in an election quarter. The
+world prices, the shocks and the dilemma rolls come from the seed and the quarter alone, and leave
+the generator untouched. Shocks are national, not regional, so they are not among the events each
+region rolls for: a kind added at the end of `PRICE_SHOCK_TYPES` has its own draw and leaves the
+others as they were. Each good's price has its own draw, in the order of
 `GOODS`, so a good added at the end leaves the others' prices as they were. `resolveQuarter`
 takes all of these as given, so the risks look-ahead (`risks.ts`) runs it on supposed chance,
 among it a slump in the world ore price. It lives the quarter through `liveQuarter`, which the
@@ -27,7 +30,8 @@ preview (`previewQuarter`) shares, so turn and preview cannot come to differ:
    unless a bailout has stopped it, and last of all grain sold abroad is paid for and grain bought
    abroad is paid for (`trade.ts`), within what the trade links carry once the mines' ore has
    its share (`tradeLinks.ts`), as they stood when the quarter began; grain sold is set aside from the reserve as it stands
-   after the dilemma's answer.
+   after the dilemma's answer. What each link carried, the ore and the grain really bought and
+   sold, is kept for the map to show next quarter (`tradeRoutes.ts`).
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
    `power.ts`) and the events in force (`events.ts`), from the reserve less the grain sold
    abroad. Grain bought abroad then reaches the national reserve.
@@ -45,9 +49,12 @@ preview (`previewQuarter`) shares, so turn and preview cannot come to differ:
    allows is in `austerity.ts`, which `checkDecisions` and the menus of loans and projects
    consult.
 
-`resolveQuarter` moves the world prices on (`trade.ts`) before it lives the quarter. Once it is
-lived, it moves the calendar (`calendar.ts`, `terms.ts`), ends and begins events, checks for
-collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may put a new
+`resolveQuarter` moves the world prices on (`trade.ts`), pushed by any world price shock in force
+(`priceShocks.ts`), before it lives the quarter. Once it is lived, it moves the calendar
+(`calendar.ts`, `terms.ts`), ends and begins events (`events.ts`), ends the shocks whose time is
+up and starts the notice of those announced (`priceShocks.ts`),
+sets decaying the sites in use where an event that damages them has begun (`upkeep.ts`), checks
+for collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may put a new
 dilemma, records the vital signs (`history.ts`), and compiles the report (`report.ts`), whose
 entries keep the order written there.
 
@@ -59,7 +66,12 @@ A new mechanic usually touches most of these:
 - `game.ts`: where it is resolved in the quarter, and what the preview projects.
 - A module of its own for its rules, called from `game.ts`.
 - `balance.ts`: its tuning values. No rule hard-codes a number.
-- `vocabulary.ts`: the names the player sees, and any new kind of site, event or spending.
+- `vocabulary.ts`: the names the player sees, and any new kind of site, event or spending. A
+  new kind of event goes at the end of `EVENT_TYPES`: the events that begin in the same quarter
+  share one roll in each region, taken in that order, so the others' strikes stay as they were.
+  `country.ts` says which country file format first lets a file name it. A world price shock
+  is not such an event: it goes at the end of `PRICE_SHOCK_TYPES`, with its sizes in
+  `balance.priceShocks`.
 - `report.ts` and the entries it compiles: what the turn report says about it.
 - `risks.ts`: the warning ahead, if it can hurt the player. Every loss must be foreseeable.
   A danger of money (the treasury, a missed payment, a bond's maturity, the credit rating)

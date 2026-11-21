@@ -44,7 +44,7 @@ const chainBuilder = () => playerNamed('Chain builder');
 const ENDINGS: readonly GameResult['ending'][] = ['won', 'inOffice', 'lostElection', 'famine'];
 
 describe('the scripted players', () => {
-  it('are the six the balance is judged by', () => {
+  it('are the eight the balance is judged by', () => {
     expect(SCRIPTED_PLAYERS.map((player) => player.name)).toEqual([
       'Does nothing',
       'Popularity',
@@ -52,6 +52,8 @@ describe('the scripted players', () => {
       'Chain builder',
       'Sensible borrower',
       'Reckless borrower',
+      'Timing trader',
+      'Mine only',
     ]);
   });
 
@@ -183,12 +185,25 @@ describe('a batch of games', () => {
     heldByDebt: 0,
     debtBurden: 0,
     peakDebtBurden: 0,
+    imported: 0,
+    exported: 0,
+    tradeIncome: 0,
+    tradeSpending: 0,
+    shocks: { failedHarvestsAbroad: 0, oreGlut: 0, drought: 0, flood: 0 },
     ...figures,
   });
 
   it('is summed up by how each ended', () => {
     const summary = summarise([
-      game(1, { heldByDebt: 2, borrowed: 400, debtBurden: 600, peakDebtBurden: 700 }),
+      game(1, {
+        heldByDebt: 2,
+        borrowed: 400,
+        debtBurden: 600,
+        peakDebtBurden: 700,
+        exported: 90_000,
+        tradeIncome: 170,
+        shocks: { failedHarvestsAbroad: 1, oreGlut: 0, drought: 2, flood: 0 },
+      }),
       game(2, {
         ending: 'lostElection',
         quarters: 40,
@@ -203,6 +218,9 @@ describe('a batch of games', () => {
         bailouts: 2,
         debtBurden: 800,
         peakDebtBurden: 1200,
+        imported: 40_000,
+        tradeSpending: 120,
+        shocks: { failedHarvestsAbroad: 2, oreGlut: 1, drought: 0, flood: 1 },
       }),
       game(3, {
         ending: 'famine',
@@ -266,5 +284,17 @@ describe('a batch of games', () => {
     expect(summary.heldQuarters).toEqual({ min: 2, median: 3, max: 3 });
     expect(summary.debtBurden).toEqual({ min: 0, median: 400, max: 800 });
     expect(summary.peakDebtBurden).toEqual({ min: 0, median: 600, max: 1200 });
+    // Trade, and the shocks met.
+    expect(summary.imported).toEqual({ min: 0, median: 0, max: 40_000 });
+    expect(summary.exported).toEqual({ min: 0, median: 0, max: 90_000 });
+    expect(summary.tradeIncome).toEqual({ min: 0, median: 0, max: 170 });
+    expect(summary.tradeSpending).toEqual({ min: 0, median: 0, max: 120 });
+    expect(summary.gamesMeeting).toEqual({
+      failedHarvestsAbroad: 2,
+      oreGlut: 1,
+      drought: 1,
+      flood: 1,
+    });
+    expect(summary.shocks.failedHarvestsAbroad).toEqual({ min: 0, median: 1, max: 2 });
   });
 });

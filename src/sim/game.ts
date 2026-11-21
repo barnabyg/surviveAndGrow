@@ -41,6 +41,7 @@ import {
   endEventsAfterHarvest,
   harvestPermille,
   rollEvents,
+  siteDamageOf,
   worstHarvestPermille,
   type ActiveEvent,
   type EventStrike,
@@ -68,12 +69,14 @@ import {
   resolveServices,
   startingServices,
 } from './prosperity';
+import { pushesInto, rollPriceShocks, turnShocks } from './priceShocks';
 import { compileReport, type ReportEntry } from './report';
 import { expectationsIn, nextTier, tierAt, tierEntry } from './tiers';
 import { heldAfter, victoryOf } from './victory';
 import { nextRandom, seedGenerator, type RngState } from './rng';
 import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
 import { scheduleAhead } from './timeline';
+import { routeCarriage } from './tradeRoutes';
 import {
   FULL_SWING_PERMILLE,
   movePrices,
@@ -85,9 +88,9 @@ import {
   type TradeOutcome,
   type WorldPrices,
 } from './trade';
-import { GOODS } from './vocabulary';
+import { GOODS, type PriceShockType } from './vocabulary';
 import { exactly, type Contribution, type Money } from './types';
-import { resolveUpkeep } from './upkeep';
+import { damageSites, resolveUpkeep } from './upkeep';
 
 /** Starts a game. The same country and seed always start the same game. */
 export function createGame(country: Country, seed: number): GameState {
@@ -104,6 +107,8 @@ export function createGame(country: Country, seed: number): GameState {
     treasury: country.start.treasury,
     foodReserve: country.start.foodReserve,
     worldPrices: openingPrices(),
+    priceShocks: [],
+    tradeCarried: [],
     regions: country.regions.map((region): RegionState => ({
       id: region.id,
       population: region.population,
@@ -150,6 +155,8 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   const next = nextDate(state.date);
   // World prices, like the dilemmas, answer to the seed and the quarter alone.
   const priceShocks = rollPrices(state.seed, next);
+  // So do the world price shocks announced, which strike no region.
+  const shocksAnnounced = rollPriceShocks(state.country, state.seed, next);
   const events = rollEvents(state.country, next, weather.rng);
   const campaign = isElectionQuarter(state.date) ? rollSwing(events.rng) : null;
   const resolved = resolveQuarter(state, decisions, {
@@ -157,6 +164,7 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
     struck: events.struck,
     swing: campaign?.swing ?? 0,
     priceShocks,
+    shocksAnnounced,
     // Dilemmas answer to the seed and the quarter alone, and leave the generator untouched.
     dilemmaRolls: rollDilemmas(state.seed, next),
   });
@@ -182,6 +190,11 @@ export interface Chance {
    * pull back towards its usual price.
    */
   readonly priceShocks: readonly number[];
+  /**
+   * The world price shocks announced as the calendar moves into the next quarter. One of a
+   * kind already announced or in force is not announced again.
+   */
+  readonly shocksAnnounced: readonly PriceShockType[];
   /**
    * The roll for each kind of dilemma, from 0 up to 1, in the vocabulary's order. One
    * arises when its roll falls under its chance. A kind with no roll does not arise.
@@ -225,9 +238,14 @@ export function resolveQuarter(
   decisions: Decisions,
   chance: Chance,
 ): QuarterResolved {
-  // The world prices move as the quarter ends. The quarter earns at the prices it began
-  // with, and is judged as it ends at the prices it leaves.
-  const worldPrices = movePrices(given.worldPrices, chance.priceShocks);
+  // The world prices move as the quarter ends, pushed by any world price shock in force. The
+  // quarter earns at the prices it began with, and is judged as it ends at the prices it leaves.
+  const date = nextDate(given.date);
+  const worldPrices = movePrices(
+    given.worldPrices,
+    chance.priceShocks,
+    pushesInto(given.priceShocks, date),
+  );
   const lived = liveQuarter(given, decisions, chance.weatherShocks, worldPrices);
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
@@ -236,12 +254,16 @@ export function resolveQuarter(
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
   // A harvest ends the events that were waiting on it; then the new quarter may bring more.
-  const date = nextDate(state.date);
   const { ended, remaining } =
     food.harvest === null
       ? { ended: [], remaining: state.events }
       : endEventsAfterHarvest(state.events);
   const begun = beginStruck(remaining, chance.struck, date);
+  // An event that damages sites sets those in use in its region decaying as it begins.
+  const damaged = damageSites(
+    { country: state.country, projects: upkept.projects },
+    siteDamageOf(state.country, begun),
+  );
   const collapse = collapseOf(state.country, approval.regions);
   // The vote is held as each term's last quarter ends, unless the state has already fallen.
   const election =
@@ -256,6 +278,8 @@ export function resolveQuarter(
   const outcome: Outcome = collapse ?? defeat ?? victory?.outcome ?? { status: 'playing' };
 
   const events = [...remaining, ...begun];
+  // World price shocks whose time is up end, and those announced begin their notice.
+  const shocks = turnShocks(state.priceShocks, chance.shocksAnnounced, date);
   const dilemmasAnswered = [...state.dilemmasAnswered, ...answer.answered];
   // A game still being played may be put a new dilemma as the next quarter begins.
   const dilemma =
@@ -296,6 +320,8 @@ export function resolveQuarter(
     ...begun.map((event) =>
       beginEntry(state.country, event, holdOn(state.country, upkept.projects, event.regionId)),
     ),
+    ...damaged.entries,
+    ...shocks.entries,
     budgetEntry(finances),
   ];
 
@@ -312,10 +338,13 @@ export function resolveQuarter(
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
       regions: approval.regions,
       events,
-      projects: upkept.projects,
+      projects: damaged.projects,
       debts: taken.debts,
       credit: credit.credit,
       worldPrices,
+      priceShocks: shocks.shocks,
+      // What crossed the border by each link, as the links stood when the quarter began.
+      tradeCarried: routeCarriage(state, traded.imported + traded.exported),
       history: [
         ...state.history,
         vitalSigns({
@@ -505,14 +534,18 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
   const calm = given.regions.map(() => 0);
   // World markets are left to chance: the quarter is lived as if they left the prices be, and
   // what the prices it leaves bear on is given as the range their limits allow.
-  const lived = liveQuarter(given, decisions, calm, movePrices(given.worldPrices, []));
+  // A world price shock in force next quarter is certain, so it moves the prices either way.
+  const pushes = pushesInto(given.priceShocks, nextDate(given.date));
+  const lived = liveQuarter(given, decisions, calm, movePrices(given.worldPrices, [], pushes));
   const low = movePrices(
     given.worldPrices,
     GOODS.map(() => -FULL_SWING_PERMILLE),
+    pushes,
   );
   const high = movePrices(
     given.worldPrices,
     GOODS.map(() => FULL_SWING_PERMILLE),
+    pushes,
   );
   const { state, building, finances, sites, food: thisQuarter, approval } = lived;
   const { serviced, taken, traded, credit } = lived;

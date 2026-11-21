@@ -50,7 +50,7 @@ The first term is 20 quarters, ending in an election. Win it and you govern on i
 the game itself is won on prosperity, held in the top tier.
 It is meant to be hard. You take office with approval near 52%, a budget that loses $5.0m a
 quarter, and a food reserve below its safe level. Left alone, the country votes you out, if a
-drought does not starve a region first.
+drought or a flood does not starve a region first.
 
 - **Feed people first.** Watch the risks in the left column. When a region runs short, pick it
   on the map and send it relief, and pay for relief only while someone needs it.
@@ -70,6 +70,10 @@ drought does not starve a region first.
 - **Don't bank on the mine.** A mine's ore sells at a world ore price that swings further than
   grain's. Its card shows the price, its forecast and what the mine earns across it, and the
   risks ahead warn when a slump would empty the treasury or miss a repayment.
+- **Prepare for shocks abroad.** Failed harvests abroad push the grain price up, and an ore glut
+  pushes the ore price down, for three quarters. Each is announced two quarters ahead, in the
+  report, under the price and among the risks: stock the reserve before grain grows dear, and don't
+  borrow against the mine before its ore cheapens.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
@@ -140,6 +144,39 @@ its burden sit beside the treasury in the top bar; the rating is raised to AA in
 To see the other side, borrow everything the finance panel allows and spend it: the treasury
 cannot cover a repayment, a bailout consolidates the debt, approval takes a 12-point blow and
 austerity holds for 8 quarters.
+
+### A Phase 4 play-through
+
+To play the finished Phase 4 game, with trade and world price shocks, from the start on a seed
+the balance run knows well:
+
+```powershell
+Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=1'
+```
+
+This starts the game at http://localhost:41730/?seed=1 and opens it in your browser. On seed 1
+the scripted chain builder, which never trades, loses its first vote with 49.9%; the timing
+trader, which builds the same sites in the same order and trades grain besides, wins in quarter
+30, in the second year of its second term. Try to win the way the timing trader does:
+
+1. Build as the chain builder does: the Korr Falls power station and its lines first, then
+   Saltmouth port, the trunk road and the Korrgate mine, each once the treasury holds its cost.
+2. In the third quarter of the first year failed harvests abroad are announced: the report says
+   so, and the grain price in the trade panel lists the shock and its forecast rises. The
+   reserve is below its safe level, so buy grain before the price rises, about 34,000 t, and
+   18,000 t more the quarter after.
+3. Once the first harvest is in, sell the surplus while grain is dear: 90,000 t a quarter, all
+   the border crossings carry, at more than $320 a tonne while the shock lasts. Keep the
+   reserve about a quarter above its safe level, and sell only while the price is at or above
+   its usual $240. Each sale brings in about $23m, which builds the chain sooner.
+4. Once the port is in use it carries far more grain, after the mine's ore: sell the surplus after
+   each harvest, and buy back if a drought takes the reserve below its safe level.
+
+Expected: the trade panel shows the price, its trend and forecast, what the links carry and what
+is free; a sale's income and an import's cost appear in the treasury's breakdown; the failed
+harvests abroad are listed under the grain price from their announcement to their end. Over
+the balance run the timing trader wins in quarter 31 in the middle of its games, against the
+chain builder's 38.
 
 The rules as built, one heading per mechanic, are in [docs/rules.md](docs/rules.md).
 
@@ -219,12 +256,44 @@ Ports in use add their own capacity. A file of format 5 that lists no crossings 
 through its ports. A file of an earlier format cannot name crossings, and is read as having one on
 each neighbour carrying 45,000 tonnes; it still loads as it is.
 
+The map draws the trade routes from the file alone, so no country needs artwork for them. A
+crossing stands on the country's border with its neighbour, at the point nearest the
+neighbour's `label`, so place the label where the crossing should be. A port's shipping lane runs
+straight from the port to whichever edge of the map it reaches over the least land, the
+country's own or a neighbour's: give a port a stretch of open sea between it and the edge.
+Each route is tagged with what it carried last quarter against what it can carry.
+
+Each region's `eventLikelihood` says how likely each of the game's events is to strike it in a
+year: the chance, from 0 to 1, of a `drought` (40% off its harvest) and, in a file of
+`"formatVersion": 6`, of a `flood` (30% off its harvest, and every site in use there decaying
+until its upkeep is paid). Both begin with the planting season, and they share one roll in each
+region, so a region's chances of the two may come to at most 1 between them. An event the region
+leaves out never strikes it. A file of an earlier format cannot name floods, and still loads as it
+is, with none:
+
+```json
+"eventLikelihood": { "drought": 0, "flood": 0.1 }
+```
+
+In a file of `"formatVersion": 7`, `priceShockLikelihood` says how likely each world price shock
+is: the chance, from 0 to 1, that it is announced as a quarter begins, unless one of its kind is
+already announced or in force. The shocks are the game's own: `failedHarvestsAbroad` (the world
+grain price pushed up by $36 a tonne a quarter) and `oreGlut` (the world ore price pushed down by
+$20 a tonne a quarter), each announced two quarters before it first moves the price and in force
+for three. One the file leaves out never comes, and the whole entry may be left out. A file of an
+earlier format cannot name them, and still loads as it is, with none. Tavara gives failed harvests
+abroad 4% a quarter and an ore glut 5%:
+
+```json
+"priceShockLikelihood": { "failedHarvestsAbroad": 0.04, "oreGlut": 0.05 }
+```
+
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:
 `grainOffer` (the reserve is below its safe level), `merchantOffer` (the first quarter of a year,
-with the reserve above its safe level), `emergencyWorks` (a region is in drought), `strikeTalks`
-(a region is striking or protesting), `teachersPay` (any time) and `donorGrant` (the treasury is
-low). One the file leaves out never arises, and the whole entry may be left out. What each
+with the reserve above its safe level), `emergencyWorks` (a region is in drought or flood),
+`strikeTalks` (a region is striking or protesting), `teachersPay` (any time) and `donorGrant` (the
+treasury is low). One the file leaves out never arises, and the whole entry may be left out. What each
 dilemma offers scales with the country's population, so the same dilemma suits a country of any
 size.
 
@@ -277,9 +346,9 @@ once without their servers colliding.
 
 [tests/e2e/app.ts](tests/e2e/app.ts) is where a browser test starts a game in a known state:
 `startGame` and `openApp` with a seed or a country file of the test's own; `tavaraWith`,
-`tavaraWithDroughtIn` and `testlandFile` for a country with chance pinned (which dilemmas and
-events can arise, and people who do not grow); and `tavaraPoisedBelowDeveloping` and
-`tavaraProsperous` for one prepared near a tier. Add a new prepared country there.
+`tavaraWithDroughtIn` and `testlandFile` for a country with chance pinned (which dilemmas arise,
+where droughts and floods strike, and people who do not grow); and `tavaraPoisedBelowDeveloping`
+and `tavaraProsperous` for one prepared near a tier. Add a new prepared country there.
 
 Gates that do not apply:
 
@@ -298,24 +367,29 @@ for up to four terms each, and reports how often each wins on prosperity, how of
 office when its terms are up, and what the others lose to: the vote, by term, or famine, by
 region. It also gives the terms served, the quarter of each win, and the prosperity and tier each
 game reached, and what each player borrowed: how many games a bailout struck, how often the debt
-test held back a win and whether it was won later, and the debt burden. It prints the tables and writes them to `balance-results.md`. It is not one of the
+test held back a win and whether it was won later, and the debt burden; and what each traded:
+the grain bought and sold abroad, what it brought in and cost, and the world price shocks,
+droughts and floods each game met. It prints the tables and writes them to `balance-results.md`. It is not one of the
 checks and gates nothing; a short run of the same players over a few seeds is part of the
 simulation tests. The games are shared out among worker processes at below-normal priority, on half the
 processors by default; 300 seeds of every player take a few minutes. How large a balance ticket's
 runs should be is in [docs/agents/balance-tickets.md](docs/agents/balance-tickets.md).
 
-Six players are what the balance is judged by: one that does nothing, one that spends
+Eight players are what the balance is judged by: one that does nothing, one that spends
 everything on popularity, one that plays sensibly but builds no large site, one that builds
 power and the mine's chain and saves up for each site, one that builds the same sites but
-borrows for them within limits of its own, and one that borrows recklessly. They are in
-`tests/balance/players.ts`, with a handful of one-lever players that probe for a trick that wins
-on its own, two that build only part of the chain and one that borrows all it can to build
-everything at once.
+borrows for them within limits of its own, one that borrows recklessly, one that plays as the
+chain builder does and trades grain with timing, and one that relies on the mine alone and never
+trades. They are in `tests/balance/players.ts`, with a handful of one-lever players that probe
+for a trick that wins on its own, two that build only part of the chain, one that borrows all it
+can to build everything at once, a trader blind to world price shocks and a borrower wary of ore
+gluts.
 
 The runs the values were tuned to, with their seeds, the values changed and what they showed, are
 recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1,
-[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2 and
-[docs/balance/phase-3.md](docs/balance/phase-3.md) for Phase 3.
+[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2,
+[docs/balance/phase-3.md](docs/balance/phase-3.md) for Phase 3 and
+[docs/balance/phase-4.md](docs/balance/phase-4.md) for Phase 4.
 
 Set these before the command to change the run:
 
@@ -323,8 +397,9 @@ Set these before the command to change the run:
 | --- | --- | --- |
 | `BALANCE_SEEDS` | The seeds to play, as `from-to` | `1-300` |
 | `BALANCE_COUNTRY` | `tavara`, `testland` or `both` | `both` |
-| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the six |
+| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the eight |
 | `BALANCE_TERMS` | The most terms each game is played for | `4` |
+| `BALANCE_SHOCKS` | `none` plays the same games without world price shocks | `shipped` |
 | `BALANCE_WORKERS` | How many games are played at once, each at below-normal priority | half the processors |
 | `BALANCE_OUT` | Where the tables are written | `balance-results.md` |
 
@@ -344,7 +419,7 @@ $env:BALANCE_SEEDS = '1001-2200'; $env:BALANCE_PLAYERS = 'all'; npm run balance
 - `src/ui/` is the interface. Each component imports its own stylesheet, named after it
   (`MapView.css` beside `MapView.tsx`). `styles.css` holds the colours, the base elements and
   the rules several components share, and `chart.css` and `map-card.css` are shared by the
-  two components that draw charts and the two map cards. `main.tsx` imports `styles.css`
+  two components that draw charts and the four map cards. `main.tsx` imports `styles.css`
   before the components, so their rules come after it.
 - `tests/sim/` tests the game rules through the simulation's public interface.
 - `tests/e2e/` drives the real app in a browser at 2560 x 1440.

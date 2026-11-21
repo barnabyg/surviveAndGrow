@@ -1,5 +1,5 @@
 {
-  "formatVersion": 5,
+  "formatVersion": 7,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -43,7 +43,10 @@
       "label": [370, 200],
       "population": 300000,
       "output": 20,
-      "farmland": 70
+      "farmland": 70,
+      "eventLikelihood": {
+        "flood": 0.15
+      }
     },
     {
       "id": "sandreach",
@@ -181,6 +184,10 @@
     "grainOffer": 0.3,
     "emergencyWorks": 0.5,
     "teachersPay": 0.1
+  },
+  "priceShockLikelihood": {
+    "failedHarvestsAbroad": 0.05,
+    "oreGlut": 0.05
   },
   "start": {
     "treasury": 10,

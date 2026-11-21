@@ -1,5 +1,6 @@
 import type { DilemmaDefinition } from './dilemmas';
 import type { EventDefinition } from './events';
+import type { PriceShockDefinition } from './priceShocks';
 import type {
   CreditRating,
   DilemmaType,
@@ -8,6 +9,7 @@ import type {
   Good,
   LastingService,
   Likelihood,
+  PriceShockType,
   ProsperityPart,
   SiteEffect,
   SiteType,
@@ -633,6 +635,48 @@ export const balance = {
       unlistedTonnes: 45_000,
     },
   },
+  /**
+   * World price shocks: events abroad that push one good's world price each quarter they are
+   * in force, on top of what markets do, by a share of its usual price in thousandths. Each is
+   * announced `noticeQuarters` before it first moves the price, and is in force for
+   * `lastsQuarters`. How likely each is to be announced in a quarter is the country file's
+   * business. The notice is shorter than the risks' horizon, so a shock that could still be
+   * announced is looked for there as a risk of its own. The forecast of the price allows only
+   * for shocks already announced.
+   */
+  priceShocks: {
+    failedHarvestsAbroad: {
+      name: 'Failed harvests abroad',
+      called: 'failed harvests abroad',
+      good: 'grain',
+      // $36 a tonne a quarter: with markets and the pull towards the usual price the grain
+      // price stays within $90 of where it was, and three quarters of it raise it by about a
+      // third.
+      pushPermillePerQuarter: 150,
+      noticeQuarters: 2,
+      lastsQuarters: 3,
+      announcement: {
+        coming:
+          'Harvests have failed across the grain-growing world, and buyers are bidding for what is left.',
+        ends: 'A new harvest abroad is in, and grain is easier to buy again.',
+      },
+    },
+    oreGlut: {
+      name: 'Ore glut',
+      called: 'an ore glut',
+      good: 'ore',
+      // $20 a tonne a quarter: three quarters of it take the ore price down by about two fifths,
+      // and a mine's earnings with it.
+      pushPermillePerQuarter: -200,
+      noticeQuarters: 2,
+      lastsQuarters: 3,
+      announcement: {
+        coming:
+          'New mines abroad have flooded the world with ore, and buyers are paying less for it.',
+        ends: 'The glut of ore abroad has been taken up, and buyers pay as they did.',
+      },
+    },
+  } satisfies Record<PriceShockType, PriceShockDefinition>,
   /** How the game is won. */
   victory: {
     /**
@@ -718,7 +762,7 @@ export const balance = {
       name: 'Emergency works',
       title: '{region} asks for emergency works',
       story:
-        'The failed rains have left {region} without work in its fields. Its council asks for public works to carry families through to the harvest, or failing that for grain from the national reserve.',
+        'Drought or flood has left {region} without work in its fields. Its council asks for public works to carry families through to the harvest, or failing that for grain from the national reserve.',
       conditions: { place: 'struckByEvent', restQuarters: 3 },
       options: [
         {
@@ -813,9 +857,25 @@ export const balance = {
       // It begins in the planting season, two quarters before the harvest it spoils.
       conditions: { beginsInQuarters: [2] },
       endsAfterHarvest: true,
-      effects: { harvestPermille: 600 },
+      effects: { harvestPermille: 600, decaysSites: false },
       announcement: {
         begins: 'The rains have failed.',
+        ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',
+      },
+    },
+    flood: {
+      name: 'Flood',
+      // The rivers rise with the planting rains, two quarters before the harvest it spoils.
+      // It begins in the same quarter as drought, so the two share the region's roll and never
+      // strike one region in the same year.
+      conditions: { beginsInQuarters: [2] },
+      endsAfterHarvest: true,
+      // It takes less of the harvest than a drought, but the water damages every site in use
+      // in the region: each decays until its upkeep is paid again. Irrigation softens what it
+      // does to the harvest as it softens the weather (`sites.irrigation.effects`).
+      effects: { harvestPermille: 700, decaysSites: true },
+      announcement: {
+        begins: 'The rivers have burst their banks.',
         ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',
       },
     },

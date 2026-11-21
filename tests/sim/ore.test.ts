@@ -19,7 +19,12 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { bothCountries, withDroughtChance, withoutPoweredMines } from './countries';
+import {
+  bothCountries,
+  withDroughtChance,
+  withoutPoweredMines,
+  withoutPriceShocks,
+} from './countries';
 import { steward } from './players';
 
 /** A country with a treasury that can pay for a whole chain, and no drought or dilemma. */
@@ -123,8 +128,10 @@ describe.each(bothCountries)('the world ore price in %s', (_name, country) => {
   });
 
   it('leaves the world grain price moving as it did before ore was traded', () => {
-    // The grain price of seed 2026 as format 7, which knew no ore, kept it.
-    const { grain } = play(createGame(country(), 2026), 3, keep).state.worldPrices;
+    // The grain price of seed 2026 as format 7, which knew no ore, kept it. A world price shock
+    // would push it further, so none is let come.
+    const { grain } = play(createGame(withoutPriceShocks(country()), 2026), 3, keep).state
+      .worldPrices;
 
     expect(grain).toEqual([240, 223, 209, 247]);
   });

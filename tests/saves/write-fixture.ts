@@ -22,18 +22,21 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   const file = path.join(import.meta.dirname, `format-${SAVE_FORMAT_VERSION}.json`);
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
-  // Tavara as it ships, with chance pinned: no drought, and the teachers asking for a rise
-  // now and then. Format 8 added ore to the goods, with a world ore price that a mine's chain
-  // earns at. The game keeps the budget it starts with, starts building Korrgate mine in its
-  // first quarter, buys 10,000 tonnes of grain for the national reserve in its first quarter
-  // and 20,000 in its third, and is saved as Year 1 · Quarter 4 begins: the world grain and ore
-  // prices have each moved three times, and the last report has the second import in it.
+  // Tavara as it ships, with chance pinned: no drought, the teachers asking for a rise now and
+  // then, and world price shocks likelier than it ships with, so that seed 2026 announces both
+  // as its second quarter begins. Format 9 added world price shocks, announced ahead and in
+  // force for a set time. The game keeps the budget it starts with, starts building Korrgate
+  // mine in its first quarter, buys 10,000 tonnes of grain for the national reserve in its
+  // first quarter and 20,000 in its second, and is saved as Year 1 · Quarter 3 begins: failed
+  // harvests abroad and an ore glut are both announced, to move the prices from Year 1 ·
+  // Quarter 4, and the last report has the second import in it.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
+    priceShockLikelihood: { failedHarvestsAbroad: 0.1, oreGlut: 0.6 },
   });
-  const imports = [10_000, 0, 20_000];
+  const imports = [10_000, 20_000];
   let game = createGame(country, 2026);
   let report: TurnReport | null = null;
   for (const tonnes of imports) {
@@ -50,9 +53,8 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.date).toEqual({ year: 1, quarter: 4 });
-  expect(game.worldPrices.grain).toHaveLength(4);
-  expect(game.worldPrices.ore).toHaveLength(4);
+  expect(game.date).toEqual({ year: 1, quarter: 3 });
+  expect(game.priceShocks.map((shock) => shock.type)).toEqual(['failedHarvestsAbroad', 'oreGlut']);
   expect(game.projects.map((project) => project.siteId)).toEqual(['korr-mine']);
   expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
 

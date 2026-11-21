@@ -246,11 +246,12 @@ describe.each(bothCountries)('looking ahead for risks in %s', (_name, country) =
 describe('the risks ahead in Tavara', () => {
   const calm = () => withDroughtChance(tavaraFile, {});
 
-  it('open with the droughts the country file makes possible, the likelier first', () => {
+  it('open with the droughts, floods and price shocks the country file makes possible, the likelier first', () => {
     const game = createGame(tavara(), 3);
 
     // A drought would begin next quarter and spoil the harvest three quarters after that,
-    // so the region would go short once four quarters have been played.
+    // so the region would go short once four quarters have been played. A flood would do
+    // its damage as soon as it began.
     expect(risksAhead(game, idle(game))).toEqual([
       {
         kind: 'famine',
@@ -260,6 +261,24 @@ describe('the risks ahead in Tavara', () => {
           'A drought there this year, a 35% chance, would leave it short of food in 4 quarters.',
         regionId: 'dry-east',
         withinQuarters: 5,
+      },
+      {
+        kind: 'event',
+        likelihood: 'unlikely',
+        headline: 'Flood in Lowmere Plains',
+        reason:
+          'A flood there next quarter, a 10% chance, would take 30% of its harvest and set any site in use there decaying until its upkeep is paid.',
+        regionId: 'lowmere-plains',
+        withinQuarters: 2,
+      },
+      {
+        kind: 'event',
+        likelihood: 'unlikely',
+        headline: 'Flood in South Delta',
+        reason:
+          'A flood there next quarter, a 20% chance, would take 30% of its harvest and set any site in use there decaying until its upkeep is paid.',
+        regionId: 'south-delta',
+        withinQuarters: 2,
       },
       {
         kind: 'famine',
@@ -278,6 +297,22 @@ describe('the risks ahead in Tavara', () => {
           'A drought there this year, a 10% chance, would leave it short of food in 4 quarters.',
         regionId: 'arden-vale',
         withinQuarters: 5,
+      },
+      {
+        kind: 'priceShock',
+        likelihood: 'remote',
+        headline: 'Failed harvests abroad',
+        reason:
+          'Should failed harvests abroad be announced as this quarter ends, a 4% chance, the world grain price would be pushed up by $36 a tonne each quarter for 3 quarters, the first time in 3 quarters.',
+        withinQuarters: 4,
+      },
+      {
+        kind: 'priceShock',
+        likelihood: 'remote',
+        headline: 'Ore glut',
+        reason:
+          'Should an ore glut be announced as this quarter ends, a 5% chance, the world ore price would be pushed down by $20 a tonne each quarter for 3 quarters, the first time in 3 quarters.',
+        withinQuarters: 4,
       },
       {
         kind: 'famine',

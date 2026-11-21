@@ -5,6 +5,7 @@ import { regionName, type Country } from './country';
 import { nextRandom, type RngState } from './rng';
 import type { ReportEntry } from './report';
 import type { GameDate, Quarter } from './types';
+import type { SiteDamage } from './upkeep';
 import { EVENT_TYPES, type EventType } from './vocabulary';
 
 /**
@@ -24,6 +25,11 @@ export interface EventDefinition {
   readonly effects: {
     /** What is left of the region's harvest while the event lasts, in thousandths. */
     readonly harvestPermille: number;
+    /**
+     * Whether the event damages the sites in use in its region as it begins: each is
+     * decaying from that quarter, until a quarter in which its upkeep is paid restores it.
+     */
+    readonly decaysSites: boolean;
   };
 }
 
@@ -61,24 +67,33 @@ export function eventsThatMayBegin(country: Country, date: GameDate): PossibleEv
 }
 
 /**
- * Rolls for every event that can begin as the calendar moves into `date`. One number is
- * drawn for every region whatever its likelihood, so the same seed gives the same weather
- * in every country file.
+ * Rolls for every event that can begin as the calendar moves into `date`. Where any can, one
+ * number is drawn for every region whatever its likelihood, so the same seed gives the same
+ * weather in every country file. The events that can begin share it: each takes its own
+ * chance of it in turn, in the order of `EVENT_TYPES`, so at most one strikes a region, and a
+ * kind added at the end leaves the others' strikes as they were.
  */
 export function rollEvents(
   country: Country,
   date: GameDate,
   rng: RngState,
 ): { readonly struck: readonly EventStrike[]; readonly rng: RngState } {
+  const types = EVENT_TYPES.filter((type) =>
+    definitions[type].conditions.beginsInQuarters.includes(date.quarter),
+  );
+  if (types.length === 0) return { struck: [], rng };
   const struck: EventStrike[] = [];
   let current = rng;
-  for (const type of EVENT_TYPES) {
-    if (!definitions[type].conditions.beginsInQuarters.includes(date.quarter)) continue;
-    for (const region of country.regions) {
-      const roll = nextRandom(current);
-      current = roll.state;
-      if (roll.value / 2 ** 32 < region.eventLikelihood[type]) {
+  for (const region of country.regions) {
+    const roll = nextRandom(current);
+    current = roll.state;
+    const drawn = roll.value / 2 ** 32;
+    let below = 0;
+    for (const type of types) {
+      below += region.eventLikelihood[type];
+      if (drawn < below) {
         struck.push({ type, regionId: region.id });
+        break;
       }
     }
   }
@@ -165,12 +180,7 @@ export function worstHarvestPermille(
 
 /** Whether an event of one type is under way in a region. */
 function isActive(active: readonly ActiveEvent[], type: EventType, regionId: string): boolean {
-  return active.some(
-    (event) =>
-      event.regionId === regionId &&
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- The engine has one event type so far, which makes this comparison always true. It is what keeps the check right once a second type is added; remove this line then.
-      event.type === type,
-  );
+  return active.some((event) => event.regionId === regionId && event.type === type);
 }
 
 /** What the turn report says when an event begins, given the hold it has on its region. */
@@ -183,6 +193,51 @@ export function beginEntry(country: Country, event: ActiveEvent, hold: number): 
     cause: `${definition.announcement.begins} This year’s harvest there will be ${harvestCutPercent(definition, hold)}% smaller than it would have been.`,
     regionId: event.regionId,
   };
+}
+
+/** The damage the events now beginning do to the sites in use in their regions. */
+export function siteDamageOf(country: Country, begun: readonly ActiveEvent[]): SiteDamage[] {
+  return begun
+    .filter((event) => damagesSites(event.type))
+    .map((event) => ({
+      regionId: event.regionId,
+      cause: `the ${definitions[event.type].name.toLowerCase()} in ${regionName(country, event.regionId)}`,
+    }));
+}
+
+/**
+ * What damaged a site as the quarter now being decided began, if an event did: "the flood in
+ * Lowmere Plains". A site it damaged is decaying for this quarter at least.
+ */
+export function damageTo(
+  state: {
+    readonly country: Country;
+    readonly events: readonly ActiveEvent[];
+    readonly date: GameDate;
+  },
+  siteId: string,
+): string | null {
+  const site = state.country.sites.find((candidate) => candidate.id === siteId);
+  const begun = state.events.filter(
+    (event) => event.began.year === state.date.year && event.began.quarter === state.date.quarter,
+  );
+  return (
+    siteDamageOf(state.country, begun).find((damage) => damage.regionId === site?.regionId)
+      ?.cause ?? null
+  );
+}
+
+/** Whether an event of this kind damages the sites in use in its region as it begins. */
+export function damagesSites(type: EventType): boolean {
+  return definitions[type].effects.decaysSites;
+}
+
+/**
+ * How much of a region's harvest an event of this kind takes, as a whole percentage, where
+ * irrigation leaves it only `hold` thousandths of its grip.
+ */
+export function harvestCutBy(type: EventType, hold: number): number {
+  return harvestCutPercent(definitions[type], hold);
 }
 
 /** What the turn report says when an event ends. */

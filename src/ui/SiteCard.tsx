@@ -1,5 +1,6 @@
 import {
   chainsThrough,
+  damageTo,
   DECAYING_SHARE,
   forecastSpan,
   formatMoney,
@@ -69,6 +70,7 @@ export function SiteCard(props: SiteCardProps) {
   const instalment = formatMoney(status.instalment);
   const upkeep = formatMoney(terms.upkeep);
   const goesWithout = upkeepShort.includes(site.id);
+  const damage = damageTo(game, site.id);
   const nameOf = (id: string) =>
     game.country.sites.find((candidate) => candidate.id === id)?.name ?? id;
   const rivals = listed(site.alternatives.map(nameOf));
@@ -139,8 +141,8 @@ export function SiteCard(props: SiteCardProps) {
       )}
       {status.state === 'decaying' && (
         <p className="warning-note" role="status">
-          ▲ Decaying: upkeep fell short, so it does only {DECAYING_SHARE} of what it does in good
-          repair. {terms.decayingEffect}{' '}
+          ▲ Decaying: {damage === null ? 'upkeep fell short' : `${damage} damaged it`}, so it does
+          only {DECAYING_SHARE} of what it does in good repair. {terms.decayingEffect}{' '}
           {goesWithout
             ? `This quarter’s upkeep will not reach it either. Paying its ${upkeep} upkeep restores it.`
             : `This quarter’s upkeep pays its ${upkeep}, which restores it from next quarter.`}
