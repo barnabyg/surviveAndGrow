@@ -7,8 +7,8 @@ world price shocks of #72. The Phase 3 record, which this follows, is [phase-3.m
 
 ## Targets
 
-These are the targets proposed in issue #73. **They are proposals: the owner has not yet
-confirmed them.** They apply to the real country, Tavara, over games of up to four terms. Where
+These are the targets proposed in issue #73. The owner accepted these results as recorded on
+2026-11-21, including the two targets for world price shocks that values alone did not meet. They apply to the real country, Tavara, over games of up to four terms. Where
 the issue left a target without a figure, the figure used to judge it is given in brackets.
 
 | Target | Result on the confirmation run | Met |
