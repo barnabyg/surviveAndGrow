@@ -78,8 +78,11 @@ export const GOOD_NAMES: Readonly<Record<Good, string>> = {
   grain: 'Grain',
 };
 
-/** Which way an order sends a good across the border. Bought abroad, it is imported. */
-export const TRADE_DIRECTIONS = ['import'] as const;
+/**
+ * Which way an order sends a good across the border. Bought abroad, it is imported; sold
+ * abroad, it is exported.
+ */
+export const TRADE_DIRECTIONS = ['import', 'export'] as const;
 export type TradeDirection = (typeof TRADE_DIRECTIONS)[number];
 
 /** The kinds of effect a dilemma's option can have on the country. */
@@ -328,6 +331,7 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 /** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
 export const RISK_KINDS = [
   'famine',
+  'reserve',
   'treasury',
   'bailout',
   'bondMaturity',

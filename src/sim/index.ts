@@ -120,12 +120,17 @@ export {
   type TermQuarter,
 } from './timeline';
 export {
+  belowSafeAfterExport,
   costOf,
+  EXPORT_MARGIN_PERMILLE,
+  exportTerms,
   formatPrice,
   importTerms,
   ORDER_STEP_TONNES,
+  plannedExport,
   plannedImport,
   priceStatus,
+  type ExportTerms,
   type ImportTerms,
   type PriceStatus,
   type TradeOrder,

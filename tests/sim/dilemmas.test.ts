@@ -303,17 +303,18 @@ describe('the dilemmas in Tavara', () => {
   });
 
   it('lets merchants buy from a reserve that is above its safe level', () => {
+    // They pay the world price, $255 a tonne by the quarter they call in.
     expect(view('merchantOffer')?.options).toEqual([
       {
         id: 'sell',
         label: 'Sell them a large part',
-        effects: ['Takes 78,000 t from the national reserve', 'Brings in $12.5m'],
+        effects: ['Takes 78,000 t from the national reserve', 'Brings in $19.9m'],
         unavailable: null,
       },
       {
         id: 'some',
         label: 'Sell them a little',
-        effects: ['Takes 39,000 t from the national reserve', 'Brings in $6.2m'],
+        effects: ['Takes 39,000 t from the national reserve', 'Brings in $9.9m'],
         unavailable: null,
       },
       { id: 'keep', label: 'Keep the grain', effects: [], unavailable: null },

@@ -579,7 +579,8 @@ export const balance = {
   /**
    * Trade with the world. Each good has a world price that moves every quarter. Grain can be
    * ordered for the national reserve: it arrives, and is paid for at the price of the quarter
-   * it was ordered in, as that quarter ends.
+   * it was ordered in, as that quarter ends. Grain can be sold from the reserve at that price
+   * less the export margin.
    */
   trade: {
     goods: {
@@ -595,6 +596,11 @@ export const balance = {
     } satisfies Record<Good, GoodBalance>,
     /** An order is for a whole number of these tonnes. */
     orderStepTonnes: 1000,
+    /**
+     * Grain sold abroad fetches the world price less this many thousandths of it, for the
+     * shipping and the traders' cut, so that selling fetches less than buying costs.
+     */
+    exportMarginPermille: 200,
     /** How many quarters ahead the forecast range of a price looks, counting the next. */
     forecastQuarters: 4,
   },
@@ -656,7 +662,7 @@ export const balance = {
       name: 'Grain sold to merchants',
       title: 'Merchants offer to buy grain',
       story:
-        'The harvest is in and the national reserve is above its safe level. Grain merchants offer to buy a part of it for export. The money is good, and the grain will be gone before the next harvest is known.',
+        'The harvest is in and the national reserve is above its safe level. Grain merchants offer to buy a part of it at the world price, and to fetch it themselves. The money is good, and the grain will be gone before the next harvest is known.',
       // It comes with the new year, when the harvest has just reached the reserve.
       conditions: { inQuarters: [1], reserve: 'aboveSafe', restQuarters: 4 },
       options: [
@@ -665,7 +671,7 @@ export const balance = {
           label: 'Sell them a large part',
           effects: [
             { kind: 'reserve', needPermille: -300 },
-            { kind: 'treasury', perMillionPeople: 24 },
+            { kind: 'atWorldPrice', good: 'grain', needPermille: -300, pricePermille: 1000 },
           ],
         },
         {
@@ -673,7 +679,7 @@ export const balance = {
           label: 'Sell them a little',
           effects: [
             { kind: 'reserve', needPermille: -150 },
-            { kind: 'treasury', perMillionPeople: 12 },
+            { kind: 'atWorldPrice', good: 'grain', needPermille: -150, pricePermille: 1000 },
           ],
         },
         { id: 'keep', label: 'Keep the grain', effects: [] },

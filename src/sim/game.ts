@@ -206,6 +206,8 @@ export interface QuarterResolved extends TurnResult {
   readonly borrowed: Money;
   /** What was paid for goods bought abroad as the quarter ended. */
   readonly tradePaid: Money;
+  /** What goods sold abroad brought in as the quarter ended. */
+  readonly tradeEarned: Money;
   /** The share of their needs each region's people ate, in thousandths, in the regions' order. */
   readonly fedPermille: readonly number[];
   readonly electionHeld: boolean;
@@ -369,6 +371,7 @@ export function resolveQuarter(
     principalRepaid: serviced.principal,
     borrowed: taken.borrowed,
     tradePaid: traded.paid,
+    tradeEarned: traded.earned,
     fedPermille: food.fedPermille,
     electionHeld: election !== null,
   };
@@ -390,9 +393,10 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   const agricultureSpent = state.agricultureSpentThisYear + finances.spent.agriculture;
   // The sites in use as the quarter begins are the ones that bear on it.
   const sites = siteEffects(state);
+  // Grain sold abroad is set aside from the reserve first, so it is neither eaten nor spoiled.
   // Grain bought abroad reaches the reserve as the quarter ends, once its food is done.
-  const food = withImported(
-    resolveFood(foodSituation(state), {
+  const food = withTraded(
+    resolveFood(withExported(foodSituation(state), traded.exported), {
       agricultureSpentThisYear: agricultureSpent,
       weatherShocks,
       harvestPermille: eventsLeave(state, sites),
@@ -494,6 +498,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
       relief: reliefFor(decisions, quarterly.finances),
       sites: quarterly.sites,
       imported: quarterly.imported,
+      exported: quarterly.exported,
     })),
     // At worst, every event that could still begin this growing year does.
     worstHarvestPermille: state.regions.map((region, index) =>
@@ -515,7 +520,12 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     repayments: exactly(serviced.paid),
     missedPayment: serviced.missed,
     borrowed: taken.borrowed,
-    trade: { imported: traded.imported, paid: traded.paid },
+    trade: {
+      imported: traded.imported,
+      paid: traded.paid,
+      exported: traded.exported,
+      earned: traded.earned,
+    },
     debt: exactly(owed),
     debtBurden: exactly(lived.debtBurden),
     creditRating: credit.credit.rating,
@@ -607,7 +617,15 @@ interface QuarterMoney {
 function resolveMoney(
   state: Pick<
     GameState,
-    'country' | 'treasury' | 'regions' | 'projects' | 'date' | 'debts' | 'credit' | 'worldPrices'
+    | 'country'
+    | 'treasury'
+    | 'regions'
+    | 'projects'
+    | 'date'
+    | 'debts'
+    | 'credit'
+    | 'worldPrices'
+    | 'foodReserve'
   >,
   decisions: Decisions,
   starts: readonly string[] = decisions.startProjects ?? [],
@@ -633,7 +651,7 @@ function resolveMoney(
     taken.borrowed,
     taken.contributions,
   );
-  const traded = resolveTrade(state, trading, borrowed.treasury);
+  const traded = resolveTrade(state, trading, borrowed.treasury, state.foodReserve);
   return {
     serviced,
     budget,
@@ -641,20 +659,28 @@ function resolveMoney(
     upkept: resolveUpkeep({ country: state.country, projects: building.projects }, budget.upkeep),
     taken,
     traded,
-    // Goods bought abroad leave the treasury but are no part of the budget's balance.
-    finances: withBorrowed(borrowed, -traded.paid, traded.money),
+    // Goods bought or sold abroad move the treasury but are no part of the budget's balance.
+    finances: withBorrowed(borrowed, traded.earned - traded.paid, traded.money),
   };
 }
 
-/** The quarter's food once the grain bought abroad has reached the national reserve. */
-function withImported<Food extends { foodReserve: number; contributions: readonly Contribution[] }>(
+/** The food situation once the grain sold abroad has been set aside from the reserve. */
+function withExported(situation: FoodSituation, exported: number): FoodSituation {
+  return { ...situation, foodReserve: situation.foodReserve - exported };
+}
+
+/**
+ * The quarter's food with its trade: the grain sold abroad, set aside before it began, and
+ * the grain bought abroad, which reaches the national reserve once it is over.
+ */
+function withTraded<Food extends { foodReserve: number; contributions: readonly Contribution[] }>(
   food: Food,
   traded: TradeOutcome,
 ): Food {
   return {
     ...food,
     foodReserve: food.foodReserve + traded.imported,
-    contributions: [...food.contributions, ...traded.food],
+    contributions: [...traded.sold, ...food.contributions, ...traded.bought],
   };
 }
 
@@ -708,6 +734,8 @@ interface QuarterAhead {
   readonly sites: SiteEffects;
   /** The grain bought abroad that reaches the reserve as that quarter ends, in tonnes. */
   readonly imported: number;
+  /** The grain sold abroad, set aside from the reserve as that quarter begins, in tonnes. */
+  readonly exported: number;
 }
 
 /**
@@ -736,6 +764,7 @@ function quartersToHarvest(state: GameState, decisions: Decisions): QuarterAhead
       finances: money.finances,
       sites: siteEffects({ ...state, projects }),
       imported: money.traded.imported,
+      exported: money.traded.exported,
     });
     ({ treasury } = money.finances);
     ({ projects } = money.upkept);

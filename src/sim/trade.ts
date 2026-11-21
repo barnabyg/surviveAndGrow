@@ -2,7 +2,9 @@ import { clamp, sum } from './arithmetic';
 import { balance } from './balance';
 import { quarterNumber } from './calendar';
 import type { ReportEntry } from './report';
+import { foodStatus, safeReserveTonnes } from './food';
 import { drawAt } from './rng';
+import type { RegionState } from './state';
 import { formatMoney, formatQuarters, formatTonnes } from './text';
 import type { Contribution, Figure, GameDate, Money, Range } from './types';
 import { GOOD_NAMES, GOODS, TRADE_DIRECTIONS, type Good, type TradeDirection } from './vocabulary';
@@ -24,6 +26,9 @@ export interface TradeOrder {
 
 /** An order is for a whole number of these tonnes. */
 export const ORDER_STEP_TONNES = balance.trade.orderStepTonnes;
+
+/** What grain sold abroad loses of the world price, in thousandths. */
+export const EXPORT_MARGIN_PERMILLE = balance.trade.exportMarginPermille;
 
 /** The world prices a game opens with: every good at its usual price. */
 export function openingPrices(): WorldPrices {
@@ -177,9 +182,34 @@ export interface ImportTerms {
   readonly unavailable: string | null;
 }
 
+/** An export as the trade panel offers it, before it is ordered. */
+export interface ExportTerms {
+  readonly good: Good;
+  readonly tonnes: number;
+  /** The price it is sold at: this quarter's world price less the export margin. */
+  readonly dollarsPerTonne: number;
+  readonly income: Money;
+  /** True when it would take the national reserve below its safe level. */
+  readonly belowSafe: boolean;
+  /** Why it cannot be ordered as things stand, or null when it can. */
+  readonly unavailable: string | null;
+}
+
 interface Trader {
   readonly worldPrices: WorldPrices;
   readonly treasury: Money;
+  /** The national reserve, which grain sold abroad comes out of. */
+  readonly foodReserve: number;
+  readonly regions: readonly RegionState[];
+}
+
+/**
+ * What a good sells for abroad this quarter, in dollars a tonne: its world price less the
+ * export margin, so that selling fetches less than buying costs.
+ */
+export function exportPriceOf(prices: WorldPrices, good: Good): number {
+  const margin = balance.trade.exportMarginPermille;
+  return Math.round((priceOf(prices, good) * (1000 - margin)) / 1000);
 }
 
 /** What kind of order an order is: the good and which way it goes. Each kind once a quarter. */
@@ -187,10 +217,29 @@ function kindOf(order: Pick<TradeOrder, 'good' | 'direction'>): string {
   return `${order.good} ${order.direction}`;
 }
 
+/** The order of a good one way among the orders planned, if there is one. */
+export function plannedOrder(
+  planned: readonly TradeOrder[],
+  good: Good,
+  direction: TradeDirection,
+): TradeOrder | undefined {
+  const kind = kindOf({ good, direction });
+  return planned.find((order) => kindOf(order) === kind);
+}
+
 /** The import of a good among the orders planned, if there is one. */
 export function plannedImport(planned: readonly TradeOrder[], good: Good): TradeOrder | undefined {
-  const kind = kindOf({ good, direction: 'import' });
-  return planned.find((order) => kindOf(order) === kind);
+  return plannedOrder(planned, good, 'import');
+}
+
+/** The export of a good among the orders planned, if there is one. */
+export function plannedExport(planned: readonly TradeOrder[], good: Good): TradeOrder | undefined {
+  return plannedOrder(planned, good, 'export');
+}
+
+/** The orders planned with one put in place of any other of its kind. */
+function withOrder(planned: readonly TradeOrder[], order: TradeOrder): TradeOrder[] {
+  return [...planned.filter((other) => kindOf(other) !== kindOf(order)), order];
 }
 
 /** What importing a number of tonnes of a good would cost this quarter, and whether it may. */
@@ -207,11 +256,52 @@ export function importTerms(
     tonnes,
     dollarsPerTonne,
     cost: costOf(tonnes, dollarsPerTonne),
-    unavailable: tradeFault(game, [
-      ...planned.filter((other) => kindOf(other) !== kindOf(order)),
-      order,
-    ]),
+    unavailable: tradeFault(game, withOrder(planned, order)),
   };
+}
+
+/**
+ * What exporting a number of tonnes of a good from the national reserve would bring in this
+ * quarter, whether it would take the reserve below its safe level, and whether it may.
+ */
+export function exportTerms(
+  game: Trader,
+  good: Good,
+  tonnes: number,
+  planned: readonly TradeOrder[] = [],
+): ExportTerms {
+  const dollarsPerTonne = exportPriceOf(game.worldPrices, good);
+  const order: TradeOrder = { good, direction: 'export', tonnes };
+  return {
+    good,
+    tonnes,
+    dollarsPerTonne,
+    income: costOf(tonnes, dollarsPerTonne),
+    belowSafe: foodStatus({ regions: game.regions, foodReserve: game.foodReserve - tonnes })
+      .belowSafeLevel,
+    unavailable: tradeFault(game, withOrder(planned, order)),
+  };
+}
+
+/** The grain the orders sell from the national reserve, in tonnes. */
+export function exportedBy(orders: readonly TradeOrder[]): number {
+  return sum(orders.filter((order) => order.direction === 'export').map((order) => order.tonnes));
+}
+
+/**
+ * Why selling grain abroad leaves the reserve below its safe level, or null when it does not
+ * or nothing is sold.
+ */
+export function belowSafeAfterExport(
+  game: Pick<Trader, 'foodReserve' | 'regions'>,
+  orders: readonly TradeOrder[],
+): string | null {
+  const sold = exportedBy(orders);
+  const left = game.foodReserve - sold;
+  if (sold === 0 || !foodStatus({ regions: game.regions, foodReserve: left }).belowSafeLevel) {
+    return null;
+  }
+  return `Selling ${formatTonnes(sold)} takes the national reserve down to ${formatTonnes(Math.max(left, 0))}, below its safe level of ${formatTonnes(safeReserveTonnes(game.regions))}.`;
 }
 
 /** What is wrong with the orders to trade this quarter, or null when the game allows them. */
@@ -230,44 +320,92 @@ export function tradeFault(game: Trader, orders: readonly TradeOrder[]): string 
   }
   const kinds = new Set(orders.map(kindOf));
   if (kinds.size !== orders.length) return 'Each good may be ordered only once a quarter.';
-  const cost = sum(
-    orders.map((order) => costOf(order.tonnes, priceOf(game.worldPrices, order.good))),
+  // Bought and sold in one quarter, a good would only lose the margin, or game it.
+  const both = GOODS.find(
+    (good) =>
+      plannedOrder(orders, good, 'import') !== undefined &&
+      plannedOrder(orders, good, 'export') !== undefined,
   );
-  return cost > game.treasury
-    ? `The treasury holds only ${formatMoney(game.treasury)}, and the grain ordered would cost ${formatMoney(cost)}.`
+  if (both !== undefined) {
+    return `${GOOD_NAMES[both]} cannot be both bought and sold in one quarter.`;
+  }
+  const imports = orders.filter((order) => order.direction === 'import');
+  const cost = sum(
+    imports.map((order) => costOf(order.tonnes, priceOf(game.worldPrices, order.good))),
+  );
+  if (cost > game.treasury) {
+    return `The treasury holds only ${formatMoney(game.treasury)}, and the grain ordered would cost ${formatMoney(cost)}.`;
+  }
+  const sold = exportedBy(orders);
+  return sold > game.foodReserve
+    ? `The national reserve holds only ${formatTonnes(game.foodReserve)}, and ${formatTonnes(sold)} would be sold.`
     : null;
 }
 
 /** What a quarter's trade did, as it ended. */
 export interface TradeOutcome {
-  /** The treasury once the goods bought have been paid for. */
+  /** The treasury once the goods sold have brought their income and the goods bought are paid for. */
   readonly treasury: Money;
-  /** What was paid for them. */
+  /** What was paid for the goods bought. */
   readonly paid: Money;
+  /** What the goods sold brought in. */
+  readonly earned: Money;
   /** The grain that reached the national reserve, in tonnes. */
   readonly imported: number;
-  /** What trade did to the treasury and to the reserve, for their breakdowns. */
+  /** The grain that left the national reserve, in tonnes. */
+  readonly exported: number;
+  /** What trade did to the treasury, for its breakdown. */
   readonly money: readonly Contribution[];
-  readonly food: readonly Contribution[];
+  /**
+   * What trade did to the reserve, for its breakdown: the grain sold, which is set aside as
+   * the quarter begins, and the grain bought, which arrives as it ends.
+   */
+  readonly sold: readonly Contribution[];
+  readonly bought: readonly Contribution[];
   readonly entries: readonly ReportEntry[];
 }
 
 /**
- * The quarter's trade, as it ends: each import is paid for out of the treasury at this
- * quarter's world price and its grain reaches the national reserve. An import the treasury
- * can no longer pay for in full by then is cut to the whole steps it can.
+ * The quarter's trade. Each export is set aside from the national reserve as it stands once
+ * any dilemma's answer has taken effect, so it is neither eaten nor spoiled, and is paid for
+ * as the quarter ends at this quarter's world price less the export margin; one the reserve
+ * no longer holds in full is cut to the whole steps it does. Each import is paid for out of
+ * the treasury as the quarter ends at this quarter's world price and its grain reaches the
+ * national reserve; one the treasury can no longer pay for in full by then is cut to the
+ * whole steps it can.
  */
 export function resolveTrade(
   game: { readonly worldPrices: WorldPrices },
   orders: readonly TradeOrder[],
   treasury: Money,
+  reserve: number,
 ): TradeOutcome {
   let left = treasury;
+  let held = reserve;
   let imported = 0;
+  let exported = 0;
+  let earned = 0;
   const money: Contribution[] = [];
-  const food: Contribution[] = [];
+  const sold: Contribution[] = [];
+  const bought: Contribution[] = [];
   const entries: ReportEntry[] = [];
-  for (const order of orders) {
+  for (const order of orders.filter((each) => each.direction === 'export')) {
+    const price = exportPriceOf(game.worldPrices, order.good);
+    const tonnes = Math.min(order.tonnes, wholeSteps(held));
+    const income = costOf(tonnes, price);
+    held -= tonnes;
+    left += income;
+    earned += income;
+    exported += tonnes;
+    const label = `${GOOD_NAMES[order.good]} exported`;
+    if (tonnes > 0) {
+      money.push({ label, amount: income });
+      sold.push({ label, amount: -tonnes });
+    }
+    entries.push(exportEntry(order, tonnes, income, price));
+  }
+  const beforeImports = left;
+  for (const order of orders.filter((each) => each.direction === 'import')) {
     const price = priceOf(game.worldPrices, order.good);
     const tonnes = affordable(order.tonnes, price, left);
     const cost = costOf(tonnes, price);
@@ -276,11 +414,46 @@ export function resolveTrade(
     const label = `${GOOD_NAMES[order.good]} imported`;
     if (tonnes > 0) {
       money.push({ label, amount: -cost });
-      food.push({ label, amount: tonnes });
+      bought.push({ label, amount: tonnes });
     }
     entries.push(importEntry(order, tonnes, cost, price));
   }
-  return { treasury: left, paid: treasury - left, imported, money, food, entries };
+  return {
+    treasury: left,
+    paid: beforeImports - left,
+    earned,
+    imported,
+    exported,
+    money,
+    sold,
+    bought,
+    entries,
+  };
+}
+
+/** The most of a weight that whole order steps make up. */
+function wholeSteps(tonnes: number): number {
+  const step = balance.trade.orderStepTonnes;
+  return Math.max(0, Math.floor(tonnes / step) * step);
+}
+
+/** What the turn report says of an export. */
+function exportEntry(order: TradeOrder, tonnes: number, income: Money, price: number): ReportEntry {
+  const name = GOOD_NAMES[order.good];
+  if (tonnes === order.tonnes) {
+    return {
+      kind: 'trade',
+      seriousness: 'notable',
+      headline: `${name} exported`,
+      cause: `${formatTonnes(tonnes)} left the national reserve, sold for ${formatMoney(income)} at $${price} a tonne.`,
+    };
+  }
+  return {
+    kind: 'trade',
+    seriousness: 'warning',
+    headline: `${name} export cut short`,
+    cause: `The national reserve held only ${formatTonnes(tonnes)} of the ${formatTonnes(order.tonnes)} sold once the dilemma was answered, at $${price} a tonne: ${formatMoney(income)}.`,
+  };
 }
 
 /** The most of an order, in whole steps, that the treasury can pay for. */

@@ -3,6 +3,8 @@ import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   createGame,
+  exportTerms,
+  foodStatus,
   importTerms,
   pendingDilemma,
   previewQuarter,
@@ -147,7 +149,7 @@ describe.each(bothCountries)('an import of grain in %s', (_name, country) => {
     const preview = previewQuarter(game, order);
     const { state } = advanceQuarter(game, order);
 
-    expect(preview.trade).toEqual({ imported: 5000, paid: 12 });
+    expect(preview.trade).toEqual({ imported: 5000, paid: 12, exported: 0, earned: 0 });
     expect(preview.treasury.min).toBe(without.treasury.min - 12);
     expect(preview.treasury).toEqual({ min: state.treasury, max: state.treasury });
     // What reaches the reserve before the harvest loses its share to spoilage on the way.
@@ -335,5 +337,216 @@ describe('the neighbour’s offer of grain', () => {
     expect(sorted.map(([, cost]) => cost)).toEqual(
       [...sorted.map(([, cost]) => cost ?? 0)].sort((a, b) => a - b),
     );
+  });
+});
+
+/** An order to sell tonnes of grain abroad from the national reserve. */
+function sale(tonnes: number): TradeOrder {
+  return { good: 'grain', direction: 'export', tonnes };
+}
+
+describe.each(bothCountries)('an export of grain in %s', (_name, country) => {
+  const start = () => createGame(country(), 2);
+  const order = { ...keep(start()), trade: [sale(5000)] };
+
+  it('is priced at this quarter’s world price less the export margin before it is ordered', () => {
+    // 5,000 tonnes at $240 a tonne less a fifth, $192 a tonne, is $0.96m.
+    expect(exportTerms(start(), 'grain', 5000)).toMatchObject({
+      good: 'grain',
+      tonnes: 5000,
+      dollarsPerTonne: 192,
+      income: 10,
+      unavailable: null,
+    });
+  });
+
+  it('leaves the national reserve and is paid for as the quarter ends, at the income shown', () => {
+    const game = start();
+    const without = advanceQuarter(game, keep(game));
+    const { state, report } = advanceQuarter(game, order);
+
+    // The grain sold is set aside at once, so it does not spoil in store with the rest.
+    expect(state.foodReserve).toBeLessThan(without.state.foodReserve - 4000);
+    expect(state.foodReserve).toBeGreaterThanOrEqual(without.state.foodReserve - 5000);
+    expect(state.treasury - without.state.treasury).toBe(10);
+    expect(report.treasury.contributions).toContainEqual({ label: 'Grain exported', amount: 10 });
+    expect(report.food.contributions).toContainEqual({ label: 'Grain exported', amount: -5000 });
+    expect(report.entries).toContainEqual({
+      kind: 'trade',
+      seriousness: 'notable',
+      headline: 'Grain exported',
+      cause: '5,000 t left the national reserve, sold for $1.0m at $192 a tonne.',
+    });
+  });
+
+  it('is in the preview: the treasury after it, and the reserve after the harvest', () => {
+    const game = start();
+    const without = previewQuarter(game, keep(game));
+    const preview = previewQuarter(game, order);
+    const { state } = advanceQuarter(game, order);
+
+    expect(preview.trade).toEqual({ imported: 0, paid: 0, exported: 5000, earned: 10 });
+    expect(preview.treasury.min).toBe(without.treasury.min + 10);
+    expect(preview.treasury).toEqual({ min: state.treasury, max: state.treasury });
+    expect(preview.foodReserveAfterHarvest.min).toBeLessThan(without.foodReserveAfterHarvest.min);
+    expect(preview.foodReserveAfterHarvest.max).toBeLessThan(without.foodReserveAfterHarvest.max);
+  });
+
+  it('is no part of the budget’s balance', () => {
+    const game = start();
+
+    expect(previewQuarter(game, order).balance).toEqual(previewQuarter(game, keep(game)).balance);
+  });
+
+  it('is refused for more grain than the national reserve holds', () => {
+    const game = { ...start(), foodReserve: 4000 };
+
+    expect(exportTerms(game, 'grain', 5000).unavailable).toBe(
+      'The national reserve holds only 4,000 t, and 5,000 t would be sold.',
+    );
+    expect(() => advanceQuarter(game, order)).toThrow(
+      'The national reserve holds only 4,000 t, and 5,000 t would be sold.',
+    );
+  });
+
+  it('cannot be ordered beside an import of the same good, so the margin cannot be gamed', () => {
+    const game = start();
+    const both = { ...keep(game), trade: [grain(5000), sale(5000)] };
+
+    expect(() => advanceQuarter(game, both)).toThrow(
+      'Grain cannot be both bought and sold in one quarter.',
+    );
+    expect(exportTerms(game, 'grain', 5000, [grain(5000)]).unavailable).toBe(
+      'Grain cannot be both bought and sold in one quarter.',
+    );
+    expect(importTerms(game, 'grain', 5000, [sale(5000)]).unavailable).toBe(
+      'Grain cannot be both bought and sold in one quarter.',
+    );
+  });
+
+  it('can be ordered during austerity', () => {
+    const game = { ...start(), austerity: { quartersLeft: 3 } };
+
+    expect(exportTerms(game, 'grain', 5000).unavailable).toBeNull();
+  });
+});
+
+describe('an export that would take the reserve below its safe level', () => {
+  // Tavara eats 260,000 tonnes a quarter, so its safe level of three months is 260,000 tonnes.
+  const game = () => ({ ...createGame(tavara(), 2), foodReserve: 300_000 });
+
+  it('is allowed, but warned of before it is ordered', () => {
+    expect(exportTerms(game(), 'grain', 30_000).belowSafe).toBe(false);
+    const terms = exportTerms(game(), 'grain', 50_000);
+    expect(terms.unavailable).toBeNull();
+    expect(terms.belowSafe).toBe(true);
+  });
+
+  it('is counted in the risks ahead', () => {
+    const reserve = (decisions: Decisions) =>
+      risksAhead(game(), decisions).filter((risk) => risk.kind === 'reserve');
+
+    expect(reserve(keep(game()))).toEqual([]);
+    expect(reserve({ ...keep(game()), trade: [sale(30_000)] })).toEqual([]);
+    expect(reserve({ ...keep(game()), trade: [sale(50_000)] })).toEqual([
+      {
+        kind: 'reserve',
+        likelihood: 'almostCertain',
+        headline: 'Grain sold below the safe reserve',
+        reason:
+          'Selling 50,000 t takes the national reserve down to 250,000 t, below its safe level of 260,000 t.',
+        withinQuarters: 1,
+      },
+    ]);
+  });
+});
+
+describe('an export the reserve can no longer cover as the quarter ends', () => {
+  it('is cut to the thousands of tonnes the reserve still holds, and the report says so', () => {
+    // The merchants take their grain first, before the grain ordered is shipped.
+    const country = withChances(tavaraFile, { dilemmas: { merchantOffer: 1 }, reserve: 400_000 });
+    let game = createGame(country, 1);
+    while (game.dilemma?.type !== 'merchantOffer') {
+      game = advanceQuarter(game, keep(game)).state;
+    }
+    const held = Math.floor(game.foodReserve / 1000) * 1000;
+    const { report } = advanceQuarter(game, {
+      ...keep(game),
+      dilemmaChoice: 'sell',
+      trade: [sale(held)],
+    });
+
+    const line = report.food.contributions.find((entry) => entry.label === 'Grain exported');
+    expect(line?.amount).toBeGreaterThan(-held);
+    expect(report.entries.find((entry) => entry.kind === 'trade')).toMatchObject({
+      seriousness: 'warning',
+      headline: 'Grain export cut short',
+    });
+  });
+});
+
+/** The grain above the reserve's safe level, in whole thousands of tonnes. */
+function surplusOf(game: GameState): number {
+  const safe = foodStatus(game).quarterlyConsumption;
+  const surplus = Math.floor((game.foodReserve - safe) / 1000) * 1000;
+  if (surplus < 1000)
+    throw new Error(`No surplus to sell: the reserve holds ${game.foodReserve} t`);
+  return surplus;
+}
+
+describe.each(bothCountries)('a surplus sold after a good harvest in %s', (name) => {
+  // A good year: no drought and no dilemmas.
+  const country = () =>
+    withChances(name === 'Tavara' ? tavaraFile : testlandFile, { growing: true });
+  const decide =
+    (selling: boolean) =>
+    (game: GameState): Decisions => ({
+      ...keep(game),
+      // The harvest reaches the reserve as the first year ends; what is above the safe level
+      // is sold as the second begins.
+      trade: selling && game.history.length === 5 ? [sale(surplusOf(game))] : [],
+    });
+
+  it('ends the year with more money and no hunger', () => {
+    const kept = play(createGame(country(), 3), 8, decide(false));
+    const sold = play(createGame(country(), 3), 8, decide(true));
+
+    expect(sold.states).toHaveLength(9);
+    expect(sold.state.outcome).toEqual({ status: 'playing' });
+    expect(sold.state.treasury).toBeGreaterThan(kept.state.treasury);
+    expect(sold.state.foodReserve).toBeLessThan(kept.state.foodReserve);
+    expect(
+      sold.states.every((state) => state.regions.every((r) => r.foodStage === 'adequate')),
+    ).toBe(true);
+    expect(sold.reports.flatMap((report) => report.entries)).toContainEqual(
+      expect.objectContaining({ kind: 'trade', headline: 'Grain exported' }),
+    );
+  });
+});
+
+describe('the merchants’ offer to buy grain', () => {
+  const offered = (seed: number) => {
+    const country = withChances(tavaraFile, { dilemmas: { merchantOffer: 1 }, reserve: 600_000 });
+    let game = createGame(country, seed);
+    while (game.dilemma?.type !== 'merchantOffer') {
+      game = advanceQuarter(game, keep(game)).state;
+    }
+    return game;
+  };
+
+  it('is priced at the world price', () => {
+    for (const seed of [1, 2, 3]) {
+      const game = offered(seed);
+      const sell = game.dilemma?.options.find((option) => option.id === 'sell');
+      const price = game.worldPrices.grain.at(-1) ?? 0;
+      const tonnes = sell?.effects.find((effect) => effect.kind === 'reserve');
+      const paid = sell?.effects.find((effect) => effect.kind === 'treasury');
+      if (tonnes?.kind !== 'reserve' || paid?.kind !== 'treasury') throw new Error('No offer');
+
+      // The merchants take three tenths of what Tavara eats in a quarter, 78,000 tonnes, and
+      // pay the world price for it: they come for it, so no margin is lost on the way.
+      expect(tonnes.tonnes).toBe(-78_000);
+      expect(paid.amount).toBe(Math.round((78_000 * price) / 100_000));
+    }
   });
 });

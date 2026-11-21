@@ -22,6 +22,7 @@ import type { Decisions, GameState, RegionState } from './state';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
+import { belowSafeAfterExport } from './trade';
 import { UPKEEP_ORDER_RULE } from './upkeep';
 import {
   FOOD_STAGES,
@@ -52,8 +53,8 @@ export interface Risk {
 export const riskHorizonQuarters = balance.risks.horizonQuarters;
 
 /**
- * The dangers of the coming quarters: famine in a region, strikes, a treasury that runs
- * out, a missed payment on a debt that brings a bailout, a bond's maturity that cannot be
+ * The dangers of the coming quarters: famine in a region, grain sold below the reserve's safe
+ * level, strikes, a treasury that runs out, a missed payment on a debt that brings a bailout, a bond's maturity that cannot be
  * met, and a lost election. It plays the quarters ahead with the real rules, holding the decisions as they are,
  * once for each course the weather could take and each event that could still begin, and
  * weighs how many of those lead to each danger. The most likely comes first, and a danger
@@ -86,6 +87,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
 
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
+    ...reserveRisk(state, decisions),
     ...treasuryRisk(whole),
     ...bailoutRisk(whole),
     ...whole.bonds.flatMap((bond) => maturityRisk(whole, bond)),
@@ -215,6 +217,24 @@ function famineReason(state: GameState, region: RegionState, finding: Finding): 
         ? 'It has too little food to last until the harvest.'
         : 'Its harvest will be too small to last the year.';
   return `${cause} It runs ${short}, and left alone that is famine ${formatQuarters(stagesToFamine - 1)} later.`;
+}
+
+/**
+ * Grain sold abroad that takes the national reserve below its safe level leaves less to fall
+ * back on. The sale is the player's own, so it is certain once ordered.
+ */
+function reserveRisk(state: GameState, decisions: Decisions): Risk[] {
+  const reason = belowSafeAfterExport(state, decisions.trade ?? []);
+  if (reason === null) return [];
+  return [
+    {
+      kind: 'reserve',
+      likelihood: 'almostCertain',
+      headline: 'Grain sold below the safe reserve',
+      reason,
+      withinQuarters: 1,
+    },
+  ];
 }
 
 /**

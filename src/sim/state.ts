@@ -177,9 +177,11 @@ export interface Decisions {
    */
   readonly borrow?: readonly Borrowing[];
   /**
-   * What to buy abroad this quarter, at this quarter's world price. The goods arrive, and are
-   * paid for, as the quarter ends; the treasury must hold the cost as the quarter begins.
-   * Austerity does not bar it.
+   * What to buy or sell abroad this quarter, at this quarter's world price, less the export
+   * margin for what is sold. Goods bought arrive, and are paid for, as the quarter ends; the
+   * treasury must hold the cost as the quarter begins. Grain sold is set aside from the
+   * national reserve, which must hold it as the quarter begins, and is paid for as the quarter
+   * ends. A good may not be both bought and sold in one quarter. Austerity bars neither.
    */
   readonly trade?: readonly TradeOrder[];
   /**
@@ -278,7 +280,10 @@ export interface Preview {
   readonly missedPayment: Money;
   /** What borrowing brings into the treasury as the quarter ends. */
   readonly borrowed: Money;
-  /** What trade does as the quarter ends: the grain that reaches the reserve, and its cost. */
+  /**
+   * What trade does as the quarter ends: the grain that reaches the reserve and its cost, and
+   * the grain that leaves it and what it brings in.
+   */
   readonly trade: TradePreview;
   /** What the nation will owe once the quarter is over. */
   readonly debt: Range;
@@ -345,6 +350,10 @@ export interface TradePreview {
   readonly imported: number;
   /** What is paid for it out of the treasury. */
   readonly paid: Money;
+  /** The grain sold abroad that leaves the national reserve, in tonnes. */
+  readonly exported: number;
+  /** What it brings into the treasury. */
+  readonly earned: Money;
 }
 
 /** A quarter's upkeep as the preview sees it. */

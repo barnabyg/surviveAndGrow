@@ -22,10 +22,12 @@ supposed chance. It lives the quarter through `liveQuarter`, which the preview
    consolidated into one bailout loan (`debt.ts`). Then the budget (`budget.ts`) with what is
    left; then project instalments, oldest first (`projects.ts`); then upkeep and decay
    (`upkeep.ts`). What is borrowed arrives as the quarter ends (`debt.ts`), unless a
-   bailout has stopped it, and last of all grain bought abroad is paid for (`trade.ts`).
+   bailout has stopped it, and last of all grain sold abroad is paid for and grain bought
+   abroad is paid for (`trade.ts`); grain sold is set aside from the reserve as it stands
+   after the dilemma's answer.
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
-   `power.ts`) and the events in force (`events.ts`). Grain bought abroad then reaches the
-   national reserve.
+   `power.ts`) and the events in force (`events.ts`), from the reserve less the grain sold
+   abroad. Grain bought abroad then reaches the national reserve.
 4. Health and education levels (`resolveServices` in `prosperity.ts`).
 5. Prosperity (`prosperity.ts`) and the tier it reaches (`tiers.ts`), which sets expectations.
 6. Approval (`approval.ts`), which decides who strikes next quarter. A bailout's blow lands
