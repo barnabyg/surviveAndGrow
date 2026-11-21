@@ -1,7 +1,7 @@
 # Survive and Grow: game design
 
 Status: Phase 1 is built, and Phase 2 (build) and Phase 3 (borrow) are built and balanced. Last
-updated 2026-11-20.
+updated 2026-11-21.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
 [rules.md](rules.md), which is the one place they are stated in full.
@@ -129,13 +129,16 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
 
 ## 6. Main screen
 
-Designed for 2560 x 1440 or larger, in three columns split by purpose. The top bar holds five vital
-signs, always visible, each with a short trend line: treasury, food reserve, approval, prosperity
-against target, and time to the election, beside the end-quarter button. The left column says what
-is happening: reports, risks ahead with likelihoods, living standards by region and an approval
-chart. The centre holds the map, its lenses and the selected site's card, over the term timeline of
-20 quarters to the election with harvests and projects marked. The right column is what you do:
-budget sliders with a live projection, then projects underway and affordable.
+Designed for 2560 x 1440 or larger, in three columns split by purpose. The top bar holds the vital
+signs, always visible: treasury, debt with its burden, credit rating, food reserve, approval,
+prosperity against target, and time to the election, beside the end-quarter button. Each figure
+but the rating and the election has a short trend line, and during austerity the bar also counts
+down the quarters it has left. The left column says what is happening: reports, risks ahead
+with likelihoods, living standards by region and an approval chart. The centre holds the map, its
+lenses and the selected site's card, over the term timeline of 20 quarters to the election with
+harvests, projects and bond maturities marked. The right column is what you do: any dilemma
+waiting, budget sliders with a live projection, projects underway and affordable, loans and
+bonds, food relief and the election forecast.
 
 Rules that apply everywhere:
 
