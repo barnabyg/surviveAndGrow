@@ -1,6 +1,7 @@
 import { apportion, clamp, sum } from './arithmetic';
 import { balance } from './balance';
-import { chainEarnings } from './chains';
+import { chainEarnings, earningLines } from './chains';
+import type { WorldPrices } from './trade';
 import type { Country } from './country';
 import { poweredOutput, regionPower, unpowered, type RegionPower } from './power';
 import { infrastructureFrom, sitesInUse, type Project } from './projects';
@@ -57,6 +58,8 @@ export interface ProsperitySituation {
   readonly country: Country;
   readonly regions: readonly RegionState[];
   readonly projects: readonly Project[];
+  /** The world prices, which set what a mine's chain earns. */
+  readonly worldPrices: WorldPrices;
 }
 
 /** Each region's living standard. */
@@ -75,7 +78,9 @@ export function livingStandards(situation: ProsperitySituation): LivingStandard[
       { label: 'Own output', amount: region.output, regionId },
       ...earnings
         .filter(({ site }) => site.regionId === regionId)
-        .map(({ site, output: amount }) => ({ label: site.name, amount, regionId })),
+        .flatMap((earning) =>
+          earningLines(earning.site.name, earning).map((line) => ({ ...line, regionId })),
+        ),
       ...(power.outputPermille > 0
         ? [{ label: fromPower, amount: poweredOutput(region.output, power), regionId }]
         : []),

@@ -47,9 +47,11 @@ export interface SiteBalance {
    */
   readonly infrastructurePermille: number;
   /**
-   * For a site that plays a part in a chain (`SITE_TYPE_DEFINITIONS`), what it produces or
-   * carries in a quarter, in Money units, while in good repair. A chain yields the least of
-   * its sites' capacities, and a decaying site has only part of its capacity.
+   * For a site that plays a part in a chain (`SITE_TYPE_DEFINITIONS`), how much ore it
+   * produces or carries in a quarter while in good repair, counted as what that ore is worth at
+   * the usual world ore price, in Money units: at $100 a tonne, 600 is 600,000 tonnes. A chain
+   * ships the least of its sites' capacities, and a decaying site has only part of its
+   * capacity. What the ore shipped earns follows the world ore price.
    */
   readonly capacity?: number;
 }
@@ -225,6 +227,12 @@ export const balance = {
      * A risk is given a likelihood when its chance, in thousandths, is at least this much.
      * A chance below the first is negligible, and the risk is not listed.
      */
+    /**
+     * The chance, in thousandths, given to a danger that only a slump in the world ore price
+     * to the low end of its forecast would bring. A slump that deep is rare, but it is what a
+     * country that lives on its mine must be ready for, so it errs towards warning.
+     */
+    oreSlumpChancePermille: 100,
     likelihoodFromPermille: {
       remote: 20,
       unlikely: 100,
@@ -580,7 +588,7 @@ export const balance = {
    * Trade with the world. Each good has a world price that moves every quarter. Grain can be
    * ordered for the national reserve: it arrives, and is paid for at the price of the quarter
    * it was ordered in, as that quarter ends. Grain can be sold from the reserve at that price
-   * less the export margin.
+   * less the export margin. Ore is sold abroad by a mine's chain, at the world ore price.
    */
   trade: {
     goods: {
@@ -592,6 +600,16 @@ export const balance = {
         highestDollarsPerTonne: 420,
         swingPermillePerQuarter: 125,
         revertPermillePerQuarter: 250,
+      },
+      // Ore is what a mine's chain ships abroad. Its usual price makes a chain's capacities,
+      // which are counted in Money at that price, a round number of tonnes. It swings further
+      // than grain, so a country that lives on its mine lives with a riskier income.
+      ore: {
+        usualDollarsPerTonne: 100,
+        lowestDollarsPerTonne: 45,
+        highestDollarsPerTonne: 190,
+        swingPermillePerQuarter: 150,
+        revertPermillePerQuarter: 200,
       },
     } satisfies Record<Good, GoodBalance>,
     /** An order is for a whole number of these tonnes. */

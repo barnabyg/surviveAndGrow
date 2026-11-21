@@ -18,6 +18,7 @@ import format3Save from '../saves/format-3.json';
 import format4Save from '../saves/format-4.json';
 import format5Save from '../saves/format-5.json';
 import format6Save from '../saves/format-6.json';
+import format7Save from '../saves/format-7.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './players';
 
@@ -392,9 +393,54 @@ describe('the save kept from save format 6', () => {
     expect(() => loadSave(damaged)).toThrow(/state\.austerity\.quartersLeft/);
   });
 
-  it('is lifted to format 7 with the world grain price at its usual level', () => {
+  it('is lifted with each world price at its usual level', () => {
     const { game } = loadSave(format6Save);
 
-    expect(game.worldPrices).toEqual({ grain: [240] });
+    expect(game.worldPrices).toEqual({ grain: [240], ore: [100] });
+  });
+});
+
+describe('the save kept from save format 7', () => {
+  it('still opens on the game it was written from, with grain bought abroad', () => {
+    const { game, report } = loadSave(format7Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(game.worldPrices.grain).toEqual([240, 223, 209, 247]);
+    expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
+    expect(report?.treasury.contributions).toContainEqual({ label: 'Grain imported', amount: -42 });
+    expect(report?.entries.map((entry) => entry.headline)).toContain('Grain imported');
+  });
+
+  it('plays on, its world price moving on from where it was and grain bought at it', () => {
+    const { game } = loadSave(format7Save);
+    const decisions = {
+      ...answering(game, steward(game)),
+      trade: [{ good: 'grain', direction: 'import', tonnes: 10_000 }] as const,
+    };
+
+    const { state, report } = advanceQuarter(game, decisions);
+
+    expect(state.worldPrices.grain.slice(0, 4)).toEqual([240, 223, 209, 247]);
+    expect(state.worldPrices.grain).toHaveLength(5);
+    // 10,000 tonnes at $247 a tonne is $2.5m.
+    expect(report.treasury.contributions).toContainEqual({ label: 'Grain imported', amount: -25 });
+  });
+
+  it('refuses a world price that is not a whole number of dollars', () => {
+    const damaged = withValue(format7Save, ['state', 'worldPrices', 'grain', 1], 22.5);
+
+    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.grain\[1\]/);
+  });
+
+  it('refuses a good with no price', () => {
+    const damaged = withValue(format7Save, ['state', 'worldPrices', 'grain'], []);
+
+    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.grain/);
+  });
+
+  it('is lifted to format 8 with the world ore price at its usual level, as the game opens', () => {
+    const { game } = loadSave(format7Save);
+
+    expect(game.worldPrices).toEqual({ grain: [240, 223, 209, 247], ore: [100] });
   });
 });

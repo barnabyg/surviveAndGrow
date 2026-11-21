@@ -16,7 +16,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import format7Save from '../saves/format-7.json';
+import format8Save from '../saves/format-8.json';
 import {
   bothCountries,
   tavara,
@@ -100,7 +100,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(7);
+    expect(save.formatVersion).toBe(8);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -313,8 +313,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 8))).toBe(
-      'The saved game was written by a newer release of the game (save format 8; this release reads format 7). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 9))).toBe(
+      'The saved game was written by a newer release of the game (save format 9; this release reads format 8). Open it with that release.',
     );
   });
 
@@ -675,51 +675,47 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 7', () => {
-  it('still opens on the game it was written from, with grain bought abroad', () => {
-    const { game, report } = loadSave(format7Save);
+describe('the save kept from save format 8', () => {
+  it('still opens on the game it was written from, with the ore price moving beside grain', () => {
+    const { game, report } = loadSave(format8Save);
 
     expect(game.date).toEqual({ year: 1, quarter: 4 });
-    expect(game.worldPrices).toEqual({ grain: [240, 223, 209, 247] });
+    expect(game.worldPrices).toEqual({ grain: [240, 223, 209, 247], ore: [100, 107, 96, 99] });
+    expect(game.projects.map((project) => [project.siteId, project.status])).toEqual([
+      ['korr-mine', 'building'],
+    ]);
     expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
-    expect(report?.treasury.contributions).toContainEqual({ label: 'Grain imported', amount: -42 });
-    expect(report?.entries.map((entry) => entry.headline)).toContain('Grain imported');
   });
 
-  it('plays on, its world price moving on from where it was and grain bought at it', () => {
-    const { game } = loadSave(format7Save);
-    const decisions = {
-      ...answering(game, steward(game)),
-      trade: [{ good: 'grain', direction: 'import', tonnes: 10_000 }] as const,
-    };
+  it('plays on, each world price moving on from where it was', () => {
+    const { game } = loadSave(format8Save);
 
-    const { state, report } = advanceQuarter(game, decisions);
+    const { state } = advanceQuarter(game, answering(game, steward(game)));
 
     expect(state.worldPrices.grain.slice(0, 4)).toEqual([240, 223, 209, 247]);
-    expect(state.worldPrices.grain).toHaveLength(5);
-    // 10,000 tonnes at $247 a tonne is $2.5m.
-    expect(report.treasury.contributions).toContainEqual({ label: 'Grain imported', amount: -25 });
+    expect(state.worldPrices.ore.slice(0, 4)).toEqual([100, 107, 96, 99]);
+    expect(state.worldPrices.ore).toHaveLength(5);
   });
 
-  it('refuses a world price that is not a whole number of dollars', () => {
-    const damaged = withValue(format7Save, ['state', 'worldPrices', 'grain', 1], 22.5);
+  it('refuses an ore price that is not a whole number of dollars', () => {
+    const damaged = withValue(format8Save, ['state', 'worldPrices', 'ore', 1], 10.5);
 
-    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.grain\[1\]/);
+    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.ore\[1\]/);
   });
 
-  it('refuses a good with no price', () => {
-    const damaged = withValue(format7Save, ['state', 'worldPrices', 'grain'], []);
+  it('refuses a save with no ore price', () => {
+    const damaged = withValue(format8Save, ['state', 'worldPrices', 'ore'], []);
 
-    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.grain/);
+    expect(() => loadSave(damaged)).toThrow(/state\.worldPrices\.ore/);
   });
 
-  // This holds for as long as format 7 is the current format: saving must write exactly
+  // This holds for as long as format 8 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(7);
-    const { game, report } = loadSave(format7Save);
+    expect(SAVE_FORMAT_VERSION).toBe(8);
+    const { game, report } = loadSave(format8Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format7Save);
+    expect(stored(saveGame(game, report))).toEqual(format8Save);
   });
 });

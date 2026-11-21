@@ -73,7 +73,10 @@ describe.each(bothCountries)('the world grain price in %s', (_name, country) => 
     // The price is drawn from the seed and the quarter alone, so the generator moves as before.
     const game = createGame(country(), 3);
     const moved = advanceQuarter(game, keep(game)).state;
-    const frozen = advanceQuarter({ ...game, worldPrices: { grain: [400] } }, keep(game)).state;
+    const frozen = advanceQuarter(
+      { ...game, worldPrices: { ...game.worldPrices, grain: [400] } },
+      keep(game),
+    ).state;
 
     expect(moved.rng).toBe(frozen.rng);
     expect(moved.regions).toEqual(frozen.regions);

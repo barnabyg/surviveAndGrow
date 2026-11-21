@@ -128,7 +128,8 @@ describe.each(countries)('a mine in %s', (_name, country) => {
     expect(chainOf(whole.state, mine.id)).toMatchObject({
       complete: true,
       missing: [],
-      output: 600,
+      atUsualPrice: 600,
+      shipped: 600_000,
       bottleneck: mine.id,
     });
     const earning = play(whole.state, [{ budget }]);
@@ -146,7 +147,7 @@ describe.each(countries)('a mine in %s', (_name, country) => {
       { budget: solvent(country(), 40), startProjects: [mine.id, road.id, port.id] },
       ...quarters(8, { budget: solvent(country(), 40) }),
     ]);
-    expect(chainOf(built.state, mine.id)).toMatchObject({ output: 600, bottleneck: mine.id });
+    expect(chainOf(built.state, mine.id)).toMatchObject({ atUsualPrice: 600, bottleneck: mine.id });
 
     // $1.0m of upkeep keeps the mine, started first, but not the road or the port after it.
     const starved = play(built.state, [{ budget: solvent(country(), 10) }]);
@@ -155,7 +156,7 @@ describe.each(countries)('a mine in %s', (_name, country) => {
     expect(siteStatus(starved.state, port.id).state).toBe('decaying');
     // A decaying road carries $36.0m of its $72.0m, less than the decaying port's $45.0m.
     const chain = chainOf(starved.state, mine.id);
-    expect(chain).toMatchObject({ complete: true, output: 360, bottleneck: road.id });
+    expect(chain).toMatchObject({ complete: true, atUsualPrice: 360, bottleneck: road.id });
     expect(chain?.links).toEqual([
       { siteId: mine.id, state: 'operating', carries: 600 },
       { siteId: road.id, state: 'decaying', carries: 360 },

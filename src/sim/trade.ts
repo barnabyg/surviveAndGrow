@@ -7,7 +7,14 @@ import { drawAt } from './rng';
 import type { RegionState } from './state';
 import { formatMoney, formatQuarters, formatTonnes } from './text';
 import type { Contribution, Figure, GameDate, Money, Range } from './types';
-import { GOOD_NAMES, GOODS, TRADE_DIRECTIONS, type Good, type TradeDirection } from './vocabulary';
+import {
+  GOOD_NAMES,
+  GOODS,
+  ORDERED_GOODS,
+  TRADE_DIRECTIONS,
+  type Good,
+  type TradeDirection,
+} from './vocabulary';
 
 /**
  * The world price of each good, in whole dollars a tonne, as each quarter began: from the
@@ -310,6 +317,9 @@ export function tradeFault(game: Trader, orders: readonly TradeOrder[]): string 
   for (const order of orders) {
     if (!(GOODS as readonly string[]).includes(order.good)) {
       return `"${order.good}" is not a good the world trades in.`;
+    }
+    if (!ORDERED_GOODS.includes(order.good)) {
+      return `${GOOD_NAMES[order.good]} cannot be ordered: it is sold abroad only by a mine’s chain.`;
     }
     if (!(TRADE_DIRECTIONS as readonly string[]).includes(order.direction)) {
       return `Goods cannot be traded "${order.direction}".`;

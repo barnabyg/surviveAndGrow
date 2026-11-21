@@ -82,7 +82,9 @@ import {
   tradeFault,
   type TradeOrder,
   type TradeOutcome,
+  type WorldPrices,
 } from './trade';
+import { GOODS } from './vocabulary';
 import { exactly, type Contribution, type Money } from './types';
 import { resolveUpkeep } from './upkeep';
 
@@ -100,6 +102,7 @@ export function createGame(country: Country, seed: number): GameState {
     date,
     treasury: country.start.treasury,
     foodReserve: country.start.foodReserve,
+    worldPrices: openingPrices(),
     regions: country.regions.map((region): RegionState => ({
       id: region.id,
       population: region.population,
@@ -126,7 +129,6 @@ export function createGame(country: Country, seed: number): GameState {
     dilemma: null,
     dilemmasAnswered: [],
     credit: openingCredit(opening),
-    worldPrices: openingPrices(),
     tier,
     startingTier: tier,
     prosperousQuarters: 0,
@@ -222,7 +224,10 @@ export function resolveQuarter(
   decisions: Decisions,
   chance: Chance,
 ): QuarterResolved {
-  const lived = liveQuarter(given, decisions, chance.weatherShocks);
+  // The world prices move as the quarter ends. The quarter earns at the prices it began
+  // with, and is judged as it ends at the prices it leaves.
+  const worldPrices = movePrices(given.worldPrices, chance.priceShocks);
+  const lived = liveQuarter(given, decisions, chance.weatherShocks, worldPrices);
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
   const { serviced, taken, traded, credit, bailout } = lived;
@@ -237,7 +242,6 @@ export function resolveQuarter(
       : endEventsAfterHarvest(state.events);
   const begun = beginStruck(remaining, chance.struck, date);
   const collapse = collapseOf(state.country, approval.regions);
-  const worldPrices = movePrices(state.worldPrices, chance.priceShocks);
   // The vote is held as each term's last quarter ends, unless the state has already fallen.
   const election =
     collapse === null && isElectionQuarter(state.date)
@@ -322,6 +326,7 @@ export function resolveQuarter(
           treasury: finances.treasury,
           foodReserve: food.foodReserve,
           regions: approval.regions,
+          worldPrices,
           prosperity: prosperity.value,
           debtBurden: lived.debtBurden,
         }),
@@ -380,8 +385,15 @@ export function resolveQuarter(
 /**
  * What a quarter does to money, food and approval, given the decisions and the weather. The
  * turn and the preview both live the quarter through here, so they cannot come to differ.
+ * The quarter earns at the world prices it began with; what it leaves, prosperity and the
+ * debt burden, is judged at `pricesAfter`, the world prices once it is over.
  */
-function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: readonly number[]) {
+function liveQuarter(
+  given: GameState,
+  decisions: Decisions,
+  weatherShocks: readonly number[],
+  pricesAfter: WorldPrices,
+) {
   // The answer to a dilemma takes effect first, so the rest of the quarter starts from it.
   const answer = answerDilemma(given, decisions.dilemmaChoice ?? null);
   const state = withAnswer(given, answer);
@@ -410,10 +422,13 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   // Prosperity is judged on the regions and the sites in use as the quarter leaves them.
   // Approval plays no part in it, so it is judged first, and the tier it reaches sets what
   // the public expects of the government from now on.
-  const prosperity = prosperityFigure(
-    prosperityStatus(given),
-    prosperityStatus({ country: state.country, regions: served, projects: upkept.projects }),
-  );
+  const left = (worldPrices: WorldPrices) => ({
+    country: state.country,
+    regions: served,
+    projects: upkept.projects,
+    worldPrices,
+  });
+  const prosperity = prosperityFigure(prosperityStatus(given), prosperityStatus(left(pricesAfter)));
   const tier = nextTier(state.tier, prosperity.value);
   const expectations = {
     was: expectationsIn(state.tier, state.startingTier),
@@ -429,13 +444,15 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
   });
   // The debt burden the quarter leaves: its debt against the revenue the regions and sites it
   // leaves would raise. The rating, the win, the record and the preview all judge this one.
-  const burden = debtBurden({
+  const owing = (worldPrices: WorldPrices) => ({
     country: state.country,
     regions: approval.regions,
     projects: upkept.projects,
     budget: decisions.budget,
     debts: taken.debts,
+    worldPrices,
   });
+  const burden = debtBurden(owing(pricesAfter));
   // The rating is reassessed as the quarter ends, on the debt and revenue it leaves behind.
   const credit = reassessCredit(
     given,
@@ -466,6 +483,10 @@ function liveQuarter(given: GameState, decisions: Decisions, weatherShocks: read
     credit,
     bailout,
     debtBurden: burden,
+    /** Prosperity as the quarter leaves it, judged at other world prices. */
+    prosperityAt: (worldPrices: WorldPrices) => prosperityStatus(left(worldPrices)).value,
+    /** The debt burden as the quarter leaves it, judged at other world prices. */
+    debtBurdenAt: (worldPrices: WorldPrices) => debtBurden(owing(worldPrices)),
   };
 }
 
@@ -481,8 +502,18 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
   // Who goes short this quarter, what relief reaches them and where approval is left do not
   // turn on the weather, so they are projected exactly by living the quarter without any.
   const calm = given.regions.map(() => 0);
-  const lived = liveQuarter(given, decisions, calm);
-  const { state, building, finances, sites, food: thisQuarter, approval, prosperity } = lived;
+  // World markets are left to chance: the quarter is lived as if they left the prices be, and
+  // what the prices it leaves bear on is given as the range their limits allow.
+  const lived = liveQuarter(given, decisions, calm, movePrices(given.worldPrices, []));
+  const low = movePrices(
+    given.worldPrices,
+    GOODS.map(() => -1000),
+  );
+  const high = movePrices(
+    given.worldPrices,
+    GOODS.map(() => 1000),
+  );
+  const { state, building, finances, sites, food: thisQuarter, approval } = lived;
   const { serviced, taken, traded, credit } = lived;
   const owed = debtOf(taken.debts);
   const situation = foodSituation(state);
@@ -527,7 +558,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
       earned: traded.earned,
     },
     debt: exactly(owed),
-    debtBurden: exactly(lived.debtBurden),
+    debtBurden: { min: lived.debtBurdenAt(high), max: lived.debtBurdenAt(low) },
     creditRating: credit.credit.rating,
     creditScore: exactly(credit.after.score),
     pausedSites: building.paused,
@@ -546,7 +577,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     relief: thisQuarter.relief,
     approval: exactly(approval.approval.value),
     approvalHeading: exactly(approval.heading),
-    prosperity: exactly(prosperity.value),
+    prosperity: { min: lived.prosperityAt(low), max: lived.prosperityAt(high) },
     unrest: approvalStatus({ regions: approval.regions }).unrest,
     voteShare: forecastVoteShare(approval.approval.value),
   };

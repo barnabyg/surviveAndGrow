@@ -26,6 +26,7 @@ import { belowSafeAfterExport } from './trade';
 import { UPKEEP_ORDER_RULE } from './upkeep';
 import {
   FOOD_STAGES,
+  GOODS,
   LIKELIHOODS,
   RISK_KINDS,
   TIER_NAMES,
@@ -83,7 +84,14 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
       play(state, decisions, played, outlook.swingSharePermille, events),
     ),
   }));
-  const whole: Scope = { state, watched, possible, courses, bonds: bondsAhead(state, courses) };
+  const whole: Scope = {
+    state,
+    watched,
+    possible,
+    courses,
+    bonds: bondsAhead(state, courses),
+    oreSlump: play(state, decisions, played, 0, [], ORE_SLUMP),
+  };
 
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
@@ -120,6 +128,19 @@ function eventsAhead(state: GameState, played: number): Supposed[] {
   return possible;
 }
 
+/**
+ * How far world markets move each good's price in a quarter played, in thousandths of its
+ * swing. Unless supposed otherwise they leave the prices be: the pull towards the usual
+ * price alone moves them.
+ */
+type PriceCourse = (quarter: number) => readonly number[];
+
+const STEADY: PriceCourse = () => [];
+
+/** The world ore price slumping as far as its forecast allows, and then left be. */
+const ORE_SLUMP: PriceCourse = (quarter) =>
+  quarter < balance.trade.forecastQuarters ? GOODS.map((good) => (good === 'ore' ? -1000 : 0)) : [];
+
 /** Plays the quarters ahead with the weather at one share of its swing throughout. */
 function play(
   start: GameState,
@@ -127,6 +148,7 @@ function play(
   quarters: number,
   swingSharePermille: number,
   events: readonly Supposed[],
+  prices: PriceCourse = STEADY,
 ): Path {
   const shock = Math.trunc(
     (balance.food.weatherSwingPermillePerQuarter * swingSharePermille) / 1000,
@@ -152,9 +174,10 @@ function play(
         weatherShocks: state.regions.map(() => shock),
         struck: events.filter((event) => event.afterQuarters === quarter + 1),
         swing: 0,
-        // World prices bear on nothing bought after the quarter being decided, so markets are
-        // supposed to leave them be.
-        priceShocks: [],
+        // Markets are supposed to leave the world prices be, unless the course says otherwise.
+        // Nothing is bought after the quarter being decided, but a mine's chain earns at the
+        // world ore price every quarter.
+        priceShocks: prices(quarter),
         // No dilemma is supposed to arise: what one does is the player's to choose.
         dilemmaRolls: [],
       },

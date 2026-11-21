@@ -287,7 +287,11 @@ export interface Preview {
   readonly trade: TradePreview;
   /** What the nation will owe once the quarter is over. */
   readonly debt: Range;
-  /** The debt burden once the quarter is over: debt against a year's revenue, in thousandths. */
+  /**
+   * The debt burden once the quarter is over: debt against a year's revenue, in thousandths.
+   * What a mine's chain earns, and so pays in tax, follows the world ore price, which world
+   * markets move as the quarter ends: the range is what their limits allow.
+   */
   readonly debtBurden: Range;
   /** The credit rating once the quarter is over, which sets the terms of the next loan. */
   readonly creditRating: CreditRating;
@@ -331,8 +335,9 @@ export interface Preview {
    */
   readonly approvalHeading: Range;
   /**
-   * National prosperity once the quarter is over, in thousandths. Nothing left to chance
-   * this quarter bears on it, so the two ends are equal.
+   * National prosperity once the quarter is over, in thousandths. Only the world ore price,
+   * which world markets move as the quarter ends, is left to chance: with no mine's chain
+   * earning, the two ends are equal.
    */
   readonly prosperity: Range;
   /** The regions that will be striking or protesting once the quarter is over. */

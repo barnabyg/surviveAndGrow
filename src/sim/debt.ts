@@ -8,6 +8,7 @@ import { ratedAtLeast } from './credit';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
 import type { RegionState } from './state';
+import type { WorldPrices } from './trade';
 import { formatMoney, formatPercent, formatQuarters } from './text';
 import type { Contribution, GameDate, Money } from './types';
 import {
@@ -111,6 +112,8 @@ export interface Owing {
   readonly projects: readonly Project[];
   readonly budget: Budget;
   readonly debts: readonly Debt[];
+  /** The world prices, which set what a mine's chain earns and so pays in tax. */
+  readonly worldPrices: WorldPrices;
 }
 
 /** What judging debt needs of the game: what it owes, its revenue, and its credit rating. */

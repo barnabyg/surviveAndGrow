@@ -23,10 +23,11 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought, and the teachers asking for a rise
-  // now and then. Format 7 added trade and the world grain price. The game keeps the budget it
-  // starts with, buys 10,000 tonnes of grain for the national reserve in its first quarter
-  // and 20,000 in its third, and is saved as Year 1 · Quarter 4 begins: the world price has
-  // moved three times, and the last report has the second import in it.
+  // now and then. Format 8 added ore to the goods, with a world ore price that a mine's chain
+  // earns at. The game keeps the budget it starts with, starts building Korrgate mine in its
+  // first quarter, buys 10,000 tonnes of grain for the national reserve in its first quarter
+  // and 20,000 in its third, and is saved as Year 1 · Quarter 4 begins: the world grain and ore
+  // prices have each moved three times, and the last report has the second import in it.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
@@ -40,6 +41,7 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
     const result = advanceQuarter(game, {
       budget: game.budget,
+      startProjects: game.date.quarter === 1 ? ['korr-mine'] : [],
       trade: tonnes === 0 ? [] : [{ good: 'grain', direction: 'import', tonnes }],
       dilemmaChoice,
     });
@@ -50,6 +52,8 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   }
   expect(game.date).toEqual({ year: 1, quarter: 4 });
   expect(game.worldPrices.grain).toHaveLength(4);
+  expect(game.worldPrices.ore).toHaveLength(4);
+  expect(game.projects.map((project) => project.siteId)).toEqual(['korr-mine']);
   expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);

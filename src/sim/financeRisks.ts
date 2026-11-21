@@ -1,4 +1,5 @@
 import { sum } from './arithmetic';
+import { balance } from './balance';
 import { missedPaymentMeans } from './bailout';
 import { creditStatus, loanRateSpan, ratingCause, ratingRank } from './credit';
 import { debtName, debtStatus, dueAtMaturity, maturityOf, paysAtMaturity, type Debt } from './debt';
@@ -13,6 +14,7 @@ import {
 } from './riskScope';
 import type { GameState } from './state';
 import { formatMoney } from './text';
+import { forecastSpan, formatPrice, priceStatus } from './trade';
 import type { Money } from './types';
 import type { Risk } from './risks';
 
@@ -40,6 +42,24 @@ export function bondsAhead(state: GameState, courses: Scope['courses']): BondAhe
   return [...owed.map((debt) => ahead(debt, 0)), ...issued.map((debt) => ahead(debt, 1))];
 }
 
+/**
+ * A danger that only a slump in the world ore price inside its forecast would bring, when the
+ * quarters ahead as they are supposed otherwise do not bring it: what a mine's chain earns
+ * falls with the price, and the tax it pays with it.
+ */
+function oreSlumpRisk(
+  scope: Scope,
+  shows: (path: Path) => number | null,
+  risk: (quarter: number, slump: string) => Pick<Risk, 'kind' | 'headline' | 'reason'>,
+): Risk[] {
+  const quarter = shows(scope.oreSlump);
+  const likelihood = likelihoodOf(balance.risks.oreSlumpChancePermille);
+  if (quarter === null || likelihood === null) return [];
+  const { forecast } = priceStatus(scope.state, 'ore');
+  const slump = `Should the world ore price slump to ${formatPrice(forecast.min)}, the low end of its forecast ${forecastSpan()}, the mines would earn less and pay less in tax`;
+  return [{ ...risk(quarter, slump), likelihood, withinQuarters: quarter + 1 }];
+}
+
 /** The treasury runs out when it cannot cover the budget, or an instalment on a project. */
 export function treasuryRisk(scope: Scope): Risk[] {
   const { state, watched } = scope;
@@ -51,7 +71,13 @@ export function treasuryRisk(scope: Scope): Risk[] {
   };
   const finding = weigh(scope, emptied);
   const likelihood = finding === null ? null : likelihoodOf(finding.chance);
-  if (finding === null || likelihood === null) return [];
+  if (finding === null || likelihood === null) {
+    return oreSlumpRisk(scope, emptied, (quarter, slump) => ({
+      kind: 'treasury',
+      headline: 'Empty treasury',
+      reason: `${slump}: the treasury could not cover the budget ${when(quarter)}, and every area would be cut.`,
+    }));
+  }
 
   // What gives way first is read off the course with ordinary weather and no new event.
   const typical = typicalOf(scope.courses);
@@ -103,7 +129,20 @@ export function bailoutRisk(scope: Scope): Risk[] {
   };
   const finding = weigh(scope, misses);
   const likelihood = finding === null ? null : likelihoodOf(finding.chance);
-  if (finding === null || likelihood === null) return [];
+  if (finding === null || likelihood === null) {
+    return oreSlumpRisk(scope, misses, (quarter, slump) => {
+      const which =
+        scope.oreSlump[quarter]?.missedOn.find((name) => !maturing(quarter).includes(name)) ??
+        'a debt';
+      const austere =
+        (quarter === 0 ? scope.state : scope.oreSlump[quarter - 1]?.state)?.austerity ?? null;
+      return {
+        kind: 'bailout',
+        headline: austere === null ? 'Bailout' : 'Austerity extended',
+        reason: `${slump}: the treasury and revenue could not cover the repayment on ${which} ${when(quarter)}. ${missedPaymentMeans({ country: scope.state.country, austerity: austere })}`,
+      };
+    });
+  }
 
   // Which debt goes unpaid is read off the course with ordinary weather and no new event.
   const typical = typicalOf(scope.courses);
