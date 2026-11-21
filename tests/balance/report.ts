@@ -6,13 +6,24 @@ import {
   TIER_NAMES,
   type Country,
 } from '../../src/sim';
-import type { Spread, Summary } from './batch';
+import type { ShockSetting } from './jobs';
+import { SHOCK_KINDS, type Shocks, type Spread, type Summary } from './batch';
 
 /** One player's batch on one country, ready to be written up. */
 export interface Row {
   readonly player: string;
   readonly summary: Summary;
 }
+
+/** What each shock is called at the head of its column. */
+const SHOCK_HEADS: Readonly<Record<keyof Shocks, string>> = {
+  failedHarvestsAbroad: 'Failed harvests abroad met',
+  oreGlut: 'Ore gluts met',
+  drought: 'Droughts met',
+  flood: 'Floods met',
+};
+
+const tonnes = (value: number) => `${Math.round(value / 1000)}kt`;
 
 const share = (games: number, of: number) =>
   of === 0 ? '0.0%' : `${((games * 100) / of).toFixed(1)}%`;
@@ -29,9 +40,11 @@ export function writeUp(
   seeds: string,
   terms: number,
   rows: readonly Row[],
+  shocks: ShockSetting = 'shipped',
 ): string {
+  const without = shocks === 'none' ? ', without world price shocks' : '';
   const lines = [
-    `### ${country.name}, seeds ${seeds}, up to ${terms} ${terms === 1 ? 'term' : 'terms'}`,
+    `### ${country.name}, seeds ${seeds}, up to ${terms} ${terms === 1 ? 'term' : 'terms'}${without}`,
     '',
     '| Player | Games | Won | Still in office | Lost the vote | Lost to famine | Terms served | Quarter of the win | Prosperity at the end |',
     '| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
@@ -84,7 +97,24 @@ export function writeUp(
       ].join(' | ')} |`;
     }),
     '',
-    'Spreads are least / middle / most. Won is the win on prosperity: Prosperous held for four quarters running, with the debt burden within the debt test as the hold completes. Still in office counts the games that had neither won nor lost when their terms were up. Vote share counts only the games that reached a vote. Bailed out counts the games in which a missed payment brought a bailout, and bailouts in a game counts them in those games. The win held back by the debt test counts the games in which prosperity was held long enough to win but the debt burden was over the limit, with how many of them were won once it passed and the quarters the win waited. The debt burden is what is owed against a year’s revenue.',
+    `| Player | Grain imported | Grain exported | Trade income | Trade spending | ${SHOCK_KINDS.map((kind) => SHOCK_HEADS[kind]).join(' | ')} |`,
+    `| --- | --- | --- | --- | --- | ${SHOCK_KINDS.map(() => '---').join(' | ')} |`,
+    ...rows.map(
+      ({ player, summary }) =>
+        [
+          `| ${player}`,
+          spread(summary.imported, tonnes),
+          spread(summary.exported, tonnes),
+          spread(summary.tradeIncome, formatMoney),
+          spread(summary.tradeSpending, formatMoney),
+          ...SHOCK_KINDS.map(
+            (kind) =>
+              `${share(summary.gamesMeeting[kind], summary.games)}, ${spread(summary.shocks[kind], String)}`,
+          ),
+        ].join(' | ') + ' |',
+    ),
+    '',
+    'Spreads are least / middle / most. Won is the win on prosperity: Prosperous held for four quarters running, with the debt burden within the debt test as the hold completes. Still in office counts the games that had neither won nor lost when their terms were up. Vote share counts only the games that reached a vote. Bailed out counts the games in which a missed payment brought a bailout, and bailouts in a game counts them in those games. The win held back by the debt test counts the games in which prosperity was held long enough to win but the debt burden was over the limit, with how many of them were won once it passed and the quarters the win waited. The debt burden is what is owed against a year’s revenue. Grain is in thousands of tonnes (kt) over the game. A shock met is a world price shock that moved its price, or a drought or flood that began in a region, while the game was played: the share of games that met one, then how many each game met.',
     '',
     ...rows.map(({ player, summary }) => {
       const votes = summary.lostElectionByTerm

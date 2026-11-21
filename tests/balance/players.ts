@@ -9,12 +9,17 @@ import {
   FOOD_STAGES,
   foodStatus,
   pendingDilemma,
+  ORDER_STEP_TONNES,
   previewQuarter,
+  priceStatus,
   siteStatus,
   siteTerms,
   startFault,
   SPENDING_AREAS,
   loanOffers,
+  importTerms,
+  exportTerms,
+  tradeCapacity,
   type Borrowing,
   type Budget,
   type Decisions,
@@ -24,6 +29,7 @@ import {
   type PendingDilemma,
   type SiteType,
   type SpendingArea,
+  type TradeOrder,
   withinAusterity,
 } from '../../src/sim';
 import type { Decide } from './batch';
@@ -633,6 +639,98 @@ function stepped(amount: Money): Money {
   return Math.max(0, Math.floor(amount / step) * step);
 }
 
+/** How the timing trader trades. These are its habits, not the game's rules. */
+const traderHabits = {
+  /**
+   * The grain it keeps in the national reserve, in thousandths of its safe level: it sells
+   * only what is above this, and stocks up to it when grain is cheap or about to grow dear.
+   */
+  keepPermille: 1250,
+  /** It sells when the world grain price is at least this share of its usual price. */
+  sellAtPermille: 1000,
+  /** It stocks up when the world grain price is at most this share of its usual price. */
+  buyAtPermille: 900,
+  /**
+   * The most of the money free to spend it puts into grain the reserve does not yet need, in
+   * thousandths. Grain for a reserve below its safe level while people go hungry it buys with
+   * all the money free.
+   */
+  mostOnStockPermille: 500,
+} as const;
+
+/**
+ * The timing trader's orders for the quarter, on top of what it has already decided: it buys
+ * grain when the reserve is short, and stocks up when grain is cheap or failed harvests abroad
+ * are announced; it sells what the reserve holds above what it keeps when grain is dear, but
+ * not while failed harvests abroad are still to come, which will make it dearer.
+ */
+function timedTrade(game: GameState, decisions: Decisions, heedsShocks = true): TradeOrder[] {
+  const grain = priceStatus(game, 'grain');
+  const { quarterlyConsumption, safeReserveMonths } = foodStatus(game);
+  const safe = Math.ceil((safeReserveMonths * quarterlyConsumption) / 3);
+  const keep = Math.floor((safe * traderHabits.keepPermille) / 1000);
+  const dearer =
+    heedsShocks &&
+    grain.shocks.some((shock) => shock.type === 'failedHarvestsAbroad' && !shock.inForce);
+  const cheap = grain.price * 1000 <= grain.usual * traderHabits.buyAtPermille;
+  const dear = grain.price * 1000 >= grain.usual * traderHabits.sellAtPermille;
+  const hungry = game.regions.some((region) => region.foodStage !== 'adequate');
+  const carried = wholeSteps(tradeCapacity(game).free);
+  const reserve = game.foodReserve;
+
+  const starting = (decisions.startProjects ?? []).reduce(
+    (total, id) => total + costOf(game, id),
+    0,
+  );
+  const free = Math.max(0, game.treasury - remainingCost(game) - starting);
+  const urgent = reserve < safe && hungry;
+  let wanted = urgent ? safe - reserve : 0;
+  if (cheap || dearer) wanted = Math.max(wanted, keep - reserve);
+  if (wanted > 0) {
+    const money = urgent ? free : Math.floor((free * traderHabits.mostOnStockPermille) / 1000);
+    for (let tonnes = Math.min(carried, roundUp(wanted)); tonnes > 0; tonnes -= ORDER_STEP_TONNES) {
+      const terms = importTerms(game, 'grain', tonnes);
+      if (terms.unavailable === null && terms.cost <= money) {
+        return [{ good: 'grain', direction: 'import', tonnes }];
+      }
+    }
+    return [];
+  }
+  const surplus = wholeSteps(Math.min(carried, reserve - keep));
+  if (dear && !dearer && surplus > 0) {
+    for (let tonnes = surplus; tonnes > 0; tonnes -= ORDER_STEP_TONNES) {
+      if (exportTerms(game, 'grain', tonnes).unavailable === null) {
+        return [{ good: 'grain', direction: 'export', tonnes }];
+      }
+    }
+  }
+  return [];
+}
+
+/** A weight brought down to a whole number of order steps. */
+function wholeSteps(tonnes: number): number {
+  return Math.max(0, Math.floor(tonnes / ORDER_STEP_TONNES) * ORDER_STEP_TONNES);
+}
+
+/** A weight brought up to a whole number of order steps. */
+function roundUp(tonnes: number): number {
+  return Math.ceil(tonnes / ORDER_STEP_TONNES) * ORDER_STEP_TONNES;
+}
+
+/**
+ * Plays as the chain builder does in everything but trade, so that the two differ only in it:
+ * it buys grain in shortages and when it is cheap, and sells the reserve's surplus when it is
+ * dear, watching for failed harvests abroad.
+ */
+const timingTrader: Decide = (game) => trading(game, true);
+
+/** The chain builder's decisions with the timing trader's orders, heeding shocks or not. */
+function trading(game: GameState, heedsShocks: boolean): Decisions {
+  const decisions = chainBuilder(game);
+  const trade = timedTrade(game, decisions, heedsShocks);
+  return trade.length > 0 ? { ...decisions, trade } : decisions;
+}
+
 export const SCRIPTED_PLAYERS: readonly ScriptedPlayer[] = [
   {
     name: 'Does nothing',
@@ -667,6 +765,18 @@ export const SCRIPTED_PLAYERS: readonly ScriptedPlayer[] = [
     manner:
       'Borrows all the lenders allow, builds whatever that pays for, spends the rest on approval and leaves the repayments to the treasury.',
     decide: recklessBorrower,
+  },
+  {
+    name: 'Timing trader',
+    manner:
+      'Plays as the chain builder does, and trades grain with timing: buys in shortages and when it is cheap, sells the surplus when it is dear.',
+    decide: timingTrader,
+  },
+  {
+    name: 'Mine only',
+    manner:
+      'Plays as the chain builder does, but builds the mine with its road and port and no power, and never trades.',
+    decide: builder(['port', 'trunkRoad', 'mine', ...SMALL_SITES]),
   },
 ];
 
@@ -750,6 +860,12 @@ export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
     manner:
       'Borrows all the lenders allow and builds everything at once, as the reckless borrower does, but taxes enough to pay the repayments and the building as it goes.',
     decide: (game) => borrowAndBuild(game, true),
+  },
+  {
+    name: 'Trader blind to shocks',
+    manner:
+      'Trades as the timing trader does, but pays no heed to failed harvests abroad until they move the price.',
+    decide: (game) => trading(game, false),
   },
   {
     name: 'Hover then spend',

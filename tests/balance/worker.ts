@@ -11,7 +11,7 @@ import { countryNamed, playersNamed, type Job, type Played } from './jobs';
 it('plays its share of the balance run', () => {
   const job = JSON.parse(process.env.BALANCE_JOB ?? 'null') as Job | null;
   if (job === null) throw new Error('A balance worker needs BALANCE_JOB.');
-  const country = countryNamed(job.country);
+  const country = countryNamed(job.country, job.shocks);
   const played: Played[] = playersNamed(job.players).flatMap((player) =>
     job.seeds.map((seed) => ({
       player: player.name,
