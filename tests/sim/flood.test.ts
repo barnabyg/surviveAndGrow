@@ -7,6 +7,7 @@ import {
   type Decisions,
   type GameState,
   loadCountry,
+  risksAhead,
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
@@ -129,6 +130,63 @@ describe('a flood in Lowmere Plains, where an irrigation scheme can be built', (
     // Irrigation leaves the flood half its hold: 15% of the harvest in place of 30%.
     expect(irrigated).toBeCloseTo(0.85, 2);
     expect(bare).toBeCloseTo(0.7, 2);
+  });
+});
+
+describe('the risks ahead in a country where floods come', () => {
+  const regionId = 'lowmere-plains';
+  const country = () => withChances(tavaraFile, { flood: { [regionId]: 0.25 } });
+  const floodRisk = (game: GameState) =>
+    risksAhead(game, asItIs(game)).filter((risk) => risk.kind === 'event');
+
+  it('include a flood that could begin, with what it would do', () => {
+    const game = createGame(country(), 1);
+
+    expect(floodRisk(game)).toEqual([
+      {
+        kind: 'event',
+        likelihood: 'unlikely',
+        headline: 'Flood in Lowmere Plains',
+        reason:
+          'A flood there next quarter, a 25% chance, would take 30% of its harvest and set any site in use there decaying until its upkeep is paid.',
+        regionId,
+        withinQuarters: 2,
+      },
+    ]);
+  });
+
+  it('name the sites a flood would damage, and what irrigation spares of the harvest', () => {
+    const built = play(createGame(country(), 2), 4, (game) => ({
+      budget: { ...game.budget, taxRatePercent: 40 },
+      startProjects: game.history.length === 1 ? ['lowmere-irrigation', 'lowmere-store'] : [],
+    })).states[3];
+    if (built === undefined) throw new Error('The game ended early');
+
+    expect(built.date).toEqual({ year: 2, quarter: 1 });
+    expect(floodRisk(built)).toEqual([
+      expect.objectContaining({
+        reason:
+          'A flood there next quarter, a 25% chance, would take 15% of its harvest and set Lowmere irrigation and Lowmere grain store decaying until their upkeep is paid.',
+      }),
+    ]);
+  });
+
+  it('leave out a flood that cannot begin before the horizon', () => {
+    const game = createGame(country(), 1);
+    const afterPlanting = play(game, 1, asItIs).states[0];
+    if (afterPlanting === undefined) throw new Error('The game ended early');
+
+    expect(afterPlanting.date).toEqual({ year: 1, quarter: 2 });
+    expect(floodRisk(afterPlanting)).toEqual([]);
+  });
+
+  it('include a flood however unlikely, since its damage is certain if it comes', () => {
+    const rare = withChances(tavaraFile, { flood: { [regionId]: 0.01 } });
+    const game = createGame(rare, 1);
+
+    expect(floodRisk(game)).toEqual([
+      expect.objectContaining({ likelihood: 'remote', headline: 'Flood in Lowmere Plains' }),
+    ]);
   });
 });
 

@@ -346,6 +346,7 @@ export const UNREST_NAMES: Readonly<Record<Unrest, string>> = {
 /** The dangers the game looks ahead for. A list of risks is in this order where nothing else decides. */
 export const RISK_KINDS = [
   'famine',
+  'event',
   'reserve',
   'treasury',
   'bailout',

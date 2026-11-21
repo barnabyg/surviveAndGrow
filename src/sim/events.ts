@@ -198,11 +198,24 @@ export function beginEntry(country: Country, event: ActiveEvent, hold: number): 
 /** The damage the events now beginning do to the sites in use in their regions. */
 export function siteDamageOf(country: Country, begun: readonly ActiveEvent[]): SiteDamage[] {
   return begun
-    .filter((event) => definitions[event.type].effects.decaysSites)
+    .filter((event) => damagesSites(event.type))
     .map((event) => ({
       regionId: event.regionId,
       cause: `The ${definitions[event.type].name.toLowerCase()} in ${regionName(country, event.regionId)}`,
     }));
+}
+
+/** Whether an event of this kind damages the sites in use in its region as it begins. */
+export function damagesSites(type: EventType): boolean {
+  return definitions[type].effects.decaysSites;
+}
+
+/**
+ * How much of a region's harvest an event of this kind takes, as a whole percentage, where
+ * irrigation leaves it only `hold` thousandths of its grip.
+ */
+export function harvestCutBy(type: EventType, hold: number): number {
+  return harvestCutPercent(definitions[type], hold);
 }
 
 /** What the turn report says when an event ends. */

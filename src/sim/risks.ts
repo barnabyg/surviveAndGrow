@@ -5,7 +5,7 @@ import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName } from './country';
 import { defeatChancePermille, electionStatus } from './election';
-import { eventName, eventsThatMayBegin } from './events';
+import { damagesSites, eventName, eventsThatMayBegin, harvestCutBy } from './events';
 import { bailoutRisk, bondsAhead, creditRisk, maturityRisk, treasuryRisk } from './financeRisks';
 import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
 import {
@@ -19,6 +19,7 @@ import {
   type Supposed,
 } from './riskScope';
 import type { Decisions, GameState, RegionState } from './state';
+import { siteEffects, sitesInUse } from './projects';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
@@ -95,6 +96,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
 
   const risks = [
     ...state.regions.flatMap((region, index) => famineRisk(whole, region, index)),
+    ...eventRisk(whole),
     ...reserveRisk(state, decisions),
     ...treasuryRisk(whole),
     ...bailoutRisk(whole),
@@ -243,6 +245,39 @@ function famineReason(state: GameState, region: RegionState, finding: Finding): 
         ? 'It has too little food to last until the harvest.'
         : 'Its harvest will be too small to last the year.';
   return `${cause} It runs ${short}, and left alone that is famine ${formatQuarters(stagesToFamine - 1)} later.`;
+}
+
+/**
+ * An event that could begin within the horizon and damage the sites in its region. What it
+ * takes of the harvest is weighed by the famine it could bring, but the damage it does to
+ * sites is certain if it comes, so it is listed however unlikely it is.
+ */
+function eventRisk(scope: Scope): Risk[] {
+  const { state, watched, possible } = scope;
+  const sites = siteEffects(state);
+  return possible
+    .filter((event) => damagesSites(event.type) && event.afterQuarters < watched)
+    .map((event) => {
+      const index = state.country.regions.findIndex((region) => region.id === event.regionId);
+      const name = eventName(event.type);
+      const cut = harvestCutBy(event.type, sites.inRegion.harvestWeather[index] ?? 1000);
+      const percent = Math.round(event.chance * 100);
+      const names = sitesInUse(state)
+        .filter((inUse) => inUse.site.regionId === event.regionId)
+        .map((inUse) => inUse.site.name);
+      const damage =
+        names.length === 0
+          ? 'any site in use there decaying until its upkeep is paid'
+          : `${listedSites(names)} decaying until ${names.length === 1 ? 'its' : 'their'} upkeep is paid`;
+      return {
+        kind: 'event',
+        likelihood: likelihoodOf(Math.round(event.chance * 1000)) ?? 'remote',
+        headline: `${name} in ${regionName(state.country, event.regionId)}`,
+        reason: `A ${name.toLowerCase()} there ${when(event.afterQuarters)}, ${articleFor(percent)} ${percent}% chance, would take ${cut}% of its harvest and set ${damage}.`,
+        regionId: event.regionId,
+        withinQuarters: event.afterQuarters + 1,
+      };
+    });
 }
 
 /**
