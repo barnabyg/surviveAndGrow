@@ -145,6 +145,39 @@ To see the other side, borrow everything the finance panel allows and spend it: 
 cannot cover a repayment, a bailout consolidates the debt, approval takes a 12-point blow and
 austerity holds for 8 quarters.
 
+### A Phase 4 play-through
+
+To play the finished Phase 4 game, with trade and world price shocks, from the start on a seed
+the balance run knows well:
+
+```powershell
+Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=1'
+```
+
+This starts the game at http://localhost:41730/?seed=1 and opens it in your browser. On seed 1
+the scripted chain builder, which never trades, loses its first vote with 49.9%; the timing
+trader, which builds the same sites in the same order and trades grain besides, wins in quarter
+30, in the second year of its second term. Try to win the way the timing trader does:
+
+1. Build as the chain builder does: the Korr Falls power station and its lines first, then
+   Saltmouth port, the trunk road and the Korrgate mine, each once the treasury holds its cost.
+2. In the third quarter of the first year failed harvests abroad are announced: the report says
+   so, and the grain price in the trade panel lists the shock and its forecast rises. The
+   reserve is below its safe level, so buy grain before the price rises, about 34,000 t, and
+   18,000 t more the quarter after.
+3. Once the first harvest is in, sell the surplus while grain is dear: 90,000 t a quarter, all
+   the border crossings carry, at more than $320 a tonne while the shock lasts. Keep the
+   reserve about a quarter above its safe level, and sell only while the price is at or above
+   its usual $240. Each sale brings in about $23m, which builds the chain sooner.
+4. Once the port is in use it carries far more grain, after the mine's ore: sell the surplus after
+   each harvest, and buy back if a drought takes the reserve below its safe level.
+
+Expected: the trade panel shows the price, its trend and forecast, what the links carry and what
+is free; a sale's income and an import's cost appear in the treasury's breakdown; the failed
+harvests abroad are listed under the grain price from their announcement to their end. Over
+the balance run the timing trader wins in quarter 31 in the middle of its games, against the
+chain builder's 38.
+
 The rules as built, one heading per mechanic, are in [docs/rules.md](docs/rules.md).
 
 ## Write a country
@@ -333,23 +366,28 @@ for up to four terms each, and reports how often each wins on prosperity, how of
 office when its terms are up, and what the others lose to: the vote, by term, or famine, by
 region. It also gives the terms served, the quarter of each win, and the prosperity and tier each
 game reached, and what each player borrowed: how many games a bailout struck, how often the debt
-test held back a win and whether it was won later, and the debt burden. It prints the tables and writes them to `balance-results.md`. It is not one of the
+test held back a win and whether it was won later, and the debt burden; and what each traded:
+the grain bought and sold abroad, what it brought in and cost, and the world price shocks,
+droughts and floods each game met. It prints the tables and writes them to `balance-results.md`. It is not one of the
 checks and gates nothing; a short run of the same players over a few seeds is part of the
 simulation tests. The games are shared out among worker processes, so a run uses most of the
 machine; 300 seeds of every player take a few minutes.
 
-Six players are what the balance is judged by: one that does nothing, one that spends
+Eight players are what the balance is judged by: one that does nothing, one that spends
 everything on popularity, one that plays sensibly but builds no large site, one that builds
 power and the mine's chain and saves up for each site, one that builds the same sites but
-borrows for them within limits of its own, and one that borrows recklessly. They are in
-`tests/balance/players.ts`, with a handful of one-lever players that probe for a trick that wins
-on its own, two that build only part of the chain and one that borrows all it can to build
-everything at once.
+borrows for them within limits of its own, one that borrows recklessly, one that plays as the
+chain builder does and trades grain with timing, and one that relies on the mine alone and never
+trades. They are in `tests/balance/players.ts`, with a handful of one-lever players that probe
+for a trick that wins on its own, two that build only part of the chain, one that borrows all it
+can to build everything at once, a trader blind to world price shocks and a borrower wary of ore
+gluts.
 
 The runs the values were tuned to, with their seeds, the values changed and what they showed, are
 recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1,
-[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2 and
-[docs/balance/phase-3.md](docs/balance/phase-3.md) for Phase 3.
+[docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2,
+[docs/balance/phase-3.md](docs/balance/phase-3.md) for Phase 3 and
+[docs/balance/phase-4.md](docs/balance/phase-4.md) for Phase 4.
 
 Set these before the command to change the run:
 
@@ -357,8 +395,9 @@ Set these before the command to change the run:
 | --- | --- | --- |
 | `BALANCE_SEEDS` | The seeds to play, as `from-to` | `1-300` |
 | `BALANCE_COUNTRY` | `tavara`, `testland` or `both` | `both` |
-| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the six |
+| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the eight |
 | `BALANCE_TERMS` | The most terms each game is played for | `4` |
+| `BALANCE_SHOCKS` | `none` plays the same games without world price shocks | `shipped` |
 | `BALANCE_WORKERS` | How many games are played at once | all but two processors |
 | `BALANCE_OUT` | Where the tables are written | `balance-results.md` |
 
