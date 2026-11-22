@@ -2,7 +2,7 @@
 
 Status: Phase 1 is built, and Phase 2 (build), Phase 3 (borrow) and Phase 4 (feed and trade) are
 built and balanced, except Phase 4's two targets for world price shocks, which values alone did
-not meet and which the owner accepted as unmet on 2026-11-21 (see `docs/balance/phase-4.md`). Last updated 2026-11-21.
+not meet and which the owner accepted as unmet on 2026-11-21 (see `docs/balance/phase-4.md`). Last updated 2026-11-22.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
 [rules.md](rules.md), which is the one place they are stated in full.
@@ -139,13 +139,18 @@ Designed for 2560 x 1440 or larger, in three columns split by purpose. The top b
 signs, always visible: treasury, debt with its burden, credit rating, food reserve, approval,
 prosperity against target, and time to the election, beside the end-quarter button. Each figure
 but the rating and the election has a short trend line, and during austerity the bar also counts
-down the quarters it has left. The left column says what is happening: reports, risks ahead
+down the quarters it has left. At the bar's end are **Tour**, a guided tour of the screen, and
+**Tips on/off**, the first-time tips that explain a mechanic when it first appears; the start
+screen's **Tutorial** starts a fixed tutorial game whose lessons walk through its first year. The
+left column says what is happening: reports, risks ahead
 with likelihoods, living standards by region and an approval chart. The centre holds the map, its
 lenses and the selected site's card, over the term timeline of 20 quarters to the election with
 harvests, projects and bond maturities marked. The right column is what you do: pinned at its
 top, any dilemma waiting and the quarter ahead (balance, treasury, approval, food reserve and the
 election forecast); below it, tabs for the budget sliders with a live projection, projects
-(underway, with a catalogue of those affordable), loans and bonds, trade, and food relief. Each
+(underway, with a catalogue of those affordable), loans and bonds, the trade panel (grain
+imports and exports, what the trade links carry, and the world grain price's sign), and food
+relief. Each
 tab says where it stands, so a decision out of sight is not forgotten.
 
 Rules that apply everywhere:
@@ -181,7 +186,7 @@ Each phase delivers a complete, playable game and adds one main new decision.
 | 1. Survive a term | Region map with lenses, treasury, tax rate, a few spending areas, simple food with regional weather, approval with strike and protest thresholds, two or three small build sites, live preview, turn report, one election | A 20-turn game: feed people, stay solvent, win the election |
 | 2. Build | Large sites (port, power, mine, trunk roads) and the chains between them, multiple terms, the prosperity index, the four tiers and the win condition | The short-term versus long-term tension now exists |
 | 3. Borrow | Loans, bonds, credit rating, debt service, bailout with forced austerity | Something worth borrowing for, and a way to overreach |
-| 4. Feed and trade | Crop yields, imports and exports at moving world prices, trade routes on the map (the national reserve, grain stores and famine stages came early, in Phase 1) | External shocks test the economy you built |
+| 4. Feed and trade | Crop yields, imports and exports at moving world prices, trade links (border crossings and ports) on the map (the national reserve, grain stores and famine stages came early, in Phase 1) | External shocks test the economy you built |
 | 5. Research | Technology tree, surveys and new site types | Long-run strategy and replay value |
 | 6. Threats | Factions, coup risk, neighbours with ambitions, unrest and army loyalty by region | Late-game pressure on a state worth taking |
 
