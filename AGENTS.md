@@ -5,6 +5,17 @@ A turn-based economics and politics survival game. The design intent and phase p
 the simulation, read `src/sim/README.md`: the order a quarter is resolved in, and the files a new
 mechanic touches.
 
+Domain terms are defined in `GLOSSARY.md`.
+
+## Verify
+
+- `npm run verify` runs every gate: formatting, lint, type check, simulation and UI tests, audit,
+  build and browser tests. CI runs the same command. The gate table is in the README's
+  [Check it](README.md#check-it).
+- One simulation test: `npx vitest run tests/sim/loans.test.ts -t "is paid before the budget"`.
+- One browser test: `npm run build && npx playwright test tests/e2e/loans.spec.ts -g "a loan is planned"`.
+  Browser tests serve the production build in `dist/`, so rebuild after every change to `src/`.
+
 ## Agent skills
 
 ### Issue tracker
