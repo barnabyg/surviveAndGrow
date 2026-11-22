@@ -12,7 +12,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { bothCountries, startingAt, tavara, withDroughtChance } from './countries';
-import { inFirstTerm } from './players';
+import { inFirstTerm } from './playing';
 
 /**
  * Each country with the one region that drought is made to strike in these tests, and how

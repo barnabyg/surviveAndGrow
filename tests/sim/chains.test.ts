@@ -15,7 +15,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { withDroughtChance, withoutPoweredMines } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 interface Played {
   readonly state: GameState;

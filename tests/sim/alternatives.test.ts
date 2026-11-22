@@ -14,7 +14,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { withDroughtChance, withoutPoweredMines } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 /** Plays one quarter for each set of decisions given, in order, sending relief where it is needed. */
 function play(start: GameState, quarters: readonly Partial<Decisions>[]): GameState {

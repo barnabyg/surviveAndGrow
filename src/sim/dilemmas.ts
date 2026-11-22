@@ -193,6 +193,16 @@ export interface DilemmaOutcome {
   readonly entries: readonly ReportEntry[];
 }
 
+/** The game as the quarter starts once the answer to a dilemma has taken effect. */
+export function withAnswer(state: GameState, answer: DilemmaOutcome): GameState {
+  return {
+    ...state,
+    treasury: answer.treasury,
+    foodReserve: answer.foodReserve,
+    regions: answer.regions,
+  };
+}
+
 /**
  * Applies the player's answer to the pending dilemma. Its effects come first in the
  * quarter: the money is there to be spent, and the food to be eaten, in the same quarter.

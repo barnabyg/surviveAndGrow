@@ -14,7 +14,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import { bothCountries, testland } from './countries';
-import { answering, inFirstTerm, steward } from './players';
+import { answering, inFirstTerm, steward } from './playing';
 
 /** A loan of a sum over a term, in Money units ($100,000) and quarters. */
 function loan(amount: number, quarters: number): Borrowing {

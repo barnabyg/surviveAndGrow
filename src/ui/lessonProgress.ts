@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LESSONS, type LessonAction } from './tourSteps';
+import { LESSONS, type LessonAction } from './lessonSteps';
 
 /** Where the tutorial's lessons stand, and the ways the game screen moves them on. */
 export interface LessonProgress {

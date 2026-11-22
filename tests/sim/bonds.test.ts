@@ -20,7 +20,7 @@ import {
   withinAusterity,
 } from '../../src/sim';
 import { bothCountries, tavara, testland } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 /** A bond of a sum maturing after a term, in Money units ($100,000) and quarters. */
 function bond(amount: number, quarters: number): Borrowing {

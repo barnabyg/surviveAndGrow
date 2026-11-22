@@ -14,7 +14,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, withChances } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 const sum = (amounts: readonly number[]) => amounts.reduce((total, amount) => total + amount, 0);
 

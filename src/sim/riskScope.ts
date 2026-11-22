@@ -1,7 +1,6 @@
 import { balance } from './balance';
 import type { PossibleEvent } from './events';
-import type { QuarterResolved } from './game';
-import type { GameState } from './state';
+import type { GameState, QuarterResolved } from './state';
 import { LIKELIHOODS, type Likelihood } from './vocabulary';
 
 /*

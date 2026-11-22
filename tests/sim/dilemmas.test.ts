@@ -19,7 +19,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { tavaraAsShipped, testlandAsShipped, withChances } from './countries';
 import { faultsOf, withValue, without } from './files';
-import { answering, inFirstTerm } from './players';
+import { answering, inFirstTerm } from './playing';
 
 type Chances = Parameters<typeof withChances>[1];
 

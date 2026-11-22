@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, seasonOf, type GameState } from '../../src/sim';
 import { bothCountries, tavara, testland } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 function play(state: GameState, quarters: number): GameState {
   let current = state;

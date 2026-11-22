@@ -2,8 +2,10 @@ import { percentOff } from './arithmetic';
 import { balance } from './balance';
 import { entersBeforeHarvest } from './calendar';
 import { regionName, type Country } from './country';
+import { siteEffects, type Project, type SiteEffects } from './projects';
 import { nextRandom, type RngState } from './rng';
 import type { ReportEntry } from './report';
+import type { GameState } from './state';
 import type { GameDate, Quarter } from './types';
 import type { SiteDamage } from './upkeep';
 import { EVENT_TYPES, type EventType } from './vocabulary';
@@ -264,4 +266,47 @@ export function describeEventWithHold(event: ActiveEvent, hold: number): string 
 /** How much of a harvest the event takes, as a whole percentage. */
 function harvestCutPercent(definition: EventDefinition, hold: number): number {
   return percentOff(leftBy(definition, hold));
+}
+
+/** This quarter's weather: one shock for each region, drawn in the regions' order. */
+export function rollWeather(
+  rng: RngState,
+  regionCount: number,
+): { readonly shocks: readonly number[]; readonly rng: RngState } {
+  const swing = balance.food.weatherSwingPermillePerQuarter;
+  const shocks: number[] = [];
+  let current = rng;
+  for (let region = 0; region < regionCount; region += 1) {
+    const roll = nextRandom(current);
+    shocks.push((roll.value % (2 * swing + 1)) - swing);
+    current = roll.state;
+  }
+  return { shocks, rng: current };
+}
+
+/** What the events in force leave of each region's harvest, given the sites in use. */
+export function eventsLeave(
+  state: Pick<GameState, 'regions' | 'events'>,
+  sites: SiteEffects,
+): number[] {
+  return state.regions.map((region, index) =>
+    harvestPermille(state.events, region.id, sites.inRegion.harvestWeather[index] ?? 1000),
+  );
+}
+
+/**
+ * An event in force and what it does to its region as things stand, in a few words:
+ * "Drought · harvest −40%", or less where irrigation is in use.
+ */
+export function describeEvent(
+  state: Pick<GameState, 'country' | 'projects'>,
+  event: ActiveEvent,
+): string {
+  return describeEventWithHold(event, holdOn(state.country, state.projects, event.regionId));
+}
+
+/** What irrigation in use leaves of the weather's and of events' hold on one region. */
+export function holdOn(country: Country, projects: readonly Project[], regionId: string): number {
+  const index = country.regions.findIndex((region) => region.id === regionId);
+  return siteEffects({ country, projects }).inRegion.harvestWeather[index] ?? 1000;
 }

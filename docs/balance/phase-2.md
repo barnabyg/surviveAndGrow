@@ -471,3 +471,39 @@ plays one term, as Phase 1 did, for the check on hover then spend. The confirmat
 processes (`BALANCE_WORKERS`, by default all but two processors); every game depends only on its
 country, player and seed, so the report is the same however many workers play it. The tuning
 run took about 7 minutes on a 20-processor machine.
+
+## Playing it (historical)
+
+This play-through was written for the finished Phase 2 game and moved here from the README
+once later phases retuned the values. Its seed outcomes held under Phase 2's values; nothing
+reruns them, and the current game may play differently. The README's play-through is the current
+one.
+
+To play the finished Phase 2 game from the start on a seed the balance run knows well:
+
+```powershell
+Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=8'
+```
+
+This starts the game at http://localhost:41730/?seed=8 and opens it in your browser. On seed 8
+the scripted chain builder wins in quarter 37, early in its second term; the scripted player who
+builds only small sites loses the vote in its third term, and one who builds only power in its
+second. Try to win the same way:
+
+1. In the first year, build the Korr Falls power station and then its three power lines, and
+   send relief wherever the risks show hunger. Expect Developing, and a 3-point drop in the
+   approval baseline, soon after the lines open.
+2. Keep the budget a little in surplus and save: the treasury must hold a site's whole cost
+   before it can start. Start Saltmouth port (or the cheaper quay), then the trunk road, then the
+   Korrgate mine, each as soon as the treasury can pay for it. Use the infrastructure lens to see
+   which links of the chain are still missing.
+3. Spend your savings on approval in the last year before each vote. The second vote is the
+   hard one: the chain costs most then, and pays off after it.
+4. Once the mine earns, build the small sites and spend on health and education. The game is won
+   when prosperity has stood at 42 or more, Prosperous, for four quarters running; the top bar
+   counts them.
+
+Expected: the mine adds $60.0m a quarter to the Korr Highlands once its road and port are in use,
+the prosperity breakdown is led by infrastructure access, and a win shows the end-of-game summary
+with each term served. Losing the second vote while the chain is still being built is common: it
+is the risk the game is about.

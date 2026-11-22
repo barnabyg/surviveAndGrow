@@ -6,20 +6,20 @@ interface TopBarActionsProps {
   readonly onEndQuarter: () => void;
   readonly onRestart: () => void;
   /** Opens the guided tour of the screen. */
-  readonly onTutorial: () => void;
+  readonly onTour: () => void;
   /** The first-time tips, turned on and off here. */
   readonly tips: TipsState;
 }
 
 /** The buttons at the end of the top bar: the tour, the tips, restarting and ending the quarter. */
 export function TopBarActions(props: TopBarActionsProps) {
-  const { playing, onEndQuarter, onRestart, onTutorial, tips } = props;
+  const { playing, onEndQuarter, onRestart, onTour, tips } = props;
   return (
     <div className="topbar__actions">
       {/* A finished game offers its own replay on the summary, so this is for one in play. */}
       {playing && (
         <>
-          <button type="button" className="button" data-tour="tutorial" onClick={onTutorial}>
+          <button type="button" className="button" data-tour="tour" onClick={onTour}>
             Tour
           </button>
           <button

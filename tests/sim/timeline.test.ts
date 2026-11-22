@@ -11,7 +11,7 @@ import {
   type GameState,
 } from '../../src/sim';
 import { bothCountries, tavara } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 /**
  * Every tax the country can bear and nothing spent but the upkeep of what is built, so every
