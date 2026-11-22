@@ -66,6 +66,8 @@ test('the harvest forecast is a range, and agriculture spending moves it and the
   page,
 }) => {
   await startGame(page);
+  // The food forecast is folded in the outlook, and opens to show its figures.
+  await outlook(page).getByText('Food forecast').click();
   const forecast = outlook(page).getByRole('group', { name: 'Harvest forecast' });
   const reserve = outlook(page).getByRole('group', { name: 'Food reserve after harvest' });
 
@@ -75,6 +77,8 @@ test('the harvest forecast is a range, and agriculture spending moves it and the
   await expect(reserve).toHaveText('Food reserve after harvest1.5 to 7.1 months');
 
   await decisions(page).getByRole('slider', { name: 'Agriculture' }).fill('20');
+  // The fold says when a pending change moves a figure inside it.
+  await expect(outlook(page).locator('summary')).toHaveText('Food forecast · changed');
 
   // $20.0m a quarter on agriculture empties the treasury by quarter 4, when the budget is
   // cut, so the forecast counts a little less than a full year at that rate.

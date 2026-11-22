@@ -99,6 +99,7 @@ test('the trade panel shows what the trade links carry, and refuses grain beyond
   const capacity = (await trade(page)).getByRole('group', { name: 'Trade capacity' });
   await expect(capacity.getByRole('row', { name: /Trade links carry/ })).toContainText('90,000 t');
   await expect(capacity.getByRole('row', { name: /Free/ })).toContainText('90,000 t');
+  await capacity.getByText('Trade links', { exact: true }).click();
   await expect(capacity.getByRole('listitem').filter({ hasText: 'Korr Pass' })).toContainText(
     'Border crossing to Voskar · 50,000 t',
   );

@@ -29,6 +29,7 @@ import {
 } from '../sim';
 import { formatRange, formatSigned } from './format';
 import { DecisionPanel, type DecisionTab } from './DecisionPanel';
+import { More } from './More';
 import './BudgetPanel.css';
 
 interface BudgetPanelProps {
@@ -286,33 +287,44 @@ export function BudgetPanel(props: BudgetPanelProps) {
             )
           );
         })}
-        <Projection
-          label="Harvest forecast"
-          before={before.harvest}
-          after={after.harvest}
-          format={(tonnes) => (tonnes / 1_000_000).toFixed(2)}
-          unit="Mt"
-        />
-        <Projection
-          label="Food reserve after harvest"
-          before={before.foodReserveAfterHarvest}
-          after={after.foodReserveAfterHarvest}
-          format={(tonnes) => monthsOfFood(tonnes, food.quarterlyConsumption).toFixed(1)}
-          unit="months"
-        />
-        {reliefRegionId !== null && (
+        <More
+          summary="Food forecast"
+          note={
+            moved(before.harvest, after.harvest) ||
+            moved(before.foodReserveAfterHarvest, after.foodReserveAfterHarvest) ||
+            before.relief.delivered !== after.relief.delivered
+              ? 'changed'
+              : null
+          }
+        >
           <Projection
-            label="Food relief this quarter"
-            before={exactly(before.relief.delivered)}
-            after={exactly(after.relief.delivered)}
-            format={formatTonnes}
-            onlyIfMoved
+            label="Harvest forecast"
+            before={before.harvest}
+            after={after.harvest}
+            format={(tonnes) => (tonnes / 1_000_000).toFixed(2)}
+            unit="Mt"
           />
-        )}
-        <p className="outlook__note">
-          The country eats {((food.quarterlyConsumption * 4) / 1_000_000).toFixed(2)} Mt a year.
-          Forecasts assume spending stays as shown.
-        </p>
+          <Projection
+            label="Food reserve after harvest"
+            before={before.foodReserveAfterHarvest}
+            after={after.foodReserveAfterHarvest}
+            format={(tonnes) => monthsOfFood(tonnes, food.quarterlyConsumption).toFixed(1)}
+            unit="months"
+          />
+          {reliefRegionId !== null && (
+            <Projection
+              label="Food relief this quarter"
+              before={exactly(before.relief.delivered)}
+              after={exactly(after.relief.delivered)}
+              format={formatTonnes}
+              onlyIfMoved
+            />
+          )}
+          <p className="outlook__note">
+            The country eats {((food.quarterlyConsumption * 4) / 1_000_000).toFixed(2)} Mt a year.
+            Forecasts assume spending stays as shown.
+          </p>
+        </More>
       </section>
 
       <div className="button-row">
@@ -330,6 +342,11 @@ export function BudgetPanel(props: BudgetPanelProps) {
       </div>
     </DecisionPanel>
   );
+}
+
+/** Whether a pending change would move a projected figure. */
+function moved(before: Range, after: Range): boolean {
+  return before.min !== after.min || before.max !== after.max;
 }
 
 /** The regions that will be in one kind of unrest. */
@@ -372,13 +389,13 @@ interface ProjectionProps {
  */
 function Projection(props: ProjectionProps) {
   const { label, before, after, format = formatMoney, unit = '', onlyIfMoved = false } = props;
-  const moved = before.min !== after.min || before.max !== after.max;
-  if (onlyIfMoved && !moved) return null;
+  const changed = moved(before, after);
+  if (onlyIfMoved && !changed) return null;
   return (
     <div className="projection" role="group" aria-label={label}>
       <span>{label}</span>
       <span className="projection__value">
-        {moved && (
+        {changed && (
           <span className="projection__before">{formatRange(before, format, unit)} → </span>
         )}
         {formatRange(after, format, unit)}

@@ -1,0 +1,23 @@
+/* A folded part of a panel: reference text, and figures that matter less often. */
+.more {
+  font-size: 14px;
+}
+
+.more__summary {
+  width: fit-content;
+  padding: 2px 0;
+  color: var(--blue);
+  cursor: pointer;
+}
+
+.more__summary:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.more__body {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

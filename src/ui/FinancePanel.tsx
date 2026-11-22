@@ -26,6 +26,7 @@ import {
   type Preview,
 } from '../sim';
 import { DecisionPanel, type DecisionTab } from './DecisionPanel';
+import { More } from './More';
 import { formatDate } from './format';
 import './FinancePanel.css';
 
@@ -162,17 +163,21 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
           <span>Credit rating {credit.name}</span>
           <span className="fixed-costs__note">{stepTerms(credit.current)}</span>
         </div>
-        {credit.above !== null && (
-          <div className="fixed-costs__row">
-            <span>One step up, {credit.above.name}</span>
-            <span className="fixed-costs__note">{stepTerms(credit.above)}</span>
-          </div>
-        )}
-        {credit.below !== null && (
-          <div className="fixed-costs__row">
-            <span>One step down, {credit.below.name}</span>
-            <span className="fixed-costs__note">{stepTerms(credit.below)}</span>
-          </div>
+        {(credit.above !== null || credit.below !== null) && (
+          <More summary="One step up or down">
+            {credit.above !== null && (
+              <div className="fixed-costs__row">
+                <span>One step up, {credit.above.name}</span>
+                <span className="fixed-costs__note">{stepTerms(credit.above)}</span>
+              </div>
+            )}
+            {credit.below !== null && (
+              <div className="fixed-costs__row">
+                <span>One step down, {credit.below.name}</span>
+                <span className="fixed-costs__note">{stepTerms(credit.below)}</span>
+              </div>
+            )}
+          </More>
         )}
         {movement !== 0 && (
           <p className={movement < 0 ? 'warning-note' : 'section-empty'}>
@@ -308,11 +313,13 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
           )}
         </>
       )}
-      <p className="section-empty">
-        Repayments and interest are paid before anything else each quarter. At the budget in force
-        the nation may owe up to {formatMoney(status.limit)}. Its debt now stands at{' '}
-        {formatPercent(status.burden)} of a year’s revenue.
-      </p>
+      <More summary="How borrowing works">
+        <p className="section-empty">
+          Repayments and interest are paid before anything else each quarter. At the budget in force
+          the nation may owe up to {formatMoney(status.limit)}. Its debt now stands at{' '}
+          {formatPercent(status.burden)} of a year’s revenue.
+        </p>
+      </More>
     </DecisionPanel>
   );
 }
