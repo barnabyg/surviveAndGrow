@@ -6,6 +6,11 @@
  * `saveGame` and `loadSave` turn a game into plain data and back. They store nothing: where
  * a save is kept is the business of whoever calls them.
  */
+/**
+ * The tuning values, read-only. The interface reads figures from the game itself; the tests
+ * read these to check the docs that restate them.
+ */
+export { balance } from './balance';
 export {
   COUNTRY_FORMAT_VERSION,
   CountryFileError,
