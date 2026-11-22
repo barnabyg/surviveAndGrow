@@ -9,6 +9,7 @@ import {
   startGame,
   tavaraWith,
   treasury,
+  openTab,
 } from './app';
 
 const map = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
@@ -40,7 +41,8 @@ async function playTwoQuarters(page: Page): Promise<void> {
     .getByRole('region', { name: 'Lowmere irrigation' })
     .getByRole('button', { name: 'Start building' })
     .click();
-  await decisions(page).getByLabel('Send food relief to').selectOption('dry-east');
+  await (await openTab(page, 'Relief')).getByLabel('Send food relief to').selectOption('dry-east');
+  await openTab(page, 'Budget');
   await decisions(page).getByRole('slider', { name: 'Health' }).fill('9');
   await decisions(page).getByRole('button', { name: 'Commit budget' }).click();
   await endQuarters(page, 2);
@@ -89,7 +91,10 @@ test('a game is saved as each quarter ends and resumed after the page is reloade
   await expect(map(page).getByRole('button', { name: /^Lowmere irrigation/ })).toHaveAccessibleName(
     'Lowmere irrigation, irrigation scheme, under construction, 2 of 3 quarters built',
   );
-  await expect(decisions(page).getByLabel('Send food relief to')).toHaveValue('dry-east');
+  await expect((await openTab(page, 'Relief')).getByLabel('Send food relief to')).toHaveValue(
+    'dry-east',
+  );
+  await openTab(page, 'Budget');
   await expect(decisions(page).getByRole('slider', { name: 'Health' })).toHaveValue('9');
   await expect(decisions(page).getByRole('slider', { name: 'Tax rate' })).toHaveValue('18');
   await expect(decisions(page).getByText('not committed')).toHaveCount(0);

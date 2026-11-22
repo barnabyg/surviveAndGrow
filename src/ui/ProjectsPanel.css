@@ -4,8 +4,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
 }
 
 .project {
@@ -85,4 +83,51 @@
 .projects .button {
   min-height: 44px;
   font-size: 15px;
+}
+
+.projects__browse {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* The catalogue of projects the treasury can cover, grouped by kind */
+.catalogue {
+  width: min(1000px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+}
+
+.catalogue__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.catalogue .section-empty {
+  margin: 6px 0 16px;
+}
+
+/* Two columns of kinds where the window allows, one where it does not. */
+.catalogue__kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  align-items: start;
+  gap: 18px 28px;
+}
+
+.catalogue__kind {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.catalogue .projects__offers li {
+  font-size: 15px;
+}
+
+.catalogue .button {
+  min-height: 38px;
 }

@@ -41,8 +41,26 @@
   border-right: 1px solid var(--line);
 }
 
+/* The quarter ahead stays put above the decision tabs, and only the open tab scrolls. */
 .column--decisions {
+  overflow: hidden;
+  padding-bottom: 0;
   border-left: 1px solid var(--line);
+}
+
+.column--decisions > .decision-tabs {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.column--decisions .decision-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -24px;
+  padding: 0 24px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
 }
 
 .column--country {

@@ -142,9 +142,11 @@ but the rating and the election has a short trend line, and during austerity the
 down the quarters it has left. The left column says what is happening: reports, risks ahead
 with likelihoods, living standards by region and an approval chart. The centre holds the map, its
 lenses and the selected site's card, over the term timeline of 20 quarters to the election with
-harvests, projects and bond maturities marked. The right column is what you do: any dilemma
-waiting, budget sliders with a live projection, projects underway and affordable, loans and
-bonds, food relief and the election forecast.
+harvests, projects and bond maturities marked. The right column is what you do: pinned at its
+top, any dilemma waiting and the quarter ahead (balance, treasury, approval, food reserve and the
+election forecast); below it, tabs for the budget sliders with a live projection, projects
+(underway, with a catalogue of those affordable), loans and bonds, trade, and food relief. Each
+tab says where it stands, so a decision out of sight is not forgotten.
 
 Rules that apply everywhere:
 

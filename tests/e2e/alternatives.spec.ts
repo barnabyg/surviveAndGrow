@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, startGame, tavaraWith } from './app';
+import { endQuarters, startGame, tavaraWith, openCatalogue } from './app';
 
 const map = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
 const site = (page: Page, name: string) =>
@@ -33,7 +33,9 @@ test('a site card warns that starting it closes its alternative, which is then c
   await quay.getByRole('button', { name: 'Start building' }).click();
 
   // While the quay is planned, the port cannot be planned with it.
-  await expect(decisions(page).getByRole('button', { name: 'Plan Saltmouth port' })).toHaveCount(0);
+  const catalogue = await openCatalogue(page);
+  await expect(catalogue.getByRole('button', { name: 'Plan Saltmouth port' })).toHaveCount(0);
+  await catalogue.getByRole('button', { name: 'Close' }).click();
   await site(page, 'Saltmouth port').click();
   const port = page.getByRole('region', { name: 'Saltmouth port' });
   await expect(port).toContainText(

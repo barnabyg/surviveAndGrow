@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   LIKELIHOOD_NAMES,
   LIKELIHOODS,
@@ -17,12 +18,19 @@ interface RisksPanelProps {
   readonly onSelectRisk: (index: number) => void;
 }
 
+/** How many risks are listed before the rest are folded away. */
+const SHOWN_RISKS = 4;
+
 /**
  * What could go wrong in the coming quarters if the player changes nothing, the most
- * likely first. A risk to one region is a button: selecting it picks that region out on
- * the map.
+ * likely first. Each risk takes two lines: what it is and how likely, and why, cut short
+ * with its whole text in a tooltip. Beyond the first few, the least likely are folded away
+ * until the player asks for them. A risk to one region is a button: selecting it picks that
+ * region out on the map and shows the whole of why.
  */
 export function RisksPanel({ risks, selectedRisk, onSelectRisk }: RisksPanelProps) {
+  const [all, setAll] = useState(false);
+  const folded = all ? 0 : Math.max(0, risks.length - SHOWN_RISKS);
   return (
     <section className="risks" aria-labelledby="risks-title" data-tour="risks">
       <div className="section-head">
@@ -36,7 +44,11 @@ export function RisksPanel({ risks, selectedRisk, onSelectRisk }: RisksPanelProp
       ) : (
         <ul className="risks__list">
           {risks.map((risk, index) => (
-            <li key={`${risk.kind}|${risk.headline}`}>
+            <li
+              key={`${risk.kind}|${risk.headline}`}
+              hidden={index >= SHOWN_RISKS && folded > 0 && index !== selectedRisk}
+              title={risk.reason}
+            >
               {risk.regionId === undefined ? (
                 <div className="risk">
                   <RiskBody risk={risk} />
@@ -58,6 +70,18 @@ export function RisksPanel({ risks, selectedRisk, onSelectRisk }: RisksPanelProp
           ))}
         </ul>
       )}
+      {risks.length > SHOWN_RISKS && (
+        <button
+          type="button"
+          className="risks__more"
+          aria-expanded={all}
+          onClick={() => {
+            setAll(!all);
+          }}
+        >
+          {all ? 'Show fewer' : `Show ${folded} more`}
+        </button>
+      )}
     </section>
   );
 }
@@ -66,16 +90,14 @@ export function RisksPanel({ risks, selectedRisk, onSelectRisk }: RisksPanelProp
 function RiskBody({ risk }: { readonly risk: Risk }) {
   return (
     <>
-      <span className="risk__text">
-        <span className="risk__headline">{risk.headline}</span>
-        <span className="risk__reason">{risk.reason}</span>
-      </span>
+      <span className="risk__headline">{risk.headline}</span>
       <span className="risk__likelihood">
         <Meter likelihood={risk.likelihood} />
         <span className={`risk__level risk__level--${risk.likelihood}`}>
           {LIKELIHOOD_NAMES[risk.likelihood]}
         </span>
       </span>
+      <span className="risk__reason">{risk.reason}</span>
     </>
   );
 }

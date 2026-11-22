@@ -7,7 +7,7 @@ import {
   type Preview,
   type ReliefDelivery,
 } from '../sim';
-import { DecisionPanel } from './DecisionPanel';
+import { DecisionPanel, type DecisionTab } from './DecisionPanel';
 import './ReliefPanel.css';
 
 interface ReliefPanelProps {
@@ -20,6 +20,25 @@ interface ReliefPanelProps {
   readonly onSendRelief: (regionId: string | null) => void;
 }
 
+/**
+ * What the relief tab says: where relief is sent, or a warning when a region will go short
+ * and none is sent there.
+ */
+export function reliefTab(
+  game: GameState,
+  preview: Preview,
+  reliefRegionId: string | null,
+): DecisionTab {
+  const short = preview.shortfalls.length;
+  const unmet = short > 0 && !preview.shortfalls.some((entry) => entry.regionId === reliefRegionId);
+  const note = unmet
+    ? `▲ ${short} ${short === 1 ? 'region' : 'regions'} short`
+    : reliefRegionId === null
+      ? 'Not sent'
+      : `To ${regionName(game.country, reliefRegionId)}`;
+  return { id: 'relief', title: 'Relief', note, pending: unmet };
+}
+
 /** Where food relief goes. It takes effect when the quarter ends, without being committed. */
 export function ReliefPanel(props: ReliefPanelProps) {
   const { game, preview, reliefSpending, reliefRegionId, onSendRelief } = props;
@@ -27,15 +46,10 @@ export function ReliefPanel(props: ReliefPanelProps) {
   const { relief } = preview;
 
   return (
-    <DecisionPanel
-      id="relief"
-      title="Food relief"
-      note={
-        <span className="section-note">
-          {formatMoney(reliefSpending)} moves {formatTonnes(relief.capacity)} a quarter
-        </span>
-      }
-    >
+    <DecisionPanel id="relief">
+      <p className="section-note">
+        {formatMoney(reliefSpending)} moves {formatTonnes(relief.capacity)} a quarter
+      </p>
       {preview.shortfalls.length === 0 ? (
         <p className="section-empty">No region will go short of food this quarter.</p>
       ) : (

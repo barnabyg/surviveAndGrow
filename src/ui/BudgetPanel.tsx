@@ -28,7 +28,8 @@ import {
   UPKEEP_ORDER_RULE,
 } from '../sim';
 import { formatRange, formatSigned } from './format';
-import { DecisionPanel } from './DecisionPanel';
+import { DecisionPanel, type DecisionTab } from './DecisionPanel';
+import { More } from './More';
 import './BudgetPanel.css';
 
 interface BudgetPanelProps {
@@ -60,6 +61,19 @@ export function countChanges(pending: Budget, committed: Budget): number {
   return spendingChanges + (pending.taxRatePercent === committed.taxRatePercent ? 0 : 1);
 }
 
+/** What the budget's tab says: whether there are changes not yet committed. */
+export function budgetTab(pending: Budget, committed: Budget): DecisionTab {
+  const changes = countChanges(pending, committed);
+  return changes > 0
+    ? {
+        id: 'budget',
+        title: 'Budget',
+        note: `${changes} uncommitted`,
+        pending: true,
+      }
+    : { id: 'budget', title: 'Budget', note: 'Committed' };
+}
+
 export function BudgetPanel(props: BudgetPanelProps) {
   const { game, committed, pending, reliefRegionId, startProjects, borrow, trade } = props;
   const { dilemmaChoice } = props;
@@ -76,17 +90,21 @@ export function BudgetPanel(props: BudgetPanelProps) {
   const food = foodStatus(game);
 
   return (
-    <DecisionPanel
-      id="budget"
-      title="Budget"
-      note={
-        changes > 0 && (
-          <span className="pending-note">
-            {changes} {changes === 1 ? 'change' : 'changes'} not committed
-          </span>
-        )
-      }
-    >
+    <DecisionPanel id="budget">
+      {/* The budget's actions head the panel and stay there as it scrolls. */}
+      <div className="button-row budget__actions">
+        <button type="button" className="button" disabled={changes === 0} onClick={onReset}>
+          Reset
+        </button>
+        <button
+          type="button"
+          className="button button--commit"
+          disabled={changes === 0}
+          onClick={onCommit}
+        >
+          Commit budget
+        </button>
+      </div>
       <div className="totals" role="group" aria-label="Budget totals">
         <Total label="Revenue" value={formatRange(after.revenue, formatMoney)} />
         <Total label="Spending" value={formatRange(after.spending, formatMoney)} />
@@ -283,50 +301,52 @@ export function BudgetPanel(props: BudgetPanelProps) {
             )
           );
         })}
-        <Projection
-          label="Harvest forecast"
-          before={before.harvest}
-          after={after.harvest}
-          format={(tonnes) => (tonnes / 1_000_000).toFixed(2)}
-          unit="Mt"
-        />
-        <Projection
-          label="Food reserve after harvest"
-          before={before.foodReserveAfterHarvest}
-          after={after.foodReserveAfterHarvest}
-          format={(tonnes) => monthsOfFood(tonnes, food.quarterlyConsumption).toFixed(1)}
-          unit="months"
-        />
-        {reliefRegionId !== null && (
-          <Projection
-            label="Food relief this quarter"
-            before={exactly(before.relief.delivered)}
-            after={exactly(after.relief.delivered)}
-            format={formatTonnes}
-            onlyIfMoved
-          />
-        )}
-        <p className="outlook__note">
-          The country eats {((food.quarterlyConsumption * 4) / 1_000_000).toFixed(2)} Mt a year.
-          Forecasts assume spending stays as shown.
-        </p>
-      </section>
-
-      <div className="button-row">
-        <button type="button" className="button" disabled={changes === 0} onClick={onReset}>
-          Reset
-        </button>
-        <button
-          type="button"
-          className="button button--commit"
-          disabled={changes === 0}
-          onClick={onCommit}
+        <More
+          summary="Food forecast"
+          note={
+            moved(before.harvest, after.harvest) ||
+            moved(before.foodReserveAfterHarvest, after.foodReserveAfterHarvest) ||
+            before.relief.delivered !== after.relief.delivered
+              ? 'changed'
+              : null
+          }
         >
-          Commit budget
-        </button>
-      </div>
+          <Projection
+            label="Harvest forecast"
+            before={before.harvest}
+            after={after.harvest}
+            format={(tonnes) => (tonnes / 1_000_000).toFixed(2)}
+            unit="Mt"
+          />
+          <Projection
+            label="Food reserve after harvest"
+            before={before.foodReserveAfterHarvest}
+            after={after.foodReserveAfterHarvest}
+            format={(tonnes) => monthsOfFood(tonnes, food.quarterlyConsumption).toFixed(1)}
+            unit="months"
+          />
+          {reliefRegionId !== null && (
+            <Projection
+              label="Food relief this quarter"
+              before={exactly(before.relief.delivered)}
+              after={exactly(after.relief.delivered)}
+              format={formatTonnes}
+              onlyIfMoved
+            />
+          )}
+          <p className="outlook__note">
+            The country eats {((food.quarterlyConsumption * 4) / 1_000_000).toFixed(2)} Mt a year.
+            Forecasts assume spending stays as shown.
+          </p>
+        </More>
+      </section>
     </DecisionPanel>
   );
+}
+
+/** Whether a pending change would move a projected figure. */
+function moved(before: Range, after: Range): boolean {
+  return before.min !== after.min || before.max !== after.max;
 }
 
 /** The regions that will be in one kind of unrest. */
@@ -369,13 +389,13 @@ interface ProjectionProps {
  */
 function Projection(props: ProjectionProps) {
   const { label, before, after, format = formatMoney, unit = '', onlyIfMoved = false } = props;
-  const moved = before.min !== after.min || before.max !== after.max;
-  if (onlyIfMoved && !moved) return null;
+  const changed = moved(before, after);
+  if (onlyIfMoved && !changed) return null;
   return (
     <div className="projection" role="group" aria-label={label}>
       <span>{label}</span>
       <span className="projection__value">
-        {moved && (
+        {changed && (
           <span className="projection__before">{formatRange(before, format, unit)} → </span>
         )}
         {formatRange(after, format, unit)}

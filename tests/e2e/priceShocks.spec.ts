@@ -1,10 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, reports, risks, startGame, tavaraWith } from './app';
+import { endQuarters, openTab, reports, risks, startGame, tavaraWith } from './app';
 
-const grainPrice = (page: Page) =>
-  decisions(page)
-    .getByRole('region', { name: 'Trade' })
-    .getByRole('group', { name: 'World grain price' });
+const grainPrice = async (page: Page) =>
+  (await openTab(page, 'Trade')).getByRole('group', { name: 'World grain price' });
 
 test('a world price shock is announced ahead, shown on the price, and pushes it as it begins', async ({
   page,
@@ -23,7 +21,7 @@ test('a world price shock is announced ahead, shown on the price, and pushes it 
 
   // Announced: in the report, beside the price and among the risks.
   await expect(reports(page).getByText('Failed harvests abroad ahead')).toBeVisible();
-  const shocks = decisions(page).getByRole('list', {
+  const shocks = (await openTab(page, 'Trade')).getByRole('list', {
     name: 'World price shocks on world grain price',
   });
   await expect(shocks).toContainText(
@@ -42,9 +40,9 @@ test('a world price shock is announced ahead, shown on the price, and pushes it 
   await expect(shocks).toContainText(
     'Failed harvests abroad: The world grain price was pushed up by $36 a tonne as this quarter began, and will be for 2 more quarters.',
   );
-  await grainPrice(page)
-    .getByRole('button', { name: /World grain price/ })
-    .click();
-  const moved = grainPrice(page).getByRole('table', { name: 'What moved the world grain price' });
+  await (await grainPrice(page)).getByRole('button', { name: /World grain price/ }).click();
+  const moved = (await grainPrice(page)).getByRole('table', {
+    name: 'What moved the world grain price',
+  });
   await expect(moved.getByRole('row', { name: /Failed harvests abroad/ })).toContainText('+$36');
 });

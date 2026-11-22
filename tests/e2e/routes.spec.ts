@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, startGame, tavaraWith, testlandFile } from './app';
+import { endQuarters, startGame, tavaraWith, testlandFile, openTab, planProject } from './app';
 
 const map = (page: Page, country = 'Republic of Tavara') =>
   page.getByRole('group', { name: `Map of ${country}` });
@@ -51,9 +51,7 @@ test('a shipping lane appears once a port is in use, with what it carried agains
     'Trunk road, Korrgate mine to Saltmouth',
     'Saltmouth port',
   ]) {
-    await decisions(page)
-      .getByRole('button', { name: `Plan ${site}` })
-      .click();
+    await planProject(page, site);
   }
   await endQuarters(page, 8);
   // Planning the port picked it out; its card is closed to see the map.
@@ -70,7 +68,7 @@ test('a shipping lane appears once a port is in use, with what it carried agains
 
   // Grain ordered fills the border crossings first, then goes by sea: the lane's card shows
   // it this quarter, beside the mine's ore.
-  const trade = decisions(page).getByRole('region', { name: 'Trade' });
+  const trade = await openTab(page, 'Trade');
   await trade.getByLabel('Tonnes to buy').fill('100000');
   await trade.getByRole('button', { name: 'Order grain' }).click();
   await lane.getByText('0 t of 900,000 t').click();

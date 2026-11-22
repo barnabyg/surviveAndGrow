@@ -180,3 +180,24 @@ export async function endQuarters(page: Page, count: number): Promise<void> {
     await page.getByRole('banner').getByRole('button', { name: 'End quarter' }).click();
   }
 }
+
+/** The decision tabs, by name: Budget, Projects, Finance, Trade and Relief. */
+export type DecisionTabName = 'Budget' | 'Projects' | 'Finance' | 'Trade' | 'Relief';
+
+/** Opens one of the decision tabs, as the player would, and gives its panel. */
+export async function openTab(page: Page, name: DecisionTabName): Promise<Locator> {
+  await decisions(page).getByRole('tab', { name, exact: true }).click();
+  return decisions(page).getByRole('tabpanel', { name, exact: true });
+}
+
+/** Opens the catalogue of projects the treasury can cover now, from the projects tab. */
+export async function openCatalogue(page: Page): Promise<Locator> {
+  const projects = await openTab(page, 'Projects');
+  await projects.getByRole('button', { name: 'Browse projects…' }).click();
+  return page.getByRole('dialog', { name: 'Affordable now' });
+}
+
+/** Plans a project from the catalogue, which closes it. */
+export async function planProject(page: Page, name: string): Promise<void> {
+  await (await openCatalogue(page)).getByRole('button', { name: `Plan ${name}` }).click();
+}

@@ -6,6 +6,17 @@
   gap: 18px;
 }
 
+/* Commit and Reset head the budget and stay in view while its tab scrolls. */
+.budget__actions {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-top: -2px;
+  padding: 2px 0 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
 .totals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

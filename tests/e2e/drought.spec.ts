@@ -8,6 +8,7 @@ import {
   situation,
   startGame,
   tavaraWithDroughtIn,
+  openTab,
 } from './app';
 
 const tavaraWithDrought = () => tavaraWithDroughtIn(['dry-east']);
@@ -37,7 +38,9 @@ test('a drought appears on the map, and relief sent to the region carries it thr
   await card.getByRole('button', { name: 'Send food relief here' }).click();
 
   await expect(map(page).getByText('Food relief on its way')).toBeVisible();
-  await expect(decisions(page).getByLabel('Send food relief to')).toHaveValue('dry-east');
+  await expect((await openTab(page, 'Relief')).getByLabel('Send food relief to')).toHaveValue(
+    'dry-east',
+  );
   await expect(card.getByRole('button', { name: 'Stop sending relief' })).toBeVisible();
 
   // The failed harvest leaves the region short from the first quarter of year 2.
@@ -112,7 +115,9 @@ test('a drought left alone worsens by stages to famine and ends the game', async
 test('relief can also be directed from the decisions column', async ({ page }) => {
   await startGame(page, { countryFile: tavaraWithDrought() });
 
-  await decisions(page)
+  await (
+    await openTab(page, 'Relief')
+  )
     .getByLabel('Send food relief to')
     .selectOption({ label: 'Salt Coast · food adequate' });
 

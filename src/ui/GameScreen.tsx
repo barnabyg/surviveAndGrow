@@ -15,27 +15,28 @@ import {
   type TurnReport,
 } from '../sim';
 import { ApprovalChart } from './ApprovalChart';
-import { BudgetPanel, countChanges } from './BudgetPanel';
+import { BudgetPanel, budgetTab, countChanges } from './BudgetPanel';
 import { ConfirmDialog, RestartDialog } from './ConfirmDialog';
+import { DecisionTabs } from './DecisionPanel';
 import { DilemmaDialog } from './DilemmaDialog';
 import { DilemmaPanel } from './DilemmaPanel';
-import { ElectionPanel } from './ElectionPanel';
-import { FinancePanel } from './FinancePanel';
+import { FinancePanel, financeTab } from './FinancePanel';
 import { GameSummary } from './GameSummary';
 import type { Lens } from './lens';
 import { LensBar } from './LensBar';
 import { MapLegend } from './MapLegend';
 import { MapView } from './MapView';
-import { ProjectsPanel } from './ProjectsPanel';
+import { ProjectsPanel, projectsTab } from './ProjectsPanel';
+import { QuarterSummary } from './QuarterSummary';
 import { RegionCard } from './RegionCard';
 import { RegionList } from './RegionList';
-import { ReliefPanel } from './ReliefPanel';
+import { ReliefPanel, reliefTab } from './ReliefPanel';
 import { ReportList } from './ReportList';
 import { RisksPanel } from './RisksPanel';
 import { SiteCard } from './SiteCard';
 import { Timeline } from './Timeline';
 import { TipCard, useTips } from './TipCard';
-import { TradePanel } from './TradePanel';
+import { TradePanel, tradeTab } from './TradePanel';
 import { TradeRouteCard } from './TradeRouteCard';
 import { TopBar } from './TopBar';
 import { Lessons } from './Lessons';
@@ -370,59 +371,70 @@ export function GameScreen(props: GameScreenProps) {
           <aside className="column column--decisions" aria-label="Decisions">
             {preview !== null && (
               <>
-                {dilemma !== null && (
-                  <DilemmaPanel
-                    dilemma={dilemma}
-                    chosen={dilemmaChoice}
-                    onOpen={() => {
-                      setDilemmaShown('yes');
+                <QuarterSummary game={game} preview={preview}>
+                  {dilemma !== null && (
+                    <DilemmaPanel
+                      dilemma={dilemma}
+                      chosen={dilemmaChoice}
+                      onOpen={() => {
+                        setDilemmaShown('yes');
+                      }}
+                    />
+                  )}
+                </QuarterSummary>
+                <DecisionTabs
+                  tabs={[
+                    budgetTab(pending, committed),
+                    projectsTab(game, plannedSiteIds),
+                    financeTab(game, preview, plannedLoans),
+                    tradeTab(preview),
+                    reliefTab(game, preview, reliefRegionId),
+                  ]}
+                >
+                  <BudgetPanel
+                    game={game}
+                    committed={committed}
+                    pending={pending}
+                    reliefRegionId={reliefRegionId}
+                    startProjects={plannedSiteIds}
+                    borrow={plannedLoans}
+                    trade={plannedTrade}
+                    dilemmaChoice={dilemmaChoice}
+                    onChange={setPending}
+                    onCommit={() => {
+                      setCommitted(pending);
+                      did('commit-budget');
+                    }}
+                    onReset={() => {
+                      setPending(committed);
                     }}
                   />
-                )}
-                <BudgetPanel
-                  game={game}
-                  committed={committed}
-                  pending={pending}
-                  reliefRegionId={reliefRegionId}
-                  startProjects={plannedSiteIds}
-                  borrow={plannedLoans}
-                  trade={plannedTrade}
-                  dilemmaChoice={dilemmaChoice}
-                  onChange={setPending}
-                  onCommit={() => {
-                    setCommitted(pending);
-                    did('commit-budget');
-                  }}
-                  onReset={() => {
-                    setPending(committed);
-                  }}
-                />
-                <ProjectsPanel
-                  game={game}
-                  preview={preview}
-                  plannedSiteIds={plannedSiteIds}
-                  onPlan={planSite}
-                />
-                <FinancePanel
-                  game={game}
-                  preview={preview}
-                  planned={plannedLoans}
-                  onPlan={setPlannedLoans}
-                />
-                <TradePanel
-                  game={game}
-                  preview={preview}
-                  planned={plannedTrade}
-                  onPlan={setPlannedTrade}
-                />
-                <ReliefPanel
-                  game={game}
-                  preview={preview}
-                  reliefSpending={committed.spending.foodRelief}
-                  reliefRegionId={reliefRegionId}
-                  onSendRelief={setReliefRegionId}
-                />
-                <ElectionPanel game={game} preview={preview} />
+                  <ProjectsPanel
+                    game={game}
+                    preview={preview}
+                    plannedSiteIds={plannedSiteIds}
+                    onPlan={planSite}
+                  />
+                  <FinancePanel
+                    game={game}
+                    preview={preview}
+                    planned={plannedLoans}
+                    onPlan={setPlannedLoans}
+                  />
+                  <TradePanel
+                    game={game}
+                    preview={preview}
+                    planned={plannedTrade}
+                    onPlan={setPlannedTrade}
+                  />
+                  <ReliefPanel
+                    game={game}
+                    preview={preview}
+                    reliefSpending={committed.spending.foodRelief}
+                    reliefRegionId={reliefRegionId}
+                    onSendRelief={setReliefRegionId}
+                  />
+                </DecisionTabs>
               </>
             )}
           </aside>

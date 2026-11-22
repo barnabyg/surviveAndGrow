@@ -443,7 +443,12 @@ export function TopBar(props: TopBarProps) {
           {atTarget && <DebtTestBreakdown victory={victory} />}
         </VitalSign>
         {/* The election is a date, not a figure that moves, so it opens to nothing. */}
-        <div className="vital vital--election" role="group" aria-label="Next election">
+        <div
+          className="vital vital--election"
+          role="group"
+          aria-label="Next election"
+          title={`Term ${election.term} · ${formatDate(election.date)}`}
+        >
           <div className="vital__figures">
             <span className="label">Next election</span>
             <span className="vital__value">

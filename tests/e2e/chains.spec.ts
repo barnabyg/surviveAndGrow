@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, startGame, tavaraWith, treasury } from './app';
+import { endQuarters, startGame, tavaraWith, treasury, openTab, planProject } from './app';
 
 const map = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
 const site = (page: Page, name: string) =>
@@ -53,10 +53,8 @@ test('a mine shows its missing links, and once its road and port are built it ea
 
   // Build the whole chain: the mine here, the road and the port from the projects list.
   await card.getByRole('button', { name: 'Start building' }).click();
-  await decisions(page)
-    .getByRole('button', { name: 'Plan Trunk road, Korrgate mine to Saltmouth' })
-    .click();
-  await decisions(page).getByRole('button', { name: 'Plan Saltmouth port' }).click();
+  await planProject(page, 'Trunk road, Korrgate mine to Saltmouth');
+  await planProject(page, 'Saltmouth port');
   // Planning the port picked it out, so the mine is picked out again.
   await site(page, 'Korrgate mine').click();
 
@@ -93,9 +91,7 @@ test('a mine shows its missing links, and once its road and port are built it ea
   await expect(page.getByRole('region', { name: 'Saltmouth port' })).toContainText(
     'Trade link: it carries 900,000 t a quarter across the border. Of the 990,000 t all the trade links carry, the mines’ ore takes 600,000 t, leaving 390,000 t for grain bought and sold abroad.',
   );
-  const capacity = decisions(page)
-    .getByRole('region', { name: 'Trade' })
-    .getByRole('group', { name: 'Trade capacity' });
+  const capacity = (await openTab(page, 'Trade')).getByRole('group', { name: 'Trade capacity' });
   await expect(capacity.getByRole('row', { name: /Mines’ ore/ })).toContainText('600,000 t');
   await expect(capacity.getByRole('row', { name: /Free/ })).toContainText('390,000 t');
 

@@ -18,7 +18,8 @@ import {
   type Preview,
   type TradeOrder,
 } from '../sim';
-import { DecisionPanel } from './DecisionPanel';
+import { DecisionPanel, type DecisionTab } from './DecisionPanel';
+import { More } from './More';
 import { WorldPriceSign } from './WorldPriceSign';
 import './TradePanel.css';
 
@@ -30,6 +31,18 @@ interface TradePanelProps {
   readonly planned: readonly TradeOrder[];
   /** Plans what to buy or sell this quarter, or takes a plan back. */
   readonly onPlan: (planned: readonly TradeOrder[]) => void;
+}
+
+/** What the trade tab says: the grain bought or sold this quarter, if any. */
+export function tradeTab(preview: Preview): DecisionTab {
+  const { imported, exported } = preview.trade;
+  const note =
+    imported > 0
+      ? `Buying ${formatTonnes(imported)}`
+      : exported > 0
+        ? `Selling ${formatTonnes(exported)}`
+        : 'None';
+  return { id: 'trade', title: 'Trade', note, pending: imported > 0 || exported > 0 };
 }
 
 /**
@@ -51,19 +64,14 @@ export function TradePanel({ game, preview, planned, onPlan }: TradePanelProps) 
   const austerity = austerityStatus(game);
 
   return (
-    <DecisionPanel
-      id="trade"
-      title="Trade"
-      note={
-        <span className="section-note">
-          {preview.trade.imported > 0
-            ? `${formatTonnes(preview.trade.imported)} of grain ordered`
-            : preview.trade.exported > 0
-              ? `${formatTonnes(preview.trade.exported)} of grain to sell`
-              : 'Nothing ordered'}
-        </span>
-      }
-    >
+    <DecisionPanel id="trade">
+      <p className="section-note">
+        {preview.trade.imported > 0
+          ? `${formatTonnes(preview.trade.imported)} of grain ordered`
+          : preview.trade.exported > 0
+            ? `${formatTonnes(preview.trade.exported)} of grain to sell`
+            : 'Nothing ordered'}
+      </p>
       <WorldPriceSign status={status} goodWhen="falling" />
       <TradeCapacityView game={game} planned={planned} />
 
@@ -178,13 +186,15 @@ export function TradePanel({ game, preview, planned, onPlan }: TradePanelProps) 
           </div>
         </>
       )}
-      <p className="section-empty">
-        Grain bought abroad goes to the national reserve. It arrives, and is paid for at this
-        quarter’s price, when the quarter ends. Grain sold abroad comes from the reserve and fetches
-        that price less {formatPercent(EXPORT_MARGIN_PERMILLE, 0)}, paid when the quarter ends.
-        Grain cannot be both bought and sold in one quarter.
-        {austerity !== null && ' Austerity bars neither: austerity starves no one.'}
-      </p>
+      <More summary="How trade works">
+        <p className="section-empty">
+          Grain bought abroad goes to the national reserve. It arrives, and is paid for at this
+          quarter’s price, when the quarter ends. Grain sold abroad comes from the reserve and
+          fetches that price less {formatPercent(EXPORT_MARGIN_PERMILLE, 0)}, paid when the quarter
+          ends. Grain cannot be both bought and sold in one quarter.
+          {austerity !== null && ' Austerity bars neither: austerity starves no one.'}
+        </p>
+      </More>
     </DecisionPanel>
   );
 }
@@ -259,26 +269,28 @@ function TradeCapacityView({
           ))}
         </tbody>
       </table>
-      <ul className="trade__links" aria-label="Trade links">
-        {capacity.links.map((link) => (
-          <li key={`${link.kind} ${link.id}`}>
-            <span>{link.name}</span>
-            <span className="fixed-costs__note">
-              {link.kind === 'crossing'
-                ? `Border crossing to ${neighbourName(crossingTo.get(link.id) ?? '')}`
-                : link.decaying
-                  ? 'Port, decaying: half its capacity'
-                  : 'Port'}{' '}
-              · {formatTonnes(link.tonnes)}
-            </span>
-          </li>
-        ))}
-      </ul>
-      <p className="section-empty">
-        Everything that crosses the border moves through a trade link: the border crossings, and
-        each port in use, which carries half while it decays. The mines’ ore takes its share first,
-        and grain bought and sold is limited to what is left.
-      </p>
+      <More summary="Trade links">
+        <ul className="trade__links" aria-label="Trade links">
+          {capacity.links.map((link) => (
+            <li key={`${link.kind} ${link.id}`}>
+              <span>{link.name}</span>
+              <span className="fixed-costs__note">
+                {link.kind === 'crossing'
+                  ? `Border crossing to ${neighbourName(crossingTo.get(link.id) ?? '')}`
+                  : link.decaying
+                    ? 'Port, decaying: half its capacity'
+                    : 'Port'}{' '}
+                · {formatTonnes(link.tonnes)}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="section-empty">
+          Everything that crosses the border moves through a trade link: the border crossings, and
+          each port in use, which carries half while it decays. The mines’ ore takes its share
+          first, and grain bought and sold is limited to what is left.
+        </p>
+      </More>
     </div>
   );
 }

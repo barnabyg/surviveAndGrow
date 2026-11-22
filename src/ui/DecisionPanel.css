@@ -1,42 +1,70 @@
-/* A decision panel's heading, which collapses the panel to the heading alone. */
-.panel__toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 0;
+/* The decisions column's tabs: one panel on show at a time. */
+.decision-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tabs {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  min-width: 0;
+  padding: 6px 6px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
   background: none;
-  color: inherit;
+  color: var(--muted);
   font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
+  text-align: left;
   cursor: pointer;
 }
 
-.panel__toggle:focus-visible {
+.tab:hover {
+  color: var(--text);
+}
+
+.tab:focus-visible {
   outline: 2px solid var(--blue);
-  outline-offset: 3px;
+  outline-offset: -2px;
 }
 
-/* A chevron drawn with borders, so it adds no text to the panel's name. */
-.panel__chevron {
-  width: 7px;
-  height: 7px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
-  transform: translateY(-2px) rotate(45deg);
-  transition: transform 120ms ease;
+.tab[aria-selected='true'] {
+  border-bottom-color: var(--amber);
+  color: var(--text);
 }
 
-.panel__toggle[aria-expanded='false'] .panel__chevron {
-  transform: rotate(-45deg);
+.tab__title {
+  font-family: var(--font-condensed);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* The body takes no box of its own, so the panel's own spacing between its parts holds. */
-.panel__body {
-  display: contents;
+.tab__note {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12px;
+  color: var(--label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.panel__body[hidden] {
+.tab__note--pending {
+  color: var(--amber);
+}
+
+.decision-panel[hidden] {
   display: none;
 }

@@ -1,10 +1,20 @@
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, reports, startGame, testlandFile, treasury } from './app';
+import {
+  decisions,
+  endQuarters,
+  openCatalogue,
+  openTab,
+  planProject,
+  reports,
+  startGame,
+  testlandFile,
+  treasury,
+} from './app';
 
 const map = (page: Page, country = 'Republic of Tavara') =>
   page.getByRole('group', { name: `Map of ${country}` });
-const projects = (page: Page) => decisions(page).getByRole('region', { name: 'Projects' });
-const affordable = (page: Page) => projects(page).getByRole('list', { name: 'Affordable now' });
+const projects = (page: Page) => openTab(page, 'Projects');
+const affordable = (page: Page) => openCatalogue(page);
 const spending = (page: Page) =>
   decisions(page)
     .getByRole('group', { name: 'Budget totals' })
@@ -23,9 +33,10 @@ test('a project started from a site’s card is paid for, built and then operate
   // It is planned until the quarter ends, and its first instalment is already in the budget.
   await expect(site).toHaveAccessibleName('Lowmere grain store, grain store, planned, $6.0m');
   await expect(card).toContainText('Grain store · planned');
-  await expect(projects(page).getByRole('group', { name: 'Lowmere grain store' })).toContainText(
-    'Planned',
-  );
+  await expect(
+    (await projects(page)).getByRole('group', { name: 'Lowmere grain store' }),
+  ).toContainText('Planned');
+  await openTab(page, 'Budget');
   await expect(decisions(page).getByRole('group', { name: 'Fixed costs' })).toContainText('$3.0m');
   await expect(spending(page)).toContainText('$39.0m');
 
@@ -38,8 +49,8 @@ test('a project started from a site’s card is paid for, built and then operate
     'Lowmere grain store, grain store, under construction, 1 of 2 quarters built',
   );
   await expect(map(page).getByText('1 of 2', { exact: true })).toBeVisible();
-  await expect(projects(page)).toContainText('1 underway · $3.0m this quarter');
-  const underway = projects(page).getByRole('group', { name: 'Lowmere grain store' });
+  await expect(await projects(page)).toContainText('1 underway · $3.0m this quarter');
+  const underway = (await projects(page)).getByRole('group', { name: 'Lowmere grain store' });
   await expect(underway.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '1');
   await expect(underway.getByRole('progressbar')).toHaveAttribute('aria-valuemax', '2');
   await expect(underway).toContainText('Opens next quarter.');
@@ -52,7 +63,7 @@ test('a project started from a site’s card is paid for, built and then operate
   await expect(card).toContainText('Grain store · operating');
   await expect(card).toContainText('In use since Year 1, Quarter 3.');
   await expect(underway).toHaveCount(0);
-  await expect(projects(page)).toContainText('In use: Lowmere grain store');
+  await expect(await projects(page)).toContainText('In use: Lowmere grain store');
 
   await treasury(page)
     .getByRole('button', { name: /Treasury/ })
@@ -64,22 +75,31 @@ test('a project started from a site’s card is paid for, built and then operate
   ).toContainText('−$3.0m');
 });
 
-test('a project planned from the affordable list can be taken back before the quarter ends', async ({
+test('a project planned from the catalogue can be taken back before the quarter ends', async ({
   page,
 }) => {
   await startGame(page);
   const site = map(page).getByRole('button', { name: /^Lowmere irrigation/ });
-  const offer = affordable(page).getByRole('listitem').filter({ hasText: 'Lowmere irrigation' });
-  await expect(offer).toContainText(
+  const catalogue = await affordable(page);
+  // Each kind says once what it costs, how long it takes and what it does.
+  const irrigation = catalogue.getByRole('region', { name: 'Irrigation scheme' });
+  await expect(irrigation).toContainText(
     '$12.0m · 3 quarters · Weather, drought and flood move its region’s harvest 50% less.',
   );
+  const offer = irrigation.getByRole('listitem').filter({ hasText: 'Lowmere irrigation' });
 
   await offer.getByRole('button', { name: 'Plan Lowmere irrigation' }).click();
 
-  // Planning it picks the site out on the map and opens its card.
+  // Planning it closes the catalogue, picks the site out on the map and opens its card.
+  await expect(catalogue).toHaveCount(0);
   await expect(site).toHaveAttribute('aria-pressed', 'true');
   await expect(site).toHaveAccessibleName('Lowmere irrigation, irrigation scheme, planned, $12.0m');
-  await expect(offer).toHaveCount(0);
+  await expect(decisions(page).getByRole('tab', { name: 'Projects' })).toHaveAccessibleDescription(
+    '1 planned',
+  );
+  await expect((await affordable(page)).getByText('Lowmere irrigation')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await openTab(page, 'Budget');
   await expect(spending(page)).toContainText('$40.0m');
 
   const card = page.getByRole('region', { name: 'Lowmere irrigation' });
@@ -88,9 +108,9 @@ test('a project planned from the affordable list can be taken back before the qu
   await expect(site).toHaveAccessibleName(
     'Lowmere irrigation, irrigation scheme, empty site, $12.0m',
   );
-  await expect(offer).toBeVisible();
   await expect(spending(page)).toContainText('$36.0m');
   await expect(decisions(page).getByRole('group', { name: 'Fixed costs' })).toHaveCount(0);
+  await expect((await affordable(page)).getByText('Lowmere irrigation')).toBeVisible();
 });
 
 test('only what the treasury can cover is offered, and a site says why it cannot be started', async ({
@@ -98,26 +118,28 @@ test('only what the treasury can cover is offered, and a site says why it cannot
 }) => {
   await startGame(page);
   // Every site but the port, the one that costs more than the treasury holds.
-  await expect(affordable(page).getByRole('listitem')).toHaveCount(14);
+  const all = await affordable(page);
+  await expect(all.getByRole('listitem')).toHaveCount(14);
   // The quay is offered with what it rules out.
-  await expect(
-    affordable(page).getByRole('listitem').filter({ hasText: 'Saltmouth quay' }),
-  ).toContainText('▲ Closes Saltmouth port for good.');
+  await expect(all.getByRole('listitem').filter({ hasText: 'Saltmouth quay' })).toContainText(
+    '▲ Closes Saltmouth port for good.',
+  );
 
   // $34.0m of the $42.0m is spoken for: two irrigation schemes and a road.
+  await page.keyboard.press('Escape');
   for (const name of ['Lowmere irrigation', 'Dustwell irrigation', 'Farm road, Arden to Lowmere']) {
-    await affordable(page)
-      .getByRole('button', { name: `Plan ${name}` })
-      .click();
+    await planProject(page, name);
   }
 
-  await expect(affordable(page).getByRole('listitem')).toHaveText([
+  const left = await affordable(page);
+  await expect(left.getByRole('listitem')).toHaveText([
     /Lowmere grain store/,
     /Southbank grain store/,
     /Power line, Korr Falls to Arden/,
     /Power line, Korr Falls to Lowmere/,
     /Power line, Korr Falls to Korrgate/,
   ]);
+  await left.getByRole('button', { name: 'Close' }).click();
 
   const road = map(page).getByRole('button', { name: /^Farm road, Westhaven to Arden/ });
   await road.focus();
@@ -132,7 +154,7 @@ test('only what the treasury can cover is offered, and a site says why it cannot
 test('a road is built along its route, and the legend explains every state', async ({ page }) => {
   await startGame(page);
   const road = map(page).getByRole('button', { name: /^Farm road, Arden to Lowmere/ });
-  await affordable(page).getByRole('button', { name: 'Plan Farm road, Arden to Lowmere' }).click();
+  await planProject(page, 'Farm road, Arden to Lowmere');
 
   await endQuarters(page, 2);
 
@@ -170,7 +192,8 @@ test('building pauses when the treasury cannot pay, and the player is warned fir
     await budget.getByRole('slider', { name }).fill('20');
   }
   await budget.getByRole('button', { name: 'Commit budget' }).click();
-  await affordable(page).getByRole('button', { name: 'Plan Lowmere grain store' }).click();
+  await planProject(page, 'Lowmere grain store');
+  await openTab(page, 'Budget');
 
   await expect(budget.getByRole('group', { name: 'Fixed costs' })).toContainText(
     '▲ Building will pause at Lowmere grain store: the treasury cannot cover its instalment.',
@@ -182,9 +205,9 @@ test('building pauses when the treasury cannot pay, and the player is warned fir
   await expect(
     map(page).getByRole('button', { name: /^Lowmere grain store/ }),
   ).toHaveAccessibleName('Lowmere grain store, grain store, paused, 0 of 2 quarters built');
-  await expect(projects(page).getByRole('group', { name: 'Lowmere grain store' })).toContainText(
-    '▲ Paused',
-  );
+  await expect(
+    (await projects(page)).getByRole('group', { name: 'Lowmere grain store' }),
+  ).toContainText('▲ Paused');
 });
 
 test('the card and the projects list agree with the timeline on when a site opens', async ({
@@ -192,12 +215,12 @@ test('the card and the projects list agree with the timeline on when a site open
 }) => {
   await startGame(page);
   const budget = decisions(page);
-  await affordable(page).getByRole('button', { name: 'Plan Lowmere grain store' }).click();
+  await planProject(page, 'Lowmere grain store');
   await endQuarters(page, 1);
 
   // One of its two quarters is built, and the next instalment can be paid.
   const card = page.getByRole('region', { name: 'Lowmere grain store' });
-  const underway = projects(page).getByRole('group', { name: 'Lowmere grain store' });
+  const underway = (await projects(page)).getByRole('group', { name: 'Lowmere grain store' });
   const bar = page
     .getByRole('main', { name: 'Country' })
     .getByRole('region', { name: 'This term' })
@@ -207,6 +230,7 @@ test('the card and the projects list agree with the timeline on when a site open
   await expect(bar).toContainText('Building · opens next quarter');
 
   // A budget that takes everything leaves nothing for it, so the opening slips a quarter.
+  await openTab(page, 'Budget');
   await budget.getByRole('slider', { name: 'Tax rate' }).fill('5');
   for (const name of ['Agriculture', 'Food relief', 'Health', 'Education', 'Security']) {
     await budget.getByRole('slider', { name }).fill('20');
@@ -217,10 +241,11 @@ test('the card and the projects list agree with the timeline on when a site open
   await expect(card).toContainText(
     '▲ The treasury cannot cover this quarter’s $3.0m instalment, so building will pause. It would then open in 2 quarters.',
   );
+  await openTab(page, 'Projects');
   await expect(underway).toContainText(
     '▲ Cannot be paid for this quarter. Would open in 2 quarters.',
   );
-  await expect(projects(page)).toContainText('1 underway · $0.0m this quarter');
+  await expect(await projects(page)).toContainText('1 underway · $0.0m this quarter');
 });
 
 test('a second country builds its sites through the same code', async ({ page }) => {
@@ -248,6 +273,6 @@ test('the side columns scroll on their own, so the page never does', async ({ pa
   }));
   expect(heights.page).toBeLessThanOrEqual(heights.window);
   // The projects panel sits at the foot of the right column and can be brought into view.
-  await projects(page).scrollIntoViewIfNeeded();
-  await expect(projects(page)).toBeInViewport();
+  await (await projects(page)).scrollIntoViewIfNeeded();
+  await expect(await projects(page)).toBeInViewport();
 });
