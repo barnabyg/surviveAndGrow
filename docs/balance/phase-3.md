@@ -560,9 +560,44 @@ shape of the quicker comparisons. Each run shares its games out among worker pro
 report is the same however many play it. The tuning run took about 7 minutes on a
 20-processor machine, and the confirmation run about 45 minutes.
 
-## Playing it
+## Playing it (historical)
 
-[The README](../../README.md#a-phase-3-play-through) gives one command that opens the finished
-Phase 3 game on seed 6, where the chain builder loses its second vote, the sensible borrower wins
-in quarter 36 and the reckless borrower is bailed out and loses its first vote, with the steps
-the sensible borrower took.
+This play-through was written for the finished Phase 3 game and moved here from the README
+once later phases retuned the values. Its seed outcomes held under Phase 3's values; nothing
+reruns them, and the current game may play differently. The README's play-through is the current
+one.
+
+To play the finished Phase 3 game, with borrowing, from the start on a seed the balance run
+knows well:
+
+```powershell
+Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=6'
+```
+
+This starts the game at http://localhost:41730/?seed=6 and opens it in your browser. On seed 6
+the scripted chain builder, which saves up for each site, loses the vote at the end of its
+second term; the scripted sensible borrower wins in quarter 36, late in its second term; and the
+reckless borrower is bailed out and loses its first vote. Try to win the way the sensible
+borrower does:
+
+1. Borrow for the mine's chain rather than save for it. In the first year a loan of $10.0m with
+   the treasury's $42.0m pays for Saltmouth port, then a $50.0m loan over 12 quarters for the
+   trunk road; in the second year a $10.0m loan tops up the savings for the Korrgate mine. The
+   money arrives as the quarter ends: start the site the quarter after. Keep the repayments
+   within 15% of a quarter's revenue.
+2. Keep the budget balanced with the repayments in it. Expect the tax near 27% while the loans
+   run, approval to sag in the second and third years, and the credit rating to rise to AA as
+   the repayments are made on time.
+3. Once the mine earns, in the fourth year, the loans are soon repaid and the tax can come down.
+   Build the power station from savings, spend on approval in the last year before the vote, and
+   win it.
+4. In the second term build the power lines and the small sites. Each tier passed lowers
+   approval for a while. The game is won when prosperity has stood at 42 or more for four
+   quarters running with the debt burden no more than 30% of a year's revenue; the top bar
+   counts the quarters and says whether the debt test is passed.
+
+Expected: the finance panel offers loans at 6% to 10% while the nation is rated A; the debt and
+its burden sit beside the treasury in the top bar; the rating is raised to AA in the third year.
+To see the other side, borrow everything the finance panel allows and spend it: the treasury
+cannot cover a repayment, a bailout consolidates the debt, approval takes a 12-point blow and
+austerity holds for 8 quarters.
