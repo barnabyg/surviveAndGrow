@@ -14,7 +14,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { withChances, withDroughtChance, withoutPoweredMines } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 /*
  * World price shocks played out over whole games, in both countries: each comes, is reported

@@ -1,3 +1,6 @@
+// How the simulation tests play a game: a careful player, the dilemma answer that costs
+// nothing, and how far "to the end" goes. The scripted players of the balance batch are in
+// tests/balance/players.ts.
 import {
   FOOD_STAGES,
   pendingDilemma,

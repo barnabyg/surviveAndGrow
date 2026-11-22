@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, risksAhead, type GameState } from '../../src/sim';
 import { TIPS, tipsDue, type TipCondition } from '../../src/ui/tips';
 import { SCRIPTED_PLAYERS, withinRules } from '../balance/players';
-import { tavaraAsShipped } from './countries';
+import { tavaraAsShipped } from '../sim/countries';
 
 /**
  * A game in the country as it ships in which each tip's condition arises: the scripted player,

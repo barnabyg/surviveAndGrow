@@ -18,7 +18,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { withDroughtChance } from './countries';
 import { faultsOf, valueAt, withValue } from './files';
-import { steward } from './players';
+import { steward } from './playing';
 
 interface Played {
   readonly state: GameState;

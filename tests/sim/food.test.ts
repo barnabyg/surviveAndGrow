@@ -13,7 +13,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 const seeds = Array.from({ length: 30 }, (_, index) => index + 1);
 

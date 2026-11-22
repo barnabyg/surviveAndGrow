@@ -12,7 +12,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import { bothCountries, tavara } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 interface Played {
   readonly state: GameState;

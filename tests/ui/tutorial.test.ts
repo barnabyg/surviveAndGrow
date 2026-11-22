@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, type Decisions, type GameState } from '../../src/sim';
 import { TUTORIAL_SEED } from '../../src/ui/tutorialGame';
-import { tavaraAsShipped } from './countries';
+import { tavaraAsShipped } from '../sim/countries';
 
 /** How the year goes with the given decisions each quarter, quarter by quarter. */
 function firstYear(decide: (game: GameState) => Decisions): GameState[] {

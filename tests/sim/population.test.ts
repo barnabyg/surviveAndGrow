@@ -18,7 +18,7 @@ import {
   withChances,
 } from './countries';
 import { faultsOf, withValue } from './files';
-import { steward } from './players';
+import { steward } from './playing';
 
 const sum = (amounts: readonly number[]) => amounts.reduce((total, amount) => total + amount, 0);
 const peopleOf = (game: GameState) => sum(game.regions.map((region) => region.population));

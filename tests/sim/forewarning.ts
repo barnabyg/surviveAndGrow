@@ -12,7 +12,7 @@ import {
   type PriceShock,
   type Risk,
 } from '../../src/sim';
-import { answering, inFirstTerm } from './players';
+import { answering, inFirstTerm } from './playing';
 
 /** How many seeds the sweep plays. */
 const SEEDS = 300;
