@@ -29,7 +29,8 @@ interface VitalSignProps {
 
 /**
  * One of the always-visible figures in the top bar. It shows its change this quarter, and
- * opens to list everything that contributed to the change.
+ * opens to list everything that contributed to the change. A warning stays in view on one
+ * line; the standing note is in the tooltip, and read out with the figure.
  */
 export function VitalSign(props: VitalSignProps) {
   const { label, value, unit, figure, formatChange, formatMovement, breakdownTitle } = props;
@@ -39,7 +40,12 @@ export function VitalSign(props: VitalSignProps) {
   const titleId = useId();
 
   return (
-    <div className="vital" role="group" aria-label={label}>
+    <div
+      className="vital"
+      role="group"
+      aria-label={label}
+      title={[remark?.text, note].filter((text) => text !== undefined).join(' · ') || undefined}
+    >
       <div className="vital__figures">
         <button
           type="button"
@@ -60,7 +66,7 @@ export function VitalSign(props: VitalSignProps) {
         {remark && (
           <div className={`vital__remark vital__remark--${remark.tone}`}>▲ {remark.text}</div>
         )}
-        {note !== undefined && <div className="vital__note">{note}</div>}
+        {note !== undefined && <span className="visually-hidden">{note}</span>}
       </div>
       {trend}
 
@@ -69,6 +75,7 @@ export function VitalSign(props: VitalSignProps) {
           <h2 className="label" id={titleId}>
             {breakdownTitle}
           </h2>
+          {note !== undefined && <p className="vital__note">{note}</p>}
           {figure === null ? (
             <p className="breakdown__empty">Nothing has moved it yet. End a quarter to see.</p>
           ) : (

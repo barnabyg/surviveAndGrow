@@ -337,6 +337,10 @@ figure there must change it here in the same commit.
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
   waits while the tour or a lesson is open. The tips are written in `src/ui/tips.ts`.
+- Each figure in the top bar shows its change this quarter and any warning, such as the food
+  reserve below its safe level. Its standing note (the debt burden, the loan rates, the safe
+  level, the strike threshold, the prosperity tier) is in its tooltip and at the head of its
+  breakdown.
 - Click the treasury, the debt, the credit rating, the food reserve, approval or prosperity in the
   top bar to see what moved it. Approval, prosperity and the credit rating also list what they
   are made of.

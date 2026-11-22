@@ -48,9 +48,19 @@ test('trend lines appear beside the vital signs once quarters have been played',
   ).toBeVisible();
   await expect(treasury(page).getByText('No trend yet')).toHaveCount(0);
 
-  // The marks on the small charts are named in words, not left to a dashed line alone.
-  await expect(foodReserve(page).getByText('Safe level: 3 months')).toBeVisible();
-  await expect(approval(page).getByText('Strikes below 40%')).toBeVisible();
+  // The marks on the small charts are named in words, not left to a dashed line alone: in the
+  // figure's tooltip, read out with it, and at the head of its breakdown.
+  await expect(foodReserve(page)).toHaveAttribute('title', /Safe level: 3 months/);
+  await expect(foodReserve(page)).toContainText('Safe level: 3 months');
+  await expect(approval(page)).toHaveAttribute('title', 'Strikes below 40%');
+  await approval(page)
+    .getByRole('button', { name: /Approval/ })
+    .click();
+  await expect(
+    approval(page)
+      .getByRole('region', { name: 'What moved approval' })
+      .getByText('Strikes below 40%', { exact: true }),
+  ).toBeVisible();
 });
 
 test('the approval chart marks the strike threshold and the 50% line', async ({ page }) => {

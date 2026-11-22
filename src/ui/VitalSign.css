@@ -38,6 +38,24 @@
   display: block;
 }
 
+/* The lines beneath the figure are cut short, with their whole text in the tooltip, so a
+   narrow window never stacks them a word to a line: the change and the note to one line, a
+   warning to two. */
+.vital__change,
+.vital__figures > .vital__note {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vital__remark {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
 .vital__change,
 .vital__remark {
   font-size: 14px;
