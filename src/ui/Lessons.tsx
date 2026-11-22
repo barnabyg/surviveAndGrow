@@ -1,7 +1,7 @@
 import { useId, useRef } from 'react';
 import type { LessonProgress } from './lessonProgress';
 import { cardPlace, outlinePlace, useSpotlight } from './spotlight';
-import { LESSONS } from './tourSteps';
+import { LESSONS } from './lessonSteps';
 import './Tour.css';
 
 /**

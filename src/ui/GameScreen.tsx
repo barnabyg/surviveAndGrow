@@ -42,7 +42,8 @@ import { TopBar } from './TopBar';
 import { Lessons } from './Lessons';
 import { Tour } from './Tour';
 import { useLessons } from './lessonProgress';
-import { TOUR_STEPS, TourTarget } from './tourSteps';
+import { TourTarget } from './spotlight';
+import { TOUR_STEPS } from './tourSteps';
 import './GameScreen.css';
 
 interface GameScreenProps {
@@ -270,7 +271,7 @@ export function GameScreen(props: GameScreenProps) {
           onRestart={() => {
             setConfirmingRestart(true);
           }}
-          onTutorial={() => {
+          onTour={() => {
             setTourStep(0);
           }}
           tips={tips}

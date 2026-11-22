@@ -1,4 +1,17 @@
-import { useEffect, useLayoutEffect, useState, type CSSProperties, type RefObject } from 'react';
+import {
+  createContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from 'react';
+
+/**
+ * The element the tour is picking out, or null when no tour is open. A collapsed decision
+ * panel opens while the tour points at it.
+ */
+export const TourTarget = createContext<string | null>(null);
 
 /** Where an element stands in the window. */
 export interface Box {
