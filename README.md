@@ -137,7 +137,7 @@ integration runs the same command on every push and pull request.
 | Formatting | Prettier | `npm run format:check` |
 | Lint and static bug analysis | ESLint with the strict, type-checked typescript-eslint rules | `npm run lint` |
 | Type check | TypeScript in strict mode | `npm run typecheck` |
-| Simulation tests | Vitest | `npm run test:unit` |
+| Simulation and UI tests | Vitest | `npm run test:unit` |
 | Dependency vulnerabilities | `npm audit`, less the dated exceptions in `scripts/audit.ts` | `npm run audit` |
 | Build | Vite | `npm run build` (run by the next gate) |
 | Browser tests | Playwright, against the production build | `npm run test:e2e` |
@@ -168,6 +168,10 @@ once without their servers colliding.
 `tavaraWithDroughtIn` and `testlandFile` for a country with chance pinned (which dilemmas arise,
 where droughts and floods strike, and people who do not grow); and `tavaraPoisedBelowDeveloping`
 and `tavaraProsperous` for one prepared near a tier. Add a new prepared country there.
+
+The forewarning sweeps in `tests/sim/forewarning-*.test.ts` play a fixed sample of 30 seeds in
+the unit run. `npm run forewarning` plays all 300 seeds of each, for a balance ticket that needs
+the whole sweep; it is not one of the gates.
 
 Gates that do not apply:
 
@@ -240,7 +244,10 @@ $env:BALANCE_SEEDS = '1001-2200'; $env:BALANCE_PLAYERS = 'all'; npm run balance
   the rules several components share, and `chart.css` and `map-card.css` are shared by the
   two components that draw charts and the four map cards. `main.tsx` imports `styles.css`
   before the components, so their rules come after it.
-- `tests/sim/` tests the game rules through the simulation's public interface.
+- `tests/sim/` tests the game rules through the simulation's public interface, and checks the
+  figures the docs restate against `src/sim/balance.ts`. It imports nothing from `src/ui/`.
+- `tests/ui/` tests the interface's own logic without a browser: the first-time tips and the
+  tutorial game's seed.
 - `tests/e2e/` drives the real app in a browser at 2560 x 1440.
 - `tests/countries/` holds a crude second country, used to prove that nothing is tied to the first.
 - `tests/balance/` holds the scripted players and the balance run.
