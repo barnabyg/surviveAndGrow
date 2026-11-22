@@ -7,6 +7,17 @@ export default defineConfig({
   // strictPort stops with an error rather than quietly moving to another port.
   server: { port: 41730, strictPort: true },
   preview: { port: 41731, strictPort: true },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          // React in a chunk of its own keeps each chunk under the 500 kB warning, and lets the
+          // browser keep React cached when only the game changes.
+          groups: [{ name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ }],
+        },
+      },
+    },
+  },
   test: {
     // Seam 1: the simulation interface, and the interface's own logic over it. Test files run in
     // parallel workers.
