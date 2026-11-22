@@ -7,7 +7,8 @@ import { regionName } from './country';
 import { defeatChancePermille, electionStatus } from './election';
 import { damagesSites, eventName, eventsThatMayBegin, harvestCutBy } from './events';
 import { bailoutRisk, bondsAhead, creditRisk, maturityRisk, treasuryRisk } from './financeRisks';
-import { checkDecisions, resolveQuarter, type QuarterResolved } from './game';
+import { checkDecisions } from './decisions';
+import { resolveQuarter } from './game';
 import {
   likelihoodOf,
   typicalOf,
@@ -18,7 +19,7 @@ import {
   type Scope,
   type Supposed,
 } from './riskScope';
-import type { Decisions, GameState, RegionState } from './state';
+import type { Decisions, GameState, QuarterResolved, RegionState } from './state';
 import { siteEffects, sitesInUse } from './projects';
 import {
   shockCalled,

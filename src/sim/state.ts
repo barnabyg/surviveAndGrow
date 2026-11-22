@@ -5,7 +5,7 @@ import type { Country } from './country';
 import type { Credit } from './credit';
 import type { Borrowing, Debt } from './debt';
 import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
-import type { ActiveEvent } from './events';
+import type { ActiveEvent, EventStrike } from './events';
 import type { Harvest } from './food';
 import type { PriceShock } from './priceShocks';
 import type { Project } from './projects';
@@ -16,7 +16,7 @@ import type { SiteSchedule } from './timeline';
 import type { TradeOrder, WorldPrices } from './trade';
 import type { RouteCarriage } from './tradeRoutes';
 import type { Figure, GameDate, Money, Range } from './types';
-import type { CreditRating, FoodStage, Tier, Unrest } from './vocabulary';
+import type { CreditRating, FoodStage, PriceShockType, Tier, Unrest } from './vocabulary';
 
 /** What is true of one region at one moment. National figures are derived from the regions. */
 export interface RegionState {
@@ -263,6 +263,62 @@ export interface ElectionResult {
 export interface TurnResult {
   readonly state: GameState;
   readonly report: TurnReport;
+}
+
+/**
+ * What chance decides in a quarter. A turn draws it from the game's generator; a projection
+ * supposes it, which is how the game looks ahead without drawing anything.
+ */
+export interface Chance {
+  /** How far the quarter's weather moves each region's coming harvest, in thousandths. */
+  readonly weatherShocks: readonly number[];
+  /** The events that strike as the calendar moves into the next quarter. */
+  readonly struck: readonly EventStrike[];
+  /** How far the campaign moves the vote, in thousandths, if an election is held. */
+  readonly swing: number;
+  /**
+   * How far world markets move each good's price this quarter, as a share of its full swing
+   * in thousandths, in the goods' order. A good with none given does not move but for the
+   * pull back towards its usual price.
+   */
+  readonly priceShocks: readonly number[];
+  /**
+   * The world price shocks announced as the calendar moves into the next quarter. One of a
+   * kind already announced or in force is not announced again.
+   */
+  readonly shocksAnnounced: readonly PriceShockType[];
+  /**
+   * The roll for each kind of dilemma, from 0 up to 1, in the vocabulary's order. One
+   * arises when its roll falls under its chance. A kind with no roll does not arise.
+   */
+  readonly dilemmaRolls: readonly number[];
+}
+
+/** A quarter resolved, with the signs of trouble a projection looks for. */
+export interface QuarterResolved extends TurnResult {
+  /** True when the treasury could not cover the budget and every area was cut. */
+  readonly spendingCut: boolean;
+  /** The sites where building paused because the treasury could not pay. */
+  readonly pausedSites: readonly string[];
+  /** The sites in use that went without upkeep, and are decaying from the next quarter. */
+  readonly upkeepShort: readonly string[];
+  /** What fell due on debts and could not be paid. */
+  readonly missedPayment: Money;
+  /** The debts a payment was missed on, by name. */
+  readonly missedOn: readonly string[];
+  /** True when a missed payment brought a bailout, outside austerity. */
+  readonly bailedOut: boolean;
+  /** What the quarter's payments on debts took off the principal owed. */
+  readonly principalRepaid: Money;
+  /** What borrowing brought into the treasury as the quarter ended. */
+  readonly borrowed: Money;
+  /** What was paid for goods bought abroad as the quarter ended. */
+  readonly tradePaid: Money;
+  /** What goods sold abroad brought in as the quarter ended. */
+  readonly tradeEarned: Money;
+  /** The share of their needs each region's people ate, in thousandths, in the regions' order. */
+  readonly fedPermille: readonly number[];
+  readonly electionHeld: boolean;
 }
 
 /**

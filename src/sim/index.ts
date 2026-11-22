@@ -84,7 +84,7 @@ export {
   type StartingLoan,
 } from './debt';
 export { electionStatus, type ElectionStatus } from './election';
-export { damageTo, type ActiveEvent } from './events';
+export { damageTo, describeEvent, type ActiveEvent } from './events';
 export {
   foodStatus,
   monthsOfFood,
@@ -161,7 +161,8 @@ export {
   type ShockStatus,
 } from './priceShocks';
 export { contains } from './geometry';
-export { advanceQuarter, budgetLimits, createGame, describeEvent, previewQuarter } from './game';
+export { advanceQuarter, budgetLimits, previewQuarter } from './game';
+export { createGame } from './newGame';
 export {
   type Decisions,
   type ElectionResult,
