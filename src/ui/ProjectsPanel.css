@@ -93,7 +93,7 @@
 
 /* The catalogue of projects the treasury can cover, grouped by kind */
 .catalogue {
-  width: min(620px, calc(100vw - 32px));
+  width: min(1000px, calc(100vw - 32px));
   max-height: calc(100vh - 64px);
 }
 
@@ -108,10 +108,12 @@
   margin: 6px 0 16px;
 }
 
+/* Two columns of kinds where the window allows, one where it does not. */
 .catalogue__kinds {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  align-items: start;
+  gap: 18px 28px;
 }
 
 .catalogue__kind {
