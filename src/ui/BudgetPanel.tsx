@@ -91,6 +91,20 @@ export function BudgetPanel(props: BudgetPanelProps) {
 
   return (
     <DecisionPanel id="budget">
+      {/* The budget's actions head the panel and stay there as it scrolls. */}
+      <div className="button-row budget__actions">
+        <button type="button" className="button" disabled={changes === 0} onClick={onReset}>
+          Reset
+        </button>
+        <button
+          type="button"
+          className="button button--commit"
+          disabled={changes === 0}
+          onClick={onCommit}
+        >
+          Commit budget
+        </button>
+      </div>
       <div className="totals" role="group" aria-label="Budget totals">
         <Total label="Revenue" value={formatRange(after.revenue, formatMoney)} />
         <Total label="Spending" value={formatRange(after.spending, formatMoney)} />
@@ -326,20 +340,6 @@ export function BudgetPanel(props: BudgetPanelProps) {
           </p>
         </More>
       </section>
-
-      <div className="button-row">
-        <button type="button" className="button" disabled={changes === 0} onClick={onReset}>
-          Reset
-        </button>
-        <button
-          type="button"
-          className="button button--commit"
-          disabled={changes === 0}
-          onClick={onCommit}
-        >
-          Commit budget
-        </button>
-      </div>
     </DecisionPanel>
   );
 }
