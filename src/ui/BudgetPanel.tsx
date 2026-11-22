@@ -28,7 +28,7 @@ import {
   UPKEEP_ORDER_RULE,
 } from '../sim';
 import { formatRange, formatSigned } from './format';
-import { DecisionPanel } from './DecisionPanel';
+import { DecisionPanel, type DecisionTab } from './DecisionPanel';
 import './BudgetPanel.css';
 
 interface BudgetPanelProps {
@@ -60,6 +60,19 @@ export function countChanges(pending: Budget, committed: Budget): number {
   return spendingChanges + (pending.taxRatePercent === committed.taxRatePercent ? 0 : 1);
 }
 
+/** What the budget's tab says: whether there are changes not yet committed. */
+export function budgetTab(pending: Budget, committed: Budget): DecisionTab {
+  const changes = countChanges(pending, committed);
+  return changes > 0
+    ? {
+        id: 'budget',
+        title: 'Budget',
+        note: `${changes} uncommitted`,
+        pending: true,
+      }
+    : { id: 'budget', title: 'Budget', note: 'Committed' };
+}
+
 export function BudgetPanel(props: BudgetPanelProps) {
   const { game, committed, pending, reliefRegionId, startProjects, borrow, trade } = props;
   const { dilemmaChoice } = props;
@@ -76,17 +89,7 @@ export function BudgetPanel(props: BudgetPanelProps) {
   const food = foodStatus(game);
 
   return (
-    <DecisionPanel
-      id="budget"
-      title="Budget"
-      note={
-        changes > 0 && (
-          <span className="pending-note">
-            {changes} {changes === 1 ? 'change' : 'changes'} not committed
-          </span>
-        )
-      }
-    >
+    <DecisionPanel id="budget">
       <div className="totals" role="group" aria-label="Budget totals">
         <Total label="Revenue" value={formatRange(after.revenue, formatMoney)} />
         <Total label="Spending" value={formatRange(after.spending, formatMoney)} />

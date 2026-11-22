@@ -89,8 +89,8 @@ figure there must change it here in the same commit.
   road or a grain store. An empty site is a dashed round marker with the symbol of its type, and a possible
   road is a dashed line. Select one to open a card with its cost, build time and effect. The
   legend under the map explains the marks.
-- Start a project from a site's card, or from the list of what the treasury can afford in the
-  right column. The treasury must hold the whole cost, which is then paid in instalments over the
+- Start a project from a site's card, or from **Browse projects…** in the projects tab of the
+  right column, which lists what the treasury can afford, grouped by kind. The treasury must hold the whole cost, which is then paid in instalments over the
   build time, as a fixed cost shown apart from the budget's sliders. Building starts when the
   quarter ends, so until then the plan can be taken back.
 - The budget's own spending is paid first and instalments out of what is left, the oldest project
@@ -316,8 +316,8 @@ figure there must change it here in the same commit.
   it what that part is for: the vital signs, the end-quarter button, the left column, the lenses,
   the map, the timeline and legend, and each decision panel. It says how far through it is, and
   Back, Next (or the arrow keys) and End tour (or Escape) move through it. A part not on screen,
-  such as the dilemma panel with no dilemma waiting, is passed over; a collapsed decision panel
-  opens while the tour points at it and closes again after. The tour holds the screen while it is
+  such as the dilemma panel with no dilemma waiting, is passed over; a decision tab is shown
+  while the tour or a lesson points at it, and the tab the player chose comes back after. The tour holds the screen while it is
   open.
 - **Tutorial** on the start screen starts the tutorial game: a fixed game whose first year, on
   the country as it ships, has no drought, flood or world price shock, and one dilemma, as the

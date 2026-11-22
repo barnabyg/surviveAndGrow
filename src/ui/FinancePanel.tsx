@@ -25,7 +25,7 @@ import {
   type LoanOffer,
   type Preview,
 } from '../sim';
-import { DecisionPanel } from './DecisionPanel';
+import { DecisionPanel, type DecisionTab } from './DecisionPanel';
 import { formatDate } from './format';
 import './FinancePanel.css';
 
@@ -37,6 +37,21 @@ interface FinancePanelProps {
   readonly planned: readonly Borrowing[];
   /** Plans the loans and bonds to take this quarter, or takes a plan back. */
   readonly onPlan: (planned: readonly Borrowing[]) => void;
+}
+
+/** What the finance tab says: borrowing planned this quarter, or else what is owed. */
+export function financeTab(
+  game: GameState,
+  preview: Preview,
+  planned: readonly Borrowing[],
+): DecisionTab {
+  const note =
+    planned.length > 0
+      ? `${planned.length} planned`
+      : debtStatus(game).debt === 0
+        ? 'No debt'
+        : `Owes ${formatMoney(preview.debt.max)}`;
+  return { id: 'finance', title: 'Finance', note, pending: planned.length > 0 };
 }
 
 /**
@@ -75,17 +90,12 @@ export function FinancePanel({ game, preview, planned, onPlan }: FinancePanelPro
   };
 
   return (
-    <DecisionPanel
-      id="finance"
-      title="Finance"
-      note={
-        <span className="section-note">
-          {status.debt === 0 && planned.length === 0
-            ? 'No debt'
-            : `Owes ${formatMoney(preview.debt.max)} after this quarter`}
-        </span>
-      }
-    >
+    <DecisionPanel id="finance">
+      <p className="section-note">
+        {status.debt === 0 && planned.length === 0
+          ? 'No debt'
+          : `Owes ${formatMoney(preview.debt.max)} after this quarter`}
+      </p>
       {planned.map((loan, index) => {
         const offer = (loan.kind === 'bond' ? bondOffers(game) : loanOffers(game)).find(
           (candidate) => candidate.amount === loan.amount && candidate.quarters === loan.quarters,

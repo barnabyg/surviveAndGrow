@@ -44,8 +44,9 @@ async function playToTheDilemma(page: Page): Promise<void> {
     .click();
 
   await expectLesson(page, 'Plan a project');
-  await decisions(page)
-    .getByRole('region', { name: 'Projects' })
+  await decisions(page).getByRole('button', { name: 'Browse projects…' }).click();
+  await page
+    .getByRole('dialog', { name: 'Affordable now' })
     .getByRole('button', { name: /^Plan / })
     .first()
     .click();

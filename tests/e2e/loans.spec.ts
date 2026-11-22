@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { debt, decisions, endQuarters, reports, startGame, treasury } from './app';
+import { debt, decisions, endQuarters, reports, startGame, treasury, openTab } from './app';
 
-const finance = (page: Page) => decisions(page).getByRole('region', { name: 'Finance' });
+const finance = (page: Page) => openTab(page, 'Finance');
 
 test('a loan is planned with its cost shown, arrives as the quarter ends and is repaid', async ({
   page,
@@ -10,23 +10,27 @@ test('a loan is planned with its cost shown, arrives as the quarter ends and is 
   await expect(debt(page)).toContainText('$0.0m');
 
   // $25.0m over eight quarters at 8% a year.
-  await finance(page).getByLabel('Borrow').selectOption({ label: '$25.0m' });
-  await finance(page).getByLabel('Over').selectOption({ label: '8 quarters' });
-  const terms = finance(page).getByRole('group', { name: 'Loan terms' });
+  await (await finance(page)).getByLabel('Borrow').selectOption({ label: '$25.0m' });
+  await (await finance(page)).getByLabel('Over').selectOption({ label: '8 quarters' });
+  const terms = (await finance(page)).getByRole('group', { name: 'Loan terms' });
   await expect(terms).toContainText('Repayment');
   await expect(terms).toContainText('$3.5m');
   await expect(terms).toContainText('At 8% a year');
-  await finance(page).getByRole('button', { name: 'Plan loan' }).click();
+  await (await finance(page)).getByRole('button', { name: 'Plan loan' }).click();
 
   // Planned, it can be taken back, and the money shows in the preview.
-  const planned = finance(page).getByRole('group', { name: 'Loan of $25.0m over 8 quarters' });
+  const planned = (await finance(page)).getByRole('group', {
+    name: 'Loan of $25.0m over 8 quarters',
+  });
   await expect(planned).toContainText('Planned');
+  await openTab(page, 'Budget');
   await expect(decisions(page).getByRole('group', { name: 'Loans received' })).toContainText(
     '+$25.0m',
   );
+  await openTab(page, 'Finance');
   await planned.getByRole('button', { name: /Cancel/ }).click();
   await expect(planned).toHaveCount(0);
-  await finance(page).getByRole('button', { name: 'Plan loan' }).click();
+  await (await finance(page)).getByRole('button', { name: 'Plan loan' }).click();
 
   await endQuarters(page, 1);
 

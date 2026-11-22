@@ -1,5 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, startGame, tavaraWithDroughtIn, testlandFile } from './app';
+import {
+  decisions,
+  endQuarters,
+  startGame,
+  tavaraWithDroughtIn,
+  testlandFile,
+  planProject,
+  openTab,
+} from './app';
 
 const map = (page: Page, country = 'Republic of Tavara') =>
   page.getByRole('group', { name: `Map of ${country}` });
@@ -89,7 +97,7 @@ test('a project is a bar on the timeline, followed by its quarters in use before
 
 test('picking a project on the timeline picks its site out on the map', async ({ page }) => {
   await startGame(page);
-  await decisions(page).getByRole('button', { name: 'Plan Lowmere grain store' }).click();
+  await planProject(page, 'Lowmere grain store');
   await page
     .getByRole('region', { name: 'Lowmere grain store' })
     .getByRole('button', { name: 'Close' })
@@ -109,7 +117,8 @@ test('a project the treasury cannot pay for opens later, and the timeline says s
 }) => {
   await startGame(page);
   const budget = decisions(page);
-  await budget.getByRole('button', { name: 'Plan Lowmere grain store' }).click();
+  await planProject(page, 'Lowmere grain store');
+  await openTab(page, 'Budget');
   const store = bars(page, 'Lowmere grain store');
   await expect(store).toContainText('In use for 18 quarters before the vote');
 

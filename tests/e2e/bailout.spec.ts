@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
-import { debt, decisions, endQuarters, reports, risks, startGame, tavaraWith } from './app';
+import { debt, endQuarters, reports, risks, startGame, tavaraWith, openTab } from './app';
 
-const finance = (page: Page) => decisions(page).getByRole('region', { name: 'Finance' });
-const projects = (page: Page) => decisions(page).getByRole('region', { name: 'Projects' });
+const finance = (page: Page) => openTab(page, 'Finance');
+const projects = (page: Page) => openTab(page, 'Projects');
 const map = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
 const austerity = (page: Page) =>
   page.getByRole('banner').getByRole('group', { name: 'Austerity' });
@@ -12,13 +12,14 @@ test('over-borrowing brings a bailout, austerity holds the budget and building, 
 }) => {
   // Tavara without drought, so nothing but the budget and the loan moves the treasury.
   await startGame(page, { countryFile: tavaraWith({ drought: [] }) });
-  const budget = decisions(page).getByRole('region', { name: 'Budget' });
+  const budget = await openTab(page, 'Budget');
 
   // $50.0m over four quarters, then the lowest tax and the most on four areas: the treasury
   // spends everything it has, and the lowest tax cannot cover a repayment of $13.1m.
-  await finance(page).getByLabel('Borrow').selectOption({ label: '$50.0m' });
-  await finance(page).getByLabel('Over').selectOption({ label: '4 quarters' });
-  await finance(page).getByRole('button', { name: 'Plan loan' }).click();
+  await (await finance(page)).getByLabel('Borrow').selectOption({ label: '$50.0m' });
+  await (await finance(page)).getByLabel('Over').selectOption({ label: '4 quarters' });
+  await (await finance(page)).getByRole('button', { name: 'Plan loan' }).click();
+  await openTab(page, 'Budget');
   await budget.getByRole('slider', { name: 'Tax rate' }).fill('5');
   for (const area of ['Agriculture', 'Health', 'Education', 'Security']) {
     await budget.getByRole('slider', { name: area }).fill('20');
@@ -53,11 +54,11 @@ test('over-borrowing brings a bailout, austerity holds the budget and building, 
   await expect(health).toHaveAccessibleDescription('▲ Austerity: no more than $5.0m');
 
   // Nothing can be borrowed, and no project started.
-  await expect(finance(page).getByRole('note', { name: 'Loans' })).toContainText(
+  await expect((await finance(page)).getByRole('note', { name: 'Loans' })).toContainText(
     'Nothing can be borrowed during austerity',
   );
-  await expect(finance(page).getByRole('button', { name: 'Plan loan' })).toHaveCount(0);
-  await expect(projects(page).getByRole('note', { name: 'Austerity' })).toContainText(
+  await expect((await finance(page)).getByRole('button', { name: 'Plan loan' })).toHaveCount(0);
+  await expect((await projects(page)).getByRole('note', { name: 'Austerity' })).toContainText(
     'No project can be started during austerity',
   );
   await map(page)
@@ -75,7 +76,8 @@ test('over-borrowing brings a bailout, austerity holds the budget and building, 
 
   await expect(reports(page).getByText('Austerity ends')).toBeVisible();
   await expect(austerity(page)).toHaveCount(0);
+  await openTab(page, 'Budget');
   await expect(tax).toHaveAttribute('min', '5');
   await expect(budget.getByRole('note', { name: 'Austerity' })).toHaveCount(0);
-  await expect(projects(page).getByRole('note', { name: 'Austerity' })).toHaveCount(0);
+  await expect((await projects(page)).getByRole('note', { name: 'Austerity' })).toHaveCount(0);
 });

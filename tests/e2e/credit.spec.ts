@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
-import { debt, decisions, endQuarters, reports, startGame, testlandFile } from './app';
+import { debt, decisions, endQuarters, reports, startGame, testlandFile, openTab } from './app';
 
-const finance = (page: Page) => decisions(page).getByRole('region', { name: 'Finance' });
+const finance = (page: Page) => openTab(page, 'Finance');
 const rating = (page: Page) =>
   page.getByRole('banner').getByRole('group', { name: 'Credit rating' });
 
@@ -22,19 +22,20 @@ test('the credit rating is shown with its breakdown, and a loan’s rate follows
   await expect(steps.getByRole('row', { name: /BBB/ })).toContainText('7.5% to 11.5%');
 
   // The finance panel says what the rating gets, and what a step either way would mean.
-  const credit = finance(page).getByRole('group', { name: 'Credit rating' });
+  const credit = (await finance(page)).getByRole('group', { name: 'Credit rating' });
   await expect(credit).toContainText('Credit rating A');
   await expect(credit).toContainText('One step up, AA');
   await expect(credit).toContainText('One step down, BBB');
 
   // A heavy loan, at A's rate. Planned, the finance panel and the budget's outlook both
   // show it cutting the rating.
-  await finance(page).getByLabel('Borrow').selectOption({ label: '$50.0m' });
-  await finance(page).getByLabel('Over').selectOption({ label: '4 quarters' });
-  const terms = finance(page).getByRole('group', { name: 'Loan terms' });
+  await (await finance(page)).getByLabel('Borrow').selectOption({ label: '$50.0m' });
+  await (await finance(page)).getByLabel('Over').selectOption({ label: '4 quarters' });
+  const terms = (await finance(page)).getByRole('group', { name: 'Loan terms' });
   await expect(terms).toContainText('At 6% a year');
-  await finance(page).getByRole('button', { name: 'Plan loan' }).click();
+  await (await finance(page)).getByRole('button', { name: 'Plan loan' }).click();
   await expect(credit).toContainText('the rating is cut to BBB when this quarter ends');
+  await openTab(page, 'Budget');
   await expect(
     decisions(page).getByRole('group', { name: 'Credit rating next quarter' }),
   ).toContainText('BBB');
@@ -45,8 +46,8 @@ test('the credit rating is shown with its breakdown, and a loan’s rate follows
   await expect(reports(page).getByText('Credit rating cut to BBB')).toBeVisible();
 
   // The next loan is offered at BBB's dearer rate.
-  await finance(page).getByLabel('Borrow').selectOption({ label: '$10.0m' });
-  await finance(page).getByLabel('Over').selectOption({ label: '4 quarters' });
+  await (await finance(page)).getByLabel('Borrow').selectOption({ label: '$10.0m' });
+  await (await finance(page)).getByLabel('Over').selectOption({ label: '4 quarters' });
   await expect(terms).toContainText('At 7.5% a year');
 });
 

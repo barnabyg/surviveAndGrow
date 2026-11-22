@@ -8,6 +8,7 @@ import {
   startGame,
   tavaraProsperous,
   tavaraWith,
+  openTab,
 } from './app';
 
 test('prosperity is a vital sign, shown against its target', async ({ page }) => {
@@ -73,7 +74,7 @@ test('while Prosperous, the prosperity breakdown shows the win’s debt test', a
   );
 
   // $100.0m borrowed over three years: 80.6% of a year's revenue of $124.0m.
-  const finance = decisions(page).getByRole('region', { name: 'Finance' });
+  const finance = await openTab(page, 'Finance');
   for (let loan = 0; loan < 2; loan += 1) {
     await finance.getByLabel('Borrow', { exact: true }).selectOption({ label: '$50.0m' });
     await finance.getByLabel('Over', { exact: true }).selectOption({ label: '12 quarters' });

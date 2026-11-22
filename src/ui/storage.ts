@@ -68,29 +68,24 @@ export function discardStoredGame(key: string): boolean {
   }
 }
 
-/** Where the decision panels the player has collapsed are remembered, for every country. */
-const CLOSED_PANELS_KEY = 'survive-and-grow/closed-panels';
+/** Where the decisions tab the player last chose is remembered, for every country. */
+const DECISION_TAB_KEY = 'survive-and-grow/decision-tab';
 
-/** The panels the player has collapsed. Storage that cannot be read leaves every panel open. */
-export function readClosedPanels(): readonly string[] {
+/** The decisions tab the player last chose, or null if there is none to be read. */
+export function readDecisionTab(): string | null {
   try {
-    const parsed = JSON.parse(window.localStorage.getItem(CLOSED_PANELS_KEY) ?? '[]') as unknown;
-    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : [];
+    return window.localStorage.getItem(DECISION_TAB_KEY);
   } catch {
-    return [];
+    return null;
   }
 }
 
-/** Remembers whether a panel is collapsed. If the browser refuses, it is simply forgotten. */
-export function storePanelClosed(panelId: string, closed: boolean): void {
-  const others = readClosedPanels().filter((id) => id !== panelId);
+/** Remembers the decisions tab chosen. If the browser refuses, it is simply forgotten. */
+export function storeDecisionTab(tabId: string): void {
   try {
-    window.localStorage.setItem(
-      CLOSED_PANELS_KEY,
-      JSON.stringify(closed ? [...others, panelId] : others),
-    );
+    window.localStorage.setItem(DECISION_TAB_KEY, tabId);
   } catch {
-    // Storage full, blocked, or a private window: the panel stays as it is for this visit.
+    // Storage full, blocked, or a private window: the tab stays chosen for this visit.
   }
 }
 

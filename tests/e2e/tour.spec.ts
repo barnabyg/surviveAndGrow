@@ -51,13 +51,13 @@ test('the tour walks the whole screen, a step at a time', async ({ page }) => {
   await expect(page.getByRole('banner').getByRole('button', { name: 'End quarter' })).toBeEnabled();
 });
 
-test('the tour opens from the top bar, works from the keyboard and opens a collapsed panel', async ({
+test('the tour opens from the top bar, works from the keyboard and shows the tab it points at', async ({
   page,
 }) => {
   await startGame(page);
-  const projects = decisions(page).getByRole('region', { name: 'Projects' });
-  await projects.getByRole('button', { name: 'Projects', exact: true }).click();
-  await expect(page.locator('#projects-body')).toBeHidden();
+  const budgetTab = decisions(page).getByRole('tab', { name: 'Budget', exact: true });
+  const projectsTab = decisions(page).getByRole('tab', { name: 'Projects', exact: true });
+  await expect(budgetTab).toHaveAttribute('aria-selected', 'true');
 
   const opener = tourButton(page);
   await opener.click();
@@ -68,19 +68,18 @@ test('the tour opens from the top bar, works from the keyboard and opens a colla
   await page.keyboard.press('ArrowLeft');
   await expect(tour(page).getByRole('heading', { name: 'Welcome to office' })).toBeVisible();
 
-  // On to the projects panel, which opens while the tour points at it.
+  // On to the projects panel, whose tab is shown while the tour points at it.
   const projectsStep = shownSteps.findIndex((step) => step.target === 'projects');
   for (let step = 0; step < projectsStep; step += 1) await page.keyboard.press('ArrowRight');
   await expect(tour(page).getByRole('heading', { name: 'Projects' })).toBeVisible();
-  await expect(page.locator('#projects-body')).toBeVisible();
+  await expect(projectsTab).toHaveAttribute('aria-selected', 'true');
+  await expect(page.locator('#projects-panel')).toBeVisible();
 
-  // It closes again when the tour moves on: the player's choice is kept.
-  await page.keyboard.press('ArrowRight');
-  await expect(page.locator('#projects-body')).toBeHidden();
-
+  // Once the tour is over, the tab the player chose comes back.
   await page.keyboard.press('Escape');
   await expect(tour(page)).toHaveCount(0);
   await expect(opener).toBeFocused();
+  await expect(budgetTab).toHaveAttribute('aria-selected', 'true');
 });
 
 test('the tour points at a dilemma waiting to be answered', async ({ page }) => {

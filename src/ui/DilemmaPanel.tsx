@@ -1,6 +1,5 @@
 import type { DilemmaView } from '../sim';
 import { effectLines } from './DilemmaDialog';
-import { DecisionPanel } from './DecisionPanel';
 import './DilemmaPanel.css';
 
 interface DilemmaPanelProps {
@@ -18,15 +17,19 @@ interface DilemmaPanelProps {
 export function DilemmaPanel({ dilemma, chosen, onOpen }: DilemmaPanelProps) {
   const option = dilemma.options.find((candidate) => candidate.id === chosen);
   return (
-    <DecisionPanel
-      id="dilemma-panel"
-      title="Decision"
-      note={
+    <section
+      className="dilemma-panel"
+      aria-labelledby="dilemma-panel-title"
+      data-tour="dilemma-panel"
+    >
+      <div className="section-head">
+        <h2 className="section-title" id="dilemma-panel-title">
+          Decision
+        </h2>
         <span className={option === undefined ? 'pending-note' : 'section-note'}>
           {option === undefined ? 'Waiting for you' : 'Takes effect when the quarter ends'}
         </span>
-      }
-    >
+      </div>
       <p className="dilemma-panel__title">{dilemma.title}</p>
       {option === undefined ? (
         <p className="warning-note">▲ The quarter cannot end until you choose.</p>
@@ -49,6 +52,6 @@ export function DilemmaPanel({ dilemma, chosen, onOpen }: DilemmaPanelProps) {
           {option === undefined ? 'Decide now' : 'Change your choice'}
         </button>
       </div>
-    </DecisionPanel>
+    </section>
   );
 }

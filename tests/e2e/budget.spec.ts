@@ -39,12 +39,16 @@ test('changing a slider, committing and ending the quarter moves the treasury by
 
   await budget.getByRole('slider', { name: 'Agriculture' }).fill('13');
 
-  await expect(budget.getByText('1 change not committed')).toBeVisible();
+  await expect(budget.getByRole('tab', { name: 'Budget' })).toHaveAccessibleDescription(
+    '1 uncommitted',
+  );
   await expect(totals(page).getByRole('group', { name: 'Balance' })).toContainText('−$7.0m');
 
   await budget.getByRole('button', { name: 'Commit budget' }).click();
 
-  await expect(budget.getByText('1 change not committed')).toHaveCount(0);
+  await expect(budget.getByRole('tab', { name: 'Budget' })).toHaveAccessibleDescription(
+    'Committed',
+  );
   await expect(treasury(page)).toContainText('$42.0m');
 
   await endQuarters(page, 1);
@@ -60,13 +64,17 @@ test('reset discards changes that have not been committed', async ({ page }) => 
 
   await budget.getByRole('slider', { name: 'Tax rate' }).fill('30');
   await budget.getByRole('slider', { name: 'Health' }).fill('2');
-  await expect(budget.getByText('2 changes not committed')).toBeVisible();
+  await expect(budget.getByRole('tab', { name: 'Budget' })).toHaveAccessibleDescription(
+    '2 uncommitted',
+  );
 
   await budget.getByRole('button', { name: 'Reset' }).click();
 
   await expect(budget.getByRole('slider', { name: 'Tax rate' })).toHaveValue('18');
   await expect(budget.getByRole('slider', { name: 'Health' })).toHaveValue('7');
-  await expect(budget.getByText('changes not committed')).toHaveCount(0);
+  await expect(budget.getByRole('tab', { name: 'Budget' })).toHaveAccessibleDescription(
+    'Committed',
+  );
 });
 
 test('ending the quarter with uncommitted changes warns first', async ({ page }) => {

@@ -18,7 +18,7 @@ import {
   type Preview,
   type TradeOrder,
 } from '../sim';
-import { DecisionPanel } from './DecisionPanel';
+import { DecisionPanel, type DecisionTab } from './DecisionPanel';
 import { WorldPriceSign } from './WorldPriceSign';
 import './TradePanel.css';
 
@@ -30,6 +30,18 @@ interface TradePanelProps {
   readonly planned: readonly TradeOrder[];
   /** Plans what to buy or sell this quarter, or takes a plan back. */
   readonly onPlan: (planned: readonly TradeOrder[]) => void;
+}
+
+/** What the trade tab says: the grain bought or sold this quarter, if any. */
+export function tradeTab(preview: Preview): DecisionTab {
+  const { imported, exported } = preview.trade;
+  const note =
+    imported > 0
+      ? `Buying ${formatTonnes(imported)}`
+      : exported > 0
+        ? `Selling ${formatTonnes(exported)}`
+        : 'None';
+  return { id: 'trade', title: 'Trade', note, pending: imported > 0 || exported > 0 };
 }
 
 /**
@@ -51,19 +63,14 @@ export function TradePanel({ game, preview, planned, onPlan }: TradePanelProps) 
   const austerity = austerityStatus(game);
 
   return (
-    <DecisionPanel
-      id="trade"
-      title="Trade"
-      note={
-        <span className="section-note">
-          {preview.trade.imported > 0
-            ? `${formatTonnes(preview.trade.imported)} of grain ordered`
-            : preview.trade.exported > 0
-              ? `${formatTonnes(preview.trade.exported)} of grain to sell`
-              : 'Nothing ordered'}
-        </span>
-      }
-    >
+    <DecisionPanel id="trade">
+      <p className="section-note">
+        {preview.trade.imported > 0
+          ? `${formatTonnes(preview.trade.imported)} of grain ordered`
+          : preview.trade.exported > 0
+            ? `${formatTonnes(preview.trade.exported)} of grain to sell`
+            : 'Nothing ordered'}
+      </p>
       <WorldPriceSign status={status} goodWhen="falling" />
       <TradeCapacityView game={game} planned={planned} />
 

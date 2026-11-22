@@ -77,12 +77,12 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     target: 'budget',
     title: 'Budget',
-    text: 'The tax rate and spending on agriculture, food relief, health, education, security and upkeep. Move a slider and the projection shows what it would do. Nothing counts until you commit it.',
+    text: 'The decisions are in tabs: budget, projects, finance, trade and relief, each saying where it stands. The budget sets the tax rate and spending on agriculture, food relief, health, education, security and upkeep. Move a slider and the projection shows what it would do. Nothing counts until you commit it.',
   },
   {
     target: 'projects',
     title: 'Projects',
-    text: 'Anything with a cost, a build time and a lasting effect: irrigation, roads, ports, mines, power. A project planned now starts when the quarter ends, and can be taken back until then. Underfunded upkeep lets what you built decay.',
+    text: 'Anything with a cost, a build time and a lasting effect: irrigation, roads, ports, mines, power. Browse projects lists every one the treasury can cover now. A project planned now starts when the quarter ends, and can be taken back until then. Underfunded upkeep lets what you built decay.',
   },
   {
     target: 'finance',
@@ -101,8 +101,8 @@ export const TOUR_STEPS: readonly TourStep[] = [
   },
   {
     target: 'election',
-    title: 'Election forecast',
-    text: 'What approval would mean for the vote if the election were held at the end of this quarter.',
+    title: 'The quarter ahead',
+    text: 'Pinned above the tabs: where your decisions leave the treasury, approval and the food reserve, and what approval would mean for the vote if the election were held at the end of this quarter.',
   },
   {
     target: 'tutorial',
@@ -176,7 +176,7 @@ export const LESSONS: readonly Lesson[] = [
     target: 'projects',
     waitFor: 'plan-project',
     title: 'Plan a project',
-    text: 'Projects raise living standards for good, but take money and time. Plan one of those affordable now, or select an empty site on the map and plan it from its card. A farm road is cheap and quick.',
+    text: 'Projects raise living standards for good, but take money and time. Press Browse projects to see those affordable now and plan one, or select an empty site on the map and plan it from its card. A farm road is cheap and quick.',
     after:
       'Planned. Building starts when the quarter ends, and the timeline under the map shows when it opens. Until then you can take it back.',
   },
