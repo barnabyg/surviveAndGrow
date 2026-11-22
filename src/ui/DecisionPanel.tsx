@@ -1,6 +1,6 @@
 import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
 import { readDecisionTab, storeDecisionTab } from './storage';
-import { TourTarget } from './tourSteps';
+import { TourTarget } from './spotlight';
 import './DecisionPanel.css';
 
 /** One tab of the decisions column, with a few words on where its panel stands. */

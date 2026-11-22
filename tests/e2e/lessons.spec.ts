@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { LESSONS } from '../../src/ui/tourSteps';
+import { LESSONS } from '../../src/ui/lessonSteps';
 import { decisions, dilemma, endQuarters, openApp } from './app';
 
 /** The lesson card, which stands beside the screen without holding it. */

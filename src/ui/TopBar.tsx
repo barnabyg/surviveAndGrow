@@ -52,7 +52,7 @@ interface TopBarProps {
   /** Asks to give up this game for a fresh one. */
   readonly onRestart: () => void;
   /** Opens the guided tour of the screen. */
-  readonly onTutorial: () => void;
+  readonly onTour: () => void;
   /** The first-time tips, which the top bar turns on and off. */
   readonly tips: TipsState;
 }
@@ -105,7 +105,7 @@ function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
 }
 
 export function TopBar(props: TopBarProps) {
-  const { game, report, onEndQuarter, onRestart, onTutorial, tips } = props;
+  const { game, report, onEndQuarter, onRestart, onTour, tips } = props;
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
@@ -491,7 +491,7 @@ export function TopBar(props: TopBarProps) {
         playing={game.outcome.status === 'playing'}
         onEndQuarter={onEndQuarter}
         onRestart={onRestart}
-        onTutorial={onTutorial}
+        onTour={onTour}
         tips={tips}
       />
     </header>
