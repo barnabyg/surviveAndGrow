@@ -8,8 +8,9 @@ export default defineConfig({
   server: { port: 41730, strictPort: true },
   preview: { port: 41731, strictPort: true },
   test: {
-    // Seam 1: the simulation interface. Test files run in parallel workers.
-    include: ['tests/sim/**/*.test.ts'],
+    // Seam 1: the simulation interface, and the interface's own logic over it. Test files run in
+    // parallel workers.
+    include: ['tests/sim/**/*.test.ts', 'tests/ui/**/*.test.ts'],
     environment: 'node',
     // Stop at the first failure in continuous integration only; report everything locally.
     bail: process.env.CI ? 1 : 0,

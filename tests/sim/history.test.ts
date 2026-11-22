@@ -11,7 +11,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import { bothCountries, tavara } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 /** Plays quarters with the budget in force and no relief, keeping every report. */
 function play(start: GameState, quarters: number) {

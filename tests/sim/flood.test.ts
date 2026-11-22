@@ -13,7 +13,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { testlandFormat4File, withChances } from './countries';
 import { faultsOf, withValue, without } from './files';
-import { steward } from './players';
+import { steward } from './playing';
 
 /** Each country with a region by a river, that a flood strikes every single year. */
 const scenarios = [

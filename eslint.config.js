@@ -58,7 +58,7 @@ export default defineConfig(
   },
   {
     // Everything outside the simulation reaches it through src/sim/index.ts alone.
-    files: ['src/ui/**/*.{ts,tsx}', 'src/main.tsx', 'tests/**/*.ts'],
+    files: ['src/ui/**/*.{ts,tsx}', 'src/main.tsx'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -67,6 +67,45 @@ export default defineConfig(
             {
               regex: '/sim/.+',
               message: 'Import from the simulation through src/sim (its index) only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // So do the tests. The pattern names src/sim, since tests/sim holds helpers of its own.
+    files: ['tests/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '/src/sim/.+',
+              message: 'Import from the simulation through src/sim (its index) only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The simulation's tests reach the game through src/sim alone; tests of the interface's
+    // logic live in tests/ui. This repeats the rule above, which a later block replaces whole.
+    files: ['tests/sim/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '/src/sim/.+',
+              message: 'Import from the simulation through src/sim (its index) only.',
+            },
+            {
+              group: ['**/src/ui', '**/src/ui/**'],
+              message: 'Tests of the interface belong in tests/ui.',
             },
           ],
         },

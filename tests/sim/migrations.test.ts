@@ -21,7 +21,7 @@ import format6Save from '../saves/format-6.json';
 import format7Save from '../saves/format-7.json';
 import format8Save from '../saves/format-8.json';
 import { withValue } from './files';
-import { answering, inFirstTerm, steward } from './players';
+import { answering, inFirstTerm, steward } from './playing';
 
 // The saves kept from every format before the current one, each lifted by the migrations to
 // the current format. The save kept from the current format is checked in save.test.ts.

@@ -25,7 +25,7 @@ import {
   withoutPoweredMines,
   withoutPriceShocks,
 } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 /** A country with a treasury that can pay for a whole chain, and no drought or dilemma. */
 function rich(file: unknown): Country {

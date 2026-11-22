@@ -8,7 +8,7 @@ import {
   type GameState,
 } from '../../src/sim';
 import { bothCountries, tavara } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 const generous: Budget = {
   taxRatePercent: 5,

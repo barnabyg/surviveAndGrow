@@ -12,17 +12,34 @@ import {
   type PriceShock,
   type Risk,
 } from '../../src/sim';
-import { answering, inFirstTerm } from './players';
+import { answering, inFirstTerm } from './playing';
 
-/** How many seeds the sweep plays. */
-const SEEDS = 300;
+/**
+ * The seeds the unit suite plays. Seeds 1 to 24 are ordinary games; the rest add the rarer
+ * ends, so that each check below has cases to check: 40, 64, 68 and 71 are lost at the vote
+ * in Tavara or Testland as they ship, 92 is survived in Testland with drought likely, and 208
+ * is the one game of Tavara as it ships that is survived. Among 1 to 24, 20 is lost at the vote
+ * in Tavara, 1 in Testland and 11 in Testland with floods likely, and Testland survives 11, 12,
+ * 16 and 21. In every sweep famine ends far more than a fifth of these games, and floods and
+ * shocks come far more often than that where they are counted.
+ */
+const SAMPLE = [...Array.from({ length: 24 }, (_, index) => index + 1), 40, 64, 68, 71, 92, 208];
 
-/** The seeds from 1 to SEEDS, in runs of a number of seeds each: [first, last] of each run. */
+/**
+ * The seeds the sweep plays: the sample, or seeds 1 to 300 when `npm run forewarning` sets
+ * FOREWARNING_SEEDS to `all`.
+ */
+const SEEDS: readonly number[] =
+  process.env.FOREWARNING_SEEDS === 'all'
+    ? Array.from({ length: 300 }, (_, index) => index + 1)
+    : SAMPLE;
+
+/** The seeds in runs of a number of seeds each: the first and last seed of a run, and its seeds. */
 const runsOf = (seedsPerTest: number) =>
-  Array.from({ length: SEEDS / seedsPerTest }, (_, index): [number, number] => [
-    index * seedsPerTest + 1,
-    (index + 1) * seedsPerTest,
-  ]);
+  Array.from({ length: Math.ceil(SEEDS.length / seedsPerTest) }, (_, index) => {
+    const seeds = SEEDS.slice(index * seedsPerTest, (index + 1) * seedsPerTest);
+    return [seeds[0] ?? 0, seeds.at(-1) ?? 0, seeds] as const;
+  });
 
 const idle = (game: GameState): Decisions => ({ budget: game.budget });
 // A dilemma must be answered, so this player takes the option that costs nothing.
@@ -52,7 +69,8 @@ const ofKind = (risks: readonly Risk[], kind: Risk['kind']) =>
  * was announced, and as announced in every quarter from then until it first moved its price.
  * With `floods` or `shocks` set, the sweep also checks that they really do come.
  *
- * Three hundred whole games, each looked ahead from every quarter, take seconds, so each test
+ * The unit suite plays a fixed sample of seeds; `npm run forewarning` plays three hundred.
+ * Whole games, each looked ahead from every quarter, take seconds, so each test
  * plays a run of them and the last tests check the runs together. Where floods or shocks are
  * likely, looking ahead before each of them takes longer, so the runs are shorter. Each country is
  * swept in a file of its own, so that the sweeps share out across the workers.
@@ -66,7 +84,7 @@ export function sweepDoingNothing(
   {
     floods = false,
     shocks = false,
-    seedsPerTest = 25,
+    seedsPerTest = 15,
   }: {
     readonly floods?: boolean;
     readonly shocks?: boolean;
@@ -79,20 +97,20 @@ export function sweepDoingNothing(
     // What each run found, by its first seed. The last tests play any run not yet played, so
     // they hold however the tests are filtered or ordered.
     const foundByRun = new Map<number, Found>();
-    const foundIn = (first: number, last: number): Found => {
+    const foundIn = (first: number, seeds: readonly number[]): Found => {
       const known = foundByRun.get(first);
       if (known !== undefined) return known;
-      const found = playRun(country, first, last);
+      const found = playRun(country, seeds);
       foundByRun.set(first, found);
       return found;
     };
     const total = (count: (found: Found) => number) =>
-      runs.reduce((sum, [first, last]) => sum + count(foundIn(first, last)), 0);
+      runs.reduce((sum, [first, , seeds]) => sum + count(foundIn(first, seeds)), 0);
 
     it.each(runs)(
       'is warned of famine, defeat, floods and price shocks before any comes in games %i to %i',
-      (first, last) => {
-        foundIn(first, last);
+      (first, _last, seeds) => {
+        foundIn(first, seeds);
       },
       // A run takes about 3 s on a CI runner, too close to vitest's default of 5 s: a busy
       // runner once took longer. This allows for that without hiding a game that hangs.
@@ -101,18 +119,18 @@ export function sweepDoingNothing(
 
     it('has famine end a good share of those games', () => {
       // The check means nothing unless famine really does end a good share of these games.
-      expect(total((found) => found.famines)).toBeGreaterThan(SEEDS / 5);
+      expect(total((found) => found.famines)).toBeGreaterThan(SEEDS.length / 5);
     });
 
     if (floods) {
       it('has floods come in a good share of those games', () => {
-        expect(total((found) => found.floods)).toBeGreaterThan(SEEDS / 5);
+        expect(total((found) => found.floods)).toBeGreaterThan(SEEDS.length / 5);
       });
     }
 
     if (shocks) {
       it('has world price shocks come in a good share of those games', () => {
-        expect(total((found) => found.shocks)).toBeGreaterThan(SEEDS / 5);
+        expect(total((found) => found.shocks)).toBeGreaterThan(SEEDS.length / 5);
       });
     }
   });
@@ -126,14 +144,14 @@ interface Found {
 }
 
 /**
- * Plays the seeds from first to last, checks every game was warned in time of what ended it
+ * Plays the given seeds, checks every game was warned in time of what ended it
  * and of every flood, and gives back how many games famine ended and how many floods came.
  */
-function playRun(country: () => Country, first: number, last: number): Found {
+function playRun(country: () => Country, seeds: readonly number[]): Found {
   let famines = 0;
   let floods = 0;
   let shocks = 0;
-  for (let seed = first; seed <= last; seed += 1) {
+  for (const seed of seeds) {
     const states = [createGame(country(), seed)];
     for (let game = states[0]; game !== undefined && inFirstTerm(game); game = states.at(-1)) {
       states.push(advanceQuarter(game, doNothing(game)).state);

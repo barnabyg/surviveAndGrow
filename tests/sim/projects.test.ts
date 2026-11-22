@@ -16,7 +16,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland, withDroughtChance } from './countries';
-import { steward } from './players';
+import { steward } from './playing';
 
 /**
  * Every tax the country can bear and nothing spent but the upkeep of what is built, so the
