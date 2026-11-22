@@ -62,3 +62,29 @@ test('the risks answer to the budget once it is committed', async ({ page }) => 
   // A danger to the whole country has no one place to show.
   await expect(risks(page).getByRole('button')).toHaveCount(0);
 });
+
+test('beyond the first four risks the rest are folded away until asked for', async ({ page }) => {
+  // Tavara as it ships threatens drought and flood across the country from the start.
+  await startGame(page);
+  await expect(risks(page).getByRole('listitem')).toHaveCount(4);
+  const more = risks(page).getByRole('button', { name: /^Show \d+ more$/ });
+  const folded = Number((await more.textContent())?.match(/\d+/)?.[0]);
+  expect(folded).toBeGreaterThan(0);
+
+  await more.click();
+  await expect(risks(page).getByRole('listitem')).toHaveCount(4 + folded);
+  await risks(page).getByRole('button', { name: 'Show fewer' }).click();
+  await expect(risks(page).getByRole('listitem')).toHaveCount(4);
+});
+
+test('a risk is two lines, its reason cut short until it is picked out', async ({ page }) => {
+  await startGame(page);
+  const famine = risks(page).getByRole('button', { name: /^Famine in The Dry East/ });
+  const reason = famine.locator('.risk__reason');
+  // The whole reason is always there for a screen reader, and in a tooltip.
+  await expect(famine).toContainText('would leave it short of food');
+  await expect(reason).toHaveCSS('white-space', 'nowrap');
+
+  await famine.click();
+  await expect(reason).toHaveCSS('white-space', 'normal');
+});

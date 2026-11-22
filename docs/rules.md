@@ -277,7 +277,7 @@ figure there must change it here in the same commit.
   payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and,
   in the term's last four quarters, losing the vote. The game plays the next four quarters with
   your committed decisions held as they are, once for each course the weather could take and each
-  drought or flood that could still begin, and lists each danger with how likely it is, as a five-step meter and in words, and a line saying why. Hunger
+  drought or flood that could still begin, and lists each danger with how likely it is, as a five-step meter and in words, and a line saying why, cut short until the risk is picked out (its whole text is in a tooltip). The four most likely are shown and the rest fold behind **Show more**. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
   further. A danger too unlikely to matter is left out, unless it would end the game, and a risk
   to one region picks that region out on the map. Neither famine nor a lost election can end the

@@ -19,9 +19,9 @@
   width: 100%;
   padding: 6px 8px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 104px;
-  align-items: start;
-  gap: 4px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 12px;
   border: 1px solid transparent;
   border-radius: 8px;
   background: none;
@@ -47,36 +47,53 @@
   background: var(--card);
 }
 
-/* The note that a risk picks its region out sits under both columns of the row. */
+/* The note that a risk picks its region out sits under both columns of the row, shown
+   only while the row is hovered, focused or picked out, so each row stays two lines. */
 .risk__place {
   grid-column: 1 / -1;
+  display: none;
   font-size: 12.5px;
   color: var(--label);
+}
+
+.risk--place:hover .risk__place,
+.risk--place:focus-visible .risk__place,
+.risk--place[aria-pressed='true'] .risk__place {
+  display: block;
 }
 
 .risk--place[aria-pressed='true'] .risk__place {
   color: var(--amber);
 }
 
-.risk__text,
+.risk__headline {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Why, on one line, cut short; the risk picked out shows all of it. */
+.risk__reason {
+  grid-column: 1 / -1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13.5px;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.risk--place[aria-pressed='true'] .risk__reason {
+  white-space: normal;
+}
+
 .risk__likelihood {
   display: flex;
-  flex-direction: column;
-}
-
-.risk__headline {
-  font-size: 15.5px;
-  font-weight: 600;
-}
-
-.risk__reason {
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.risk__likelihood {
-  gap: 3px;
-  padding-top: 5px;
+  align-items: center;
+  gap: 8px;
 }
 
 .risk__level {
@@ -102,6 +119,26 @@
   fill: none;
   stroke: var(--line-strong);
   stroke-width: 1.5;
+}
+
+.risk__meter {
+  width: 60px;
+  height: 10px;
+}
+
+.risks__more {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border: none;
+  background: none;
+  color: var(--blue);
+  font: inherit;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.risks__more:focus-visible {
+  outline: 2px solid var(--blue);
 }
 
 .risk__meter .risk__step--reached {
