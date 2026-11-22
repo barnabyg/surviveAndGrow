@@ -1,8 +1,10 @@
 import { apportion, clamp, percentOff, sum } from './arithmetic';
 import { balance } from './balance';
+import type { BudgetOutcome } from './budget';
 import { regionName, type Country } from './country';
+import type { DilemmaOutcome } from './dilemmas';
 import type { ReportEntry } from './report';
-import type { RegionState } from './state';
+import type { Decisions, RegionState } from './state';
 import { formatPercent } from './text';
 import { expectationsIn } from './tiers';
 import type { Contribution, Figure, Money } from './types';
@@ -48,6 +50,19 @@ export interface ApprovalInputs {
    * (`was`) and lower it once it ends (`now`), in thousandths. Left out, there are none.
    */
   readonly expectations?: { readonly was: number; readonly now: number };
+}
+
+/** Approval answers to the tax rate decided and to what was actually spent. */
+export function approvalInputs(
+  decisions: Decisions,
+  finances: BudgetOutcome,
+  answer: DilemmaOutcome,
+): ApprovalInputs {
+  return {
+    taxRatePercent: decisions.budget.taxRatePercent,
+    spent: finances.spent,
+    pushes: answer.pushes,
+  };
 }
 
 export interface RegionUnrest {

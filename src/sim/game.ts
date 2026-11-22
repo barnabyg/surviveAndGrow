@@ -1,147 +1,51 @@
-import { approvalStatus, resolveApproval, startingApproval, type ApprovalInputs } from './approval';
+import { approvalInputs, approvalStatus, resolveApproval } from './approval';
 import { sum } from './arithmetic';
-import { austerityBudgetFault } from './austerity';
 import { bailoutPushes, budgetAfter, resolveBailout } from './bailout';
 import { balance } from './balance';
-import { nextDate, quartersUntilHarvest } from './calendar';
-import {
-  budgetEntry,
-  checkBudget,
-  cutEntry,
-  resolveBudget,
-  revenueOf,
-  withBorrowed,
-  withFixedCosts,
-  type BudgetOutcome,
-} from './budget';
-import {
-  borrowFault,
-  debtBurden,
-  debtOf,
-  serveDebts,
-  startingDebts,
-  takeDebts,
-  type Borrowing,
-} from './debt';
-import { deficitOf, openingCredit, reassessCredit, recordAfter } from './credit';
-import { regionName, type Country } from './country';
-import {
-  answerDilemma,
-  ariseDilemma,
-  choiceFault,
-  rollDilemmas,
-  type DilemmaOutcome,
-} from './dilemmas';
+import { nextDate } from './calendar';
+import { budgetEntry, cutEntry } from './budget';
+import { collapseEntry, collapseOf } from './collapse';
+import { debtBurden, debtOf } from './debt';
+import { deficitOf, reassessCredit, recordAfter } from './credit';
+import { checkDecisions } from './decisions';
+import { answerDilemma, ariseDilemma, rollDilemmas, withAnswer } from './dilemmas';
 import { forecastVoteShare, holdElection, isElectionQuarter, rollSwing } from './election';
 import {
   beginEntry,
   beginStruck,
-  describeEventWithHold,
   endEntry,
   endEventsAfterHarvest,
-  harvestPermille,
+  eventsLeave,
+  holdOn,
   rollEvents,
+  rollWeather,
   siteDamageOf,
   worstHarvestPermille,
-  type ActiveEvent,
-  type EventStrike,
 } from './events';
-import {
-  forecastFood,
-  reliefCapacity,
-  resolveFood,
-  regionKeep,
-  type FoodInputs,
-  type FoodSituation,
-} from './food';
+import { foodSituation, forecastFood, reliefFor, resolveFood, withExported } from './food';
 import { vitalSigns } from './history';
-import {
-  resolveProjects,
-  siteEffects,
-  startFault,
-  type BuildingOutcome,
-  type Project,
-  type SiteEffects,
-} from './projects';
-import {
-  prosperityFigure,
-  prosperityStatus,
-  resolveServices,
-  startingServices,
-} from './prosperity';
+import { quartersToHarvest, resolveMoney, withTraded } from './money';
+import { siteEffects } from './projects';
+import { prosperityFigure, prosperityStatus, resolveServices } from './prosperity';
 import { pushesInto, rollPriceShocks, turnShocks } from './priceShocks';
 import { compileReport, type ReportEntry } from './report';
-import { expectationsIn, nextTier, tierAt, tierEntry } from './tiers';
+import { expectationsIn, nextTier, tierEntry } from './tiers';
 import { heldAfter, victoryOf } from './victory';
-import { nextRandom, seedGenerator, type RngState } from './rng';
-import type { Decisions, GameState, Outcome, Preview, RegionState, TurnResult } from './state';
+import type {
+  Chance,
+  Decisions,
+  GameState,
+  Outcome,
+  Preview,
+  QuarterResolved,
+  TurnResult,
+} from './state';
 import { scheduleAhead } from './timeline';
 import { routeCarriage } from './tradeRoutes';
-import {
-  FULL_SWING_PERMILLE,
-  movePrices,
-  openingPrices,
-  resolveTrade,
-  rollPrices,
-  tradeFault,
-  type TradeOrder,
-  type TradeOutcome,
-  type WorldPrices,
-} from './trade';
-import { GOODS, type PriceShockType } from './vocabulary';
-import { exactly, type Contribution, type Money } from './types';
-import { damageSites, resolveUpkeep } from './upkeep';
-
-/** Starts a game. The same country and seed always start the same game. */
-export function createGame(country: Country, seed: number): GameState {
-  const approval = startingApproval(country);
-  const services = startingServices(country);
-  const date = { year: 1, quarter: 1 } as const;
-  const opening = {
-    country,
-    projects: [],
-    // The rating the game opens at follows from the debt it starts with.
-    debts: startingDebts(country.start.loans, date),
-    budget: country.start.budget,
-    date,
-    treasury: country.start.treasury,
-    foodReserve: country.start.foodReserve,
-    worldPrices: openingPrices(),
-    priceShocks: [],
-    tradeCarried: [],
-    regions: country.regions.map((region): RegionState => ({
-      id: region.id,
-      population: region.population,
-      output: region.output,
-      foodStock: regionKeep(region.population),
-      weather: 0,
-      foodStage: 'adequate',
-      famineQuarters: 0,
-      ...approval,
-      ...services,
-    })),
-  } as const;
-  const signs = vitalSigns(opening);
-  // The game begins in whatever tier its starting prosperity reaches.
-  const tier = tierAt(signs.prosperity ?? 0);
-  return {
-    seed,
-    rng: seedGenerator(seed),
-    ...opening,
-    reliefRegionId: null,
-    agricultureSpentThisYear: 0,
-    events: [],
-    history: [signs],
-    dilemma: null,
-    dilemmasAnswered: [],
-    credit: openingCredit(opening),
-    tier,
-    startingTier: tier,
-    prosperousQuarters: 0,
-    austerity: null,
-    outcome: { status: 'playing' },
-  };
-}
+import { FULL_SWING_PERMILLE, movePrices, rollPrices, type WorldPrices } from './trade';
+import { GOODS } from './vocabulary';
+import { exactly } from './types';
+import { damageSites } from './upkeep';
 
 /**
  * Resolves the current quarter with the player's decisions and moves the date on.
@@ -171,62 +75,6 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
   // The campaign's draw counts only if the vote was held: a state that fell held none.
   const rng = resolved.electionHeld && campaign !== null ? campaign.rng : events.rng;
   return { state: { ...resolved.state, rng }, report: resolved.report };
-}
-
-/**
- * What chance decides in a quarter. A turn draws it from the game's generator; a projection
- * supposes it, which is how the game looks ahead without drawing anything.
- */
-export interface Chance {
-  /** How far the quarter's weather moves each region's coming harvest, in thousandths. */
-  readonly weatherShocks: readonly number[];
-  /** The events that strike as the calendar moves into the next quarter. */
-  readonly struck: readonly EventStrike[];
-  /** How far the campaign moves the vote, in thousandths, if an election is held. */
-  readonly swing: number;
-  /**
-   * How far world markets move each good's price this quarter, as a share of its full swing
-   * in thousandths, in the goods' order. A good with none given does not move but for the
-   * pull back towards its usual price.
-   */
-  readonly priceShocks: readonly number[];
-  /**
-   * The world price shocks announced as the calendar moves into the next quarter. One of a
-   * kind already announced or in force is not announced again.
-   */
-  readonly shocksAnnounced: readonly PriceShockType[];
-  /**
-   * The roll for each kind of dilemma, from 0 up to 1, in the vocabulary's order. One
-   * arises when its roll falls under its chance. A kind with no roll does not arise.
-   */
-  readonly dilemmaRolls: readonly number[];
-}
-
-/** A quarter resolved, with the signs of trouble a projection looks for. */
-export interface QuarterResolved extends TurnResult {
-  /** True when the treasury could not cover the budget and every area was cut. */
-  readonly spendingCut: boolean;
-  /** The sites where building paused because the treasury could not pay. */
-  readonly pausedSites: readonly string[];
-  /** The sites in use that went without upkeep, and are decaying from the next quarter. */
-  readonly upkeepShort: readonly string[];
-  /** What fell due on debts and could not be paid. */
-  readonly missedPayment: Money;
-  /** The debts a payment was missed on, by name. */
-  readonly missedOn: readonly string[];
-  /** True when a missed payment brought a bailout, outside austerity. */
-  readonly bailedOut: boolean;
-  /** What the quarter's payments on debts took off the principal owed. */
-  readonly principalRepaid: Money;
-  /** What borrowing brought into the treasury as the quarter ended. */
-  readonly borrowed: Money;
-  /** What was paid for goods bought abroad as the quarter ended. */
-  readonly tradePaid: Money;
-  /** What goods sold abroad brought in as the quarter ended. */
-  readonly tradeEarned: Money;
-  /** The share of their needs each region's people ate, in thousandths, in the regions' order. */
-  readonly fedPermille: readonly number[];
-  readonly electionHeld: boolean;
 }
 
 /**
@@ -617,276 +465,5 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
   };
 }
 
-/**
- * An event in force and what it does to its region as things stand, in a few words:
- * "Drought · harvest −40%", or less where irrigation is in use.
- */
-export function describeEvent(
-  state: Pick<GameState, 'country' | 'projects'>,
-  event: ActiveEvent,
-): string {
-  return describeEventWithHold(event, holdOn(state.country, state.projects, event.regionId));
-}
-
 /** The ranges the budget may be set within. */
 export const budgetLimits = balance.budget;
-
-/**
- * @throws RangeError when a decision is outside what the game allows.
- * @throws Error when the game is already over.
- */
-export function checkDecisions(state: GameState, decisions: Decisions, mustAnswer = true): void {
-  if (state.outcome.status !== 'playing') throw new Error('The game is over.');
-  const unanswered = choiceFault(state, decisions.dilemmaChoice ?? null, mustAnswer);
-  if (unanswered !== null) throw new RangeError(unanswered);
-  checkBudget(decisions.budget);
-  const austere = austerityBudgetFault(state, decisions.budget);
-  if (austere !== null) throw new RangeError(austere);
-  const target = decisions.reliefRegionId ?? null;
-  if (target !== null && !state.regions.some((region) => region.id === target)) {
-    throw new RangeError(`There is no region "${target}" to send food relief to.`);
-  }
-  const fault = startFault(state, decisions.startProjects ?? []);
-  if (fault !== null) throw new RangeError(fault);
-  const borrowing = borrowFault(state, decisions.borrow ?? []);
-  if (borrowing !== null) throw new RangeError(borrowing);
-  const trading = tradeFault(state, decisions.trade ?? []);
-  if (trading !== null) throw new RangeError(trading);
-}
-
-interface QuarterMoney {
-  /** What repaying debts did, before anything else. */
-  readonly serviced: ReturnType<typeof serveDebts>;
-  /** What the budget alone did: revenue, and spending on the areas it sets. */
-  readonly budget: BudgetOutcome;
-  /** What building did with the money the budget left. */
-  readonly building: BuildingOutcome;
-  /** The projects once upkeep has told on the sites in use, and what the report says of it. */
-  readonly upkept: ReturnType<typeof resolveUpkeep>;
-  /** What was borrowed, which arrives as the quarter ends. */
-  readonly taken: ReturnType<typeof takeDebts>;
-  /** What was bought abroad, paid for as the quarter ends, after what was borrowed arrives. */
-  readonly traded: TradeOutcome;
-  /** All of it together: the quarter's whole effect on the treasury. */
-  readonly finances: BudgetOutcome;
-}
-
-/**
- * One quarter of money. Repayments on debts come first, out of the treasury and the
- * quarter's revenue; then the budget's own spending, cut if what is left cannot cover it;
- * then the instalments on projects are paid out of what is left. The sites that upkeep did
- * not reach are decaying from the next quarter. What is borrowed arrives as the quarter
- * ends, after all of it, unless a missed payment has brought a bailout; and then what was
- * bought abroad is paid for.
- */
-function resolveMoney(
-  state: Pick<
-    GameState,
-    | 'country'
-    | 'treasury'
-    | 'regions'
-    | 'projects'
-    | 'date'
-    | 'debts'
-    | 'credit'
-    | 'worldPrices'
-    | 'foodReserve'
-  >,
-  decisions: Decisions,
-  starts: readonly string[] = decisions.startProjects ?? [],
-  borrowing: readonly Borrowing[] = decisions.borrow ?? [],
-  trading: readonly TradeOrder[] = decisions.trade ?? [],
-): QuarterMoney {
-  const serviced = serveDebts(
-    state.debts,
-    state.treasury + revenueOf(state, decisions.budget),
-    state.date,
-  );
-  const budget = resolveBudget(state, decisions.budget, serviced);
-  const building = resolveProjects(state, starts, state.date, budget.treasury);
-  // A missed payment puts everything owed in the bailout loan, and nothing more is lent.
-  const taken = takeDebts(
-    serviced.debts,
-    serviced.missed > 0 ? [] : borrowing,
-    state.date,
-    state.credit.rating,
-  );
-  const borrowed = withBorrowed(
-    withFixedCosts(budget, building.paid, building.contributions),
-    taken.borrowed,
-    taken.contributions,
-  );
-  const traded = resolveTrade(state, trading, borrowed.treasury, state.foodReserve);
-  return {
-    serviced,
-    budget,
-    building,
-    upkept: resolveUpkeep({ country: state.country, projects: building.projects }, budget.upkeep),
-    taken,
-    traded,
-    // Goods bought or sold abroad move the treasury but are no part of the budget's balance.
-    finances: withBorrowed(borrowed, traded.earned - traded.paid, traded.money),
-  };
-}
-
-/** The food situation once the grain sold abroad has been set aside from the reserve. */
-function withExported(situation: FoodSituation, exported: number): FoodSituation {
-  return { ...situation, foodReserve: situation.foodReserve - exported };
-}
-
-/**
- * The quarter's food with its trade: the grain sold abroad, set aside before it began, and
- * the grain bought abroad, which reaches the national reserve once it is over.
- */
-function withTraded<Food extends { foodReserve: number; contributions: readonly Contribution[] }>(
-  food: Food,
-  traded: TradeOutcome,
-): Food {
-  return {
-    ...food,
-    foodReserve: food.foodReserve + traded.imported,
-    contributions: [...traded.sold, ...food.contributions, ...traded.bought],
-  };
-}
-
-/** Relief goes where the player sends it, as far as what was actually spent on it can move. */
-function reliefFor(decisions: Decisions, finances: BudgetOutcome): FoodInputs['relief'] {
-  return {
-    regionId: decisions.reliefRegionId ?? null,
-    capacity: reliefCapacity(finances.spent.foodRelief),
-  };
-}
-
-/** Approval answers to the tax rate decided and to what was actually spent. */
-function approvalInputs(
-  decisions: Decisions,
-  finances: BudgetOutcome,
-  answer: DilemmaOutcome,
-): ApprovalInputs {
-  return {
-    taxRatePercent: decisions.budget.taxRatePercent,
-    spent: finances.spent,
-    pushes: answer.pushes,
-  };
-}
-
-/** The game as the quarter starts once the answer to a dilemma has taken effect. */
-function withAnswer(state: GameState, answer: DilemmaOutcome): GameState {
-  return {
-    ...state,
-    treasury: answer.treasury,
-    foodReserve: answer.foodReserve,
-    regions: answer.regions,
-  };
-}
-
-/** What the events in force leave of each region's harvest, given the sites in use. */
-function eventsLeave(state: Pick<GameState, 'regions' | 'events'>, sites: SiteEffects): number[] {
-  return state.regions.map((region, index) =>
-    harvestPermille(state.events, region.id, sites.inRegion.harvestWeather[index] ?? 1000),
-  );
-}
-
-/** What irrigation in use leaves of the weather's and of events' hold on one region. */
-function holdOn(country: Country, projects: readonly Project[], regionId: string): number {
-  const index = country.regions.findIndex((region) => region.id === regionId);
-  return siteEffects({ country, projects }).inRegion.harvestWeather[index] ?? 1000;
-}
-
-interface QuarterAhead {
-  readonly finances: BudgetOutcome;
-  /** The sites in use as that quarter begins. */
-  readonly sites: SiteEffects;
-  /** The grain bought abroad that reaches the reserve as that quarter ends, in tonnes. */
-  readonly imported: number;
-  /** The grain sold abroad, set aside from the reserve as that quarter begins, in tonnes. */
-  readonly exported: number;
-}
-
-/**
- * What the budget will bring in and pay out in each quarter from this one to the harvest
- * if it is left as it is, and the sites that will be in use by then. A treasury that runs
- * dry on the way cuts the later quarters' spending and pauses building, and the forecast
- * must know it.
- */
-function quartersToHarvest(state: GameState, decisions: Decisions): QuarterAhead[] {
-  const quarterly: QuarterAhead[] = [];
-  let { treasury, date } = state;
-  let projects: readonly Project[] = state.projects;
-  let { debts } = state;
-  for (let ahead = quartersUntilHarvest(state.date.quarter); ahead > 0; ahead -= 1) {
-    // Projects are started, money borrowed and goods bought in the quarter being decided and
-    // none after.
-    const later = quarterly.length === 0 ? undefined : [];
-    const money = resolveMoney(
-      { ...state, treasury, projects, date, debts },
-      decisions,
-      later,
-      later,
-      later,
-    );
-    quarterly.push({
-      finances: money.finances,
-      sites: siteEffects({ ...state, projects }),
-      imported: money.traded.imported,
-      exported: money.traded.exported,
-    });
-    ({ treasury } = money.finances);
-    ({ projects } = money.upkept);
-    ({ debts } = money.taken);
-    date = nextDate(date);
-  }
-  return quarterly;
-}
-
-function foodSituation(state: GameState): FoodSituation {
-  return {
-    country: state.country,
-    quarter: state.date.quarter,
-    regions: state.regions,
-    foodReserve: state.foodReserve,
-  };
-}
-
-type Collapse = Extract<Outcome, { readonly cause: 'famine' }>;
-
-/** The state collapses when famine has held one region for too many quarters running. */
-function collapseOf(country: Country, regions: readonly RegionState[]): Collapse | null {
-  const limit = balance.hunger.collapseAfterFamineQuarters;
-  const stricken = regions.find((region) => region.famineQuarters >= limit);
-  if (stricken === undefined) return null;
-  return {
-    status: 'lost',
-    cause: 'famine',
-    regionId: stricken.id,
-    headline: 'The state has collapsed',
-    summary: `Famine held ${regionName(country, stricken.id)} for ${limit} quarters running. The state has collapsed.`,
-  };
-}
-
-/** What the turn report says when famine brings the state down. */
-function collapseEntry(outcome: Collapse): ReportEntry {
-  return {
-    kind: 'collapse',
-    seriousness: 'critical',
-    headline: outcome.headline,
-    cause: outcome.summary,
-    regionId: outcome.regionId,
-  };
-}
-
-/** This quarter's weather: one shock for each region, drawn in the regions' order. */
-function rollWeather(
-  rng: RngState,
-  regionCount: number,
-): { readonly shocks: readonly number[]; readonly rng: RngState } {
-  const swing = balance.food.weatherSwingPermillePerQuarter;
-  const shocks: number[] = [];
-  let current = rng;
-  for (let region = 0; region < regionCount; region += 1) {
-    const roll = nextRandom(current);
-    shocks.push((roll.value % (2 * swing + 1)) - swing);
-    current = roll.state;
-  }
-  return { shocks, rng: current };
-}

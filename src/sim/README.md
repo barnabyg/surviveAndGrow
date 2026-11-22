@@ -7,20 +7,23 @@ every file it needs.
 
 ## How a quarter is resolved
 
-`advanceQuarter` in `game.ts` draws everything chance decides, in this fixed order and nowhere
-else: the weather, the world prices (`trade.ts`), the world price shocks announced
+`createGame` in `newGame.ts` starts a game. `advanceQuarter` in `game.ts` first checks the
+decisions (`checkDecisions` in `decisions.ts`), then draws everything chance decides, in this
+fixed order and nowhere else: the weather (`rollWeather` in `events.ts`), the world prices (`trade.ts`), the world price shocks announced
 (`priceShocks.ts`), the events that strike and the campaign swing in an election quarter. The
 world prices, the shocks and the dilemma rolls come from the seed and the quarter alone, and leave
 the generator untouched. Shocks are national, not regional, so they are not among the events each
 region rolls for: a kind added at the end of `PRICE_SHOCK_TYPES` has its own draw and leaves the
 others as they were. Each good's price has its own draw, in the order of
 `GOODS`, so a good added at the end leaves the others' prices as they were. `resolveQuarter`
-takes all of these as given, so the risks look-ahead (`risks.ts`) runs it on supposed chance,
+takes all of these as given (the `Chance` it is handed, and the `QuarterResolved` it returns,
+are declared in `state.ts`), so the risks look-ahead (`risks.ts`) runs it on supposed chance,
 among it a slump in the world ore price. It lives the quarter through `liveQuarter`, which the
 preview (`previewQuarter`) shares, so turn and preview cannot come to differ:
 
 1. The answer to a dilemma (`dilemmas.ts`).
-2. Money (`resolveMoney`): repayments on debts, oldest first, out of the treasury and the
+2. Money (`resolveMoney` in `money.ts`, which also projects the quarters to the harvest for
+   the preview's food forecast): repayments on debts, oldest first, out of the treasury and the
    quarter's revenue (`debt.ts`), a bond's interest each quarter and its whole sum at
    maturity. A payment missed on any of them brings a bailout: everything owed is
    consolidated into one bailout loan (`debt.ts`). Then the budget (`budget.ts`) with what is
@@ -54,7 +57,7 @@ preview (`previewQuarter`) shares, so turn and preview cannot come to differ:
 (`calendar.ts`, `terms.ts`), ends and begins events (`events.ts`), ends the shocks whose time is
 up and starts the notice of those announced (`priceShocks.ts`),
 sets decaying the sites in use where an event that damages them has begun (`upkeep.ts`), checks
-for collapse, holds the election (`election.ts`), checks for victory (`victory.ts`), may put a new
+for collapse (`collapse.ts`), holds the election (`election.ts`), checks for victory (`victory.ts`), may put a new
 dilemma, records the vital signs (`history.ts`), and compiles the report (`report.ts`), whose
 entries keep the order written there.
 
@@ -63,7 +66,9 @@ entries keep the order written there.
 A new mechanic usually touches most of these:
 
 - `state.ts`: what the game remembers between quarters.
-- `game.ts`: where it is resolved in the quarter, and what the preview projects.
+- `game.ts`: where it is resolved in the quarter, and what the preview projects. Money it
+  moves goes through `money.ts`, a decision it adds is checked in `decisions.ts`, and a new
+  field in the opening state is set in `newGame.ts`.
 - A module of its own for its rules, called from `game.ts`.
 - `balance.ts`: its tuning values. No rule hard-codes a number.
 - `vocabulary.ts`: the names the player sees, and any new kind of site, event or spending. A

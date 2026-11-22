@@ -1,10 +1,11 @@
 import { sum } from './arithmetic';
 import { balance } from './balance';
+import type { BudgetOutcome } from './budget';
 import { isHarvestQuarter, nextQuarter, quartersUntilHarvest } from './calendar';
 import { regionName, type Country, type Region } from './country';
 import type { SiteEffects } from './projects';
 import type { ReportEntry } from './report';
-import type { RegionShortfall, RegionState, ReliefDelivery } from './state';
+import type { Decisions, GameState, RegionShortfall, RegionState, ReliefDelivery } from './state';
 import { formatCount, formatQuarters, formatTonnes } from './text';
 import type { Contribution, Money, Quarter, Range } from './types';
 import { FOOD_STAGE_NAMES, FOOD_STAGES, type FoodStage } from './vocabulary';
@@ -466,4 +467,27 @@ function grow(
 
 function regionOf(country: Country, regionId: string): Region | undefined {
   return country.regions.find((region) => region.id === regionId);
+}
+
+/** The food situation as the game stands. */
+export function foodSituation(state: GameState): FoodSituation {
+  return {
+    country: state.country,
+    quarter: state.date.quarter,
+    regions: state.regions,
+    foodReserve: state.foodReserve,
+  };
+}
+
+/** The food situation once the grain sold abroad has been set aside from the reserve. */
+export function withExported(situation: FoodSituation, exported: number): FoodSituation {
+  return { ...situation, foodReserve: situation.foodReserve - exported };
+}
+
+/** Relief goes where the player sends it, as far as what was actually spent on it can move. */
+export function reliefFor(decisions: Decisions, finances: BudgetOutcome): FoodInputs['relief'] {
+  return {
+    regionId: decisions.reliefRegionId ?? null,
+    capacity: reliefCapacity(finances.spent.foodRelief),
+  };
 }
