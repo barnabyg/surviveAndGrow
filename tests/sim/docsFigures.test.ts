@@ -38,6 +38,11 @@ function rate(basisPoints: number): string {
   return `${String(basisPoints / 100)}%`;
 }
 
+/** A list as the docs give one: `4, 8 or 12`. */
+function listOr(items: readonly string[]): string {
+  return items.join(', ').replace(/, ([^,]*)$/, ' or $1');
+}
+
 /** A share in thousandths of a usual price, in whole dollars a tonne: `$30`. */
 function dollarsOf(permille: number, usualDollars: number): string {
   return `$${String(Math.round((Math.abs(permille) * usualDollars) / 1000))}`;
@@ -74,16 +79,7 @@ const RULES: readonly string[] = [
   `a trunk road ${formatMoney(sites.trunkRoad.capacity)} a quarter (${oreTonnes(sites.trunkRoad.capacity)} tonnes) and a port ${formatMoney(sites.port.capacity)} (${oreTonnes(sites.port.capacity)} tonnes)`,
   `(${formatMoney(sites.mine.cost)}, ${formatMoney(sites.trunkRoad.cost)} and ${formatMoney(sites.port.cost)}; ${String(sites.mine.buildQuarters)}, ${String(sites.trunkRoad.buildQuarters)} and ${String(sites.port.buildQuarters)} quarters to build; ${formatMoney(sites.mine.upkeep)}, ${formatMoney(sites.trunkRoad.upkeep)} and ${formatMoney(sites.port.upkeep)} upkeep)`,
   // Borrowing
-  `offers a loan of ${loans.amounts
-    .map(formatMoney)
-    .join(', ')
-    .replace(/, ([^,]*)$/, ' or $1')} over ${loans.terms
-    .map((term) => String(term.quarters))
-    .join(', ')
-    .replace(/, ([^,]*)$/, ' or $1')} quarters, at ${loans.terms
-    .map((term) => rate(term.annualRateBasisPoints))
-    .join(', ')
-    .replace(/, ([^,]*)$/, ' or $1')} a year to a nation rated A`,
+  `offers a loan of ${listOr(loans.amounts.map(formatMoney))} over ${listOr(loans.terms.map((term) => String(term.quarters)))} quarters, at ${listOr(loans.terms.map((term) => rate(term.annualRateBasisPoints)))} a year to a nation rated A`,
   // Bailout and austerity
   `approval takes a ${String(-finance.bailout.approvalPermille / 10)}-point blow`,
   `Austerity then holds for ${String(finance.austerity.quarters)} quarters: the tax rate cannot go below ${String(finance.austerity.taxFloorPercent)}%`,

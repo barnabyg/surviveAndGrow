@@ -68,6 +68,12 @@ export default defineConfig(
               regex: '/sim/.+',
               message: 'Import from the simulation through src/sim (its index) only.',
             },
+            {
+              regex: '(^|/)sim$',
+              importNames: ['balance'],
+              message:
+                'The interface reads figures from the game, not the balance values; balance is exported for the tests.',
+            },
           ],
         },
       ],

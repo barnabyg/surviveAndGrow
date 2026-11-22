@@ -24,8 +24,8 @@ This starts the game at http://localhost:41730 and opens it in your browser. It 
 2560 x 1440 display.
 
 New to the game? Choose **Tutorial** on the start screen. It plays your first year with you, a
-lesson at a time, each asking you to do one thing: set the budget, change the map's lens, plan a
-project, end a quarter, answer a dilemma. The **Tour** button in the top bar shows what every part
+lesson at a time, each asking you to do one thing; the lessons are listed in
+[docs/rules.md](docs/rules.md#the-screen). The **Tour** button in the top bar shows what every part
 of the screen is for, at any time. In any game, a short tip explains each mechanic the first time it
 appears; **Tips on** in the top bar turns them off, and back on to see them again.
 

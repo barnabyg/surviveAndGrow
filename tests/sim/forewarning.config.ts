@@ -7,5 +7,7 @@ export default defineConfig({
     include: ['tests/sim/forewarning-*.test.ts'],
     environment: 'node',
     env: { FOREWARNING_SEEDS: 'all' },
+    // Stop at the first failure in continuous integration only; report everything locally.
+    bail: process.env.CI ? 1 : 0,
   },
 });
