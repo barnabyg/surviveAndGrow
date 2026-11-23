@@ -243,14 +243,19 @@ interface UnlocksProps {
 }
 
 /**
- * The sites of this country a technology unlocks, each with its region, or that the country
- * has none, for a technology that unlocks a type of site. Says nothing for any other.
+ * The sites of this country a technology unlocks, each with its region, or that none is left
+ * open, for a technology that unlocks a type of site. Says nothing for any other.
  */
 function Unlocks({ name, known, status, gains }: UnlocksProps) {
   if (status.unlocks.length === 0) return null;
   const types = status.unlocks.map((type) => SITE_TYPE_NAMES[type].toLowerCase()).join(' or ');
   if (gains.unlocks.length === 0) {
-    return <p className="project__note">This country has no site for a {types}.</p>;
+    return (
+      <p className="project__note">
+        No site in this country is left open for a {types}: there is none, or its alternative was
+        built.
+      </p>
+    );
   }
   return (
     <section className="technology__gains" aria-label={`What ${name} unlocks in this game`}>
