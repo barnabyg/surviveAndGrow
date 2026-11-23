@@ -80,6 +80,10 @@ drought or a flood does not starve a region first.
   pushes the ore price down, for three quarters. Each is announced two quarters ahead, in the
   report, under the price and among the risks: stock the reserve before grain grows dear, and don't
   borrow against the mine before its ore cheapens.
+- **Research for the long run.** The research tab holds the technology tree. Research is a
+  project with no site, paid in instalments like a site and known for good once finished; one
+  technology is researched at a time. Drought-resistant seed makes weather and drought move every
+  region's harvest less.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
