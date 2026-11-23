@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { SPENDING_AREA_NAMES, SPENDING_AREAS } from '../../src/sim';
 import { decisions, endQuarters, startGame, treasury } from './app';
 
 const totals = (page: Page) => decisions(page).getByRole('group', { name: 'Budget totals' });
@@ -9,15 +10,7 @@ test('the budget shows a slider for tax and each spending area, with the totals'
   await startGame(page);
   const budget = decisions(page);
 
-  for (const name of [
-    'Tax rate',
-    'Agriculture',
-    'Food relief',
-    'Health',
-    'Education',
-    'Security',
-    'Upkeep',
-  ]) {
+  for (const name of ['Tax rate', ...SPENDING_AREAS.map((area) => SPENDING_AREA_NAMES[area])]) {
     await expect(budget.getByRole('slider', { name })).toBeVisible();
   }
   await expect(budget.getByRole('slider', { name: 'Tax rate' })).toHaveValue('18');

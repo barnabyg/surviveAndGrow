@@ -173,6 +173,14 @@ A new mechanic usually touches most of these:
   share one roll in each region, taken in that order, so the others' strikes stay as they were.
   `countryFormats.ts` says which country file format first lets a file name it. A world price shock
   goes at the end of `PRICE_SHOCK_TYPES` instead, sized in `balance.priceShocks`.
+- A new spending area goes in `SPENDING_AREAS`, with its name beside it (`vocabulary/budget.ts`). The
+  budget's own rules (`budget.ts`), the sliders, what austerity allows and the budgets the tests
+  build all read that list, so only these are written for it: what a country file starts by
+  spending on it, and what an older file that leaves it out means (`readBudget` in
+  `countryStart.ts`); a save-format change, since a save holds every area (`readBudget` in
+  `save.ts`); the rule for what it buys; and its share in
+  `balance.finance.austerity.spendingCapPermille`, if austerity caps it. The fixed games of
+  `tests/sim/replay.test.ts` are pinned again, since their fingerprint holds the budget.
 - `report.ts` and the entries it compiles: what the turn report says about it.
 - `risks.ts`: the warning ahead, if it can hurt the player. Every loss must be foreseeable. A danger
   of money (the treasury, a missed payment, a bond's maturity, the credit rating) goes in
@@ -194,6 +202,8 @@ A new mechanic usually touches most of these:
 - `src/ui/tips.ts`: its first-time tip. `src/ui/tourSteps.ts`: a tour step for a new part.
 - Tests: a whole-game test on both countries (`bothCountries` in `tests/sim/countries.ts` gives
   Tavara and the second country, `tests/countries/testland.json`, which gains the mechanic too), and
-  a browser test in `tests/e2e/` on a country prepared in `tests/e2e/app.ts`.
+  a browser test in `tests/e2e/` on a country prepared in `tests/e2e/app.ts`. A test builds its
+  budget with `budgetOf` or `budgetFrom` (`tests/budgets.ts`), which fill in the spending areas it
+  does not name.
 - `docs/rules.md` gains a bullet for it, under its own heading if it is a new mechanic, and
   `tests/sim/docsFigures.test.ts` a check for every figure a doc restates.

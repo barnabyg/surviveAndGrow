@@ -1,3 +1,5 @@
+import { listed, SPENDING_AREA_NAMES, SPENDING_AREAS } from '../sim';
+
 /**
  * One step of the guided tour of the main screen. The step picks out the element marked
  * `data-tour="<target>"`, or with a null target stands alone in the middle of the screen.
@@ -9,6 +11,11 @@ export interface TourStep {
   readonly title: string;
   readonly text: string;
 }
+
+/** The spending areas as a sentence names them, so that the tour keeps up with the budget. */
+const SPENDING_AREAS_LISTED = listed(
+  SPENDING_AREAS.map((area) => SPENDING_AREA_NAMES[area].toLowerCase()),
+);
 
 /** The guided tour, in the order it is shown: the top bar, then the columns left to right. */
 export const TOUR_STEPS: readonly TourStep[] = [
@@ -80,7 +87,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     target: 'budget',
     title: 'Budget',
-    text: 'The decisions are in tabs: budget, projects, research, finance, trade and relief, each saying where it stands. The budget sets the tax rate and spending on agriculture, food relief, health, education, security and upkeep. Move a slider and the projection shows what it would do. Nothing counts until you commit it.',
+    text: `The decisions are in tabs: budget, projects, research, finance, trade and relief, each saying where it stands. The budget sets the tax rate and spending on ${SPENDING_AREAS_LISTED}. Move a slider and the projection shows what it would do. Nothing counts until you commit it.`,
   },
   {
     target: 'projects',
