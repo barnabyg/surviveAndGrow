@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { decisions, dilemma, endQuarters, openTab, reports, startGame, tavaraWith } from './app';
 
 const tipCard = (page: Page) => page.locator('.lessons__card', { hasText: 'First-time tip' });
@@ -151,6 +151,48 @@ test('Tips silences the research and survey tips, and turned on again shows both
   await expect(tipCard(page).getByRole('heading', { name: 'Surveys' })).toBeVisible();
   await tipCard(page).getByRole('button', { name: 'Got it' }).click();
   await expect(tipCard(page)).toHaveCount(0);
+});
+
+/** Sees a tip's outline drawn round an element, and no wider than to pick it out. */
+async function expectTipDrawnRound(page: Page, element: Locator): Promise<void> {
+  await expect(async () => {
+    const target = await element.boundingBox();
+    const outline = await page.locator('.lessons__outline').boundingBox();
+    expect(target).not.toBeNull();
+    expect(outline).not.toBeNull();
+    if (target !== null && outline !== null) {
+      expect(outline.x).toBeLessThanOrEqual(target.x);
+      expect(outline.y).toBeLessThanOrEqual(target.y);
+      expect(outline.x + outline.width).toBeGreaterThanOrEqual(target.x + target.width);
+      expect(outline.y + outline.height).toBeGreaterThanOrEqual(target.y + target.height);
+      expect(outline.width).toBeLessThan(target.width + 40);
+      expect(outline.height).toBeLessThan(target.height + 40);
+    }
+  }).toPass();
+}
+
+test('a tip about a panel behind another tab is drawn round the tab that opens it', async ({
+  page,
+}) => {
+  // Tips are off as the game starts, so research is planned unexplained and its tab left.
+  await startGame(page, { countryFile: quiet() });
+  const research = await openTab(page, 'Research');
+  await research.getByRole('button', { name: 'Research Drought-resistant seed' }).click();
+  await openTab(page, 'Budget');
+  await tipsButton(page).click();
+  await expect(tipCard(page).getByRole('heading', { name: 'Research' })).toBeVisible();
+
+  // The research panel is not on screen, so the tip points at its tab and leaves the budget open.
+  const researchTab = decisions(page).getByRole('tab', { name: 'Research', exact: true });
+  await expectTipDrawnRound(page, researchTab);
+  await expect(decisions(page).getByRole('tab', { name: 'Budget', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+
+  // Once its tab is opened, the tip is drawn round the panel.
+  await researchTab.click();
+  await expectTipDrawnRound(page, research);
 });
 
 test('tips can be turned off, and on again to show them afresh', async ({ page }) => {

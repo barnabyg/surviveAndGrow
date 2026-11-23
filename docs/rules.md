@@ -473,7 +473,8 @@ main figures from the balance values and fails if this file, the README or
   card of a region that may hide a deposit is first opened or a survey is planned. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
-  waits while the tour or a lesson is open. The tips are written in `src/ui/tips.ts`.
+  waits while the tour or a lesson is open. A tip about a decision panel behind another tab is
+  drawn round the tab that opens it. The tips are written in `src/ui/tips.ts`.
 - Each figure in the top bar shows its change this quarter and any warning, such as the food
   reserve below its safe level. Its standing note (the debt burden, the loan rates, the safe
   level, the strike threshold, the prosperity tier) is in its tooltip and at the head of its
