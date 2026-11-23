@@ -334,7 +334,7 @@ export const IMPROVEMENT_SENTENCES = {
   capacity:
     '{sites} carry {percent}% more, so a chain they hold back ships more ore and a port carries more across the border.',
   power:
-    'The power from {sites} does {percent}% more: a region it reaches gains more output and more infrastructure access.',
+    '{sites} do {percent}% more for each region their power reaches: it gains more output and more infrastructure access.',
 } as const;
 
 /**
