@@ -129,7 +129,7 @@ const RULES: readonly string[] = [
   `failed harvests abroad push the grain price up by ${dollarsOf(priceShocks.failedHarvestsAbroad.pushPermillePerQuarter, grain.usualDollarsPerTonne)} a tonne a quarter, and an ore glut pushes the ore price down by ${dollarsOf(priceShocks.oreGlut.pushPermillePerQuarter, ore.usualDollarsPerTonne)} a tonne a quarter`,
 ];
 
-const README: readonly string[] = [
+const PLAYING: readonly string[] = [
   `Below ${percent(strikes.belowPermille)} a region strikes`,
   `an ore glut pushes the ore price down, for ${words(priceShocks.oreGlut.lastsQuarters)} quarters. Each is announced ${words(priceShocks.oreGlut.noticeQuarters)} quarters ahead`,
   `its usual $${String(grain.usualDollarsPerTonne)}`,
@@ -146,7 +146,7 @@ const COUNTRIES: readonly string[] = [
 
 describe.each([
   { doc: 'docs/rules.md', figures: RULES },
-  { doc: 'README.md', figures: README },
+  { doc: 'docs/playing.md', figures: PLAYING },
   { doc: 'docs/countries.md', figures: COUNTRIES },
 ])('$doc states the balance figures', ({ doc, figures }) => {
   const text = docText(doc);

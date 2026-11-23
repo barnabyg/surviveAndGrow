@@ -553,9 +553,9 @@ confirmation about 27 and Testland's about two.
 
 ## Playing it
 
-[The README](../../README.md#a-play-through) gives one command that opens the game on seed 1.
+[The play-through](../playing.md#a-play-through) gives one command that opens the game on seed 1.
 There the chain builder loses its first vote with 49.9%; the improver, building the same sites
 and researching, wins it with 51.3% and its second with 51.1%, and loses its third; and the
 timing trader, building the same sites and trading grain, wins in quarter 30, with the trades it
 made. Replayed for this record on the values as they now stand, each of those outcomes is as the
-README states it.
+play-through stated it.

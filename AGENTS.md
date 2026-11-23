@@ -1,9 +1,16 @@
 # Survive and Grow
 
-A turn-based economics and politics survival game. The design intent and phase plan are in
-`docs/design.md`; the rules as built, with their figures, are in `docs/rules.md`. Before changing
-the simulation, read `src/sim/README.md`: the order a quarter is resolved in, and the files a new
-mechanic touches.
+A turn-based economics and politics survival game. Before changing the simulation, read
+`src/sim/README.md`: the order a quarter is resolved in, and the files a new mechanic touches.
+
+The other docs are long. Read the part a ticket needs, not the whole file:
+
+- `docs/rules.md`: the rules as built, with their figures, one heading per mechanic. Read the
+  heading for the mechanic in hand (`grep -n '^## ' docs/rules.md` lists them).
+- `docs/screen.md`: what each part of the screen shows, for a ticket that changes the interface.
+- `docs/design.md`: the design intent. Section 4 is the systems, section 8 the phase plan.
+- `docs/playing.md`: the player's guide and a play-through on a known seed, for manual testing.
+- `docs/balance/phase-N.md`: a phase's balance record. Read the section a balance ticket names.
 
 Domain terms are defined in `GLOSSARY.md`.
 
