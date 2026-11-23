@@ -1,8 +1,11 @@
 # Survive and Grow: game design
 
-Status: Phase 1 is built, and Phase 2 (build), Phase 3 (borrow) and Phase 4 (feed and trade) are
-built and balanced, except Phase 4's two targets for world price shocks, which values alone did
-not meet and which the owner accepted as unmet on 2026-11-21 (see `docs/balance/phase-4.md`). Last updated 2026-11-22.
+Status: Phase 1 is built, and Phase 2 (build), Phase 3 (borrow), Phase 4 (feed and trade) and
+Phase 5 (research) are built and balanced, with two exceptions. Phase 4's two targets for world
+price shocks were not met by values alone, and the owner accepted them as unmet on 2026-11-21
+(see `docs/balance/phase-4.md`). Phase 5's target that surveying be worth it on average was not
+met by values alone either, and awaits the owner's choice between accepting it as unmet and
+changing the player or the game (see `docs/balance/phase-5.md`). Last updated 2026-11-23.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
 [rules.md](rules.md), which is the one place they are stated in full.
@@ -92,7 +95,7 @@ Prosperity, tiers and people.
   forced austerity. Rules: rules.md, Borrowing and the credit rating, and Bailout and austerity;
   balance: `docs/balance/phase-3.md`.
 
-- **Technology** (Phase 5, under way): a tree bought with money and time, using the project
+- **Technology** (Phase 5): a tree bought with money and time, using the project
   mechanism: research is a project on no site, one technology at a time, known for good once
   finished. It unlocks and improves what already exists; the first technology, drought-resistant
   seed, makes weather and drought move every region's harvest less, and the tiers built on it
@@ -102,12 +105,12 @@ Prosperity, tiers and people.
   clinic and the school, so research reaches prosperity through health and education as well as
   through infrastructure. Rules: rules.md, Research, Locked sites and the dam, and Clinics and
   schools.
-- **Surveys** (Phase 5, under way): exploration with visible risk. A country file hides deposits
+- **Surveys** (Phase 5): exploration with visible risk. A country file hides deposits
   in its regions, each with a likelihood and a range of sizes; a survey is a project on a region
   that shows both before the player commits, and reports nothing or a deposit of a definite size,
   whose mine and road then join the map to be built like any other. The result comes from the
   seed and the deposit, not the random generator, so it is fair and the same seed finds the same.
-  Rules: rules.md, Surveys.
+  Rules: rules.md, Surveys; balance: `docs/balance/phase-5.md`.
 
 ### Still to come
 

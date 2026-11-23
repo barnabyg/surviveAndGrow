@@ -103,10 +103,9 @@ drought or a flood does not starve a region first.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
-### A Phase 4 play-through
+### A play-through
 
-To play the finished Phase 4 game, with trade and world price shocks, from the start on a seed
-the balance run knows well:
+To play the game as Phase 5 leaves it, from the start on a seed the balance run knows well:
 
 ```powershell
 Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=1'
@@ -115,7 +114,9 @@ Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=1'
 This starts the game at http://localhost:41730/?seed=1 and opens it in your browser. On seed 1
 the scripted chain builder, which never trades, loses its first vote with 49.9%; the timing
 trader, which builds the same sites in the same order and trades grain besides, wins in quarter
-30, in the second year of its second term. Try to win the way the timing trader does:
+30, in the third year of its second term. The improver, which builds the same sites and
+researches the technologies that improve them, wins that first vote with 51.3% and its second
+with 51.1%, and loses its third. Try to win the way the timing trader does:
 
 1. Build as the chain builder does: the Korr Falls power station and its lines first, then
    Saltmouth port, the trunk road and the Korrgate mine, each once the treasury holds its cost.
@@ -133,8 +134,8 @@ trader, which builds the same sites in the same order and trades grain besides, 
 Expected: the trade panel shows the price, its trend and forecast, what the links carry and what
 is free; a sale's income and an import's cost appear in the treasury's breakdown; the failed
 harvests abroad are listed under the grain price from their announcement to their end. Over
-seeds 1-300 of the balance run on Tavara, the timing trader wins in quarter 32 in the middle of
-its games, against the chain builder's 38.
+the 400 games of Phase 5's confirmation run on Tavara, the timing trader wins in quarter 32 in
+the middle of its games, against the chain builder's 38.
 
 The rules as built, one heading per mechanic, are in [docs/rules.md](docs/rules.md).
 
@@ -236,8 +237,9 @@ gluts and an unlocker that holds off whatever would rule a locked site out.
 The runs the values were tuned to, with their seeds, the values changed and what they showed, are
 recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1,
 [docs/balance/phase-2.md](docs/balance/phase-2.md) for Phase 2,
-[docs/balance/phase-3.md](docs/balance/phase-3.md) for Phase 3 and
-[docs/balance/phase-4.md](docs/balance/phase-4.md) for Phase 4.
+[docs/balance/phase-3.md](docs/balance/phase-3.md) for Phase 3,
+[docs/balance/phase-4.md](docs/balance/phase-4.md) for Phase 4 and
+[docs/balance/phase-5.md](docs/balance/phase-5.md) for Phase 5.
 
 Set these before the command to change the run:
 
