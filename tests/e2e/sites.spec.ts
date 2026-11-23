@@ -88,6 +88,7 @@ test('a legend explains the marks for sites, routes and trade routes', async ({ 
     'Decaying',
     'Closed by an alternative',
     'Possible route',
+    'Not yet surveyed: a deposit may lie there (filled while a survey is under way)',
     'Road',
     'Power line',
     '✕ Missing link in a chain',

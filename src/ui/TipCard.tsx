@@ -10,6 +10,7 @@ interface TipsInput {
   readonly risks: readonly Risk[];
   readonly plannedSiteIds: readonly string[];
   readonly plannedResearch: Technology | null;
+  readonly plannedSurveys: readonly string[];
   /** Whether the tour or a lesson is open, which a tip waits behind. */
   readonly quiet: boolean;
 }
@@ -27,10 +28,13 @@ export interface TipsState {
  * seen is shown; dismissing it marks it seen, in every game and country.
  */
 export function useTips(input: TipsInput): TipsState {
-  const { game, risks, plannedSiteIds, plannedResearch, quiet } = input;
+  const { game, risks, plannedSiteIds, plannedResearch, plannedSurveys, quiet } = input;
   const [on, setOn] = useState(() => !readTipsOff());
   const [seen, setSeen] = useState(readTipsSeen);
-  const due = on && !quiet ? tipsDue({ game, risks, plannedSiteIds, plannedResearch }) : new Set();
+  const due =
+    on && !quiet
+      ? tipsDue({ game, risks, plannedSiteIds, plannedResearch, plannedSurveys })
+      : new Set();
   const tip = TIPS.find((candidate) => due.has(candidate.when) && !seen.has(candidate.id)) ?? null;
   return {
     tip,

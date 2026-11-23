@@ -169,6 +169,7 @@ test('a road is built along its route, and the legend explains every state', asy
     'Decaying',
     'Closed by an alternative',
     'Possible route',
+    'Not yet surveyed: a deposit may lie there (filled while a survey is under way)',
     'Road',
     'Power line',
     '✕ Missing link in a chain',

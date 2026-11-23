@@ -46,6 +46,7 @@ describe('the first-time tips', () => {
       ...ARISES.map(([condition]) => condition),
       'weather-warning',
       'research',
+      'survey',
     ]);
     expect(TIPS.filter((tip) => !covered.has(tip.when))).toEqual([]);
   });
@@ -72,6 +73,16 @@ describe('the first-time tips', () => {
     const decisions = { budget: game.budget, startResearch: seed } as const;
     const underway = advanceQuarter(game, decisions).state;
     expect(tipsDue({ game: underway, risks: [], plannedSiteIds: [] })).toContain('research');
+  });
+
+  it('wait for a survey once the player plans one, and while it is under way', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    expect(
+      tipsDue({ game, risks: [], plannedSiteIds: [], plannedSurveys: ['salt-coast'] }),
+    ).toContain('survey');
+    const decisions = { budget: game.budget, startSurveys: ['salt-coast'] };
+    const underway = advanceQuarter(game, decisions).state;
+    expect(tipsDue({ game: underway, risks: [], plannedSiteIds: [] })).toContain('survey');
   });
 
   it('wait for nothing in a game that has only just begun, risks ahead aside', () => {

@@ -20,6 +20,8 @@ interface ResearchPanelProps {
   readonly planned: Technology | null;
   /** The sites the player means to start building on, which the treasury must cover too. */
   readonly plannedSiteIds: readonly string[];
+  /** The regions the player means to survey, which the treasury must cover too. */
+  readonly plannedSurveys: readonly string[];
   /** Plans research on a technology this quarter, or takes the plan back with null. */
   readonly onPlan: (technology: Technology | null) => void;
 }
@@ -32,8 +34,9 @@ export function researchTab(
   game: GameState,
   planned: Technology | null,
   plannedSiteIds: readonly string[],
+  plannedSurveys: readonly string[] = [],
 ): DecisionTab {
-  const statuses = researchStatuses(game, planned, plannedSiteIds);
+  const statuses = researchStatuses(game, planned, plannedSiteIds, plannedSurveys);
   const underway = statuses.find(
     (status) => status.state === 'researching' || status.state === 'paused',
   );
@@ -58,8 +61,9 @@ export function researchTab(
  * available or locked, what it costs, how long it takes, what it needs and what it does.
  * One technology is researched at a time, and research is started from here.
  */
-export function ResearchPanel({ game, planned, plannedSiteIds, onPlan }: ResearchPanelProps) {
-  const statuses = researchStatuses(game, planned, plannedSiteIds);
+export function ResearchPanel(props: ResearchPanelProps) {
+  const { game, planned, plannedSiteIds, plannedSurveys, onPlan } = props;
+  const statuses = researchStatuses(game, planned, plannedSiteIds, plannedSurveys);
   const underway = statuses.find(
     (status) => status.state === 'researching' || status.state === 'paused',
   );

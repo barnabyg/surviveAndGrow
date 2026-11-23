@@ -18,7 +18,8 @@ import {
   SITE_TYPE_NAMES,
   siteStatus,
   siteTerms,
-  startFault,
+  onSite,
+  planFault,
   termCalendar,
   tradeCapacity,
   UPKEEP_ORDER_RULE,
@@ -26,6 +27,7 @@ import {
   type GameState,
   type SiteSchedule,
   formatQuarters,
+  type ProjectPlan,
 } from '../sim';
 import { formatDate } from './format';
 import { opening } from './schedule';
@@ -38,6 +40,8 @@ interface SiteCardProps {
   readonly siteId: string;
   /** The sites the player means to start building on when the quarter ends. */
   readonly plannedSiteIds: readonly string[];
+  /** Everything the player means to start this quarter, which the treasury must cover too. */
+  readonly plan: ProjectPlan;
   /** When each project is built and in use, as the decisions in force will leave it. */
   readonly schedule: readonly SiteSchedule[];
   /** The sites whose instalment the treasury will not cover this quarter. */
@@ -55,8 +59,8 @@ interface SiteCardProps {
  * the plan can be taken back.
  */
 export function SiteCard(props: SiteCardProps) {
-  const { game, siteId, plannedSiteIds, schedule, pausedSites, upkeepShort, onPlan, onClose } =
-    props;
+  const { game, siteId, plannedSiteIds, plan, schedule, pausedSites, upkeepShort } = props;
+  const { onPlan, onClose } = props;
   const site = game.country.sites.find((candidate) => candidate.id === siteId);
   if (!site) return null;
   const terms = siteTerms(site.type);
@@ -76,7 +80,7 @@ export function SiteCard(props: SiteCardProps) {
   const rivals = listed(site.alternatives.map(nameOf));
   // An empty site can be started unless the treasury cannot cover it with what is planned.
   const fault =
-    status.state === 'empty' && !planned ? startFault(game, [...plannedSiteIds, site.id]) : null;
+    status.state === 'empty' && !planned ? planFault(game, plan, onSite(site.id)) : null;
 
   return (
     <section className="map-card" aria-labelledby="site-card-title">

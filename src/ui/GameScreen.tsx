@@ -101,6 +101,8 @@ export function GameScreen(props: GameScreenProps) {
   const [plannedSiteIds, setPlannedSiteIds] = useState<readonly string[]>([]);
   // The technology the player means to start researching, taken back the same way.
   const [plannedResearch, setPlannedResearch] = useState<Technology | null>(null);
+  // The regions the player means to start surveying, taken back the same way.
+  const [plannedSurveys, setPlannedSurveys] = useState<readonly string[]>([]);
   // The loans the player means to take. Their money arrives when the quarter ends, so until
   // then they can be taken back, like a planned project.
   const [plannedLoans, setPlannedLoans] = useState<readonly Borrowing[]>([]);
@@ -142,9 +144,15 @@ export function GameScreen(props: GameScreenProps) {
     reliefRegionId,
     startProjects: plannedSiteIds,
     startResearch: plannedResearch,
+    startSurveys: plannedSurveys,
     borrow: plannedLoans,
     trade: plannedTrade,
     dilemmaChoice,
+  };
+  const plan = {
+    startProjects: plannedSiteIds,
+    startResearch: plannedResearch,
+    startSurveys: plannedSurveys,
   };
   const dilemma = playing ? pendingDilemma(game) : null;
   const preview = playing ? previewQuarter(game, decisions) : null;
@@ -157,6 +165,7 @@ export function GameScreen(props: GameScreenProps) {
             reliefRegionId,
             startProjects: plannedSiteIds,
             startResearch: plannedResearch,
+            startSurveys: plannedSurveys,
             borrow: plannedLoans,
             trade: plannedTrade,
             dilemmaChoice,
@@ -169,6 +178,7 @@ export function GameScreen(props: GameScreenProps) {
       reliefRegionId,
       plannedSiteIds,
       plannedResearch,
+      plannedSurveys,
       plannedLoans,
       plannedTrade,
       dilemmaChoice,
@@ -183,6 +193,7 @@ export function GameScreen(props: GameScreenProps) {
     risks,
     plannedSiteIds,
     plannedResearch,
+    plannedSurveys,
     quiet: touring || learning,
   });
   // The timeline shows every project, and the site picked out on the map if it is still
@@ -235,6 +246,15 @@ export function GameScreen(props: GameScreenProps) {
     }
   };
 
+  // Planning a survey keeps its region picked out, so the player sees its card change.
+  const planSurvey = (regionId: string, planned: boolean) => {
+    setPlannedSurveys(
+      planned
+        ? [...plannedSurveys.filter((id) => id !== regionId), regionId]
+        : plannedSurveys.filter((id) => id !== regionId),
+    );
+  };
+
   // Selecting a report picks its region out on the map; selecting it again lets go.
   const selectEntry = (index: number) => {
     const regionId = report?.entries[index]?.regionId;
@@ -261,6 +281,7 @@ export function GameScreen(props: GameScreenProps) {
     setReportPicked(null);
     setPlannedSiteIds([]);
     setPlannedResearch(null);
+    setPlannedSurveys([]);
     setPlannedLoans([]);
     setPlannedTrade([]);
     setConfirmingEnd(false);
@@ -333,6 +354,7 @@ export function GameScreen(props: GameScreenProps) {
                   selectedSiteId={selectedSiteId}
                   onSelectSite={selectSite}
                   plannedSiteIds={plannedSiteIds}
+                  plannedSurveys={plannedSurveys}
                   plannedTrade={plannedTrade}
                   selectedRouteId={selectedRouteId}
                   onSelectRoute={selectRoute}
@@ -345,6 +367,8 @@ export function GameScreen(props: GameScreenProps) {
                     preview={preview}
                     reliefRegionId={reliefRegionId}
                     onSendRelief={setReliefRegionId}
+                    plan={plan}
+                    onPlanSurvey={planSurvey}
                     onClose={() => {
                       selectRegion(null);
                     }}
@@ -355,6 +379,7 @@ export function GameScreen(props: GameScreenProps) {
                     game={game}
                     siteId={selectedSiteId}
                     plannedSiteIds={plannedSiteIds}
+                    plan={plan}
                     schedule={schedule}
                     pausedSites={preview?.pausedSites ?? []}
                     upkeepShort={preview?.upkeep.short ?? []}
@@ -406,7 +431,7 @@ export function GameScreen(props: GameScreenProps) {
                   tabs={[
                     budgetTab(pending, committed),
                     projectsTab(game, plannedSiteIds),
-                    researchTab(game, plannedResearch, plannedSiteIds),
+                    researchTab(game, plannedResearch, plannedSiteIds, plannedSurveys),
                     financeTab(game, preview, plannedLoans),
                     tradeTab(preview),
                     reliefTab(game, preview, reliefRegionId),
@@ -419,6 +444,7 @@ export function GameScreen(props: GameScreenProps) {
                     reliefRegionId={reliefRegionId}
                     startProjects={plannedSiteIds}
                     startResearch={plannedResearch}
+                    startSurveys={plannedSurveys}
                     borrow={plannedLoans}
                     trade={plannedTrade}
                     dilemmaChoice={dilemmaChoice}
@@ -435,12 +461,14 @@ export function GameScreen(props: GameScreenProps) {
                     game={game}
                     preview={preview}
                     plannedSiteIds={plannedSiteIds}
+                    plan={plan}
                     onPlan={planSite}
                   />
                   <ResearchPanel
                     game={game}
                     planned={plannedResearch}
                     plannedSiteIds={plannedSiteIds}
+                    plannedSurveys={plannedSurveys}
                     onPlan={setPlannedResearch}
                   />
                   <FinancePanel

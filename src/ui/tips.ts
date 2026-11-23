@@ -2,6 +2,7 @@ import {
   chainsThrough,
   electionStatus,
   researchStatuses,
+  surveyStatuses,
   TIERS,
   type GameState,
   type Risk,
@@ -22,7 +23,8 @@ export type TipCondition =
   | 'bailout'
   | 'election-near'
   | 'tier-passed'
-  | 'research';
+  | 'research'
+  | 'survey';
 
 /** A note shown once, the first time what it explains appears in a game. */
 export interface Tip {
@@ -107,6 +109,13 @@ export const TIPS: readonly Tip[] = [
     title: 'Research',
     text: 'The research tab holds the technology tree. Research is a project with no site: the treasury must hold its whole cost, it is paid in instalments after the budget and pauses when the treasury cannot pay. One technology is researched at a time, and it is known for good from the quarter after its last instalment.',
   },
+  {
+    id: 'survey',
+    when: 'survey',
+    target: 'map',
+    title: 'Surveys',
+    text: 'A region marked with a magnifying glass may hide a deposit of ore. Its card says what a survey costs, how likely it is to find one and how large it could be. A survey is paid like any project and each region is surveyed once. If it finds a deposit, its mine and road appear on the map to be built.',
+  },
 ];
 
 /** What a tip may be shown for: the game as it stands and what the player has planned. */
@@ -118,6 +127,8 @@ export interface TipView {
   readonly plannedSiteIds: readonly string[];
   /** The technology the player has planned to research this quarter, if any. */
   readonly plannedResearch?: Technology | null;
+  /** The regions the player has planned to survey this quarter. */
+  readonly plannedSurveys?: readonly string[];
 }
 
 /** How many quarters before the election quarter its tip is shown: a year ahead. */
@@ -125,7 +136,7 @@ const ELECTION_NOTICE_QUARTERS = 3;
 
 /** The tip conditions that hold now. */
 export function tipsDue(view: TipView): ReadonlySet<TipCondition> {
-  const { game, risks, plannedSiteIds, plannedResearch } = view;
+  const { game, risks, plannedSiteIds, plannedResearch, plannedSurveys } = view;
   const due = new Set<TipCondition>();
   if (game.outcome.status !== 'playing') return due;
   if (game.dilemma !== null) due.add('dilemma');
@@ -146,6 +157,11 @@ export function tipsDue(view: TipView): ReadonlySet<TipCondition> {
   const research = researchStatuses(game, plannedResearch ?? null);
   if (research.some((status) => ['planned', 'researching', 'paused'].includes(status.state))) {
     due.add('research');
+  }
+  // Surveys are explained once the player plans one, or once one is under way.
+  const surveys = surveyStatuses(game, { startSurveys: plannedSurveys ?? [] });
+  if (surveys.some((status) => ['planned', 'surveying', 'paused'].includes(status.state))) {
+    due.add('survey');
   }
   return due;
 }

@@ -5,10 +5,12 @@ import {
   formatMoney,
   siteStatus,
   siteTerms,
-  startFault,
+  onSite,
+  planFault,
   termCalendar,
   type GameState,
   type Preview,
+  type ProjectPlan,
   type Site,
   type SiteStatus,
   formatQuarters,
@@ -24,6 +26,8 @@ interface ProjectsPanelProps {
   readonly preview: Preview;
   /** The sites the player means to start building on when the quarter ends. */
   readonly plannedSiteIds: readonly string[];
+  /** Everything the player means to start this quarter, which the treasury must cover too. */
+  readonly plan: ProjectPlan;
   /** Plans building on a site this quarter, or takes the plan back. */
   readonly onPlan: (siteId: string, planned: boolean) => void;
 }
@@ -51,7 +55,8 @@ export function projectsTab(game: GameState, plannedSiteIds: readonly string[]):
  * what they will do. Below them is every empty site the treasury can cover now, on top of
  * whatever is already planned for this quarter.
  */
-export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: ProjectsPanelProps) {
+export function ProjectsPanel(props: ProjectsPanelProps) {
+  const { game, preview, plannedSiteIds, plan, onPlan } = props;
   const [browsing, setBrowsing] = useState(false);
   const sites = game.country.sites.map((site) => ({
     site,
@@ -68,9 +73,7 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
   const barred = buildingBarred(game);
   const affordable = sites.filter(
     ({ site, status, planned }) =>
-      status.state === 'empty' &&
-      !planned &&
-      startFault(game, [...plannedSiteIds, site.id]) === null,
+      status.state === 'empty' && !planned && planFault(game, plan, onSite(site.id)) === null,
   );
 
   // When each opens is the simulation's to say, so the list agrees with the timeline.

@@ -65,6 +65,13 @@ export function MapLegend() {
         Possible route
       </li>
       <li>
+        <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+          <circle cx="-1.5" cy="-1.5" r="3.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M1,1 L5,5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        Not yet surveyed: a deposit may lie there (filled while a survey is under way)
+      </li>
+      <li>
         <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
           <path d="M2,8 H24" stroke="#f1e6c6" strokeWidth="3.5" strokeLinecap="round" />
         </svg>

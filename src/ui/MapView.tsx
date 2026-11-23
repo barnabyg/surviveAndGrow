@@ -13,6 +13,7 @@ import {
   MAP_FRAME,
   settlementLooks,
   siteStatus,
+  surveyStatuses,
   tradeRoutes,
   UNREST_NAMES,
   type Decoration,
@@ -45,6 +46,8 @@ interface MapViewProps {
   readonly onSelectSite: (siteId: string) => void;
   /** The sites the player means to start building on when the quarter ends. */
   readonly plannedSiteIds: readonly string[];
+  /** The regions the player means to survey this quarter. */
+  readonly plannedSurveys: readonly string[];
   /** The grain the player means to buy and sell abroad this quarter, which the routes carry. */
   readonly plannedTrade: readonly TradeOrder[];
   /** The trade route the player has picked out, if any. */
@@ -68,7 +71,7 @@ interface Paint {
  */
 export function MapView(props: MapViewProps) {
   const { game, lens, selectedRegionId, reliefRegionId, onSelectRegion } = props;
-  const { selectedSiteId, onSelectSite, plannedSiteIds } = props;
+  const { selectedSiteId, onSelectSite, plannedSiteIds, plannedSurveys } = props;
   const { plannedTrade, selectedRouteId, onSelectRoute } = props;
   const { country } = game;
   // The whole map takes on the look of the tier of prosperity in force.
@@ -332,6 +335,15 @@ export function MapView(props: MapViewProps) {
             relieved={region.id === reliefRegionId}
           />
         ))}
+
+        {surveyStatuses(game, { startSurveys: plannedSurveys })
+          .filter(({ state }) => state !== 'barren' && state !== 'surveyed')
+          .map((status) => {
+            const region = country.regions.find((each) => each.id === status.regionId);
+            return region === undefined ? null : (
+              <SurveyMark key={region.id} region={region} state={status.state} palette={palette} />
+            );
+          })}
       </g>
 
       {/* Trade routes go under the sites, so a lane never covers its port. */}
@@ -372,6 +384,49 @@ export function MapView(props: MapViewProps) {
         );
       })}
     </svg>
+  );
+}
+
+/** How a region not yet surveyed is marked: what the magnifying glass says of it. */
+const SURVEY_MARK_WORDS: Readonly<Record<string, string>> = {
+  unsurveyed: 'not yet surveyed: a deposit of ore may lie here',
+  planned: 'survey planned',
+  surveying: 'being surveyed',
+  paused: 'survey paused',
+};
+
+interface SurveyMarkProps {
+  readonly region: Region;
+  readonly state: string;
+  readonly palette: MapPalette;
+}
+
+/**
+ * A magnifying glass above a region's name while the region may still hide a deposit, the
+ * shape the legend explains. Its glass is filled once a survey is planned or under way, and its
+ * name says which, so the mark never rests on colour alone.
+ */
+function SurveyMark({ region, state, palette }: SurveyMarkProps) {
+  const [x, y] = region.label;
+  const underway = state !== 'unsurveyed';
+  return (
+    <g
+      className="map__survey"
+      transform={`translate(${x} ${y - 30})`}
+      role="img"
+      aria-label={`${region.name}: ${SURVEY_MARK_WORDS[state] ?? ''}`}
+    >
+      <circle r="9" fill={palette.tagBackground} />
+      <circle
+        cx="-1.5"
+        cy="-1.5"
+        r="3.5"
+        fill={underway ? palette.tagText : 'none'}
+        stroke={palette.tagText}
+        strokeWidth="1.5"
+      />
+      <path d="M1,1 L5,5" stroke={palette.tagText} strokeWidth="2" strokeLinecap="round" />
+    </g>
   );
 }
 

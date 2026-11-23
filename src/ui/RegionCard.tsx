@@ -1,4 +1,5 @@
 import {
+  buildingBarred,
   DECAYING_SHARE,
   describeEvent,
   describeUnrest,
@@ -7,12 +8,17 @@ import {
   formatMoney,
   formatPercent,
   formatIndex,
+  formatQuarters,
   formatTonnes,
   livingStandards,
+  surveyStatus,
+  SURVEY_STATE_NAMES,
   type Contribution,
   type GameState,
   type LivingStandard,
   type Preview,
+  type ProjectPlan,
+  type SurveyStatus,
   type TurnReport,
 } from '../sim';
 import { formatSignedCount } from './format';
@@ -28,12 +34,17 @@ interface RegionCardProps {
   /** The region food relief is being sent to, if any. */
   readonly reliefRegionId: string | null;
   readonly onSendRelief: (regionId: string | null) => void;
+  /** Everything the player means to start this quarter, among it the surveys. */
+  readonly plan: ProjectPlan;
+  /** Plans a survey of the region this quarter, or takes the plan back. */
+  readonly onPlanSurvey: (regionId: string, planned: boolean) => void;
   readonly onClose: () => void;
 }
 
 /** The card for the region picked out on the map: how it stands, and relief at a click. */
 export function RegionCard(props: RegionCardProps) {
   const { game, report, regionId, preview, reliefRegionId, onSendRelief, onClose } = props;
+  const { plan, onPlanSurvey } = props;
   const region = game.country.regions.find((candidate) => candidate.id === regionId);
   const state = game.regions.find((candidate) => candidate.id === regionId);
   if (!region || !state) return null;
@@ -41,6 +52,7 @@ export function RegionCard(props: RegionCardProps) {
   const events = game.events.filter((event) => event.regionId === regionId);
   const shortfall = preview.shortfalls.find((entry) => entry.regionId === regionId)?.shortfall;
   const relieved = reliefRegionId === regionId;
+  const survey = surveyStatus(game, regionId, plan);
   const unrest = describeUnrest(state.unrest);
   const standard = livingStandards(game).find((entry) => entry.regionId === regionId);
   // What moved the region's people last quarter: its growth, and any deaths in famine.
@@ -107,6 +119,7 @@ export function RegionCard(props: RegionCardProps) {
           ▲ {describeEvent(game, event)}
         </p>
       ))}
+      <SurveySection status={survey} barred={buildingBarred(game) !== null} />
       <p className={shortfall === undefined ? 'map-card__note' : 'warning-note'}>
         {shortfall === undefined
           ? 'Its people have enough to eat this quarter.'
@@ -116,6 +129,12 @@ export function RegionCard(props: RegionCardProps) {
         <button type="button" className="button" onClick={onClose}>
           Close
         </button>
+        <SurveyButton
+          status={survey}
+          onPlan={(planned) => {
+            onPlanSurvey(regionId, planned);
+          }}
+        />
         <button
           type="button"
           className="button button--commit"
@@ -128,6 +147,102 @@ export function RegionCard(props: RegionCardProps) {
         </button>
       </div>
     </section>
+  );
+}
+
+interface SurveySectionProps {
+  readonly status: SurveyStatus;
+  /** Whether austerity forbids starting anything. */
+  readonly barred: boolean;
+}
+
+/**
+ * The region's survey in a line or two, so the card stays short: what one costs and takes,
+ * how likely it is to find a deposit and how large one could be, before the player commits;
+ * then how it is going, and what it found. A region where no deposit could lie shows nothing.
+ */
+function SurveySection({ status, barred }: SurveySectionProps) {
+  const { name, state, tonnes } = status;
+  if (state === 'barren') return null;
+  const range =
+    tonnes === null
+      ? ''
+      : tonnes.min === tonnes.max
+        ? formatTonnes(tonnes.min)
+        : `${formatTonnes(tonnes.min)} to ${formatTonnes(tonnes.max)}`;
+  const progress =
+    state === 'surveying' || state === 'paused'
+      ? ` · ${status.quartersPaid} of ${formatQuarters(status.surveyQuarters)} done`
+      : '';
+  return (
+    <section className="map-card__survey" aria-label="Survey">
+      <p className="map-card__note">
+        <span className="map-card__term">
+          Survey · {SURVEY_STATE_NAMES[state]}
+          {progress}
+        </span>{' '}
+        {state === 'unsurveyed' || state === 'planned'
+          ? `${formatMoney(status.cost)} over ${formatQuarters(status.surveyQuarters)} · ${formatPercent(Math.round(status.likelihood * 1000), 0)} chance of a find · ${range} of ore a quarter if found.${state === 'planned' ? ' It starts when this quarter ends.' : ''}`
+          : state === 'surveying'
+            ? `${formatMoney(status.instalment)} this quarter. What it finds is reported when it is done.`
+            : ''}
+      </p>
+      {state === 'surveyed' && (
+        <p className="map-card__note" role="status" aria-label="Survey result">
+          {status.found === null
+            ? 'Surveyed: no deposit of ore worth mining lies here.'
+            : `Surveyed: a deposit of ore was found. Its mine could yield ${formatTonnes(status.found)} a quarter.`}
+        </p>
+      )}
+      {state === 'paused' && (
+        <p className="warning-note">
+          ▲ Paused: the treasury could not cover its {formatMoney(status.instalment)} instalment.
+        </p>
+      )}
+      {state === 'unsurveyed' && status.fault !== null && (
+        <p className="warning-note" role="note" aria-label={`Why ${name} cannot be surveyed`}>
+          ▲ {barred ? 'No survey can be started during austerity.' : status.fault}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** The button that plans a survey of the region, or takes the plan back, when either can be done. */
+function SurveyButton({
+  status,
+  onPlan,
+}: {
+  readonly status: SurveyStatus;
+  readonly onPlan: (planned: boolean) => void;
+}) {
+  const { name, state } = status;
+  if (state === 'planned') {
+    return (
+      <button
+        type="button"
+        className="button"
+        aria-label={`Cancel the survey of ${name}`}
+        onClick={() => {
+          onPlan(false);
+        }}
+      >
+        Cancel survey
+      </button>
+    );
+  }
+  if (state !== 'unsurveyed' || status.fault !== null) return null;
+  return (
+    <button
+      type="button"
+      className="button"
+      aria-label={`Survey ${name}`}
+      onClick={() => {
+        onPlan(true);
+      }}
+    >
+      Survey
+    </button>
   );
 }
 
