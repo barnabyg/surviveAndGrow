@@ -3,9 +3,15 @@ import {
   approvalStatus,
   createGame,
   debtStatus,
+  depositIn,
   electionStatus,
   GOOD_NAMES,
+  isInUseState,
+  knownTechnologies,
   prosperityStatus,
+  siteStatus,
+  surveyStatuses,
+  TECHNOLOGIES,
   TIERS,
   victoryStatus,
   type Country,
@@ -13,6 +19,7 @@ import {
   type Figure,
   type GameDate,
   type GameState,
+  type Technology,
   type Tier,
 } from '../../src/sim';
 import { withinRules } from './players';
@@ -77,6 +84,17 @@ export interface GameResult {
   readonly tradeSpending: number;
   /** The shocks the game met: those that struck while it was played. */
   readonly shocks: Shocks;
+  /**
+   * The technologies known as the game ended, each with the quarter of the game, counted
+   * from 1, at whose end its research finished.
+   */
+  readonly technologies: Readonly<Partial<Record<Technology, number>>>;
+  /** How many regions were surveyed as the game ended: the surveys finished. */
+  readonly surveys: number;
+  /** How many of those surveys found a deposit. */
+  readonly depositsFound: number;
+  /** How many of the deposits found had their mine in use as the game ended. */
+  readonly depositsMined: number;
 }
 
 /**
@@ -132,6 +150,27 @@ function countShocks(met: ReadonlySet<string>): Shocks {
 const rankOf = (tier: Tier) => TIERS.indexOf(tier);
 
 /**
+ * What the surveys of a game have come to, as the survey tab shows each region: how many are
+ * finished, how many of them found a deposit, and how many of the deposits found have their
+ * mine in use.
+ */
+function surveyed(
+  game: GameState,
+): Pick<GameResult, 'surveys' | 'depositsFound' | 'depositsMined'> {
+  const regions = surveyStatuses(game, {});
+  const found = regions.filter((region) => region.found !== null);
+  const mined = found.filter((region) => {
+    const mine = depositIn(game.country, region.regionId)?.mine;
+    return mine !== undefined && isInUseState(siteStatus(game, mine.id).state);
+  });
+  return {
+    surveys: regions.filter((region) => region.state === 'surveyed').length,
+    depositsFound: found.length,
+    depositsMined: mined.length,
+  };
+}
+
+/**
  * Plays one game through the simulation's public interface, with no screen, until it ends or
  * the number of terms given is up.
  */
@@ -156,6 +195,7 @@ export function playGame(
   const sold = `${GOOD_NAMES.grain} exported`;
   const bought = `${GOOD_NAMES.grain} imported`;
   const met = new Set<string>();
+  const technologies: Partial<Record<Technology, number>> = {};
   while (game.outcome.status === 'playing' && quarters < limit) {
     const decisions = withinRules(game, decide(game));
     const result = advanceQuarter(game, decisions);
@@ -173,6 +213,8 @@ export function playGame(
     game = result.state;
     meeting(game, met);
     quarters += 1;
+    for (const technology of knownTechnologies(game.projects))
+      technologies[technology] ??= quarters;
     if (game.outcome.status === 'playing' && victoryStatus(game).waitingOnDebt) heldByDebt += 1;
     if (rankOf(game.tier) > rankOf(peakTier)) peakTier = game.tier;
     peakProsperity = Math.max(peakProsperity, prosperityStatus(game).value);
@@ -196,6 +238,8 @@ export function playGame(
     peakDebtBurden,
     ...traded,
     shocks: countShocks(met),
+    technologies,
+    ...surveyed(game),
   };
   const ended = { regionId: null, winQuarter: null };
   if (outcome.status === 'playing') return { ...figures, ...ended, ending: 'inOffice' };
@@ -269,6 +313,32 @@ export interface Summary {
   readonly shocks: Readonly<Record<keyof Shocks, Spread>>;
   /** The games that met at least one of each shock. */
   readonly gamesMeeting: Readonly<Record<keyof Shocks, number>>;
+  /** How many technologies each game knew as it ended. */
+  readonly technologies: Spread;
+  /** The games that came to know at least one technology. */
+  readonly researched: number;
+  /** The quarter in which the first technology became known, in those games, or null. */
+  readonly firstTechnology: Spread | null;
+  /**
+   * Each technology some game came to know, in the tree's order: the games that knew it as
+   * they ended, and the quarter in which it became known in them.
+   */
+  readonly technologyKnown: readonly {
+    readonly technology: Technology;
+    readonly games: number;
+    readonly quarter: Spread;
+  }[];
+  /** How many regions each game surveyed. */
+  readonly surveys: Spread;
+  /** How many deposits each game's surveys found. */
+  readonly depositsFound: Spread;
+  /** The games whose surveys found at least one deposit. */
+  readonly foundDeposit: number;
+  /**
+   * Every deposit found in the batch, each game's counted, and how many of them had their
+   * mine in use as their game ended.
+   */
+  readonly deposits: { readonly found: number; readonly mined: number };
 }
 
 export function summarise(results: readonly GameResult[]): Summary {
@@ -285,6 +355,8 @@ export function summarise(results: readonly GameResult[]): Summary {
     byTerm.set(terms, (byTerm.get(terms) ?? 0) + 1);
   }
   const zero = { min: 0, median: 0, max: 0 };
+  /** For each game, the quarters in which its technologies became known. */
+  const known = results.map((result) => Object.values(result.technologies));
   return {
     games: results.length,
     won: count('won'),
@@ -323,6 +395,23 @@ export function summarise(results: readonly GameResult[]): Summary {
     tradeSpending: spreadOf(results.map((result) => result.tradeSpending)) ?? zero,
     shocks: byShock((kind) => spreadOf(results.map((result) => result.shocks[kind])) ?? zero),
     gamesMeeting: byShock((kind) => results.filter((result) => result.shocks[kind] > 0).length),
+    technologies: spreadOf(known.map((quarters) => quarters.length)) ?? zero,
+    researched: known.filter((quarters) => quarters.length > 0).length,
+    firstTechnology: spreadOf(
+      known.flatMap((quarters) => (quarters.length > 0 ? Math.min(...quarters) : [])),
+    ),
+    technologyKnown: TECHNOLOGIES.flatMap((technology) => {
+      const quarters = results.flatMap((result) => result.technologies[technology] ?? []);
+      const quarter = spreadOf(quarters);
+      return quarter === null ? [] : [{ technology, games: quarters.length, quarter }];
+    }),
+    surveys: spreadOf(results.map((result) => result.surveys)) ?? zero,
+    depositsFound: spreadOf(results.map((result) => result.depositsFound)) ?? zero,
+    foundDeposit: results.filter((result) => result.depositsFound > 0).length,
+    deposits: {
+      found: results.reduce((total, result) => total + result.depositsFound, 0),
+      mined: results.reduce((total, result) => total + result.depositsMined, 0),
+    },
   };
 }
 

@@ -213,7 +213,9 @@ region. It also gives the terms served, the quarter of each win, and the prosper
 game reached, and what each player borrowed: how many games a bailout struck, how often the debt
 test held back a win and whether it was won later, and the debt burden; and what each traded:
 the grain bought and sold abroad, what it brought in and cost, and the world price shocks,
-droughts and floods each game met. It prints the tables and writes them to `balance-results.md`. It is not one of the
+droughts and floods each game met; and what each researched and surveyed: the technologies it
+came to know and the quarter each became known, the regions surveyed, the deposits found and how
+many of them were mined. It prints the tables and writes them to `balance-results.md`. It is not one of the
 checks and gates nothing; a short run of the same players over a few seeds is part of the
 simulation tests. The games are shared out among worker processes at below-normal priority, on half the
 processors by default; 300 seeds of every player take a few minutes. How large a balance ticket's

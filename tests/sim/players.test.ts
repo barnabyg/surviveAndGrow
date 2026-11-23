@@ -12,6 +12,7 @@ import {
 import { DEFAULT_TERMS, playGame, summarise, type GameResult } from '../balance/batch';
 import { SCRIPTED_PLAYERS, withinRules, type ScriptedPlayer } from '../balance/players';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
+import { gameResult } from './results';
 
 /**
  * A short run of the scripted players, as a smoke test: whole games of several terms on the
@@ -167,35 +168,9 @@ describe.each(shipped)('a scripted player in %s', (_name, country) => {
 });
 
 describe('a batch of games', () => {
-  const game = (seed: number, figures: Partial<GameResult>): GameResult => ({
-    seed,
-    ending: 'inOffice',
-    regionId: null,
-    quarters: 80,
-    terms: 4,
-    winQuarter: null,
-    voteShare: 520,
-    treasury: 100,
-    approval: 510,
-    prosperity: 400,
-    peakTier: 'industrialising',
-    peakProsperity: 410,
-    borrowed: 0,
-    bailouts: 0,
-    heldByDebt: 0,
-    debtBurden: 0,
-    peakDebtBurden: 0,
-    imported: 0,
-    exported: 0,
-    tradeIncome: 0,
-    tradeSpending: 0,
-    shocks: { failedHarvestsAbroad: 0, oreGlut: 0, drought: 0, flood: 0 },
-    ...figures,
-  });
-
   it('is summed up by how each ended', () => {
     const summary = summarise([
-      game(1, {
+      gameResult(1, {
         heldByDebt: 2,
         borrowed: 400,
         debtBurden: 600,
@@ -204,7 +179,7 @@ describe('a batch of games', () => {
         tradeIncome: 170,
         shocks: { failedHarvestsAbroad: 1, oreGlut: 0, drought: 2, flood: 0 },
       }),
-      game(2, {
+      gameResult(2, {
         ending: 'lostElection',
         quarters: 40,
         terms: 2,
@@ -222,7 +197,7 @@ describe('a batch of games', () => {
         tradeSpending: 120,
         shocks: { failedHarvestsAbroad: 2, oreGlut: 1, drought: 0, flood: 1 },
       }),
-      game(3, {
+      gameResult(3, {
         ending: 'famine',
         regionId: 'dry-east',
         quarters: 9,
@@ -234,7 +209,7 @@ describe('a batch of games', () => {
         peakTier: 'subsistence',
         peakProsperity: 300,
       }),
-      game(4, {
+      gameResult(4, {
         ending: 'won',
         quarters: 53,
         terms: 3,

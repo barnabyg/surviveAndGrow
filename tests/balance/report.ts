@@ -3,6 +3,7 @@ import {
   formatMoney,
   formatPercent,
   regionName,
+  technologyName,
   TIER_NAMES,
   type Country,
 } from '../../src/sim';
@@ -34,7 +35,10 @@ function spread(figures: Spread | null, format: (value: number) => string): stri
     : `${format(figures.min)} / ${format(figures.median)} / ${format(figures.max)}`;
 }
 
-/** A batch on one country as Markdown tables, with the causes of loss spelt out beneath. */
+/**
+ * A batch on one country as Markdown tables, with the causes of loss and the technologies
+ * each player came to know spelt out beneath.
+ */
 export function writeUp(
   country: Country,
   seeds: string,
@@ -114,7 +118,21 @@ export function writeUp(
         ].join(' | ') + ' |',
     ),
     '',
-    'Spreads are least / middle / most. Won is the win on prosperity: Prosperous held for four quarters running, with the debt burden within the debt test as the hold completes. Still in office counts the games that had neither won nor lost when their terms were up. Vote share counts only the games that reached a vote. Bailed out counts the games in which a missed payment brought a bailout, and bailouts in a game counts them in those games. The win held back by the debt test counts the games in which prosperity was held long enough to win but the debt burden was over the limit, with how many of them were won once it passed and the quarters the win waited. The debt burden is what is owed against a year’s revenue. Grain is in thousands of tonnes (kt) over the game. A shock met is a world price shock that moved its price, or a drought or flood that began in a region, while the game was played: the share of games that met one, then how many each game met.',
+    '| Player | Technologies known | Quarter of the first technology | Regions surveyed | Deposits found | Found deposits mined |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...rows.map(({ player, summary }) => {
+      const { found, mined } = summary.deposits;
+      return `| ${[
+        player,
+        `${share(summary.researched, summary.games)}, ${spread(summary.technologies, String)}`,
+        spread(summary.firstTechnology, String),
+        spread(summary.surveys, String),
+        `${share(summary.foundDeposit, summary.games)}, ${spread(summary.depositsFound, String)}`,
+        found === 0 ? 'none found' : `${share(mined, found)}, ${mined} of ${found}`,
+      ].join(' | ')} |`;
+    }),
+    '',
+    'Spreads are least / middle / most. Won is the win on prosperity: Prosperous held for four quarters running, with the debt burden within the debt test as the hold completes. Still in office counts the games that had neither won nor lost when their terms were up. Vote share counts only the games that reached a vote. Bailed out counts the games in which a missed payment brought a bailout, and bailouts in a game counts them in those games. The win held back by the debt test counts the games in which prosperity was held long enough to win but the debt burden was over the limit, with how many of them were won once it passed and the quarters the win waited. The debt burden is what is owed against a year’s revenue. Grain is in thousands of tonnes (kt) over the game. A shock met is a world price shock that moved its price, or a drought or flood that began in a region, while the game was played: the share of games that met one, then how many each game met. Technologies known is the share of games that came to know at least one, then how many each game knew as it ended; the quarter of the first technology is the quarter of the game in which its research finished, in those games. Regions surveyed counts the surveys finished. Deposits found is the share of games whose surveys found at least one, then how many each game found. A found deposit is mined when its mine is in use as the game ends: the share of all the deposits the games found, and how many of them.',
     '',
     ...rows.map(({ player, summary }) => {
       const votes = summary.lostElectionByTerm
@@ -127,6 +145,16 @@ export function writeUp(
       return `- ${player}: lost the vote ${votes === '' ? 'in no game' : votes}; famine brought the state down in ${
         where === '' ? 'no game' : `${where} (in quarter ${when})`
       }.`;
+    }),
+    '',
+    ...rows.map(({ player, summary }) => {
+      const known = summary.technologyKnown
+        .map(
+          ({ technology, games, quarter }, index) =>
+            `${technologyName(technology)} in ${share(games, summary.games)}${index === 0 ? ' of its games' : ''} (quarter ${spread(quarter, String)})`,
+        )
+        .join(', ');
+      return `- ${player}: came to know ${known === '' ? 'no technology' : known}.`;
     }),
     '',
   ];
