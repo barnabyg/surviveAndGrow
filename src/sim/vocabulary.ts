@@ -327,16 +327,24 @@ export const TECHNOLOGY_STATE_NAMES: Readonly<Record<TechnologyState, string>> =
 /**
  * How a project stands: being built, held up for want of money, or finished. A site, once
  * built, is in use: operating while its upkeep is paid and decaying while it is not. A
- * technology, once researched, is known.
+ * technology, once researched, is known. A region, once its survey is done, is surveyed.
  */
-export const PROJECT_STATUSES = ['building', 'paused', 'operating', 'decaying', 'known'] as const;
+export const PROJECT_STATUSES = [
+  'building',
+  'paused',
+  'operating',
+  'decaying',
+  'known',
+  'surveyed',
+] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 /**
- * What a project can be for: a site, built on, or a technology, researched. A kind added here
- * is a project's target of its own in `projects.ts`, and a save-format change.
+ * What a project can be for: a site, built on, a technology, researched, or a region,
+ * surveyed. A kind added here is a project's target of its own in `projects.ts`, and a
+ * save-format change.
  */
-export const PROJECT_TARGET_KINDS = ['site', 'technology'] as const;
+export const PROJECT_TARGET_KINDS = ['site', 'technology', 'survey'] as const;
 export type ProjectTargetKind = (typeof PROJECT_TARGET_KINDS)[number];
 
 /**
@@ -396,6 +404,46 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
       finished: 'researchCompleted',
     },
   },
+  survey: {
+    begins: 'Survey begins',
+    resumes: 'Survey resumes',
+    paused: 'Survey paused',
+    finished: 'Survey finished',
+    work: 'surveying',
+    takes: 'it takes to survey',
+    idle: 'no surveying was done this quarter',
+    finishedCause: 'The surveyors have reported.',
+    paying: 'Surveying',
+    reportKinds: {
+      started: 'surveyStarted',
+      paused: 'surveyPaused',
+      finished: 'surveyCompleted',
+    },
+  },
+};
+
+/**
+ * How a region stands for a survey: no deposit could lie there, so there is nothing to
+ * survey; not yet surveyed; planned to be surveyed as the quarter ends; being surveyed, or
+ * paused for want of money; or surveyed, once and for all.
+ */
+export const SURVEY_STATES = [
+  'barren',
+  'unsurveyed',
+  'planned',
+  'surveying',
+  'paused',
+  'surveyed',
+] as const;
+export type SurveyState = (typeof SURVEY_STATES)[number];
+
+export const SURVEY_STATE_NAMES: Readonly<Record<SurveyState, string>> = {
+  barren: 'Nothing to survey',
+  unsurveyed: 'Not surveyed',
+  planned: 'Planned',
+  surveying: 'Being surveyed',
+  paused: 'Paused',
+  surveyed: 'Surveyed',
 };
 
 /**
@@ -552,6 +600,9 @@ export const REPORT_KINDS = [
   'researchStarted',
   'researchPaused',
   'researchCompleted',
+  'surveyStarted',
+  'surveyPaused',
+  'surveyCompleted',
   'siteDecaying',
   'siteRestored',
   'loanTaken',

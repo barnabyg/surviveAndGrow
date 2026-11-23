@@ -1,6 +1,7 @@
 import {
   instalment,
   onSite,
+  onSurvey,
   onTechnology,
   projectStartFault,
   type Project,
@@ -35,12 +36,13 @@ export interface TechnologyStatus extends TechnologyTerms {
 
 /**
  * Every technology in the tree, in the vocabulary's order, as it stands with `planned` to
- * be started as the quarter ends beside the sites planned.
+ * be started as the quarter ends beside the sites and the surveys planned.
  */
 export function researchStatuses(
   game: ProjectStarting,
   planned: Technology | null,
   plannedSiteIds: readonly string[] = [],
+  plannedSurveys: readonly string[] = [],
 ): readonly TechnologyStatus[] {
   return TECHNOLOGIES.map((technology) => {
     const terms = technologyTerms(technology);
@@ -49,7 +51,7 @@ export function researchStatuses(
     const fault =
       planned === technology
         ? `${terms.name} is planned.`
-        : researchFault(game, technology, plannedSiteIds, planned);
+        : researchFault(game, technology, plannedSiteIds, planned, plannedSurveys);
     return {
       ...terms,
       state: stateOf(project, planned === technology, terms, game.projects),
@@ -66,18 +68,20 @@ export function researchStatuses(
 }
 
 /**
- * What is wrong with starting research on a technology this quarter, beside the sites and
- * the research already planned, or null when it can be started.
+ * What is wrong with starting research on a technology this quarter, beside the sites, the
+ * research and the surveys already planned, or null when it can be started.
  */
 export function researchFault(
   game: ProjectStarting,
   technology: Technology,
   plannedSiteIds: readonly string[],
   planned: Technology | null = null,
+  plannedSurveys: readonly string[] = [],
 ): string | null {
   return projectStartFault(game, [
     ...plannedSiteIds.map(onSite),
     ...(planned === null ? [] : [onTechnology(planned)]),
+    ...plannedSurveys.map(onSurvey),
     onTechnology(technology),
   ]);
 }

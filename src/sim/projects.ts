@@ -1,7 +1,8 @@
 import { sum } from './arithmetic';
 import { buildingBarred, type Austere } from './austerity';
 import { nextDate } from './calendar';
-import type { Country, Site } from './country';
+import { regionName, type Country, type Site } from './country';
+import { surveyFault, surveyFindings, surveyOf, surveyTerms } from './deposits';
 import type { ReportEntry } from './report';
 import { infrastructureOf, siteEffectsOf, siteTerms } from './sites';
 import {
@@ -38,15 +39,21 @@ export interface TechnologyTarget {
   readonly technology: Technology;
 }
 
+/** A project on no site: surveying a region for the deposit the country file hides there. */
+export interface SurveyTarget {
+  readonly kind: 'survey';
+  readonly regionId: string;
+}
+
 /**
- * What a project is for, one of `PROJECT_TARGET_KINDS`: a site, built on, or a technology,
- * researched. Whatever its target, a project is paid for and paused in the same way
+ * What a project is for, one of `PROJECT_TARGET_KINDS`: a site, built on, a technology,
+ * researched, or a region, surveyed. Whatever its target, a project is paid for and paused in the same way
  * (`resolveProjects`) and barred in the same way (`projectStartFault`). Only what depends on
  * the target is written for each kind: its terms (`projectTerms`), what may stop it being
  * started (`targetFault`), the site it is on (`siteOf`), and how a save holds it
  * (`readTarget` in `save.ts`). A kind added to this union is found by the compiler in each.
  */
-export type ProjectTarget = SiteTarget | TechnologyTarget;
+export type ProjectTarget = SiteTarget | TechnologyTarget | SurveyTarget;
 
 /**
  * Something being built or in use: anything with a cost, a build time and a lasting effect
@@ -74,6 +81,11 @@ export function onTechnology(technology: Technology): ProjectTarget {
   return { kind: 'technology', technology };
 }
 
+/** The target of a survey of a region. */
+export function onSurvey(regionId: string): ProjectTarget {
+  return { kind: 'survey', regionId };
+}
+
 /** The site a project is on, or null for a project that is on no site. */
 export function siteOf({ target }: Pick<Project, 'target'>): string | null {
   return target.kind === 'site' ? target.siteId : null;
@@ -81,16 +93,18 @@ export function siteOf({ target }: Pick<Project, 'target'>): string | null {
 
 /**
  * The projects a quarter's decisions start, in the order they are paid for: the sites to
- * build on, as listed, and then the research, if any.
+ * build on, as listed, then the research, if any, and then the surveys, as listed.
  */
 export function startsOf(decisions: {
   readonly startProjects?: readonly string[];
   readonly startResearch?: Technology | null;
+  readonly startSurveys?: readonly string[];
 }): ProjectTarget[] {
   const research = decisions.startResearch ?? null;
   return [
     ...(decisions.startProjects ?? []).map(onSite),
     ...(research === null ? [] : [onTechnology(research)]),
+    ...(decisions.startSurveys ?? []).map(onSurvey),
   ];
 }
 
@@ -126,14 +140,30 @@ export interface ProjectTerms {
   readonly buildQuarters: number;
   /** What it does once finished, as the report says it. */
   readonly effect: string;
-  /** How the finished project stands: a site is operating, a technology known. */
+  /** How the finished project stands: a site is operating, a technology known, a region surveyed. */
   readonly finished: ProjectStatus;
   readonly words: ProjectWords;
 }
 
-/** A project's terms, or null when there is no such target: a site the country lacks. */
+/**
+ * A project's terms, or null when there is no such target: a site or region the country
+ * lacks. What a survey found is told when it finishes (`surveyFindings`), not here.
+ */
 export function projectTerms(country: Country, target: ProjectTarget): ProjectTerms | null {
   const words = PROJECT_TARGET_WORDS[target.kind];
+  if (target.kind === 'survey') {
+    if (!country.regions.some((region) => region.id === target.regionId)) return null;
+    const { cost, surveyQuarters } = surveyTerms(country, target.regionId);
+    return {
+      name: regionName(country, target.regionId),
+      regionId: target.regionId,
+      cost,
+      buildQuarters: surveyQuarters,
+      effect: 'It finds whether a deposit of ore lies there, and how large it is.',
+      finished: 'surveyed',
+      words,
+    };
+  }
   if (target.kind === 'technology') {
     if (!TECHNOLOGIES.includes(target.technology)) return null;
     const { name, cost, researchQuarters, effect } = technologyTerms(target.technology);
@@ -141,7 +171,7 @@ export function projectTerms(country: Country, target: ProjectTarget): ProjectTe
   }
   const site = country.sites.find((candidate) => candidate.id === target.siteId);
   if (site === undefined) return null;
-  const { cost, buildQuarters, effect } = siteTerms(site.type);
+  const { cost, buildQuarters, effect } = siteTerms(site.type, site.capacity);
   return {
     name: site.name,
     regionId: site.regionId,
@@ -204,12 +234,15 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
   };
 }
 
-/** How a project on a site can stand: never known, which only research becomes. */
-export type SiteProjectState = Exclude<ProjectStatus, 'known'>;
+/**
+ * How a project on a site can stand: never known, which only research becomes, nor surveyed,
+ * which only a survey becomes.
+ */
+export type SiteProjectState = Exclude<ProjectStatus, 'known' | 'surveyed'>;
 
-/** How a site's project stands. Only research is ever known, so a site's never is. */
+/** How a site's project stands. Only a project on no site is ever finished otherwise than in use. */
 export function siteStateOf({ status }: Pick<Project, 'status'>): SiteProjectState {
-  return status === 'known' ? 'operating' : status;
+  return status === 'known' || status === 'surveyed' ? 'operating' : status;
 }
 
 /**
@@ -262,13 +295,18 @@ export function projectStartFault(
  * What is wrong with starting a project for this target beside those listed before it, or
  * null when nothing is. A project is started on an empty site, not on one closed by building
  * on one of its alternatives nor together with one. Research is started on a technology whose
- * prerequisites are known, while no other is being researched (`technologyFault`).
+ * prerequisites are known, while no other is being researched (`technologyFault`). A survey
+ * is started once in a region where a deposit may lie (`surveyFault`).
  */
 function targetFault(
   { country, projects }: Building,
   target: ProjectTarget,
   alongside: readonly ProjectTarget[],
 ): string | null {
+  if (target.kind === 'survey') {
+    const surveying = alongside.flatMap((other) => surveyOf({ target: other }) ?? []);
+    return surveyFault(country, projects, target.regionId, surveying);
+  }
   if (target.kind === 'technology') {
     if (!TECHNOLOGIES.includes(target.technology)) {
       return `There is no technology "${target.technology}" to research.`;
@@ -313,9 +351,10 @@ export interface BuildingOutcome {
  * the budget has left, in the order they were started: the budget's own spending comes
  * first. A project whose instalment cannot be covered pauses for the quarter and carries on
  * when it can be paid. One that has had its last instalment is in use from the next quarter.
+ * A survey that finishes reports what it found, which the seed decides (`deposits.ts`).
  */
 export function resolveProjects(
-  { country, projects }: Building,
+  { country, projects, seed }: Building & { readonly seed: number },
   starts: readonly ProjectTarget[],
   date: GameDate,
   available: Money,
@@ -352,16 +391,18 @@ export function resolveProjects(
     const quartersPaid = project.quartersPaid + 1;
     if (project.status === 'paused') entries.push(resumedEntry(terms, quartersPaid));
     if (quartersPaid < terms.buildQuarters) return { ...project, quartersPaid, status: 'building' };
-    entries.push(completedEntry(terms));
+    const regionId = surveyOf(project);
+    const effect = regionId === null ? terms.effect : surveyFindings(country, seed, regionId);
+    entries.push(completedEntry({ ...terms, effect }));
     return { ...project, quartersPaid, status: terms.finished, opened: nextDate(date) };
   });
 
   return { projects: after, paid: available - left, contributions, paused, entries };
 }
 
-/** Whether a project is finished: a site in use, or a technology known. */
+/** Whether a project is finished: a site in use, a technology known or a region surveyed. */
 function isFinished(project: Project): boolean {
-  return inUse(project) || project.status === 'known';
+  return inUse(project) || project.status === 'known' || project.status === 'surveyed';
 }
 
 /**

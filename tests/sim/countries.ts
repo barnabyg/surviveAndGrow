@@ -92,9 +92,17 @@ export function testlandFormat5File(): unknown {
 
 /** Testland's file as format 6 could write it: no world price shock ever comes. */
 export function testlandFormat6File(): unknown {
-  const file = structuredClone(testlandFile) as Chances;
+  const file = testlandFormat7File() as Chances;
   delete file.priceShockLikelihood;
   file.formatVersion = 6;
+  return file;
+}
+
+/** Testland's file as format 7 could write it: it hides no deposit for a survey to find. */
+export function testlandFormat7File(): unknown {
+  const file = structuredClone(testlandFile) as Chances & { deposits?: unknown };
+  delete file.deposits;
+  file.formatVersion = 7;
   return file;
 }
 

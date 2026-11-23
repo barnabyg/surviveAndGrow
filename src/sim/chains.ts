@@ -2,7 +2,7 @@ import { balance } from './balance';
 import type { Country, Site } from './country';
 import type { ShockWatch } from './priceShocks';
 import { projectOnSite, siteStatus, type Project } from './projects';
-import { capacityOf, oreTonnesOf } from './sites';
+import { oreTonnesOf, siteCapacity } from './sites';
 import { costOf, formatPrice, priceOf, priceStatus, type WorldPrices } from './trade';
 import type { Money } from './types';
 import { inUse } from './upkeep';
@@ -156,7 +156,7 @@ export function oreEarnings(building: Building & ShockWatch, siteId: string): Or
   const source = building.country.sites.find((site) => site.id === siteId);
   if (chain === null || source === undefined) return null;
   const shipping = chain.shipped > 0;
-  const tonnes = shipping ? chain.shipped : oreTonnesOf(capacityOf(source.type) ?? 0);
+  const tonnes = shipping ? chain.shipped : oreTonnesOf(siteCapacity(source) ?? 0);
   const { price, forecast } = priceStatus(building, 'ore');
   return {
     tonnes,
@@ -211,7 +211,7 @@ function sitesOf(building: Building, source: Site): Site[] {
 function linkOf(building: Building, site: Site): ChainLink {
   const project = projectOnSite(building.projects, site.id);
   const { state } = siteStatus(building, site.id);
-  const capacity = capacityOf(site.type, state === 'decaying');
+  const capacity = siteCapacity(site, state === 'decaying');
   return {
     siteId: site.id,
     state,

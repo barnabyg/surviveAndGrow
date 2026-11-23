@@ -18,6 +18,7 @@ export {
   regionName,
   type Country,
   type Crossing,
+  type Deposit,
   type Decoration,
   type Neighbour,
   type Point,
@@ -108,6 +109,7 @@ export {
 export { oreTonnesOf } from './sites';
 export {
   onSite,
+  onSurvey,
   onTechnology,
   projectStartFault,
   siteOf,
@@ -118,6 +120,22 @@ export {
   type SiteStatus,
 } from './projects';
 export { researchFault, researchStatuses, type TechnologyStatus } from './research';
+export {
+  capacityOfTonnes,
+  depositFind,
+  depositIn,
+  surveyedRegions,
+  surveyFindings,
+  surveyTerms,
+  type SurveyTerms,
+} from './deposits';
+export {
+  planFault,
+  surveyStatus,
+  surveyStatuses,
+  type ProjectPlan,
+  type SurveyStatus,
+} from './surveys';
 export {
   knownTechnologies,
   technologyName,
@@ -207,6 +225,7 @@ export {
   quartersWord,
 } from './text';
 export {
+  DOLLARS_PER_MONEY,
   exactly,
   MONEY_PER_MILLION,
   type Contribution,
@@ -243,6 +262,8 @@ export {
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
+  SURVEY_STATE_NAMES,
+  SURVEY_STATES,
   TECHNOLOGIES,
   TECHNOLOGY_DEFINITIONS,
   TECHNOLOGY_STATE_NAMES,
@@ -274,6 +295,7 @@ export {
   type SiteState,
   type SiteType,
   type SpendingArea,
+  type SurveyState,
   type Technology,
   type TechnologyState,
   type Terrain,

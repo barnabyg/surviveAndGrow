@@ -5,6 +5,8 @@ import {
   austerityStatus,
   debtStatus,
   electionStatus,
+  knownTechnologies,
+  loadCountry,
   loadSave,
   pendingDilemma,
   priceStatus,
@@ -24,6 +26,7 @@ import format7Save from '../saves/format-7.json';
 import format8Save from '../saves/format-8.json';
 import format9Save from '../saves/format-9.json';
 import format10Save from '../saves/format-10.json';
+import format11Save from '../saves/format-11.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './playing';
 
@@ -619,5 +622,39 @@ describe('the save kept from save format 10', () => {
 
     expect(game.projects.every((project) => project.target.kind === 'site')).toBe(true);
     expect(game.projects.map((project) => project.status)).toEqual(['decaying', 'paused']);
+  });
+});
+
+describe('the save kept from save format 11', () => {
+  it('still opens on the game it was written from, a site in use and research under way', () => {
+    const { game } = loadSave(format11Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(
+      game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+    ).toEqual([
+      [{ kind: 'site', siteId: 'lowmere-store' }, 'operating', 2],
+      [{ kind: 'technology', technology: 'droughtResistantSeed' }, 'building', 3],
+    ]);
+    expect(knownTechnologies(game.projects)).toEqual([]);
+  });
+
+  it('plays on, the research finishing and the seed known from the next quarter', () => {
+    const { game } = loadSave(format11Save);
+
+    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
+
+    expect(report.entries.map((entry) => entry.headline)).toContain(
+      'Research finished: Drought-resistant seed',
+    );
+    expect(state.projects[1]).toMatchObject({ status: 'known', opened: state.date });
+    expect(knownTechnologies(state.projects)).toEqual(['droughtResistantSeed']);
+  });
+
+  it('is lifted to format 12 as it was, having surveyed nothing and found no deposit', () => {
+    const { game } = loadSave(format11Save);
+
+    expect(game.projects.some((project) => project.target.kind === 'survey')).toBe(false);
+    expect(game.country.sites).toEqual(loadCountry(game.country.source).sites);
   });
 });

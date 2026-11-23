@@ -1,5 +1,5 @@
 {
-  "formatVersion": 7,
+  "formatVersion": 8,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -175,6 +175,33 @@
         [788, 292]
       ],
       "dependsOn": ["north-station"]
+    }
+  ],
+  "deposits": [
+    {
+      "id": "north-ore",
+      "region": "northfield",
+      "likelihood": 0.5,
+      "tonnes": { "min": 200000, "max": 400000 },
+      "mine": {
+        "id": "north-mine",
+        "type": "mine",
+        "name": "Northfield mine",
+        "at": [300, 200],
+        "dependsOn": ["north-trunk-road"]
+      },
+      "route": {
+        "id": "north-trunk-road",
+        "type": "trunkRoad",
+        "name": "Trunk road, Northfield mine to Alpha port",
+        "region": "northfield",
+        "route": [
+          [300, 212],
+          [270, 350],
+          [255, 488]
+        ],
+        "dependsOn": ["alpha-port"]
+      }
     }
   ],
   "crossings": [

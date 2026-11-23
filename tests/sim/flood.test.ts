@@ -202,7 +202,7 @@ describe('flood likelihoods in a country file', () => {
 
   it('need country file format 6', () => {
     // Tavara as format 6 wrote it, before it could name world price shocks.
-    const format6 = without(tavaraFile, ['priceShockLikelihood']);
+    const format6 = without(without(tavaraFile, ['deposits']), ['priceShockLikelihood']);
     const faults = faultsOf(withValue(format6, ['formatVersion'], 5));
 
     expect(faults).toEqual([

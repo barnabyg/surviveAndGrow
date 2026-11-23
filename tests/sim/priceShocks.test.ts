@@ -11,7 +11,13 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { tavaraAsShipped, testlandAsShipped, testlandFormat5File, withChances } from './countries';
+import {
+  tavaraAsShipped,
+  testlandAsShipped,
+  testlandFormat5File,
+  testlandFormat7File,
+  withChances,
+} from './countries';
 import { faultsOf, withValue } from './files';
 
 const asItIs = (game: GameState): Decisions => ({ budget: game.budget });
@@ -207,7 +213,7 @@ describe.each(files)('world price shocks in %s', (_country, file) => {
 describe('how likely each world price shock is, in a country file', () => {
   it('is given by Tavara and Testland as they ship, a few in a hundred each quarter', () => {
     for (const country of [tavaraAsShipped(), testlandAsShipped()]) {
-      expect(country.formatVersion).toBe(7);
+      expect(country.formatVersion).toBe(8);
       for (const chance of Object.values(country.priceShockLikelihood)) {
         expect(chance).toBeGreaterThan(0);
         expect(chance).toBeLessThanOrEqual(0.1);
@@ -228,7 +234,7 @@ describe('how likely each world price shock is, in a country file', () => {
   });
 
   it('cannot be given in a file of format 6', () => {
-    const older = withValue(testlandFile, ['formatVersion'], 6);
+    const older = withValue(testlandFormat7File(), ['formatVersion'], 6);
 
     expect(faultsOf(older)).toEqual(['priceShockLikelihood needs country file format 7 or later.']);
   });

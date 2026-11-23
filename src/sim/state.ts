@@ -195,6 +195,13 @@ export interface Decisions {
    */
   readonly startResearch?: Technology | null;
   /**
+   * The regions to start surveying this quarter, each once and only where the country file
+   * hides a deposit, never one surveyed before. The treasury must hold their whole cost beside
+   * that of the sites and the research started. Their first instalments are paid as the
+   * quarter ends, after the research's. None may be started during austerity.
+   */
+  readonly startSurveys?: readonly string[];
+  /**
    * What to borrow this quarter, each from the menu of loans. The money arrives as the
    * quarter ends, and repayments begin the quarter after. Together with what is owed it must
    * stay within the most that may be owed. Nothing may be borrowed during austerity.

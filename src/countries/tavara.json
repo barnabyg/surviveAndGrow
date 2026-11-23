@@ -1,5 +1,5 @@
 {
-  "formatVersion": 7,
+  "formatVersion": 8,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -539,6 +539,63 @@
         [476, 192]
       ],
       "dependsOn": ["korr-falls-station"]
+    }
+  ],
+  "deposits": [
+    {
+      "id": "westhaven-ore",
+      "region": "salt-coast",
+      "likelihood": 0.6,
+      "tonnes": { "min": 150000, "max": 350000 },
+      "mine": {
+        "id": "westhaven-mine",
+        "type": "mine",
+        "name": "Westhaven mine",
+        "at": [170, 330],
+        "dependsOn": ["westhaven-trunk-road"]
+      },
+      "route": {
+        "id": "westhaven-trunk-road",
+        "type": "trunkRoad",
+        "name": "Trunk road, Westhaven mine to Saltmouth",
+        "region": "salt-coast",
+        "route": [
+          [172, 318],
+          [150, 280],
+          [142, 236]
+        ],
+        "dependsOn": ["saltmouth-port"]
+      }
+    },
+    {
+      "id": "dustwell-ore",
+      "region": "dry-east",
+      "likelihood": 0.35,
+      "tonnes": { "min": 400000, "max": 900000 },
+      "mine": {
+        "id": "dustwell-mine",
+        "type": "mine",
+        "name": "Dustwell mine",
+        "at": [880, 500],
+        "dependsOn": ["dustwell-trunk-road"]
+      },
+      "route": {
+        "id": "dustwell-trunk-road",
+        "type": "trunkRoad",
+        "name": "Trunk road, Dustwell mine to Saltmouth",
+        "region": "dry-east",
+        "route": [
+          [868, 492],
+          [760, 430],
+          [700, 330],
+          [600, 300],
+          [480, 262],
+          [300, 215],
+          [220, 226],
+          [152, 226]
+        ],
+        "dependsOn": ["saltmouth-port"]
+      }
     }
   ],
   "crossings": [

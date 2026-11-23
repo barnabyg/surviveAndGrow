@@ -1,4 +1,4 @@
-import type { Site } from './country';
+import type { Deposit, Site } from './country';
 import type { Reader } from './countryReader';
 import {
   SITE_CHAIN_ROLES,
@@ -8,16 +8,25 @@ import {
   type SiteType,
 } from './vocabulary';
 
+/** A site, and where it is written in the country file: "sites[3]". */
+export interface PlacedSite {
+  readonly site: Site;
+  readonly path: string;
+}
+
 /**
  * Each site a site depends on must be another site the country has, and no chain of
  * dependencies may lead back to where it started. A source must lead to an outlet, and a
- * power line to a power station.
+ * power line to a power station. The sites are the country's and its deposits', each with
+ * where it is written.
  */
-export function checkDependencies(reader: Reader, sites: readonly Site[]): void {
+export function checkDependencies(reader: Reader, placed: readonly PlacedSite[]): void {
+  const sites = placed.map(({ site }) => site);
+  const pathOf = (site: Site) => placed.find((each) => each.site === site)?.path ?? site.id;
   const byId = new Map(sites.map((site) => [site.id, site]));
-  sites.forEach((site, index) => {
+  sites.forEach((site) => {
     site.dependsOn.forEach((id, place) => {
-      const path = `sites[${index}].dependsOn[${place}]`;
+      const path = `${pathOf(site)}.dependsOn[${place}]`;
       if (id === site.id) reader.fault(path, `is "${id}": a site cannot depend on itself`);
       else if (!byId.has(id)) reader.fault(path, `is "${id}", which is not the id of a site`);
       else if (site.alternatives.includes(id)) {
@@ -46,9 +55,8 @@ export function checkDependencies(reader: Reader, sites: readonly Site[]): void 
       const key = [...cycle.slice(0, -1)].sort().join(' ');
       if (!reported.has(key)) {
         reported.add(key);
-        const index = sites.indexOf(site);
         reader.fault(
-          `sites[${index}].dependsOn`,
+          `${pathOf(site)}.dependsOn`,
           `goes round in a circle: ${cycle.map((id) => `"${id}"`).join(' depends on ')}`,
         );
       }
@@ -77,10 +85,10 @@ export function checkDependencies(reader: Reader, sites: readonly Site[]): void 
         )
       );
     });
-  sites.forEach((site, index) => {
+  sites.forEach((site) => {
     if (SITE_CHAIN_ROLES[site.type] !== 'source' || reaches(site, new Set([site.id]))) return;
     reader.fault(
-      `sites[${index}].dependsOn`,
+      `${pathOf(site)}.dependsOn`,
       `must lead, directly or through other sites, to a ${outletNames}: a ${SITE_TYPE_NAMES[site.type].toLowerCase()} earns only through a chain that reaches one`,
     );
   });
@@ -103,13 +111,56 @@ export function checkDependencies(reader: Reader, sites: readonly Site[]): void 
         )
       );
     });
-  sites.forEach((site, index) => {
+  sites.forEach((site) => {
     if (SITE_POWER_ROLES[site.type] !== 'line' || powers(site, new Set([site.id]))) return;
     const name = SITE_TYPE_NAMES[site.type].toLowerCase();
     reader.fault(
-      `sites[${index}].dependsOn`,
+      `${pathOf(site)}.dependsOn`,
       `must lead, directly or through other ${name}s, to a ${stationNames}: a ${name} carries power only from one`,
     );
+  });
+}
+
+/**
+ * A deposit's sites are hidden until a survey finds them, so none of the country's sites may
+ * depend on one or name one as an alternative, and a deposit's site may depend only on the
+ * country's sites and the other site of its own deposit.
+ */
+export function checkDeposits(
+  reader: Reader,
+  sites: readonly Site[],
+  deposits: readonly Deposit[],
+): void {
+  const owner = new Map<string, number>();
+  deposits.forEach((deposit, index) => {
+    for (const site of [deposit.mine, deposit.route]) {
+      if (site.id !== '') owner.set(site.id, index);
+    }
+  });
+  const hidden = (id: string) =>
+    `is "${id}", a deposit’s site, which is hidden until a survey finds it`;
+  sites.forEach((site, index) => {
+    for (const key of ['dependsOn', 'alternatives'] as const) {
+      site[key].forEach((id, place) => {
+        if (owner.has(id)) reader.fault(`sites[${index}].${key}[${place}]`, hidden(id));
+      });
+    }
+  });
+  deposits.forEach((deposit, index) => {
+    for (const [site, part] of [
+      [deposit.mine, 'mine'],
+      [deposit.route, 'route'],
+    ] as const) {
+      site.dependsOn.forEach((id, place) => {
+        const from = owner.get(id);
+        if (from !== undefined && from !== index) {
+          reader.fault(
+            `deposits[${index}].${part}.dependsOn[${place}]`,
+            `is "${id}", a site of another deposit: a deposit’s site may depend only on the country’s sites and its own deposit’s`,
+          );
+        }
+      });
+    }
   });
 }
 

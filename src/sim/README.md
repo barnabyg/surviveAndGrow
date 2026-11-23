@@ -64,7 +64,7 @@ entries keep the order written there.
 ## Projects and their targets
 
 A project names its target, what it is for (`ProjectTarget` in `projects.ts`): a site, built
-on, or a technology, researched. Surveys are to be a target of their own kind. What a project
+on, a technology, researched, or a region, surveyed. What a project
 shares is written once and takes no notice of the target: `projectStartFault` bars any new
 project during austerity and when the treasury does not hold the whole cost of everything started
 together, and `resolveProjects` pays the instalments after the budget, the oldest project first,
@@ -75,8 +75,10 @@ Only what depends on the target is written for each kind: its name, region, cost
 effect, the status it finishes with and the words the report and the treasury's breakdown use
 for it (`projectTerms`, with the words in `PROJECT_TARGET_WORDS` in `vocabulary.ts`), what else
 stops it being started (`targetFault`), and how a save holds it (`readTarget` in `save.ts`). A
-quarter's decisions start sites (`startProjects`) and research (`startResearch`); `startsOf`
-turns both into targets, the sites first. A project on no site is resolved like any other: it takes
+quarter's decisions start sites (`startProjects`), research (`startResearch`) and surveys
+(`startSurveys`); `startsOf` turns them into targets in that order. The interface checks a
+plan against everything else planned with `planFault` (`surveys.ts`), so that the treasury
+covers them all. A project on no site is resolved like any other: it takes
 its turn for instalments in the order it was started and pauses in the same way, but it has no
 site, so `siteOf` gives null for it. Everything that reads the sites in use (`siteStatus`,
 `sitesInUse`, `siteEffects`, upkeep, chains, power, trade links and the timeline) passes over
@@ -103,6 +105,23 @@ the weather moves a harvest answers to the effects in `WEATHER_HELD_BY`, and eac
 to the effects its definition lists (`heldBy` in `balance.events`), which is how
 drought-resistant seed softens drought but not flood. A technology that improves something new
 adds an effect there; one that unlocks a site type is for that ticket to add.
+
+## Surveys and deposits
+
+A country file may hide deposits (`Deposit` in `country.ts`, read by `readDeposits` and
+checked by `checkDeposits` in `siteChecks.ts`): a mine and the trunk road that serves it, in a
+region, with a likelihood and a range of sizes. A deposit's sites are not among the country's
+`sites` until a survey of its region finds it. A survey is a project whose target is a region
+(`SurveyTarget`); it finishes `surveyed`, and the report says what it found
+(`surveyFindings`, in `resolveProjects`).
+
+Whether a deposit is there and how large it is come from the seed and the deposit's id alone
+(`depositFind` in `deposits.ts`, keyed with `drawAt`), so the generator is untouched and the
+same seed always finds the same. Nothing about the find is kept in the state: `withFinds` adds
+the found deposits' sites to the country from the surveys finished and the seed, as a quarter
+ends (`game.ts`) and as a save is loaded (`save.ts`), and a found mine carries the size found
+as its own `capacity`, which `siteCapacity` (`sites.ts`) gives the chain in place of the type's.
+`surveys.ts` gives the interface each region as it stands for a survey (`surveyStatuses`).
 
 ## Adding a mechanic
 

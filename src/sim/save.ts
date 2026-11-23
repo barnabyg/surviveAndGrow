@@ -9,6 +9,7 @@ import {
 } from './dilemmas';
 import type { Credit } from './credit';
 import type { Debt } from './debt';
+import { depositIn, withFinds } from './deposits';
 import type { ActiveEvent } from './events';
 import type { Harvest } from './food';
 import type { VitalSigns } from './history';
@@ -156,9 +157,23 @@ export function loadSave(
 ): RestoredGame {
   if (!isRecord(saved)) throw new SaveError(damaged('it is not a saved game'));
   const current = toCurrentFormat(saved, migrations);
-
-  const country = readCountry(record(current.country, 'country'));
   const state = record(current.state, 'state');
+
+  const fileCountry = readCountry(record(current.country, 'country'));
+  const seed = whole(current.seed, 'seed');
+  const projects = readProjects(state.projects, 'state.projects', fileCountry);
+  // The deposits found so far are on the map: the seed and the surveys finished say which.
+  const country = withFinds(fileCountry, projects, seed);
+  const unfound = projects.flatMap((project) => {
+    const siteId = siteOf(project);
+    return siteId === null || country.sites.some((site) => site.id === siteId) ? [] : [siteId];
+  });
+  if (unfound.length > 0) {
+    fail(
+      'state.projects',
+      `builds on ${unfound[0] ?? ''}, a site of a deposit no survey has found`,
+    );
+  }
   const regionIds = country.regions.map((region) => region.id);
   const region = (value: unknown, path: string) => oneOf(value, path, regionIds, 'a region');
   const regionOrNone = (value: unknown, path: string) =>
@@ -166,7 +181,7 @@ export function loadSave(
 
   const game: GameState = {
     country,
-    seed: whole(current.seed, 'seed'),
+    seed,
     rng: whole(current.rng, 'rng', 0, 2 ** 32 - 1),
     date: date(state.date, 'state.date'),
     treasury: whole(state.treasury, 'state.treasury'),
@@ -184,7 +199,7 @@ export function loadSave(
       regionId: region(item.regionId, `${path}.regionId`),
       began: date(item.began, `${path}.began`),
     })),
-    projects: readProjects(state.projects, 'state.projects', country),
+    projects,
     debts: readDebts(state.debts, 'state.debts'),
     credit: readCredit(record(state.credit, 'state.credit'), 'state.credit'),
     worldPrices: readWorldPrices(
@@ -296,21 +311,30 @@ function readRegions(saved: unknown, path: string, regionIds: readonly string[])
 
 /**
  * The projects, each for something the country has, no two for the same thing, and none paid
- * for beyond the quarters it takes to finish. A project on a site is never known, and research
- * never in use. At most one technology is being researched, and none is researched before its
- * prerequisites are known.
+ * for beyond the quarters it takes to finish. A project on a site is never known nor surveyed,
+ * research never in use nor surveyed, and a survey only ever being done or surveyed. A site
+ * may be one of a deposit's, found or not: which are found is for the seed to say. A survey is
+ * of a region where the country hides a deposit. At most one technology is being researched,
+ * and none is researched before its prerequisites are known.
  */
 function readProjects(saved: unknown, path: string, country: Country): Project[] {
+  // Every site the country has or hides: which of a deposit's are found is checked later.
+  const every = {
+    ...country,
+    sites: [...country.sites, ...country.deposits.flatMap(({ mine, route }) => [mine, route])],
+  };
   const projects = list(saved, path, (item, itemPath): Project => {
     const target = readTarget(
       record(item.target, `${itemPath}.target`),
       `${itemPath}.target`,
-      country,
+      every,
     );
     const quartersPaid = whole(item.quartersPaid, `${itemPath}.quartersPaid`, 0);
-    const buildQuarters = projectTerms(country, target)?.buildQuarters ?? 0;
+    const buildQuarters = projectTerms(every, target)?.buildQuarters ?? 0;
     if (quartersPaid > buildQuarters) {
-      const what = target.kind === 'site' ? 'the site' : 'the technology';
+      const what = { site: 'the site', technology: 'the technology', survey: 'the region' }[
+        target.kind
+      ];
       const takes = PROJECT_TARGET_WORDS[target.kind].takes.replace('it takes', '');
       fail(
         `${itemPath}.quartersPaid`,
@@ -323,8 +347,15 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
       PROJECT_STATUSES,
       'a state of building',
     );
-    const fits = target.kind === 'site' ? status !== 'known' : !isInUseState(status);
+    const fits = {
+      site: status !== 'known' && status !== 'surveyed',
+      technology: !isInUseState(status) && status !== 'surveyed',
+      survey: status === 'building' || status === 'paused' || status === 'surveyed',
+    }[target.kind];
     if (!fits) fail(`${itemPath}.status`, `is "${status}", which a ${target.kind} never is`);
+    if (target.kind === 'survey' && depositIn(country, target.regionId) === null) {
+      fail(`${itemPath}.target.regionId`, 'is a region where the country hides no deposit');
+    }
     return {
       target,
       began: date(item.began, `${itemPath}.began`),
@@ -359,13 +390,23 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
   return projects;
 }
 
-/** What a project is for: a site the country has, or a technology the engine knows. */
+/**
+ * What a project is for: a site the country has or hides in a deposit, a technology the
+ * engine knows, or a region of the country.
+ */
 function readTarget(saved: Json, path: string, country: Country): ProjectTarget {
   const kind = oneOf(saved.kind, `${path}.kind`, PROJECT_TARGET_KINDS, 'a kind of project');
   if (kind === 'technology') {
     return {
       kind,
       technology: oneOf(saved.technology, `${path}.technology`, TECHNOLOGIES, 'a technology'),
+    };
+  }
+  if (kind === 'survey') {
+    const regionIds = country.regions.map((region) => region.id);
+    return {
+      kind,
+      regionId: oneOf(saved.regionId, `${path}.regionId`, regionIds, 'a region'),
     };
   }
   const siteIds = country.sites.map((site) => site.id);

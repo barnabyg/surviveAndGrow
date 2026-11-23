@@ -26,15 +26,18 @@ export interface SiteTerms {
   readonly decayingEffect: string;
 }
 
-/** The terms on which a site of one type is built. They are the same wherever it stands. */
-export function siteTerms(type: SiteType): SiteTerms {
+/**
+ * The terms on which a site of one type is built. They are the same wherever it stands, but
+ * for what a found deposit's mine produces: its own `capacity`, when it is given one.
+ */
+export function siteTerms(type: SiteType, capacity?: Money): SiteTerms {
   const { cost, buildQuarters, upkeep } = balance.sites[type];
   return {
     cost,
     buildQuarters,
     upkeep,
-    effect: effectOf(type, false),
-    decayingEffect: effectOf(type, true),
+    effect: effectOf(type, false, capacity),
+    decayingEffect: effectOf(type, true, capacity),
   };
 }
 
@@ -67,10 +70,22 @@ export function infrastructureOf(type: SiteType, decaying = false): number {
  * What a site of one type in use produces or carries in a quarter as part of a chain, or
  * null for a type that plays no part in one. A decaying site has only part of it.
  */
-export function capacityOf(type: SiteType, decaying = false): Money | null {
-  const { capacity }: SiteBalance = balance.sites[type];
+export function capacityOf(type: SiteType, decaying = false, own?: Money): Money | null {
+  const { capacity: usual }: SiteBalance = balance.sites[type];
+  const capacity = own ?? usual;
   if (capacity === undefined || SITE_CHAIN_ROLES[type] === null) return null;
   return decaying ? weakened(capacity) : capacity;
+}
+
+/**
+ * What a site produces or carries in a quarter as part of a chain: its type's capacity, or
+ * the size a survey revealed for a found deposit's mine (`capacityOf`).
+ */
+export function siteCapacity(
+  site: { readonly type: SiteType; readonly capacity?: Money },
+  decaying = false,
+): Money | null {
+  return capacityOf(site.type, decaying, site.capacity);
 }
 
 /**
@@ -107,9 +122,9 @@ function weakened(permille: number): number {
 }
 
 /** A site's effects in words, written from the same figures the rules use. */
-function effectOf(type: SiteType, decaying: boolean): string {
+function effectOf(type: SiteType, decaying: boolean, own?: Money): string {
   const role = SITE_CHAIN_ROLES[type];
-  const capacity = capacityOf(type, decaying);
+  const capacity = capacityOf(type, decaying, own);
   const powerRole = SITE_POWER_ROLES[type];
   const gain = powerGain(decaying);
   return [

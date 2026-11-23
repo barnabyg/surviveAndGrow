@@ -18,6 +18,7 @@ import {
   testlandFormat3File,
   testlandFormat4File,
   testlandFormat5File,
+  testlandFormat7File,
   testlandInDebt,
 } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
@@ -26,7 +27,7 @@ describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
     const country = tavara();
 
-    expect(tavaraAsShipped().formatVersion).toBe(7);
+    expect(tavaraAsShipped().formatVersion).toBe(8);
     expect(country.regions.map((region) => [region.name, region.terrain])).toEqual([
       ['Korr Highlands', 'highlands'],
       ['Salt Coast', 'coast'],
@@ -365,7 +366,7 @@ describe('a country file in format 3', () => {
   it('may mark sites as alternatives, each ruling out the other whichever side says so', () => {
     const country = testland();
 
-    expect(country.formatVersion).toBe(7);
+    expect(country.formatVersion).toBe(8);
     expect(valueAt(testlandFile, ['sites', 5, 'alternatives'])).toBeUndefined();
     expect(country.sites.map((site) => [site.id, site.alternatives])).toEqual([
       ['north-irrigation', []],
@@ -447,7 +448,7 @@ describe('a country file in format 4', () => {
   it('may say the loans the game starts with, each with its own terms', () => {
     const country = testlandInDebt();
 
-    expect(country.formatVersion).toBe(7);
+    expect(country.formatVersion).toBe(8);
     expect(country.start.loans).toEqual([
       { owed: 70, annualRateBasisPoints: 700, quarters: 8 },
       { owed: 40, annualRateBasisPoints: 950, quarters: 12 },
@@ -656,9 +657,9 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it is written for another version of the format', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 8);
+    const file = withValue(testlandFile, ['formatVersion'], 9);
 
-    expect(faultsOf(file)).toEqual(['formatVersion is 8, but this game reads versions 1 to 7.']);
+    expect(faultsOf(file)).toEqual(['formatVersion is 9, but this game reads versions 1 to 8.']);
   });
 
   it('when its format version is not a number', () => {
@@ -748,14 +749,14 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it has no regions', () => {
-    const empty = withValue(withValue(testlandFile, ['regions'], []), ['settlements'], []);
+    const empty = withValue(withValue(testlandFormat7File(), ['regions'], []), ['settlements'], []);
     const file = withValue(empty, ['sites'], []);
 
     expect(faultsOf(file)).toEqual(['regions must list at least one region.']);
   });
 
   it('when it lists no sites at all', () => {
-    const file = without(testlandFile, ['sites']);
+    const file = without(testlandFormat7File(), ['sites']);
 
     expect(faultsOf(file)).toEqual(['sites is missing.']);
   });

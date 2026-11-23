@@ -50,6 +50,7 @@ export function resolveMoney(
   state: Pick<
     GameState,
     | 'country'
+    | 'seed'
     | 'treasury'
     | 'regions'
     | 'projects'

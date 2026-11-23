@@ -26,6 +26,7 @@ import {
 import { foodSituation, forecastFood, reliefFor, resolveFood, withExported } from './food';
 import { vitalSigns } from './history';
 import { quartersToHarvest, resolveMoney, withTraded } from './money';
+import { withFinds } from './deposits';
 import { siteEffects, sitesAmong } from './projects';
 import { prosperityFigure, prosperityStatus, resolveServices } from './prosperity';
 import { pushesInto, rollPriceShocks, turnShocks } from './priceShocks';
@@ -177,6 +178,8 @@ export function resolveQuarter(
   return {
     state: {
       ...state,
+      // A deposit a survey found this quarter is on the map, to be built, from the next.
+      country: withFinds(state.country, damaged.projects, state.seed),
       date,
       treasury: finances.treasury,
       // A bailout brings the budget in force within the austerity it imposes.

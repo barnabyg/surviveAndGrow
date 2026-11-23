@@ -170,6 +170,21 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Finished research report',
     path: 'M7,2 H13 M8.5,2 V8 L3.5,17 H16.5 L11.5,8 V2 M7,13 L9,15 L13,10.5',
   },
+  // A magnifying glass held over the ground.
+  surveyStarted: {
+    label: 'Survey report',
+    path: 'M8,3 A5,5 0 1 1 7.99,3 M11.5,11.5 L16,16 M2,18 H18',
+  },
+  // The same glass with work stopped: two upright bars in it.
+  surveyPaused: {
+    label: 'Paused survey report',
+    path: 'M8,3 A5,5 0 1 1 7.99,3 M11.5,11.5 L16,16 M2,18 H18 M6.5,6 V10 M9.5,6 V10',
+  },
+  // The same glass, ticked.
+  surveyCompleted: {
+    label: 'Finished survey report',
+    path: 'M8,3 A5,5 0 1 1 7.99,3 M11.5,11.5 L16,16 M2,18 H18 M5.5,8 L7.5,10 L10.5,6',
+  },
   // A finished building with a crack running down it.
   siteDecaying: {
     label: 'Decaying site report',
