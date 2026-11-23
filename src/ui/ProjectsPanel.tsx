@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   buildingBarred,
+  knownTechnologies,
   SITE_TYPE_NAMES,
   formatMoney,
   siteStatus,
@@ -13,6 +14,7 @@ import {
   type ProjectPlan,
   type Site,
   type SiteStatus,
+  type Technology,
   formatQuarters,
 } from '../sim';
 import { opening } from './schedule';
@@ -94,6 +96,7 @@ export function ProjectsPanel(props: ProjectsPanelProps) {
         <ProjectCard
           key={site.id}
           site={site}
+          known={knownTechnologies(game.projects)}
           status={status}
           planned={planned}
           opens={openingOf(site.id)}
@@ -158,6 +161,8 @@ export function ProjectsPanel(props: ProjectsPanelProps) {
 
 interface ProjectCardProps {
   readonly site: Site;
+  /** The technologies known, which may improve what the site does. */
+  readonly known: readonly Technology[];
   readonly status: SiteStatus;
   readonly planned: boolean;
   /** When it opens as things stand, such as "next quarter", or null if it has no schedule. */
@@ -168,8 +173,9 @@ interface ProjectCardProps {
 }
 
 /** One project under way or planned: how far it has got, as a bar and in words. */
-function ProjectCard({ site, status, planned, opens, unpaid, onCancel }: ProjectCardProps) {
-  const { effect } = siteTerms(site.type);
+function ProjectCard(props: ProjectCardProps) {
+  const { site, known, status, planned, opens, unpaid, onCancel } = props;
+  const { effect } = siteTerms(site.type, site.capacity, known);
   return (
     <div className="project" role="group" aria-label={site.name}>
       <div className="project__head">
@@ -272,7 +278,7 @@ function ProjectCatalogue({ game, sites, onPlan, onClose }: ProjectCatalogueProp
       </p>
       <div className="catalogue__kinds">
         {kinds.map(({ type, sites: ofKind }) => {
-          const terms = siteTerms(type);
+          const terms = siteTerms(type, undefined, knownTechnologies(game.projects));
           const titleId = `catalogue-${type}`;
           return (
             <section key={type} className="catalogue__kind" aria-labelledby={titleId}>

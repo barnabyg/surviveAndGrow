@@ -75,3 +75,19 @@
   min-height: 44px;
   font-size: 15px;
 }
+
+/* What a technology improves in this game: the sites in use, the chains and the regions. */
+.technology__gains {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.technology__gains ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

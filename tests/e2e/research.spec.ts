@@ -59,7 +59,8 @@ test('research is started from the tree, finishes, and the technology is known',
   await expect(await seed(page)).toContainText('Known');
   await expect(await seed(page)).toContainText('Known since Year 2, Quarter 1.');
   await expect((await seed(page)).getByRole('button')).toHaveCount(0);
-  await expect(researchTab(page)).toHaveAccessibleDescription('All known');
+  // The seed known, what builds on it can be researched next.
+  await expect(researchTab(page)).toHaveAccessibleDescription('Idle · 2 available');
 });
 
 test('the tree says why research cannot be started', async ({ page }) => {

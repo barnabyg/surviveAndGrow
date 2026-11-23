@@ -6,6 +6,8 @@ import {
   formatMoney,
   formatPrice,
   formatTonnes,
+  knownTechnologies,
+  listed,
   oreEarnings,
   oreTonnesOf,
   portTonnesOf,
@@ -21,6 +23,7 @@ import {
   onSite,
   planFault,
   termCalendar,
+  technologyName,
   tradeCapacity,
   UPKEEP_ORDER_RULE,
   type Chain,
@@ -63,7 +66,9 @@ export function SiteCard(props: SiteCardProps) {
   const { onPlan, onClose } = props;
   const site = game.country.sites.find((candidate) => candidate.id === siteId);
   if (!site) return null;
-  const terms = siteTerms(site.type);
+  const known = knownTechnologies(game.projects);
+  // What it does counts the technologies known that improve it, and names them.
+  const terms = siteTerms(site.type, site.capacity, known);
   const status = siteStatus(game, site.id);
   const planned = plannedSiteIds.includes(site.id);
   const underWay = status.state === 'building' || status.state === 'paused';
@@ -296,14 +301,20 @@ function TradeLinkNote({ game, siteId }: { readonly game: GameState; readonly si
   if (link === undefined) {
     return (
       <p className="map-card__note">
-        Once in use, it adds {formatTonnes(portTonnesOf(site.type))} a quarter to the{' '}
-        {formatTonnes(capacity.total)} the trade links carry now.
+        Once in use, it adds{' '}
+        {formatTonnes(portTonnesOf(site.type, false, knownTechnologies(game.projects)))} a quarter
+        to the {formatTonnes(capacity.total)} the trade links carry now.
       </p>
     );
   }
+  const improved =
+    link.improvedBy.length === 0
+      ? ''
+      : ` (${formatTonnes(link.unimproved)} without ${listed(link.improvedBy.map(technologyName))})`;
   return (
     <p className="map-card__note" role="status">
-      Trade link: it carries {formatTonnes(link.tonnes)} a quarter across the border
+      Trade link: it carries {formatTonnes(link.tonnes)}
+      {improved} a quarter across the border
       {link.decaying ? ', half its capacity while it decays' : ''}. Of the{' '}
       {formatTonnes(capacity.total)} all the trade links carry, the mines’ ore takes{' '}
       {formatTonnes(capacity.ore)}, leaving {formatTonnes(capacity.total - capacity.ore)} for grain
@@ -327,13 +338,6 @@ function PowerReach({ game, siteId }: { readonly game: GameState; readonly siteI
       power station in use.
     </p>
   );
-}
-
-/** Names in a sentence: "A", "A and B", "A, B and C". */
-function listed(names: readonly string[]): string {
-  return names.length < 2
-    ? (names[0] ?? '')
-    : `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`;
 }
 
 function Fact({ label, value }: { readonly label: string; readonly value: string }) {

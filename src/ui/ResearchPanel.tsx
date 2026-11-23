@@ -1,12 +1,16 @@
 import {
   buildingBarred,
+  formatIndex,
   formatMoney,
   formatQuarters,
+  formatTonnes,
   researchStatuses,
+  technologyGains,
   technologyName,
   TECHNOLOGY_STATE_NAMES,
   type GameState,
   type Technology,
+  type TechnologyGains,
   type TechnologyStatus,
 } from '../sim';
 import { DecisionPanel, type DecisionTab } from './DecisionPanel';
@@ -88,6 +92,7 @@ export function ResearchPanel(props: ResearchPanelProps) {
           <li key={status.technology}>
             <TechnologyCard
               status={status}
+              gains={technologyGains(game, status.technology)}
               barred={barred !== null}
               onPlan={() => {
                 onPlan(status.technology);
@@ -115,6 +120,8 @@ const STATE_MARKS: Readonly<Record<TechnologyStatus['state'], string>> = {
 
 interface TechnologyCardProps {
   readonly status: TechnologyStatus;
+  /** What it does in this game, from the sites in use. */
+  readonly gains: TechnologyGains;
   /** Austerity forbids starting anything, which the panel says once. */
   readonly barred: boolean;
   readonly onPlan: () => void;
@@ -122,7 +129,7 @@ interface TechnologyCardProps {
 }
 
 /** One technology of the tree: how it stands, what it takes, needs and does. */
-function TechnologyCard({ status, barred, onPlan, onCancel }: TechnologyCardProps) {
+function TechnologyCard({ status, gains, barred, onPlan, onCancel }: TechnologyCardProps) {
   const { name, state } = status;
   const underway = state === 'researching' || state === 'paused';
   const needs = status.prerequisites.map(technologyName);
@@ -157,6 +164,7 @@ function TechnologyCard({ status, barred, onPlan, onCancel }: TechnologyCardProp
       <p className="projects__terms">
         {formatMoney(status.cost)} · {formatQuarters(status.researchQuarters)} · {status.effect}
       </p>
+      <Gains name={name} known={state === 'known'} gains={gains} />
       <dl className="technology__links">
         <div>
           <dt>Needs</dt>
@@ -222,5 +230,55 @@ function TechnologyCard({ status, barred, onPlan, onCancel }: TechnologyCardProp
           )
         ))}
     </div>
+  );
+}
+
+interface GainsProps {
+  readonly name: string;
+  readonly known: boolean;
+  readonly gains: TechnologyGains;
+}
+
+/**
+ * What a technology does in this game, from the sites in use: each site it improves, with
+ * each figure it moves set beside what it is without it, then each chain and region it moves
+ * and by how much. A technology that improves a type of site not yet built says it pays off
+ * only once one is. One that improves no site says nothing more here.
+ */
+function Gains({ name, known, gains }: GainsProps) {
+  const { sites, chains, regions, awaiting } = gains;
+  if (awaiting !== null) return <p className="project__note">{awaiting}</p>;
+  if (sites.length === 0) return null;
+  const would = known ? '' : ' would';
+  return (
+    <section className="technology__gains" aria-label={`What ${name} improves in this game`}>
+      <div className="projects__terms">
+        {known ? 'In this game it improves' : 'In this game it would improve'}
+      </div>
+      <ul>
+        {sites.map((site) => (
+          <li key={site.siteId}>
+            <span className="project__name">{site.name}:</span> {site.effect}
+          </li>
+        ))}
+        {chains.map((chain) => (
+          <li key={chain.sourceId}>
+            {chain.name}
+            {would} {known ? 'ships' : 'ship'} {formatTonnes(chain.after)} of ore a quarter, not{' '}
+            {formatTonnes(chain.before)}.
+          </li>
+        ))}
+        {regions.map((region) => (
+          <li key={region.regionId}>
+            {region.name}
+            {would} {known ? 'gains' : 'gain'} {formatMoney(region.output)} of output a quarter
+            {region.infrastructure === 0
+              ? ''
+              : ` and ${formatIndex(region.infrastructure)} of infrastructure access`}
+            .
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
