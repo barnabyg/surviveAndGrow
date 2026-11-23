@@ -502,7 +502,10 @@ export const PROJECT_TARGET_FINISHED = {
  * of each report entry, the work it is ("2 of its 3 quarters of building"), what it is for
  * ("the site"), what finishing it is ("the 3 quarters it takes to build"), what a quarter
  * without money did, what finishing means, the line it pays in the treasury's breakdown
- * ("Building Lowmere irrigation"), and the kinds of report its entries are.
+ * ("Building Lowmere irrigation"), and the kinds of report its entries are. The risks ahead
+ * warn of an instalment the treasury cannot cover with `instalmentOn`, which comes before the
+ * project's name ("research into Hydropower") and is empty for a site, whose name says it
+ * all, and with `pauses`, which is what then pauses.
  */
 export interface ProjectWords {
   readonly begins: string;
@@ -515,6 +518,8 @@ export interface ProjectWords {
   readonly idle: string;
   readonly finishedCause: string;
   readonly paying: string;
+  readonly instalmentOn: string;
+  readonly pauses: string;
   readonly reportKinds: {
     readonly started: ReportKind;
     readonly paused: ReportKind;
@@ -534,6 +539,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     idle: 'nothing was built this quarter',
     finishedCause: 'It is in use from next quarter.',
     paying: 'Building',
+    instalmentOn: '',
+    pauses: 'building there',
     reportKinds: {
       started: 'projectStarted',
       paused: 'projectPaused',
@@ -551,6 +558,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     idle: 'no research was done this quarter',
     finishedCause: 'It is known from next quarter.',
     paying: 'Researching',
+    instalmentOn: 'research into',
+    pauses: 'the research',
     reportKinds: {
       started: 'researchStarted',
       paused: 'researchPaused',
@@ -568,6 +577,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     idle: 'no surveying was done this quarter',
     finishedCause: 'The surveyors have reported.',
     paying: 'Surveying',
+    instalmentOn: 'the survey of',
+    pauses: 'the survey',
     reportKinds: {
       started: 'surveyStarted',
       paused: 'surveyPaused',

@@ -3,6 +3,7 @@ import { balance } from './balance';
 import { missedPaymentMeans } from './bailout';
 import { creditStatus, loanRateSpan, ratingCause, ratingRank } from './credit';
 import { debtName, debtStatus, dueAtMaturity, maturityOf, paysAtMaturity, type Debt } from './debt';
+import { pausedProjects, projectTerms, type Project, type ProjectTerms } from './projects';
 import {
   likelihoodOf,
   typicalOf,
@@ -12,7 +13,7 @@ import {
   type Path,
   type Scope,
 } from './riskScope';
-import type { GameState } from './state';
+import type { GameState, QuarterResolved } from './state';
 import { formatMoney } from './text';
 import { forecastSpan, formatPrice, priceStatus } from './trade';
 import type { Money } from './types';
@@ -60,13 +61,48 @@ function oreSlumpRisk(
   return [{ ...risk(quarter, slump), likelihood, withinQuarters: quarter + 1 }];
 }
 
-/** The treasury runs out when it cannot cover the budget, or an instalment on a project. */
+/**
+ * What gives way in a quarter the treasury runs out in, and when: the budget, whose every area
+ * is cut, or failing that the oldest project left unpaid, named in the words of its kind,
+ * whether it is building on a site, research or a survey. It is said as it stands, or as
+ * something supposed would have it.
+ */
+function givesWay(
+  resolved: QuarterResolved | undefined,
+  quarter: number,
+  supposed = false,
+): string {
+  const [cannot, will] = supposed ? ['could not', 'would'] : ['cannot', 'will'];
+  const unpaid = resolved === undefined || resolved.spendingCut ? null : firstUnpaid(resolved);
+  if (unpaid === null) {
+    return `the treasury ${cannot} cover the budget ${when(quarter)}, and every area ${will} be cut.`;
+  }
+  const { instalmentOn, pauses } = unpaid.words;
+  const on = instalmentOn === '' ? unpaid.name : `${instalmentOn} ${unpaid.name}`;
+  return `the treasury ${cannot} cover the instalment on ${on} ${when(quarter)}, and ${pauses} ${will} pause.`;
+}
+
+/** The projects whose instalment a quarter could not cover, the oldest first. */
+function unpaidIn(resolved: QuarterResolved): Project[] {
+  return pausedProjects(resolved.state.projects);
+}
+
+/** The oldest project a quarter left unpaid, by its terms, or null when it paid for them all. */
+function firstUnpaid(resolved: QuarterResolved): ProjectTerms | null {
+  const [first] = unpaidIn(resolved);
+  return first === undefined ? null : projectTerms(resolved.state.country, first.target);
+}
+
+/**
+ * The treasury runs out when it cannot cover the budget, or an instalment on a project,
+ * whatever the project is for.
+ */
 export function treasuryRisk(scope: Scope): Risk[] {
   const { state, watched } = scope;
   const emptied = (path: Path) => {
     const quarter = path
       .slice(0, watched)
-      .findIndex((resolved) => resolved.spendingCut || resolved.pausedSites.length > 0);
+      .findIndex((resolved) => resolved.spendingCut || unpaidIn(resolved).length > 0);
     return quarter === -1 ? null : quarter;
   };
   const finding = weigh(scope, emptied);
@@ -75,18 +111,13 @@ export function treasuryRisk(scope: Scope): Risk[] {
     return oreSlumpRisk(scope, emptied, (quarter, slump) => ({
       kind: 'treasury',
       headline: 'Empty treasury',
-      reason: `${slump}: the treasury could not cover the budget ${when(quarter)}, and every area would be cut.`,
+      reason: `${slump}: ${givesWay(scope.oreSlump[quarter], quarter, true)}`,
     }));
   }
 
   // What gives way first is read off the course with ordinary weather and no new event.
   const typical = typicalOf(scope.courses);
   const quarter = emptied(typical) ?? finding.soonest;
-  const first = typical[quarter];
-  const site =
-    first === undefined || first.spendingCut
-      ? undefined
-      : state.country.sites.find((candidate) => candidate.id === first.pausedSites[0]);
   // Repayments are paid before anything else, so they are what squeezes the rest: those due
   // in the quarter the treasury runs out, as the course has it begin.
   const begins = quarter === 0 ? state : (typical[quarter - 1]?.state ?? state);
@@ -100,11 +131,7 @@ export function treasuryRisk(scope: Scope): Risk[] {
       kind: 'treasury',
       likelihood,
       headline: 'Empty treasury',
-      reason:
-        (site === undefined
-          ? `As things stand the treasury cannot cover the budget ${when(finding.soonest)}, and every area will be cut.`
-          : `As things stand the treasury cannot cover the instalment on ${site.name} ${when(finding.soonest)}, and building there will pause.`) +
-        firstNote,
+      reason: `As things stand ${givesWay(typical[quarter], finding.soonest)}${firstNote}`,
       withinQuarters: finding.soonest + 1,
     },
   ];

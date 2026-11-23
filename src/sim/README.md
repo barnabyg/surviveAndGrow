@@ -74,8 +74,8 @@ quarter. Taking a plan back is the interface's: a plan is not a project until th
 
 Only what depends on the target is written for each kind: its name, region, cost, build time,
 effect, the status it finishes with (`PROJECT_TARGET_FINISHED` in `vocabulary.ts`, which
-`siteStateOf`, `standsAs` and a save's check read) and the words the report and the treasury's
-breakdown use for it (`projectTerms`, with the words in `PROJECT_TARGET_WORDS`), what else
+`siteStateOf`, `standsAs` and a save's check read) and the words the report, the treasury's
+breakdown and the risks ahead use for it (`projectTerms`, `PROJECT_TARGET_WORDS`), what else
 stops it being started (`targetFault`), and how a save holds it (`readTarget` in `save.ts`). A
 quarter's decisions start sites (`startProjects`), research (`startResearch`) and surveys
 (`startSurveys`); `startsOf` turns them into targets in that order. The interface checks a

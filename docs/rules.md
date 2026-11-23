@@ -414,10 +414,18 @@ main figures from the balance values and fails if this file, the README or
   what it would do. The quarters ahead are played with the shocks announced pushing the prices,
   so the dangers one brings, such as a treasury a glut would empty, are weighed from the quarter
   it is announced.
+- The treasury runs out when it cannot cover the budget, and every area is cut, or when it
+  cannot cover an instalment on a project, which pauses. The warning says which gives way first
+  and when: the budget, or the oldest project left unpaid, named for what it is, whether
+  building on a site, research into a technology or the survey of a region. The instalments of
+  every project under way or planned are counted in each quarter played, so research or a
+  survey planned now is warned of when its instalments would leave a later quarter's budget
+  short.
 - While a mine earns, the game also plays the quarters ahead with ordinary weather and the world
   ore price slumping to the low end of its forecast. A treasury that would run out, or a
   repayment that would be missed, only in that slump is listed as unlikely, with the price it
-  would take.
+  would take and, for the treasury, what would give way: the budget, or the building, research
+  or survey that would pause.
 
 ## Dilemmas
 

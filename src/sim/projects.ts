@@ -461,6 +461,14 @@ export function resolveProjects(
   return { projects: after, paid: available - left, contributions, paused, entries };
 }
 
+/**
+ * The projects a quarter left paused, in the order they were started: those whose instalment
+ * it could not cover, whatever each is for. One paid for in a later quarter is building again.
+ */
+export function pausedProjects(projects: readonly Project[]): Project[] {
+  return projects.filter((project) => project.status === 'paused');
+}
+
 /** Whether a project is finished: a site in use, a technology known or a region surveyed. */
 function isFinished(project: Project): boolean {
   return inUse(project) || project.status === PROJECT_TARGET_FINISHED[project.target.kind];

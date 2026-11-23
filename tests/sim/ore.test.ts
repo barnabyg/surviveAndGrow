@@ -277,6 +277,25 @@ describe('a slump in the world ore price inside its forecast, in Tavara', () => 
     expect(slumped.at(4)?.worldPrices.ore.at(-1)).toBeLessThan(80);
   });
 
+  it('is warned of when it would pause research, in the research’s own words', () => {
+    // The budget of the test above, which only just balances on the mine’s tax, and a
+    // treasury that covers the seed’s $2.0m instalments while the ore price holds.
+    const budget: Budget = {
+      taxRatePercent: 25,
+      spending: { ...solvent(country).spending, health: 200, education: 110 },
+    };
+    const poor: GameState = { ...game, treasury: 140 };
+    const treasuryRisk = (decisions: Decisions) =>
+      risksAhead(poor, decisions).find((risk) => risk.kind === 'treasury');
+
+    expect(treasuryRisk({ budget })).toBe(undefined);
+    const warning = treasuryRisk({ budget, startResearch: 'droughtResistantSeed' });
+    expect(warning).toMatchObject({ headline: 'Empty treasury', likelihood: 'unlikely' });
+    expect(warning?.reason).toMatch(
+      /^Should the world ore price slump to \$\d+ a tonne, the low end of its forecast over the next 4 quarters, .*: the treasury could not cover the instalment on research into Drought-resistant seed in 3 quarters, and the research would pause\.$/,
+    );
+  });
+
   it('is warned of when it would cause a missed payment on a debt', () => {
     const loan: Debt = {
       kind: 'loan',
