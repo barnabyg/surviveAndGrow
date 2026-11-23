@@ -2,7 +2,7 @@ import { outputPermille } from './approval';
 import { balance } from './balance';
 import { clamp, sum } from './arithmetic';
 import { chainEarnings, earningLines } from './chains';
-import { poweredOutput, regionPower } from './power';
+import { poweredOutput, powerLines, regionPower } from './power';
 import { regionName, type Country } from './country';
 import type { Project } from './projects';
 import type { ReportEntry } from './report';
@@ -179,6 +179,7 @@ function collectTaxes(
     const name = regionName(country, region.id);
     const power = powers.find((entry) => entry.regionId === region.id);
     const fromPower = power === undefined ? 0 : poweredOutput(region.output, power);
+    const powerLabel = `Tax from power in ${name}`;
     // What a chain or power adds to the region's output is taxed as a line of its own. What a
     // chain earns is taxed at the world ore price, and the price's effect is a line beside it.
     const tax = (output: Money) => percentOf(output, budget.taxRatePercent);
@@ -191,9 +192,17 @@ function collectTaxes(
           output: earning.output,
           lines: earningLines(`Tax from ${earning.site.name}`, earning, tax),
         })),
-      ...(fromPower > 0
-        ? [{ label: `Tax from power in ${name}`, output: fromPower, lines: null }]
-        : []),
+      ...(power === undefined || fromPower === 0
+        ? []
+        : [
+            {
+              label: powerLabel,
+              output: fromPower,
+              lines: powerLines(powerLabel, power, (gain) =>
+                tax(poweredOutput(region.output, gain)),
+              ),
+            },
+          ]),
     ];
     const kept = outputPermille(region.unrest);
     const lost = sum(

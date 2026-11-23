@@ -85,9 +85,12 @@ describe('the technology tree', () => {
   it.each(bothCountries)('starts in %s with nothing known and the seed available', (_, country) => {
     const game = createGame(country(), 1);
     expect(knownTechnologies(game.projects)).toEqual([]);
-    expect(researchStatuses(game, null)).toEqual([
-      expect.objectContaining({ technology: SEED, state: 'available', fault: null }),
-    ]);
+    // The seed needs nothing; everything else in the tree builds on it, so is locked.
+    const statuses = researchStatuses(game, null);
+    expect(statuses.map((status) => [status.technology, status.state])).toEqual(
+      TECHNOLOGIES.map((technology) => [technology, technology === SEED ? 'available' : 'locked']),
+    );
+    expect(statuses[0]?.fault).toBeNull();
   });
 });
 

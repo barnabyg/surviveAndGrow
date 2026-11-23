@@ -2,11 +2,12 @@ import { sum } from './arithmetic';
 import { chains } from './chains';
 import type { Country } from './country';
 import { projectOnSite, type Project } from './projects';
-import { capacityOf, oreTonnesOf } from './sites';
+import { capacityOf, improvementsOf, oreTonnesOf } from './sites';
+import { knownTechnologies } from './technology';
 import { formatTonnes } from './text';
 import type { TradeOrder, WorldPrices } from './trade';
 import { inUse } from './upkeep';
-import { SITE_CHAIN_ROLES, type SiteType } from './vocabulary';
+import { SITE_CHAIN_ROLES, type SiteType, type Technology } from './vocabulary';
 
 interface Trading {
   readonly country: Country;
@@ -27,6 +28,10 @@ export interface TradeLink {
   readonly tonnes: number;
   /** Whether it is a port that decays, and so carries only part of what it does in good repair. */
   readonly decaying: boolean;
+  /** What it would carry if no technology improved it, in tonnes: `tonnes` while none does. */
+  readonly unimproved: number;
+  /** The technologies known that make it carry more, in the order they became known. */
+  readonly improvedBy: readonly Technology[];
 }
 
 /**
@@ -71,26 +76,41 @@ export function tradeLinks(game: Omit<Trading, 'worldPrices'>): TradeLink[] {
     kind: 'crossing',
     tonnes: crossing.tonnes,
     decaying: false,
+    unimproved: crossing.tonnes,
+    improvedBy: [],
   }));
+  const known = knownTechnologies(game.projects);
   const ports = game.country.sites.flatMap((site): TradeLink[] => {
     const project = projectOnSite(game.projects, site.id);
     if (SITE_CHAIN_ROLES[site.type] !== 'outlet' || project === undefined || !inUse(project)) {
       return [];
     }
     const decaying = project.status === 'decaying';
-    const tonnes = portTonnesOf(site.type, decaying);
-    return [{ id: site.id, name: site.name, kind: 'port', tonnes, decaying }];
+    const tonnes = portTonnesOf(site.type, decaying, known);
+    const unimproved = portTonnesOf(site.type, decaying);
+    const improvedBy =
+      tonnes === unimproved
+        ? []
+        : improvementsOf(site.type, known).map(([technology]) => technology);
+    return [
+      { id: site.id, name: site.name, kind: 'port', tonnes, decaying, unimproved, improvedBy },
+    ];
   });
   return [...crossings, ...ports];
 }
 
 /**
  * What a port of one type carries across the border in a quarter while in use, in tonnes: what
- * it ships for a chain, and half of it while it decays. Nothing for a site that is not a port.
+ * it ships for a chain, with the technologies `known` that improve it, and half of it while it
+ * decays. Nothing for a site that is not a port.
  */
-export function portTonnesOf(type: SiteType, decaying = false): number {
+export function portTonnesOf(
+  type: SiteType,
+  decaying = false,
+  known: readonly Technology[] = [],
+): number {
   if (SITE_CHAIN_ROLES[type] !== 'outlet') return 0;
-  return oreTonnesOf(capacityOf(type, decaying) ?? 0);
+  return oreTonnesOf(capacityOf(type, decaying, undefined, known) ?? 0);
 }
 
 /**

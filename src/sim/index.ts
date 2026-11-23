@@ -113,13 +113,23 @@ export {
   onTechnology,
   projectStartFault,
   siteOf,
+  siteEffects,
   siteStatus,
   startFault,
   type Project,
   type ProjectTarget,
   type SiteStatus,
 } from './projects';
-export { researchFault, researchStatuses, type TechnologyStatus } from './research';
+export {
+  researchFault,
+  researchStatuses,
+  technologyGains,
+  type ChainGain,
+  type RegionGain,
+  type SiteGain,
+  type TechnologyGains,
+  type TechnologyStatus,
+} from './research';
 export {
   capacityOfTonnes,
   depositFind,
@@ -222,6 +232,7 @@ export {
   formatQuarters,
   formatSignedPoints,
   formatTonnes,
+  listed,
   quartersWord,
 } from './text';
 export {

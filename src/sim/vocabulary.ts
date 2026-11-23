@@ -160,21 +160,65 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
     SiteType,
     {
       readonly name: string;
+      /** The name of several, as a technology that improves them all speaks of them. */
+      readonly plural: string;
       readonly form: SiteForm;
       readonly chainRole: ChainRole | null;
       readonly powerRole: PowerRole | null;
     }
   >
 > = {
-  irrigation: { name: 'Irrigation scheme', form: 'place', chainRole: null, powerRole: null },
-  farmRoad: { name: 'Farm road', form: 'route', chainRole: null, powerRole: null },
-  grainStore: { name: 'Grain store', form: 'place', chainRole: null, powerRole: null },
-  mine: { name: 'Mine', form: 'place', chainRole: 'source', powerRole: null },
-  trunkRoad: { name: 'Trunk road', form: 'route', chainRole: 'link', powerRole: null },
-  port: { name: 'Port', form: 'place', chainRole: 'outlet', powerRole: null },
-  shallowPort: { name: 'Shallow port', form: 'place', chainRole: 'outlet', powerRole: null },
-  powerStation: { name: 'Power station', form: 'place', chainRole: null, powerRole: 'station' },
-  powerLine: { name: 'Power line', form: 'route', chainRole: null, powerRole: 'line' },
+  irrigation: {
+    name: 'Irrigation scheme',
+    plural: 'Irrigation schemes',
+    form: 'place',
+    chainRole: null,
+    powerRole: null,
+  },
+  farmRoad: {
+    name: 'Farm road',
+    plural: 'Farm roads',
+    form: 'route',
+    chainRole: null,
+    powerRole: null,
+  },
+  grainStore: {
+    name: 'Grain store',
+    plural: 'Grain stores',
+    form: 'place',
+    chainRole: null,
+    powerRole: null,
+  },
+  mine: { name: 'Mine', plural: 'Mines', form: 'place', chainRole: 'source', powerRole: null },
+  trunkRoad: {
+    name: 'Trunk road',
+    plural: 'Trunk roads',
+    form: 'route',
+    chainRole: 'link',
+    powerRole: null,
+  },
+  port: { name: 'Port', plural: 'Ports', form: 'place', chainRole: 'outlet', powerRole: null },
+  shallowPort: {
+    name: 'Shallow port',
+    plural: 'Shallow ports',
+    form: 'place',
+    chainRole: 'outlet',
+    powerRole: null,
+  },
+  powerStation: {
+    name: 'Power station',
+    plural: 'Power stations',
+    form: 'place',
+    chainRole: null,
+    powerRole: 'station',
+  },
+  powerLine: {
+    name: 'Power line',
+    plural: 'Power lines',
+    form: 'route',
+    chainRole: null,
+    powerRole: 'line',
+  },
 };
 
 /**
@@ -243,6 +287,11 @@ export const SITE_EFFECT_DEFINITIONS: Readonly<
       readonly reach: 'region' | 'nation';
       readonly sentence: string;
       readonly everywhere: string;
+      /**
+       * What a technology that improves a type of site's effect does, for `{sites}`, the
+       * types it improves, with `{percent}` what it takes off what the site leaves.
+       */
+      readonly improved: string;
     }
   >
 > = {
@@ -250,24 +299,43 @@ export const SITE_EFFECT_DEFINITIONS: Readonly<
     reach: 'region',
     sentence: 'Weather, drought and flood move its region’s harvest {percent}% less.',
     everywhere: 'Weather, drought and flood move every region’s harvest {percent}% less.',
+    improved:
+      '{sites} hold back a further {percent}% of how far weather, drought and flood move their region’s harvest.',
   },
   transportLoss: {
     reach: 'region',
     sentence: '{percent}% less of its region’s surplus is lost on the way to the national reserve.',
     everywhere:
       '{percent}% less of every region’s surplus is lost on the way to the national reserve.',
+    improved:
+      '{sites} save a further {percent}% of the surplus their region loses on the way to the national reserve.',
   },
   reserveSpoilage: {
     reach: 'nation',
     sentence: '{percent}% less of the national reserve spoils each quarter.',
     everywhere: '{percent}% less of the national reserve spoils each quarter.',
+    improved: '{sites} save a further {percent}% of what spoils in the national reserve.',
   },
   weatherAndDrought: {
     reach: 'region',
     sentence: 'Weather and drought move its region’s harvest {percent}% less.',
     everywhere: 'Weather and drought move every region’s harvest {percent}% less.',
+    improved:
+      '{sites} hold back a further {percent}% of how far weather and drought move their region’s harvest.',
   },
 };
+
+/**
+ * What a technology that improves what a type of site carries or brings does, in a sentence
+ * the player can be shown: `{sites}` names the types it improves and `{percent}` what it adds.
+ * What one that improves a site's effect does is the effect's own (`SITE_EFFECT_DEFINITIONS`).
+ */
+export const IMPROVEMENT_SENTENCES = {
+  capacity:
+    '{sites} carry {percent}% more, so a chain they hold back ships more ore and a port carries more across the border.',
+  power:
+    'The power from {sites} does {percent}% more: a region it reaches gains more output and more infrastructure access.',
+} as const;
 
 /**
  * The effects that lessen how far the weather moves a region's harvest. What lessens an
@@ -281,7 +349,13 @@ export const WEATHER_HELD_BY: readonly SiteEffect[] = ['harvestWeather', 'weathe
  * are balance values (`balance.technologies`); a technology is added here and there and in no
  * rule.
  */
-export const TECHNOLOGIES = ['droughtResistantSeed'] as const;
+export const TECHNOLOGIES = [
+  'droughtResistantSeed',
+  'improvedIrrigation',
+  'coldStorage',
+  'roadEngineering',
+  'gridEfficiency',
+] as const;
 export type Technology = (typeof TECHNOLOGIES)[number];
 
 /**
@@ -298,6 +372,10 @@ export const TECHNOLOGY_DEFINITIONS: Readonly<
   >
 > = {
   droughtResistantSeed: { name: 'Drought-resistant seed', prerequisites: [] },
+  improvedIrrigation: { name: 'Improved irrigation', prerequisites: ['droughtResistantSeed'] },
+  coldStorage: { name: 'Cold storage', prerequisites: ['droughtResistantSeed'] },
+  roadEngineering: { name: 'Road engineering', prerequisites: ['improvedIrrigation'] },
+  gridEfficiency: { name: 'Grid efficiency', prerequisites: ['coldStorage'] },
 };
 
 /**

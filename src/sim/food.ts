@@ -6,17 +6,16 @@ import { regionName, type Country, type Region } from './country';
 import { leftIn, type SiteEffects } from './projects';
 import type { ReportEntry } from './report';
 import type { Decisions, GameState, RegionShortfall, RegionState, ReliefDelivery } from './state';
-import { formatCount, formatQuarters, formatTonnes } from './text';
+import { formatCount, formatQuarters, formatTonnes, listed } from './text';
 import type { Contribution, Money, Quarter, Range } from './types';
 import { eventHeldBy } from './events';
-import { technologyEffectsOf, technologyTerms } from './technology';
+import { technologyEffectsOf, technologyName, technologyTerms } from './technology';
 import {
   EVENT_TYPES,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
   WEATHER_HELD_BY,
   type FoodStage,
-  type Technology,
 } from './vocabulary';
 
 /** What one region grew at a harvest, and where it went. All weights are in tonnes. */
@@ -121,13 +120,21 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const fedPermilles: number[] = [];
   const population: Contribution[] = [];
 
-  const spoiled = Math.floor(
-    (situation.foodReserve *
-      food.reserveSpoilagePermillePerQuarter *
-      inputs.sites.national.reserveSpoilage) /
-      1_000_000,
-  );
-  if (spoiled > 0) contributions.push({ label: 'Spoiled in store', amount: -spoiled });
+  const spoiling = (left: number) =>
+    Math.floor((situation.foodReserve * food.reserveSpoilagePermillePerQuarter * left) / 1_000_000);
+  const spoiled = spoiling(inputs.sites.national.reserveSpoilage);
+  // What the technologies that improve the grain stores save is a line of its own, naming them.
+  const unimproved = spoiling(inputs.sites.unimproved.national.reserveSpoilage);
+  if (unimproved > 0) contributions.push({ label: 'Spoiled in store', amount: -unimproved });
+  if (unimproved > spoiled) {
+    const by = inputs.sites.improvedBy.reserveSpoilage.map((technology) =>
+      technologyName(technology),
+    );
+    contributions.push({
+      label: `Kept from spoiling by ${listed(by)}`,
+      amount: unimproved - spoiled,
+    });
+  }
   let foodReserve = situation.foodReserve - spoiled;
   let relief: ReliefDelivery = { capacity: inputs.relief.capacity, shortfall: 0, delivered: 0 };
 
@@ -241,7 +248,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   if (lost > 0) contributions.push({ label: 'Lost in transport', amount: -lost });
   const delivered = sum(harvests.map((harvest) => harvest.surplus)) - lost;
   const harvest = { total: sum(harvests.map((entry) => entry.grown)), regions: harvests };
-  entries.push(harvestEntry(harvest, inputs.sites.technologies));
+  entries.push(harvestEntry(harvest, inputs.sites));
 
   return {
     regions: harvested,
@@ -446,14 +453,19 @@ function hungerEntry(change: HungerChange): ReportEntry | null {
 
 /**
  * What the turn report says when the harvest comes in, naming each technology known that
- * lessened how far the weather or events moved it.
+ * lessened how far the weather or events moved it: everywhere, or through the sites in use it
+ * improves.
  */
-function harvestEntry(harvest: Harvest, known: readonly Technology[]): ReportEntry {
+function harvestEntry(harvest: Harvest, sites: SiteEffects): ReportEntry {
   const lost = sum(harvest.regions.map((region) => region.lost));
   const delivered = sum(harvest.regions.map((region) => region.surplus)) - lost;
-  const held = new Set([...WEATHER_HELD_BY, ...EVENT_TYPES.flatMap(eventHeldBy)]);
-  const lessened = known
-    .filter((technology) => technologyEffectsOf(technology).some(([effect]) => held.has(effect)))
+  const held = [...new Set([...WEATHER_HELD_BY, ...EVENT_TYPES.flatMap(eventHeldBy)])];
+  const lessened = sites.technologies
+    .filter(
+      (technology) =>
+        technologyEffectsOf(technology).some(([effect]) => held.includes(effect)) ||
+        held.some((effect) => sites.improvedBy[effect].includes(technology)),
+    )
     .map((technology) => {
       const { name, effect } = technologyTerms(technology);
       return ` ${name} is known: ${effect}`;

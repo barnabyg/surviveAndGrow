@@ -2,11 +2,13 @@ import { balance } from './balance';
 import type { Country, Site } from './country';
 import type { ShockWatch } from './priceShocks';
 import { projectOnSite, siteStatus, type Project } from './projects';
-import { oreTonnesOf, siteCapacity } from './sites';
+import { improvementsOf, oreTonnesOf, siteCapacity } from './sites';
+import { knownTechnologies, technologyName } from './technology';
+import { listed } from './text';
 import { costOf, formatPrice, priceOf, priceStatus, type WorldPrices } from './trade';
 import type { Money } from './types';
 import { inUse } from './upkeep';
-import { SITE_CHAIN_ROLES, type SiteState } from './vocabulary';
+import { SITE_CHAIN_ROLES, type SiteState, type Technology } from './vocabulary';
 
 interface Building {
   readonly country: Country;
@@ -64,13 +66,31 @@ export interface Chain {
    * equals). Null only for a chain with nothing in it that limits it.
    */
   readonly bottleneck: string | null;
+  /**
+   * The ore the chain would ship this quarter, in tonnes, if no technology improved its
+   * sites: the same as `shipped` while none does.
+   */
+  readonly unimproved: number;
+  /**
+   * The technologies known that make the chain ship more than `unimproved`, in the order they
+   * became known: those that improve a site of it. Empty while they make no difference.
+   */
+  readonly improvedBy: readonly Technology[];
 }
 
-/** The chain of a site that is a source, or null for a site of any other type. */
-export function chainOf(building: Building, siteId: string): Chain | null {
+/**
+ * The chain of a site that is a source, or null for a site of any other type, with the sites
+ * improved by the technologies `known`: those known in the game, unless others are given.
+ */
+export function chainOf(
+  building: Building,
+  siteId: string,
+  known: readonly Technology[] = knownTechnologies(building.projects),
+): Chain | null {
   const source = building.country.sites.find((site) => site.id === siteId);
   if (source === undefined || SITE_CHAIN_ROLES[source.type] !== 'source') return null;
-  const links = sitesOf(building, source).map((site) => linkOf(building, site));
+  const sites = sitesOf(building, source);
+  const links = sites.map((site) => linkOf(building, site, known));
   const [own, ...dependencies] = links;
   const missing = dependencies
     .filter((link) => link.state !== 'operating' && link.state !== 'decaying')
@@ -86,6 +106,14 @@ export function chainOf(building: Building, siteId: string): Chain | null {
   );
   const shipped = oreTonnesOf(working ? (weakest?.carries ?? 0) : 0);
   const orePrice = priceOf(building.worldPrices, 'ore');
+  const unimproved =
+    known.length === 0 ? shipped : (chainOf(building, siteId, [])?.shipped ?? shipped);
+  const improvedBy =
+    shipped > unimproved
+      ? known.filter((technology) =>
+          sites.some((site) => improvementsOf(site.type, [technology]).length > 0),
+        )
+      : [];
   return {
     sourceId: source.id,
     links,
@@ -96,6 +124,8 @@ export function chainOf(building: Building, siteId: string): Chain | null {
     output: costOf(shipped, orePrice),
     atUsualPrice: costOf(shipped, balance.trade.goods.ore.usualDollarsPerTonne),
     bottleneck: !complete ? (missing[0] ?? null) : !working ? source.id : (weakest?.siteId ?? null),
+    unimproved,
+    improvedBy,
   };
 }
 
@@ -121,6 +151,10 @@ export interface ChainEarning {
   readonly atUsualPrice: Money;
   /** The world ore price, in dollars a tonne. */
   readonly orePrice: number;
+  /** What it would earn at the usual world ore price if no technology improved its chain. */
+  readonly unimproved: Money;
+  /** The technologies known that make its chain ship more, in the order they became known. */
+  readonly improvedBy: readonly Technology[];
 }
 
 /** The sources that ship ore this quarter, in the country file's order. */
@@ -128,8 +162,9 @@ export function chainEarnings(building: Building): ChainEarning[] {
   return chains(building).flatMap((chain) => {
     const site = building.country.sites.find((candidate) => candidate.id === chain.sourceId);
     if (site === undefined || chain.shipped === 0) return [];
-    const { output, atUsualPrice, orePrice } = chain;
-    return [{ site, output, atUsualPrice, orePrice }];
+    const { output, atUsualPrice, orePrice, improvedBy } = chain;
+    const unimproved = costOf(chain.unimproved, balance.trade.goods.ore.usualDollarsPerTonne);
+    return [{ site, output, atUsualPrice, orePrice, unimproved, improvedBy }];
   });
 }
 
@@ -168,19 +203,29 @@ export function oreEarnings(building: Building & ShockWatch, siteId: string): Or
 }
 
 /**
- * A source's earnings as a breakdown lists them: what its ore would earn at the usual price,
- * under the label given, and beside it, while the price is not at its usual level, the world
- * ore price's effect: "Korrgate mine: ore at $85 a tonne".
+ * A source's earnings as a breakdown lists them: what its ore would earn at the usual price
+ * without the technologies that improve its chain, under the label given; beside it what those
+ * technologies add, naming them: "Korrgate mine: Road engineering"; and, while the price is not
+ * at its usual level, the world ore price's effect: "Korrgate mine: ore at $85 a tonne".
  */
 export function earningLines(
   label: string,
-  earning: Pick<ChainEarning, 'output' | 'atUsualPrice' | 'orePrice'>,
+  earning: Pick<ChainEarning, 'output' | 'atUsualPrice' | 'orePrice' | 'unimproved' | 'improvedBy'>,
   value: (output: Money) => Money = (output) => output,
 ): { readonly label: string; readonly amount: Money }[] {
-  const usual = value(earning.atUsualPrice);
-  const effect = value(earning.output) - usual;
+  const base = value(earning.unimproved);
+  const improved = value(earning.atUsualPrice) - base;
+  const effect = value(earning.output) - value(earning.atUsualPrice);
   return [
-    { label, amount: usual },
+    { label, amount: base },
+    ...(improved === 0
+      ? []
+      : [
+          {
+            label: `${label}: ${listed(earning.improvedBy.map(technologyName))}`,
+            amount: improved,
+          },
+        ]),
     ...(effect === 0
       ? []
       : [{ label: `${label}: ore at ${formatPrice(earning.orePrice)}`, amount: effect }]),
@@ -208,10 +253,10 @@ function sitesOf(building: Building, source: Site): Site[] {
   return found;
 }
 
-function linkOf(building: Building, site: Site): ChainLink {
+function linkOf(building: Building, site: Site, known: readonly Technology[]): ChainLink {
   const project = projectOnSite(building.projects, site.id);
   const { state } = siteStatus(building, site.id);
-  const capacity = siteCapacity(site, state === 'decaying');
+  const capacity = siteCapacity(site, state === 'decaying', known);
   return {
     siteId: site.id,
     state,

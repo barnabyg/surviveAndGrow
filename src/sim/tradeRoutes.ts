@@ -4,7 +4,9 @@ import { contains } from './geometry';
 import { siteStatus, type Project } from './projects';
 import type { TradeOrder, WorldPrices } from './trade';
 import { portTonnesOf, tradeCapacity, tradeLinks } from './tradeLinks';
-import { MAP_FRAME, SITE_CHAIN_ROLES } from './vocabulary';
+import { improvementsOf } from './sites';
+import { knownTechnologies } from './technology';
+import { MAP_FRAME, SITE_CHAIN_ROLES, type Technology } from './vocabulary';
 
 interface Trading {
   readonly country: Country;
@@ -51,6 +53,10 @@ export interface TradeRoute {
    * would carry once in use.
    */
   readonly capacity: number;
+  /** What it would carry if no technology improved it, in tonnes: `capacity` while none does. */
+  readonly unimproved: number;
+  /** The technologies known that make it carry more, in the order they became known. */
+  readonly improvedBy: readonly Technology[];
   /** What it carried in the quarter last played: nothing before the first. */
   readonly carried: Carriage;
   /** What it is to carry this quarter: the mines' ore and the grain ordered so far. */
@@ -120,12 +126,15 @@ export function tradeRoutes(
         kind: link.kind,
         state: link.decaying ? 'weak' : 'open',
         capacity: link.tonnes,
+        unimproved: link.unimproved,
+        improvedBy: link.improvedBy,
         carried: carriage(game.tradeCarried, link.id),
         planned: carriage(planned, link.id),
         path,
       },
     ];
   });
+  const known = knownTechnologies(game.projects);
   const missing = country.sites.flatMap((site): TradeRoute[] => {
     const state = siteStatus(game, site.id).state;
     const unbuilt = state === 'empty' || state === 'building' || state === 'paused';
@@ -137,7 +146,9 @@ export function tradeRoutes(
         name: site.name,
         kind: 'port',
         state: 'missing',
-        capacity: portTonnesOf(site.type),
+        capacity: portTonnesOf(site.type, false, known),
+        unimproved: portTonnesOf(site.type),
+        improvedBy: improvementsOf(site.type, known).map(([technology]) => technology),
         carried: NOTHING,
         planned: NOTHING,
         path,

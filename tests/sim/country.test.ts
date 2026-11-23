@@ -205,6 +205,7 @@ describe('the types of site', () => {
       cost: 120,
       buildQuarters: 3,
       upkeep: 4,
+      improvedBy: [],
       effect: 'Weather, drought and flood move its region’s harvest 50% less.',
       decayingEffect: 'Weather, drought and flood move its region’s harvest 25% less.',
     });
@@ -212,6 +213,7 @@ describe('the types of site', () => {
       cost: 100,
       buildQuarters: 3,
       upkeep: 3,
+      improvedBy: [],
       effect: '50% less of its region’s surplus is lost on the way to the national reserve.',
       decayingEffect:
         '25% less of its region’s surplus is lost on the way to the national reserve.',
@@ -220,6 +222,7 @@ describe('the types of site', () => {
       cost: 60,
       buildQuarters: 2,
       upkeep: 2,
+      improvedBy: [],
       effect: '25% less of the national reserve spoils each quarter.',
       decayingEffect: '13% less of the national reserve spoils each quarter.',
     });
@@ -230,6 +233,7 @@ describe('the types of site', () => {
       cost: 400,
       buildQuarters: 6,
       upkeep: 6,
+      improvedBy: [],
       effect:
         'Ships 600,000 t of ore a quarter, worth $60.0m at the usual world ore price, to add to its region’s output, but only while its chain to a port is complete.',
       decayingEffect:
@@ -239,6 +243,7 @@ describe('the types of site', () => {
       cost: 300,
       buildQuarters: 5,
       upkeep: 5,
+      improvedBy: [],
       effect: 'Carries up to 720,000 t of a mine’s ore a quarter along its chain.',
       decayingEffect: 'Carries up to 360,000 t of a mine’s ore a quarter along its chain.',
     });
@@ -246,6 +251,7 @@ describe('the types of site', () => {
       cost: 500,
       buildQuarters: 8,
       upkeep: 8,
+      improvedBy: [],
       effect:
         'Ships up to 900,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
       decayingEffect:
@@ -255,6 +261,7 @@ describe('the types of site', () => {
       cost: 250,
       buildQuarters: 5,
       upkeep: 4,
+      improvedBy: [],
       effect:
         'Ships up to 360,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
       decayingEffect:

@@ -103,3 +103,10 @@ export function formatPercent(permille: number, decimals: 0 | 1 = 1): string {
 export function capitalised(phrase: string): string {
   return phrase.charAt(0).toUpperCase() + phrase.slice(1);
 }
+
+/** Names in a sentence: "A", "A and B", "A, B and C". */
+export function listed(names: readonly string[]): string {
+  return names.length < 2
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`;
+}

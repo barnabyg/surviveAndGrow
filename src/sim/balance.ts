@@ -69,6 +69,30 @@ export interface TechnologyBalance {
   readonly cost: number;
   readonly researchQuarters: number;
   readonly effects: Readonly<Partial<Record<SiteEffect, number>>>;
+  /**
+   * What it does for each type of site it improves. It pays off only where such a site is in
+   * use, and adds to what the site does before decay takes its share.
+   */
+  readonly improves: Readonly<Partial<Record<SiteType, SiteImprovement>>>;
+}
+
+/**
+ * How a technology improves a type of site in use. Each part is left out where it does not
+ * apply.
+ */
+export interface SiteImprovement {
+  /**
+   * What it leaves, in thousandths, of what the site's own effect leaves of the same thing: an
+   * irrigation scheme that leaves 500 of the weather's hold, improved by 800, leaves 400.
+   */
+  readonly effects?: Readonly<Partial<Record<SiteEffect, number>>>;
+  /** What it adds to what the site produces or carries in a chain, in thousandths of it. */
+  readonly capacityPermille?: number;
+  /**
+   * For a power station, what it adds to what its power gives each region it reaches, output
+   * and infrastructure access alike, in thousandths of it.
+   */
+  readonly powerPermille?: number;
 }
 
 /**
@@ -351,6 +375,43 @@ export const balance = {
       cost: 80,
       researchQuarters: 4,
       effects: { weatherAndDrought: 700 },
+      improves: {},
+    },
+    // The second tier improves what has been built, so it pays off only where the player
+    // has built it. An irrigation scheme then takes 60% off the weather's hold, not 50%.
+    improvedIrrigation: {
+      cost: 100,
+      researchQuarters: 4,
+      effects: {},
+      improves: { irrigation: { effects: { harvestWeather: 800 } } },
+    },
+    // A grain store then saves 40% of the reserve's spoilage, not 25%.
+    coldStorage: {
+      cost: 80,
+      researchQuarters: 3,
+      effects: {},
+      improves: { grainStore: { effects: { reserveSpoilage: 800 } } },
+    },
+    // The third tier. Trunk roads and ports carry a quarter more, so a chain held back by its
+    // road or its port ships more, and a port carries more grain across the border. A mine
+    // produces no more: a chain its mine holds back gains nothing.
+    roadEngineering: {
+      cost: 150,
+      researchQuarters: 5,
+      effects: {},
+      improves: {
+        trunkRoad: { capacityPermille: 250 },
+        port: { capacityPermille: 250 },
+        shallowPort: { capacityPermille: 250 },
+      },
+    },
+    // Power from a station then adds 25% to a region's output, not 20%, and 18.7 points of
+    // infrastructure access, not 15.
+    gridEfficiency: {
+      cost: 150,
+      researchQuarters: 5,
+      effects: {},
+      improves: { powerStation: { powerPermille: 250 } },
     },
   } satisfies Record<Technology, TechnologyBalance>,
   /**

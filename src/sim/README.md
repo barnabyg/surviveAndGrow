@@ -104,7 +104,20 @@ reads it counts them: the harvest, the preview's forecast, the risks ahead and t
 the weather moves a harvest answers to the effects in `WEATHER_HELD_BY`, and each event's hold
 to the effects its definition lists (`heldBy` in `balance.events`), which is how
 drought-resistant seed softens drought but not flood. A technology that improves something new
-adds an effect there; one that unlocks a site type is for that ticket to add.
+everywhere adds an effect there; one that unlocks a site type is for that ticket to add.
+
+A technology can instead improve a type of site (`improves` in `balance.technologies`, a
+`SiteImprovement`): leave less of what the site's effect bears on, raise what it carries in a
+chain, or, for a power station, raise what its power gives a region. It pays off only where
+such a site is in use. The rules that read a site take the technologies known
+(`siteEffectsOf`, `capacityOf`, `powerGain` in `sites.ts`, through `siteEffects`, `chainOf`,
+`regionPower` and `tradeLinks`, each of which reads them from the projects), so the turn, the
+preview and the risks ahead count them alike. Each of those also says what the figure would be
+without them (`unimproved`) and which technologies moved it (`improvedBy`), so that every
+breakdown splits the figure and names them: `earningLines` and `powerLines` for the region
+and treasury breakdowns, the spoilage line in `food.ts`, and the site's own sentence
+(`siteTerms` with the technologies known). `technologyGains` (`research.ts`) says what a
+technology does in this game, from the sites in use, for the research tab.
 
 ## Surveys and deposits
 

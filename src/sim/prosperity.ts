@@ -3,7 +3,7 @@ import { balance } from './balance';
 import { chainEarnings, earningLines } from './chains';
 import type { WorldPrices } from './trade';
 import type { Country } from './country';
-import { poweredOutput, regionPower, unpowered, type RegionPower } from './power';
+import { poweredOutput, powerLines, regionPower, unpowered, type RegionPower } from './power';
 import { infrastructureFrom, sitesInUse, type Project } from './projects';
 import type { RegionState } from './state';
 import { DOLLARS_PER_MONEY, type Contribution, type Figure, type Money } from './types';
@@ -79,8 +79,9 @@ export function livingStandards(situation: ProsperitySituation): LivingStandard[
           earningLines(earning.site.name, earning).map((line) => ({ ...line, regionId })),
         ),
       ...(power.outputPermille > 0
-        ? [{ label: fromPower, amount: poweredOutput(region.output, power), regionId }]
-        : []),
+        ? powerLines(fromPower, power, (gain) => poweredOutput(region.output, gain))
+        : []
+      ).map((line) => ({ ...line, regionId })),
     ];
     const infrastructure: Contribution[] = [
       ...inUse
@@ -88,8 +89,9 @@ export function livingStandards(situation: ProsperitySituation): LivingStandard[
         .map((entry) => ({ label: entry.site.name, amount: infrastructureFrom(entry), regionId }))
         .filter((part) => part.amount > 0),
       ...(power.infrastructurePermille > 0
-        ? [{ label: fromPower, amount: power.infrastructurePermille, regionId }]
-        : []),
+        ? powerLines(fromPower, power, (gain) => gain.infrastructurePermille)
+        : []
+      ).map((line) => ({ ...line, regionId })),
     ];
     const scores = scoresOf(
       { ...region, output: sum(output.map((part) => part.amount)) },

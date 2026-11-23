@@ -84,6 +84,7 @@ describe('the power sites', () => {
       cost: 300,
       buildQuarters: 5,
       upkeep: 5,
+      improvedBy: [],
       effect:
         'Powers each region a power line links to it: the region produces 20% more and gains 15.0 points of infrastructure access.',
       decayingEffect:
@@ -93,6 +94,7 @@ describe('the power sites', () => {
       cost: 60,
       buildQuarters: 2,
       upkeep: 1,
+      improvedBy: [],
       effect:
         'Brings power from a power station to its region: the region produces 20% more and gains 15.0 points of infrastructure access.',
       decayingEffect:
@@ -155,6 +157,8 @@ describe.each(countries)('power in %s', (_name, country) => {
       weakened: false,
       outputPermille: 200,
       infrastructurePermille: 150,
+      unimproved: { outputPermille: 200, infrastructurePermille: 150 },
+      improvedBy: [],
     });
   });
 

@@ -1,13 +1,18 @@
 import { percentOff } from './arithmetic';
-import { balance } from './balance';
+import { balance, type SiteImprovement } from './balance';
 import type { Project } from './projects';
+import { listed } from './text';
 import type { Money } from './types';
 import {
+  IMPROVEMENT_SENTENCES,
   SITE_EFFECT_DEFINITIONS,
   SITE_EFFECTS,
+  SITE_TYPE_DEFINITIONS,
+  SITE_TYPES,
   TECHNOLOGIES,
   TECHNOLOGY_DEFINITIONS,
   type SiteEffect,
+  type SiteType,
   type Technology,
 } from './vocabulary';
 
@@ -38,19 +43,68 @@ export function technologyTerms(technology: Technology): TechnologyTerms {
     name,
     cost,
     researchQuarters,
-    effect: technologyEffectsOf(technology)
-      .map(([effect, permille]) =>
+    effect: [
+      ...technologyEffectsOf(technology).map(([effect, permille]) =>
         SITE_EFFECT_DEFINITIONS[effect].everywhere.replace(
           '{percent}',
           String(percentOff(permille)),
         ),
-      )
-      .join(' '),
+      ),
+      ...improvementSentences(technology),
+    ].join(' '),
     prerequisites,
     leadsTo: TECHNOLOGIES.filter((other) =>
       TECHNOLOGY_DEFINITIONS[other].prerequisites.includes(technology),
     ),
   };
+}
+
+/**
+ * What a technology does for the types of site it improves, in sentences the player can be
+ * shown. Types improved alike share a sentence: "Trunk roads, ports and shallow ports carry
+ * 25% more…".
+ */
+function improvementSentences(technology: Technology): string[] {
+  const improves: Readonly<Partial<Record<SiteType, SiteImprovement>>> =
+    balance.technologies[technology].improves;
+  const groups = new Map<string, { template: string; percent: number; types: SiteType[] }>();
+  const add = (key: string, template: string, percent: number, type: SiteType) => {
+    const group = groups.get(key) ?? { template, percent, types: [] };
+    group.types.push(type);
+    groups.set(key, group);
+  };
+  for (const type of SITE_TYPES) {
+    const improvement = improves[type];
+    if (improvement === undefined) continue;
+    for (const effect of SITE_EFFECTS) {
+      const permille = improvement.effects?.[effect];
+      if (permille === undefined) continue;
+      const { improved } = SITE_EFFECT_DEFINITIONS[effect];
+      add(`${effect} ${String(permille)}`, improved, percentOff(permille), type);
+    }
+    const { capacityPermille, powerPermille } = improvement;
+    if (capacityPermille !== undefined) {
+      const percent = Math.round(capacityPermille / 10);
+      add(`capacity ${String(capacityPermille)}`, IMPROVEMENT_SENTENCES.capacity, percent, type);
+    }
+    if (powerPermille !== undefined) {
+      const percent = Math.round(powerPermille / 10);
+      add(`power ${String(powerPermille)}`, IMPROVEMENT_SENTENCES.power, percent, type);
+    }
+  }
+  return [...groups.values()].map(({ template, percent, types }) =>
+    template.replace('{sites}', pluralsOf(types)).replace('{percent}', String(percent)),
+  );
+}
+
+/** Types of site named together, as a sentence begins with them: "Trunk roads and ports". */
+function pluralsOf(types: readonly SiteType[]): string {
+  return listed(
+    types.map((type, index) => {
+      const { plural } = SITE_TYPE_DEFINITIONS[type];
+      return index === 0 ? plural : plural.toLowerCase();
+    }),
+  );
 }
 
 /** The name of a technology, as the player reads it: "Drought-resistant seed". */
@@ -124,11 +178,4 @@ export function technologyFault(
     return `${name} needs ${listed(missing.map(technologyName))} to be known first.`;
   }
   return null;
-}
-
-/** Names in a line: "A", "A and B", "A, B and C". */
-function listed(names: readonly string[]): string {
-  return names.length <= 1
-    ? (names[0] ?? '')
-    : `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`;
 }

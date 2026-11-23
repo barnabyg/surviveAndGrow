@@ -1,10 +1,11 @@
 import { sum } from './arithmetic';
 import { buildingBarred, type Austere } from './austerity';
+import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName, type Country, type Site } from './country';
 import { surveyFault, surveyFindings, surveyOf, surveyTerms } from './deposits';
 import type { ReportEntry } from './report';
-import { infrastructureOf, siteEffectsOf, siteTerms } from './sites';
+import { improvementsOf, infrastructureOf, siteEffectsOf, siteTerms } from './sites';
 import {
   knownTechnologies,
   technologyEffectsOf,
@@ -214,7 +215,8 @@ interface Building {
 export function siteStatus({ country, projects }: Building, siteId: string): SiteStatus {
   const site = country.sites.find((candidate) => candidate.id === siteId);
   const project = projectOnSite(projects, siteId);
-  const terms = site === undefined ? null : siteTerms(site.type);
+  // Only what building takes is needed here, not what the site does, which takes longer to say.
+  const terms = site === undefined ? null : balance.sites[site.type];
   const quartersPaid = project?.quartersPaid ?? 0;
   const closedBy =
     project === undefined
@@ -418,6 +420,13 @@ export interface SiteEffects {
   readonly national: Readonly<Record<SiteEffect, number>>;
   /** The technologies known, whose effects are counted here, in the order they became known. */
   readonly technologies: readonly Technology[];
+  /**
+   * For each effect, the technologies known that improve a site in use bearing on it, in the
+   * order they became known: those that `inRegion` and `national` count beyond `unimproved`.
+   */
+  readonly improvedBy: Readonly<Record<SiteEffect, readonly Technology[]>>;
+  /** The same effects as they would be if no technology improved the sites in use. */
+  readonly unimproved: Pick<SiteEffects, 'inRegion' | 'national'>;
 }
 
 /**
@@ -437,6 +446,38 @@ export function leftIn(
 
 /** The effects of the sites in use and the technologies known as a quarter begins. */
 export function siteEffects({ country, projects }: Building): SiteEffects {
+  const technologies = knownTechnologies(projects);
+  const inUse = sitesInUse({ country, projects });
+  const improvedBy = Object.fromEntries(
+    SITE_EFFECTS.map((effect) => [
+      effect,
+      technologies.filter((technology) =>
+        inUse.some(({ site }) =>
+          improvementsOf(site.type, [technology]).some(
+            ([, improvement]) => improvement.effects?.[effect] !== undefined,
+          ),
+        ),
+      ),
+    ]),
+  ) as Record<SiteEffect, Technology[]>;
+  return {
+    ...effectsOf(country, inUse, technologies, technologies),
+    technologies,
+    improvedBy,
+    unimproved: effectsOf(country, inUse, technologies, []),
+  };
+}
+
+/**
+ * What the sites in use, improved by the technologies `improving`, and the technologies
+ * `known` everywhere leave of each thing, region by region and across the nation.
+ */
+function effectsOf(
+  country: Country,
+  inUse: readonly SiteInUse[],
+  known: readonly Technology[],
+  improving: readonly Technology[],
+): Pick<SiteEffects, 'inRegion' | 'national'> {
   const inRegion = Object.fromEntries(
     SITE_EFFECTS.map((effect) => [effect, country.regions.map(() => 1000)]),
   ) as Record<SiteEffect, number[]>;
@@ -445,9 +486,9 @@ export function siteEffects({ country, projects }: Building): SiteEffects {
     number
   >;
   const leave = (left: number, permille: number) => Math.floor((left * permille) / 1000);
-  for (const { site, decaying } of sitesInUse({ country, projects })) {
+  for (const { site, decaying } of inUse) {
     const regionIndex = country.regions.findIndex((region) => region.id === site.regionId);
-    for (const [effect, permille] of siteEffectsOf(site.type, decaying)) {
+    for (const [effect, permille] of siteEffectsOf(site.type, decaying, improving)) {
       if (SITE_EFFECT_DEFINITIONS[effect].reach === 'nation') {
         national[effect] = leave(national[effect], permille);
       } else if (regionIndex >= 0) {
@@ -456,8 +497,7 @@ export function siteEffects({ country, projects }: Building): SiteEffects {
       }
     }
   }
-  const technologies = knownTechnologies(projects);
-  for (const technology of technologies) {
+  for (const technology of known) {
     for (const [effect, permille] of technologyEffectsOf(technology)) {
       if (SITE_EFFECT_DEFINITIONS[effect].reach === 'nation') {
         national[effect] = leave(national[effect], permille);
@@ -466,7 +506,7 @@ export function siteEffects({ country, projects }: Building): SiteEffects {
       }
     }
   }
-  return { inRegion, national, technologies };
+  return { inRegion, national };
 }
 
 /** A site in use, and whether it is decaying for want of upkeep. */

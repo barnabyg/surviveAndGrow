@@ -1,20 +1,33 @@
+import { sum } from './arithmetic';
+import { chains } from './chains';
+import { regionName } from './country';
+import { livingStandards, type ProsperitySituation } from './prosperity';
 import {
   instalment,
   onSite,
+  sitesInUse,
   onSurvey,
   onTechnology,
   projectStartFault,
   type Project,
   type ProjectStarting,
 } from './projects';
+import { improvedEffect, improves } from './sites';
 import {
   knownTechnologies,
+  technologyName,
   technologyOf,
   technologyTerms,
   type TechnologyTerms,
 } from './technology';
 import type { GameDate, Money } from './types';
-import { TECHNOLOGIES, type Technology, type TechnologyState } from './vocabulary';
+import {
+  SITE_TYPE_DEFINITIONS,
+  SITE_TYPES,
+  TECHNOLOGIES,
+  type Technology,
+  type TechnologyState,
+} from './vocabulary';
 
 /** How one technology stands in the tree, and what researching it takes and does. */
 export interface TechnologyStatus extends TechnologyTerms {
@@ -98,4 +111,121 @@ function stateOf(
   if (planned) return 'planned';
   const known = knownTechnologies(projects);
   return terms.prerequisites.every((needed) => known.includes(needed)) ? 'available' : 'locked';
+}
+
+/** A site in use a technology improves, and what it would do with it. */
+export interface SiteGain {
+  readonly siteId: string;
+  readonly name: string;
+  /**
+   * What the site does with the technology, in its own sentence, each figure the technology
+   * moves saying what it is without it: "now" for one not yet known.
+   */
+  readonly effect: string;
+}
+
+/** A chain whose ore a technology moves, in tonnes a quarter. */
+export interface ChainGain {
+  readonly sourceId: string;
+  readonly name: string;
+  readonly before: number;
+  readonly after: number;
+}
+
+/** A region whose output and infrastructure access a technology moves. */
+export interface RegionGain {
+  readonly regionId: string;
+  readonly name: string;
+  /** What it adds to the region's output a quarter. */
+  readonly output: Money;
+  /** What it adds to the region's infrastructure access, in thousandths. */
+  readonly infrastructure: number;
+}
+
+/**
+ * What a technology does in this game, from the sites in use: what it would do once known, or
+ * what it does, for one known. A technology that improves a type of site pays off only where
+ * one is in use.
+ */
+export interface TechnologyGains {
+  readonly sites: readonly SiteGain[];
+  readonly chains: readonly ChainGain[];
+  readonly regions: readonly RegionGain[];
+  /**
+   * While no site it improves is in use, a sentence that says so; null when one is, or when
+   * the technology improves no type of site.
+   */
+  readonly awaiting: string | null;
+}
+
+/** What a technology does in this game, from the sites in use (`TechnologyGains`). */
+export function technologyGains(
+  game: ProsperitySituation & { readonly date: GameDate },
+  technology: Technology,
+): TechnologyGains {
+  const isKnown = knownTechnologies(game.projects).includes(technology);
+  const without = game.projects.filter((project) => technologyOf(project) !== technology);
+  const withIt: readonly Project[] = isKnown
+    ? game.projects
+    : [
+        ...without,
+        {
+          target: onTechnology(technology),
+          began: game.date,
+          quartersPaid: technologyTerms(technology).researchQuarters,
+          status: 'known',
+          opened: game.date,
+        },
+      ];
+  const before = { ...game, projects: without };
+  const after = { ...game, projects: withIt };
+  const knownBefore = knownTechnologies(without);
+  const note = isKnown ? `without ${technologyName(technology)}` : 'now';
+  const sites = sitesInUse(before).flatMap(({ site, decaying }): SiteGain[] => {
+    const effect = improvedEffect(site, knownBefore, technology, decaying, note);
+    return effect === null ? [] : [{ siteId: site.id, name: site.name, effect }];
+  });
+  const chainsBefore = chains(before);
+  const chainGains = chains(after).flatMap((chain): ChainGain[] => {
+    const then = chainsBefore.find((each) => each.sourceId === chain.sourceId)?.shipped ?? 0;
+    const name = game.country.sites.find((site) => site.id === chain.sourceId)?.name ?? '';
+    return chain.shipped === then
+      ? []
+      : [{ sourceId: chain.sourceId, name, before: then, after: chain.shipped }];
+  });
+  const standardsBefore = livingStandards(before);
+  const regions = livingStandards(after).flatMap((standard): RegionGain[] => {
+    const then = standardsBefore.find((each) => each.regionId === standard.regionId);
+    const output =
+      sum(standard.output.map((part) => part.amount)) -
+      sum((then?.output ?? []).map((part) => part.amount));
+    const infrastructure =
+      standard.scores.infrastructure -
+      (then?.scores.infrastructure ?? standard.scores.infrastructure);
+    return output === 0 && infrastructure === 0
+      ? []
+      : [
+          {
+            regionId: standard.regionId,
+            name: regionName(game.country, standard.regionId),
+            output,
+            infrastructure,
+          },
+        ];
+  });
+  const improved = SITE_TYPES.filter((type) => improves(technology, type)).map((type) =>
+    SITE_TYPE_DEFINITIONS[type].name.toLowerCase(),
+  );
+  const awaiting =
+    improved.length === 0 || sites.length > 0
+      ? null
+      : `No ${orListed(improved)} is in use yet, so it improves nothing until one is built.`;
+  return { sites, chains: chainGains, regions, awaiting };
+}
+
+/** Names as alternatives: "A", "A or B", "A, B or C". */
+function orListed(names: readonly string[]): string {
+  return names.length < 2
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} or ${names.at(-1) ?? ''}`;
 }
