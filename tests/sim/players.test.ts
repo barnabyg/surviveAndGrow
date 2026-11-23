@@ -5,44 +5,87 @@ import {
   createGame,
   electionStatus,
   loanOffers,
+  technologyTerms,
   TIERS,
   type Borrowing,
+  type Country,
   type GameState,
+  type Technology,
 } from '../../src/sim';
 import { DEFAULT_TERMS, playGame, summarise, type GameResult } from '../balance/batch';
-import { SCRIPTED_PLAYERS, withinRules, type ScriptedPlayer } from '../balance/players';
+import { SCRIPTED_PLAYERS, withinRules } from '../balance/players';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
 import { gameResult } from './results';
+import { ENDINGS, GAME_TIMEOUT, playerNamed } from './scripted';
 
 /**
  * A short run of the scripted players, as a smoke test: whole games of several terms on the
- * countries as they ship, dilemmas included. The large batch that judges the balance is a
- * separate command (`npm run balance`) and gates nothing.
+ * countries as they ship, dilemmas included, and what each game records of its research and
+ * surveys. The large batch that judges the balance is a separate command (`npm run balance`)
+ * and gates nothing.
  */
 const SEEDS = [1];
-
-/**
- * Whole games of several terms take a second or two each, and longer while the rest of the
- * suite runs alongside; the default limit of five seconds is too close.
- */
-const GAME_TIMEOUT = 30_000;
 
 const shipped = [
   ['Tavara', tavaraAsShipped],
   ['Testland', testlandAsShipped],
 ] as const;
 
-/** The scripted player of a name. */
-function playerNamed(name: string): ScriptedPlayer {
-  const player = SCRIPTED_PLAYERS.find((candidate) => candidate.name === name);
-  if (player === undefined) throw new Error(`There is no player "${name}".`);
-  return player;
-}
-
 /** The chain builder, the player that builds most without borrowing. */
 const chainBuilder = () => playerNamed('Chain builder');
 
-const ENDINGS: readonly GameResult['ending'][] = ['won', 'inOffice', 'lostElection', 'famine'];
+/** The scripted players that research, and the one that surveys. The rest do neither. */
+const RESEARCHERS: readonly string[] = ['Improver', 'Unlocker'];
+const SURVEYORS: readonly string[] = ['Prospector'];
+
+/**
+ * The games played here in which a player that researches never has the money for it. In
+ * Testland on seed 1 floods in Northfield in the second and third years leave the reserve
+ * below its safe level from quarter 10 to quarter 16, so the improver funds the farms more
+ * each quarter while its power station is still being paid for. From quarter 13, when the
+ * station is in use, until it is voted out in quarter 20 it never has more than $1.0m, and
+ * the first technology on its way costs $8.0m. On seed 2 the reserve holds until quarter 16:
+ * the improver has $8.7m in quarter 13, and researches.
+ */
+const TOO_POOR_TO_RESEARCH: readonly string[] = ['Improver in Testland on seed 1'];
+
+/**
+ * What any game records of its research and surveys, whoever played it: a technology is known
+ * only after everything it needs, and no later than the game ends; only a region where ore may
+ * lie is surveyed, a deposit is found only by a survey, and only a found deposit is mined.
+ */
+function expectResearchAndSurveysInOrder(result: GameResult, country: Country): void {
+  for (const [technology, quarter] of Object.entries(result.technologies) as [
+    Technology,
+    number,
+  ][]) {
+    expect(quarter).toBeLessThanOrEqual(result.quarters);
+    for (const needed of technologyTerms(technology).prerequisites) {
+      expect(result.technologies[needed]).toBeLessThan(quarter);
+    }
+  }
+  expect(result.surveys).toBeLessThanOrEqual(country.deposits.length);
+  expect(result.depositsFound).toBeLessThanOrEqual(result.surveys);
+  expect(result.depositsMined).toBeLessThanOrEqual(result.depositsFound);
+}
+
+/**
+ * Each player does what it is for: the prospector alone surveys, and only the improver and
+ * the unlocker research. `game` names the game, as `TOO_POOR_TO_RESEARCH` does.
+ */
+function expectResearchAndSurveysOfItsKind(result: GameResult, name: string, game: string): void {
+  const known = Object.keys(result.technologies);
+  if (SURVEYORS.includes(name)) {
+    expect(result.surveys).toBeGreaterThan(0);
+  } else {
+    expect(result.surveys).toBe(0);
+  }
+  if (RESEARCHERS.includes(name) && !TOO_POOR_TO_RESEARCH.includes(game)) {
+    expect(known.length).toBeGreaterThan(0);
+  } else {
+    expect(known).toEqual([]);
+  }
+}
 
 describe('the scripted players', () => {
   it('are the eleven the balance is judged by', () => {
@@ -114,8 +157,8 @@ describe('the scripted players', () => {
   });
 });
 
-describe.each(shipped)('a scripted player in %s', (_name, country) => {
-  describe.each(SCRIPTED_PLAYERS)('$name', ({ decide }) => {
+describe.each(shipped)('a scripted player in %s', (land, country) => {
+  describe.each(SCRIPTED_PLAYERS)('$name', ({ name, decide }) => {
     it.each(SEEDS)(
       'plays seed %i through its terms to an ending',
       (seed) => {
@@ -142,6 +185,9 @@ describe.each(shipped)('a scripted player in %s', (_name, country) => {
         } else if (result.ending === 'inOffice') {
           expect(result.quarters).toBe(DEFAULT_TERMS * termQuarters);
         }
+        // The same game is the one whose research and surveys are checked: it is played once.
+        expectResearchAndSurveysInOrder(result, country());
+        expectResearchAndSurveysOfItsKind(result, name, `${name} in ${land} on seed ${seed}`);
       },
       GAME_TIMEOUT,
     );

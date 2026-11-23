@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { playGame } from '../balance/batch';
 import { DEGENERATE_PLAYERS } from '../balance/players';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
+import { ENDINGS, GAME_TIMEOUT } from './scripted';
 
 /**
  * The players that each lean on one lever, or build only part of what the chain builder
@@ -15,11 +16,8 @@ describe.each([
   it.each(DEGENERATE_PLAYERS)(
     '$name plays to an ending',
     ({ decide }) => {
-      expect(['won', 'inOffice', 'lostElection', 'famine']).toContain(
-        playGame(country(), 1, decide, 1).ending,
-      );
-      // A term of a builder's game takes a second or so, longer while other tests run alongside.
+      expect(ENDINGS).toContain(playGame(country(), 1, decide, 1).ending);
     },
-    30_000,
+    GAME_TIMEOUT,
   );
 });

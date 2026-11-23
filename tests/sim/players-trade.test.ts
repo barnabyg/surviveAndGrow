@@ -1,15 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, foodStatus, type GameState } from '../../src/sim';
 import { playGame } from '../balance/batch';
-import { DEGENERATE_PLAYERS, SCRIPTED_PLAYERS, type ScriptedPlayer } from '../balance/players';
 import { tavaraAsShipped } from './countries';
-
-/** The scripted player of a name. */
-function playerNamed(name: string): ScriptedPlayer {
-  const player = SCRIPTED_PLAYERS.find((candidate) => candidate.name === name);
-  if (player === undefined) throw new Error(`There is no player "${name}".`);
-  return player;
-}
+import { GAME_TIMEOUT, playerNamed } from './scripted';
 
 const trader = () => playerNamed('Timing trader');
 
@@ -89,11 +82,11 @@ describe('the timing trader', () => {
     // Above its safe level but below what the trader keeps; grain at $230 is not cheap.
     const reserve = Math.ceil(foodStatus(coming).quarterlyConsumption * 1.1);
     const lean = { ...coming, foodReserve: reserve };
-    const blind = DEGENERATE_PLAYERS.find((player) => player.name === 'Trader blind to shocks');
+    const blind = playerNamed('Trader blind to shocks');
 
     expect(trader().decide({ ...past, foodReserve: reserve }).trade).toBeUndefined();
     expect(trader().decide(lean).trade?.[0]?.direction).toBe('import');
-    expect(blind?.decide(lean).trade).toBeUndefined();
+    expect(blind.decide(lean).trade).toBeUndefined();
   });
 });
 
@@ -110,11 +103,11 @@ describe('the borrower wary of gluts', () => {
         },
       ],
     };
-    const wary = DEGENERATE_PLAYERS.find((player) => player.name === 'Borrower wary of gluts');
+    const wary = playerNamed('Borrower wary of gluts');
 
     expect(playerNamed('Sensible borrower').decide(glut).borrow?.length).toBeGreaterThan(0);
-    expect(wary?.decide(game).borrow).toEqual(playerNamed('Sensible borrower').decide(game).borrow);
-    expect(wary?.decide(glut).borrow).toBeUndefined();
+    expect(wary.decide(game).borrow).toEqual(playerNamed('Sensible borrower').decide(game).borrow);
+    expect(wary.decide(glut).borrow).toBeUndefined();
   });
 });
 
@@ -136,20 +129,28 @@ describe('the player who relies on the mine', () => {
 });
 
 describe('a game played by the balance run', () => {
-  it('counts what the timing trader bought and sold, and the shocks it met', () => {
-    const result = playGame(tavaraAsShipped(), 6, trader().decide);
+  it(
+    'counts what the timing trader bought and sold, and the shocks it met',
+    () => {
+      const result = playGame(tavaraAsShipped(), 6, trader().decide);
 
-    expect(result.exported).toBeGreaterThan(0);
-    expect(result.tradeIncome).toBeGreaterThan(0);
-    expect(result.shocks.drought).toBeGreaterThan(0);
-    expect(result.shocks.failedHarvestsAbroad + result.shocks.oreGlut).toBeGreaterThan(0);
-  }, 30_000);
+      expect(result.exported).toBeGreaterThan(0);
+      expect(result.tradeIncome).toBeGreaterThan(0);
+      expect(result.shocks.drought).toBeGreaterThan(0);
+      expect(result.shocks.failedHarvestsAbroad + result.shocks.oreGlut).toBeGreaterThan(0);
+    },
+    GAME_TIMEOUT,
+  );
 
-  it('counts no trade for a player that never trades', () => {
-    const result = playGame(tavaraAsShipped(), 6, playerNamed('Chain builder').decide);
+  it(
+    'counts no trade for a player that never trades',
+    () => {
+      const result = playGame(tavaraAsShipped(), 6, playerNamed('Chain builder').decide);
 
-    expect([result.imported, result.exported, result.tradeIncome, result.tradeSpending]).toEqual([
-      0, 0, 0, 0,
-    ]);
-  }, 30_000);
+      expect([result.imported, result.exported, result.tradeIncome, result.tradeSpending]).toEqual([
+        0, 0, 0, 0,
+      ]);
+    },
+    GAME_TIMEOUT,
+  );
 });
