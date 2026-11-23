@@ -67,7 +67,7 @@ main figures from the balance values and fails if this file, the README or
   per head, health, education and infrastructure access (the sites in use there, and power),
   weighted 15% each for the first four and 40% for infrastructure, so building is the main road
   to prosperity. A small site in use adds 20 to 30 points of infrastructure access to its region,
-  a large one 10 to 40, and power 15. Prosperity is the regions' living standards averaged by
+  a large one 10 to 40, a clinic or a school 5, and power 15. Prosperity is the regions' living standards averaged by
   population. The region list in the left column
   shows each region's living standard as a figure and a bar, so inequality shows at a glance.
 - Prosperity is divided into four tiers: Subsistence, then Developing from 30, Industrialising
@@ -83,7 +83,8 @@ main figures from the balance values and fails if this file, the README or
   keeps up. A region's card shows how many people it gained, or lost to famine, last quarter.
 - Health and education are lasting levels in each region. Spending on them builds the levels up
   over many quarters, and they wear down without it; a game starts with them where the starting
-  budget holds them. Their spending still moves approval at once, as before.
+  budget holds them. Their spending still moves approval at once, as before. A clinic or a school
+  in use lifts its own region's level further (see Clinics and schools).
 
 ## Building
 
@@ -165,6 +166,30 @@ main figures from the balance values and fails if this file, the README or
   breakdown of how much less the weather moves its harvest, which lists each site in use there
   and each technology known that lessens it, and what they take off together.
 
+## Clinics and schools
+
+- A **clinic** and a **school** are small sites that serve their region's people, so research
+  reaches prosperity through health and education as well as through infrastructure. **Public
+  health** unlocks the clinic and **Teacher training** the school; until then their sites are
+  locked. Each costs $8.0m over 3 quarters and $0.3m upkeep, and adds 5 points to its region's
+  infrastructure access.
+- A clinic in use lets its region's health level settle 15 points higher than health spending
+  alone holds it, and a school does the same for its education level. The level is not raised at
+  once: it climbs there over the quarters the site is in use, as it does towards what spending
+  holds, closing 5% of the gap each quarter for health and 4% for education. Several in one
+  region add up, and no level passes 100. No other region gains.
+- Like any site they need upkeep and decay without it, and a flood damages them. A decaying
+  clinic or school gives half. A level a site held up wears back down once the site gives less.
+- A region's card gives its health and education levels. Where a clinic or a school is in use,
+  it also breaks down where that level settles: what spending holds, under the budget
+  committed, and each clinic or school by name. A site's card says what it would do before it is
+  built, and the infrastructure breakdown names it too.
+- The preview's prosperity and the risks ahead count them, the warning that upkeep will fall
+  short among them.
+- Tavara has two clinic sites, at Dustwell in The Dry East and at Westhaven on the Salt Coast,
+  and two school sites, at Southbank in the South Delta and at Korrgate in the Korr Highlands.
+  The test country has one of each, side by side in Sandreach.
+
 ## Power
 
 - Power reaches a region along a power line. Tavara has one power station, at Korr Falls ($30.0m,
@@ -217,6 +242,9 @@ main figures from the balance values and fails if this file, the README or
 - **Hydropower** (needs improved irrigation and grid efficiency; $20.0m over 6 quarters) does
   nothing of itself: it unlocks the dam (see Locked sites and the dam). Its card in the Research
   tab names the sites of this country it unlocks, and their regions.
+- **Public health** and **Teacher training** ($8.0m over 4 quarters each) are a branch of their
+  own: each needs nothing first and does nothing of itself. Public health unlocks the clinic and
+  teacher training the school (see Clinics and schools), and each names the sites it unlocks.
 - A site's card gives each figure a known technology moves beside what it would be without it, as
   in "40% (25% without Cold storage)", and so do a port's trade link and its shipping lane, and
   the report of a site finished while the technology is known. The

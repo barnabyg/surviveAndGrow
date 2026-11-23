@@ -98,7 +98,10 @@ Prosperity, tiers and people.
   seed, makes weather and drought move every region's harvest less, and the tiers built on it
   improve irrigation schemes, grain stores, trunk roads and ports, and power stations, so they pay
   off only where the player has built them. Hydropower, joining both branches, unlocks the dam.
-  Rules: rules.md, Research, and Locked sites and the dam.
+  Public health and teacher training, a branch of their own that needs nothing first, unlock the
+  clinic and the school, so research reaches prosperity through health and education as well as
+  through infrastructure. Rules: rules.md, Research, Locked sites and the dam, and Clinics and
+  schools.
 - **Surveys** (Phase 5, under way): exploration with visible risk. A country file hides deposits
   in its regions, each with a likelihood and a range of sizes; a survey is a project on a region
   that shows both before the player commits, and reports nothing or a deposit of a definite size,
@@ -133,7 +136,9 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
   appear on the map; a region not yet surveyed is marked with a magnifying glass. Research
   unlocks new site types: a dam is on the map from the start, locked and wearing a padlock, until
   hydropower is known. A dam is a power station that also steadies its own region's harvest, and
-  a country may offer it as an alternative to a power station.
+  a country may offer it as an alternative to a power station. Clinics and schools are locked the
+  same way: small sites that raise their own region's health or education level over the
+  quarters they are in use.
 - **Lenses:** the map switches between country, food, approval, living standards and infrastructure
   views.
 - **The infrastructure lens shows what is built and what is missing,** region by region, with every

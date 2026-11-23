@@ -88,6 +88,11 @@ drought or a flood does not starve a region first.
   Each technology says what it would improve in your game, and a site's card, the breakdowns
   and the infrastructure lens name the technology behind each figure it moves. Hydropower unlocks the dam: until then a dam's site is locked,
   marked with a padlock, and its card names the research it needs.
+- **Clinics and schools lift one region.** Public health and teacher training need nothing
+  first; each unlocks a small, cheap site. A clinic in use lets its region's health level settle
+  higher than health spending alone holds it, and a school its education level, climbing there
+  over the quarters it is in use. The region's card shows both levels and names the clinic or
+  school that raises one.
 - **A dam does two jobs.** It powers the regions its lines reach, like a power station, and
   steadies its own region's harvest. It is dear and slow to build, and in Tavara it is an
   alternative to the Korr Falls power station: build one or the other.

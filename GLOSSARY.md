@@ -36,6 +36,10 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
   known. Not "hidden", which is a deposit's state before a survey.
 - **Dam**: a type of site research unlocks. It is a power station that also lessens how far the
   weather moves its own region's harvest, as irrigation does.
+- **Clinic**, **school**: the types of site that serve a region's people, each unlocked by
+  research of its own (public health, teacher training). One in use raises where its region's
+  health or education level settles (`services` in `balance.sites`), on top of what spending
+  holds. Not "hospital" or "service building".
 - **Research**: the project that makes a technology known. It is on no site, needs no upkeep and
   never decays, and one technology is researched at a time.
 - **Deposit**: ore a country file hides in a region (`deposits`): a mine and the trunk road that
