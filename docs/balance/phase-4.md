@@ -693,6 +693,6 @@ minutes on a 20-processor machine with every processor but two, and the confirma
 
 ## Playing it
 
-[The README](../../README.md#a-phase-4-play-through) gives one command that opens the finished
+[The README](../../README.md#a-play-through) gives one command that opens the finished
 Phase 4 game on seed 1, where the chain builder loses its first vote with 49.9% and the timing
 trader, building the same sites, wins in quarter 30, with the trades it made.
