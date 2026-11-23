@@ -95,7 +95,9 @@ Prosperity, tiers and people.
 - **Technology** (Phase 5, under way): a tree bought with money and time, using the project
   mechanism: research is a project on no site, one technology at a time, known for good once
   finished. It unlocks and improves what already exists; the first technology, drought-resistant
-  seed, makes weather and drought move every region's harvest less. Rules: rules.md, Research.
+  seed, makes weather and drought move every region's harvest less, and the tiers built on it
+  improve irrigation schemes, grain stores, trunk roads and ports, and power stations, so they pay
+  off only where the player has built them. Rules: rules.md, Research.
 - **Surveys** (Phase 5, under way): exploration with visible risk. A country file hides deposits
   in its regions, each with a likelihood and a range of sizes; a survey is a project on a region
   that shows both before the player commits, and reports nothing or a deposit of a definite size,

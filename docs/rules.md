@@ -177,6 +177,29 @@ main figures from the balance values and fails if this file, the README or
   40%. It does not hold back a flood's water. Where a region has irrigation too, the two multiply
   together. The harvest report names it, and the harvest forecast, a drought's description on the
   map and the risks ahead count it.
+- The rest of the tree **improves what is built**. Each technology improves a type of site, so it
+  pays off only where such a site is in use. A decaying site does only part of what the improved
+  site does, as it does of its own figures:
+  - **Improved irrigation** (needs drought-resistant seed; $10.0m over 4 quarters): an irrigation
+    scheme takes 60% off how far weather, drought and flood move its region's harvest, not 50%.
+  - **Cold storage** (needs drought-resistant seed; $8.0m over 3 quarters): a grain store saves 40%
+    of what spoils in the national reserve, not 25%.
+  - **Road engineering** (needs improved irrigation; $15.0m over 5 quarters): trunk roads, ports
+    and shallow ports carry 25% more. A chain held back by its road or its port ships more (a
+    mine shipping through a shallow port, 450,000 tonnes a quarter instead of 360,000), and a port
+    carries more grain across the border. A chain its mine holds back gains nothing.
+  - **Grid efficiency** (needs cold storage; $15.0m over 5 quarters): a powered region produces
+    25% more, not 20%, and gains 18.7 points of infrastructure access, not 15.
+- A site's card gives each figure a known technology moves beside what it would be without it, as
+  in "40% (25% without Cold storage)", and so do a port's trade link and its shipping lane. The
+  region's output and infrastructure access, the treasury's tax and the food reserve each give
+  what a technology adds as a line of its own that names it ("Korrgate mine: Road engineering",
+  "Kept from spoiling by Cold storage"). The harvest report names improved irrigation where an
+  irrigation scheme is in use. The preview and the risks ahead count every technology known.
+- Each technology in the Research tab says what it would improve in this game: every site in use
+  it improves, with the figures it would move beside what they are now, and every chain and
+  region it would move, and by how much. One whose sites are not built yet says it improves
+  nothing until one is.
 
 ## Surveys
 

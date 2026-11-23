@@ -26,6 +26,10 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
   has prerequisites, a cost, a research time and a lasting effect once **known**. The list is the
   engine's (`TECHNOLOGIES` in `src/sim/vocabulary.ts`); a country file cannot add one. Not
   "tech" or "upgrade".
+- **Improvement**: what a technology does for a type of site (`improves` in
+  `balance.technologies`): it leaves less of what the site's effect bears on, raises what the site
+  carries in a chain, or raises what a power station's power gives a region. It pays off only
+  where such a site is in use, and every figure it moves names it. Not "upgrade" or "bonus".
 - **Research**: the project that makes a technology known. It is on no site, needs no upkeep and
   never decays, and one technology is researched at a time.
 - **Deposit**: ore a country file hides in a region (`deposits`): a mine and the trunk road that

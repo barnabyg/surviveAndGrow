@@ -83,7 +83,10 @@ drought or a flood does not starve a region first.
 - **Research for the long run.** The research tab holds the technology tree. Research is a
   project with no site, paid in instalments like a site and known for good once finished; one
   technology is researched at a time. Drought-resistant seed makes weather and drought move every
-  region's harvest less.
+  region's harvest less. What builds on it improves what you have built: irrigation schemes, grain
+  stores, trunk roads and ports, and power stations each do more, but only where one is in use.
+  Each technology says what it would improve in your game, and a site's card names the technology
+  behind each figure it moves.
 - **Survey for ore.** A region marked with a magnifying glass may hide a deposit. Its card shows
   what a survey costs, how likely it is to find one and how large it could be; if it finds one,
   a new mine and road appear on the map, earning what the survey found once their chain reaches a
