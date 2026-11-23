@@ -7,7 +7,6 @@ import {
   electionStatus,
   loadCountry,
   onSite,
-  onTechnology,
   siteStatus,
   surveyStatuses,
   technologiesNeeded,
@@ -17,12 +16,15 @@ import {
   type Technology,
 } from '../../src/sim';
 import { DEFAULT_TERMS, playGame } from '../balance/batch';
-import { SCRIPTED_PLAYERS, type ScriptedPlayer } from '../balance/players';
+import { DEGENERATE_PLAYERS, SCRIPTED_PLAYERS, type ScriptedPlayer } from '../balance/players';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
+import { knowing } from './playing';
 
 /** The scripted player of a name. */
 function playerNamed(name: string): ScriptedPlayer {
-  const player = SCRIPTED_PLAYERS.find((candidate) => candidate.name === name);
+  const player = [...SCRIPTED_PLAYERS, ...DEGENERATE_PLAYERS].find(
+    (candidate) => candidate.name === name,
+  );
   if (player === undefined) throw new Error(`There is no player "${name}".`);
   return player;
 }
@@ -31,23 +33,6 @@ const chainBuilder = () => playerNamed('Chain builder');
 
 /** The same game with a treasury that pays for anything. */
 const rich = (game: GameState): GameState => ({ ...game, treasury: 5000 });
-
-/** The same game with the technologies given known, as if researched before it. */
-function knowing(game: GameState, technologies: readonly Technology[]): GameState {
-  return {
-    ...game,
-    projects: [
-      ...game.projects,
-      ...technologies.map((technology) => ({
-        target: onTechnology(technology),
-        began: game.date,
-        quartersPaid: technologyTerms(technology).researchQuarters,
-        status: 'known' as const,
-        opened: game.date,
-      })),
-    ],
-  };
-}
 
 /** The same game with the sites given built and in use, as if built before it. */
 function withInUse(game: GameState, siteIds: readonly string[]): GameState {
@@ -179,23 +164,29 @@ describe('the unlocker', () => {
     ).toEqual([]);
   });
 
-  it('leaves alone the power station its dam would stand in for, and the lines from it', () => {
+  it('gives up nothing for a locked site: it builds the power station, and then researches nothing for the dam that closes', () => {
     let game = rich(fresh());
+    const dam = siteOfType(game.country, 'dam');
     const started: string[] = [];
-    for (let quarter = 0; quarter < 6; quarter += 1) {
+    const researched: Technology[] = [];
+    for (let quarter = 0; quarter < 12; quarter += 1) {
       const decisions = unlocker().decide(game);
       started.push(...(decisions.startProjects ?? []));
+      if (decisions.startResearch) researched.push(decisions.startResearch);
       game = rich(advanceQuarter(game, decisions).state);
     }
-    const types = started.map((id) => typeOf(game, id));
 
-    // Tavara's dam is an alternative to its power station, which the lines depend on.
-    expect(types[0]).toBe('port');
-    expect(types).not.toContain('powerStation');
-    expect(types).not.toContain('powerLine');
+    // Tavara's dam is an alternative to its power station, which the chain builder builds first.
+    expect(typeOf(game, started[0])).toBe('powerStation');
+    expect(siteStatus(game, dam)).toMatchObject({ state: 'closed', lockedBy: [] });
+    // Only what the clinics and schools wait on is researched: hydropower's long way is not.
+    expect(researched).toEqual(['publicHealth', 'teacherTraining']);
+    expect(started.map((id) => typeOf(game, id))).toEqual(
+      expect.arrayContaining(['clinic', 'school']),
+    );
   });
 
-  it('builds what it has unlocked before anything else, and then what waited on it', () => {
+  it('builds what it has unlocked before anything else, clinics and schools among it', () => {
     let game = rich(knowing(fresh(), [...lockingTechnologies(fresh())]));
     const unlocked = game.country.sites
       .filter((site) => technologiesNeeded(site).length > 0)
@@ -209,6 +200,42 @@ describe('the unlocker', () => {
     const types = started.map((id) => typeOf(game, id));
 
     expect(started.slice(0, unlocked.length)).toEqual(unlocked);
+    expect(types).toEqual(expect.arrayContaining(['dam', 'clinic', 'school']));
+    expect(types.at(-1)).toBe('powerLine');
+    expect(types).not.toContain('powerStation');
+  });
+});
+
+describe('the unlocker holding out', () => {
+  const holdingOut = () => playerNamed('Unlocker holding out');
+  const fresh = () => createGame(tavaraAsShipped(), 1);
+
+  it('leaves alone the power station its dam would stand in for, and the lines from it', () => {
+    let game = rich(fresh());
+    const started: string[] = [];
+    for (let quarter = 0; quarter < 6; quarter += 1) {
+      const decisions = holdingOut().decide(game);
+      started.push(...(decisions.startProjects ?? []));
+      game = rich(advanceQuarter(game, decisions).state);
+    }
+    const types = started.map((id) => typeOf(game, id));
+
+    // Tavara's dam is an alternative to its power station, which the lines depend on.
+    expect(types[0]).toBe('port');
+    expect(types).not.toContain('powerStation');
+    expect(types).not.toContain('powerLine');
+  });
+
+  it('researches on to the dam, and builds the lines once it is begun', () => {
+    let game = rich(knowing(fresh(), [...lockingTechnologies(fresh())]));
+    const started: string[] = [];
+    for (let quarter = 0; quarter < 40 && !started.some(isPowerLine(game)); quarter += 1) {
+      const decisions = holdingOut().decide(game);
+      started.push(...(decisions.startProjects ?? []));
+      game = rich(advanceQuarter(game, decisions).state);
+    }
+    const types = started.map((id) => typeOf(game, id));
+
     expect(types).toContain('dam');
     expect(types.at(-1)).toBe('powerLine');
     expect(types).not.toContain('powerStation');

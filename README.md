@@ -230,8 +230,8 @@ trades, and three that play as the chain builder does and also research or surve
 researches the improvements to the sites it has built, one that chases the sites research
 unlocks, and one that surveys early and builds what it finds. They are in `tests/balance/players.ts`, with a handful of one-lever players that probe
 for a trick that wins on its own, two that build only part of the chain, one that borrows all it
-can to build everything at once, a trader blind to world price shocks and a borrower wary of ore
-gluts.
+can to build everything at once, a trader blind to world price shocks, a borrower wary of ore
+gluts and an unlocker that holds off whatever would rule a locked site out.
 
 The runs the values were tuned to, with their seeds, the values changed and what they showed, are
 recorded in [docs/balance/phase-1.md](docs/balance/phase-1.md) for Phase 1,

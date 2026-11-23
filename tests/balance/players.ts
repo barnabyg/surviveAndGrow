@@ -558,28 +558,37 @@ function leftAloneFor(game: GameState, unlocking: readonly string[]): ReadonlySe
  * quarter it makes for the technologies the country's locked sites wait on, the nearest
  * first, by way of whatever each needs first, and starts each as soon as the money free
  * covers it, ahead of the next site. A site it has unlocked it builds before anything else.
- * Until then it leaves alone whatever would rule that site out, and what depends on that: in
- * Tavara the power station, which the dam is an alternative to, and the power lines. The
- * rest it builds in the chain builder's order. Its twin is the chain builder, which
- * researches nothing and so never builds a site research unlocks: the difference between
- * them is what chasing new types of site is worth.
+ * The rest it builds in the chain builder's order.
+ *
+ * It gives up nothing for a locked site: where one is an alternative to a site the chain
+ * builder builds, as Tavara's dam is to its power station, it builds that site in its turn,
+ * which closes the locked one, and then no longer makes for what would have unlocked it.
+ * `holdingOut`, it instead leaves alone whatever would rule a locked site out, and what
+ * depends on that, until the locked site is begun: in Tavara the power station and the power
+ * lines, which wait for the dam.
+ *
+ * Its twin is the chain builder, which researches nothing and so never builds a site research
+ * unlocks: the difference between them is what chasing new types of site is worth.
  */
-const unlocker: Decide = (game) =>
-  steward(
-    game,
-    {
-      sites: (now) => {
-        const unlocking = sitesToUnlock(now);
-        const left = leftAloneFor(now, unlocking);
-        const rest = ofTypes([...CHAIN, ...SMALL_SITES])(now);
-        return [...unlocking, ...rest.filter((id) => !unlocking.includes(id) && !left.has(id))];
+function unlocking(holdingOut: boolean): Decide {
+  return (game) =>
+    steward(
+      game,
+      {
+        sites: (now) => {
+          const chased = sitesToUnlock(now);
+          const left = holdingOut ? leftAloneFor(now, chased) : new Set<string>();
+          const rest = ofTypes([...CHAIN, ...SMALL_SITES])(now);
+          return [...chased, ...rest.filter((id) => !chased.includes(id) && !left.has(id))];
+        },
+        // A site an alternative has closed is locked by nothing, so nothing is researched for it.
+        technologies: (now) => [
+          ...new Set(sitesToUnlock(now).flatMap((id) => siteStatus(now, id).lockedBy)),
+        ],
       },
-      technologies: (now) => [
-        ...new Set(sitesToUnlock(now).flatMap((id) => siteStatus(now, id).lockedBy)),
-      ],
-    },
-    savesUp,
-  );
+      savesUp,
+    );
+}
 
 /**
  * The sites of the deposits the surveys have found, deposit by deposit in the country file's
@@ -1097,8 +1106,8 @@ export const SCRIPTED_PLAYERS: readonly ScriptedPlayer[] = [
   {
     name: 'Unlocker',
     manner:
-      'Plays as the chain builder does, but researches towards every site a technology unlocks and builds each once it is unlocked, before anything else, leaving alone whatever would rule one out.',
-    decide: unlocker,
+      'Plays as the chain builder does, but researches towards every site a technology unlocks and builds each once it is unlocked, before anything else. It gives up no site for one: a locked site that an earlier site rules out goes unbuilt.',
+    decide: unlocking(false),
   },
   {
     name: 'Prospector',
@@ -1231,5 +1240,11 @@ export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
       }
       return { budget, ...choices };
     },
+  },
+  {
+    name: 'Unlocker holding out',
+    manner:
+      'Plays as the unlocker does, but leaves alone whatever would rule a locked site out, and what depends on it, until the locked site is begun.',
+    decide: unlocking(true),
   },
 ];
