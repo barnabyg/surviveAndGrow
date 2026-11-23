@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, foodStatus, type GameState } from '../../src/sim';
-import { playGame } from '../balance/batch';
 import { tavaraAsShipped } from './countries';
-import { GAME_TIMEOUT, playerNamed } from './scripted';
+import { playerNamed } from './scripted';
 
 const trader = () => playerNamed('Timing trader');
 
@@ -126,31 +125,4 @@ describe('the player who relies on the mine', () => {
     expect(types.slice(0, 3)).toEqual(['port', 'trunkRoad', 'mine']);
     expect(types).not.toContain('powerStation');
   });
-});
-
-describe('a game played by the balance run', () => {
-  it(
-    'counts what the timing trader bought and sold, and the shocks it met',
-    () => {
-      const result = playGame(tavaraAsShipped(), 6, trader().decide);
-
-      expect(result.exported).toBeGreaterThan(0);
-      expect(result.tradeIncome).toBeGreaterThan(0);
-      expect(result.shocks.drought).toBeGreaterThan(0);
-      expect(result.shocks.failedHarvestsAbroad + result.shocks.oreGlut).toBeGreaterThan(0);
-    },
-    GAME_TIMEOUT,
-  );
-
-  it(
-    'counts no trade for a player that never trades',
-    () => {
-      const result = playGame(tavaraAsShipped(), 6, playerNamed('Chain builder').decide);
-
-      expect([result.imported, result.exported, result.tradeIncome, result.tradeSpending]).toEqual([
-        0, 0, 0, 0,
-      ]);
-    },
-    GAME_TIMEOUT,
-  );
 });

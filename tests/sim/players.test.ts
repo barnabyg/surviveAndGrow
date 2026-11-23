@@ -21,9 +21,9 @@ import { ENDINGS, GAME_TIMEOUT, playerNamed } from './scripted';
 
 /**
  * A short run of the scripted players, as a smoke test: whole games of several terms on the
- * countries as they ship, dilemmas included, and what each game records of its research and
- * surveys. The large batch that judges the balance is a separate command (`npm run balance`)
- * and gates nothing.
+ * countries as they ship, dilemmas included, and what each game records of its research, its
+ * surveys and its trade. The large batch that judges the balance is a separate command
+ * (`npm run balance`) and gates nothing.
  */
 const SEEDS = [1];
 
@@ -85,6 +85,24 @@ function expectResearchAndSurveysOfItsKind(result: GameResult, name: string, gam
     expect(known.length).toBeGreaterThan(0);
   } else {
     expect(known).toEqual([]);
+  }
+}
+
+/** The scripted player that trades grain abroad. The rest never trade. */
+const TRADERS: readonly string[] = ['Timing trader'];
+
+/**
+ * What a game records of its trade: a player that trades sells grain abroad and is paid for
+ * it, and one that never trades has bought, sold, earned and spent nothing.
+ */
+function expectTradeOfItsKind(result: GameResult, name: string): void {
+  if (TRADERS.includes(name)) {
+    expect(result.exported).toBeGreaterThan(0);
+    expect(result.tradeIncome).toBeGreaterThan(0);
+  } else {
+    expect([result.imported, result.exported, result.tradeIncome, result.tradeSpending]).toEqual([
+      0, 0, 0, 0,
+    ]);
   }
 }
 
@@ -189,6 +207,12 @@ describe.each(shipped)('a scripted player in %s', (land, country) => {
         // The same game is the one whose research and surveys are checked: it is played once.
         expectResearchAndSurveysInOrder(result, country());
         expectResearchAndSurveysOfItsKind(result, name, `${name} in ${land} on seed ${seed}`);
+        expectTradeOfItsKind(result, name);
+        // Tavara's seeds bring droughts and world price shocks, and a game counts those it met.
+        if (land === 'Tavara' && TRADERS.includes(name)) {
+          expect(result.shocks.drought).toBeGreaterThan(0);
+          expect(result.shocks.failedHarvestsAbroad + result.shocks.oreGlut).toBeGreaterThan(0);
+        }
         // So is the one the play-through in docs/playing.md says the ending of.
         const stated =
           land === 'Tavara' && seed === PLAY_THROUGH_SEED
