@@ -9,6 +9,7 @@ test('the decisions column shows one tab at a time and remembers the one chosen'
   await expect(tabs.getByRole('tab')).toHaveText([
     /^Budget/,
     /^Projects/,
+    /^Research/,
     /^Finance/,
     /^Trade/,
     /^Relief/,
@@ -31,8 +32,8 @@ test('the decisions column shows one tab at a time and remembers the one chosen'
   // The arrow keys move along the tabs, as in any tab list.
   await tabs.getByRole('tab', { name: 'Projects' }).focus();
   await page.keyboard.press('ArrowRight');
-  await expect(tabs.getByRole('tab', { name: 'Finance' })).toBeFocused();
-  await expect(decisions(page).getByRole('tabpanel', { name: 'Finance' })).toBeVisible();
+  await expect(tabs.getByRole('tab', { name: 'Research' })).toBeFocused();
+  await expect(decisions(page).getByRole('tabpanel', { name: 'Research' })).toBeVisible();
   await page.keyboard.press('ArrowLeft');
   await page.keyboard.press('ArrowLeft');
   await expect(decisions(page).getByRole('tabpanel', { name: 'Budget' })).toBeVisible();

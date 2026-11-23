@@ -12,6 +12,7 @@ import {
   withinAusterity,
   type Borrowing,
   type GameState,
+  type Technology,
   type TradeOrder,
   type TurnReport,
 } from '../sim';
@@ -28,6 +29,7 @@ import { LensBar } from './LensBar';
 import { MapLegend } from './MapLegend';
 import { MapView } from './MapView';
 import { ProjectsPanel, projectsTab } from './ProjectsPanel';
+import { ResearchPanel, researchTab } from './ResearchPanel';
 import { QuarterSummary } from './QuarterSummary';
 import { RegionCard } from './RegionCard';
 import { RegionList } from './RegionList';
@@ -97,6 +99,8 @@ export function GameScreen(props: GameScreenProps) {
   // The sites the player means to start building on. Building begins when the quarter
   // ends, so until then a plan can be taken back, like the relief target.
   const [plannedSiteIds, setPlannedSiteIds] = useState<readonly string[]>([]);
+  // The technology the player means to start researching, taken back the same way.
+  const [plannedResearch, setPlannedResearch] = useState<Technology | null>(null);
   // The loans the player means to take. Their money arrives when the quarter ends, so until
   // then they can be taken back, like a planned project.
   const [plannedLoans, setPlannedLoans] = useState<readonly Borrowing[]>([]);
@@ -137,6 +141,7 @@ export function GameScreen(props: GameScreenProps) {
     budget: committed,
     reliefRegionId,
     startProjects: plannedSiteIds,
+    startResearch: plannedResearch,
     borrow: plannedLoans,
     trade: plannedTrade,
     dilemmaChoice,
@@ -151,6 +156,7 @@ export function GameScreen(props: GameScreenProps) {
             budget: committed,
             reliefRegionId,
             startProjects: plannedSiteIds,
+            startResearch: plannedResearch,
             borrow: plannedLoans,
             trade: plannedTrade,
             dilemmaChoice,
@@ -162,6 +168,7 @@ export function GameScreen(props: GameScreenProps) {
       committed,
       reliefRegionId,
       plannedSiteIds,
+      plannedResearch,
       plannedLoans,
       plannedTrade,
       dilemmaChoice,
@@ -171,7 +178,13 @@ export function GameScreen(props: GameScreenProps) {
     (risk) => risk.headline === riskPicked && risk.regionId === selectedRegionId,
   );
   const selectedRisk = pickedRisk === -1 ? null : pickedRisk;
-  const tips = useTips({ game, risks, plannedSiteIds, quiet: touring || learning });
+  const tips = useTips({
+    game,
+    risks,
+    plannedSiteIds,
+    plannedResearch,
+    quiet: touring || learning,
+  });
   // The timeline shows every project, and the site picked out on the map if it is still
   // empty and unplanned, as if building there began now. A closed site can never begin.
   const schedule =
@@ -247,6 +260,7 @@ export function GameScreen(props: GameScreenProps) {
     setPending(withinAusterity(result.state, pending));
     setReportPicked(null);
     setPlannedSiteIds([]);
+    setPlannedResearch(null);
     setPlannedLoans([]);
     setPlannedTrade([]);
     setConfirmingEnd(false);
@@ -392,6 +406,7 @@ export function GameScreen(props: GameScreenProps) {
                   tabs={[
                     budgetTab(pending, committed),
                     projectsTab(game, plannedSiteIds),
+                    researchTab(game, plannedResearch, plannedSiteIds),
                     financeTab(game, preview, plannedLoans),
                     tradeTab(preview),
                     reliefTab(game, preview, reliefRegionId),
@@ -403,6 +418,7 @@ export function GameScreen(props: GameScreenProps) {
                     pending={pending}
                     reliefRegionId={reliefRegionId}
                     startProjects={plannedSiteIds}
+                    startResearch={plannedResearch}
                     borrow={plannedLoans}
                     trade={plannedTrade}
                     dilemmaChoice={dilemmaChoice}
@@ -420,6 +436,12 @@ export function GameScreen(props: GameScreenProps) {
                     preview={preview}
                     plannedSiteIds={plannedSiteIds}
                     onPlan={planSite}
+                  />
+                  <ResearchPanel
+                    game={game}
+                    planned={plannedResearch}
+                    plannedSiteIds={plannedSiteIds}
+                    onPlan={setPlannedResearch}
                   />
                   <FinancePanel
                     game={game}

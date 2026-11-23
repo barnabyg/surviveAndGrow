@@ -42,7 +42,11 @@ describe('the first-time tips', () => {
   });
 
   it('can each arise in the country as it ships', () => {
-    const covered = new Set([...ARISES.map(([condition]) => condition), 'weather-warning']);
+    const covered = new Set([
+      ...ARISES.map(([condition]) => condition),
+      'weather-warning',
+      'research',
+    ]);
     expect(TIPS.filter((tip) => !covered.has(tip.when))).toEqual([]);
   });
 
@@ -57,6 +61,17 @@ describe('the first-time tips', () => {
     const game = createGame(tavaraAsShipped(), 1);
     const risks = risksAhead(game, { budget: game.budget });
     expect(tipsDue({ game, risks, plannedSiteIds: [] }).has('weather-warning')).toBe(true);
+  });
+
+  it('wait for research once the player plans it, and while it is under way', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    const seed = 'droughtResistantSeed';
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [], plannedResearch: seed })).toContain(
+      'research',
+    );
+    const decisions = { budget: game.budget, startResearch: seed } as const;
+    const underway = advanceQuarter(game, decisions).state;
+    expect(tipsDue({ game: underway, risks: [], plannedSiteIds: [] })).toContain('research');
   });
 
   it('wait for nothing in a game that has only just begun, risks ahead aside', () => {

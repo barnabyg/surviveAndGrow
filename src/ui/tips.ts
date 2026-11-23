@@ -1,4 +1,12 @@
-import { chainsThrough, electionStatus, TIERS, type GameState, type Risk } from '../sim';
+import {
+  chainsThrough,
+  electionStatus,
+  researchStatuses,
+  TIERS,
+  type GameState,
+  type Risk,
+  type Technology,
+} from '../sim';
 
 /**
  * What a first-time tip waits for. Each is read from the game as it stands, the risks ahead
@@ -13,7 +21,8 @@ export type TipCondition =
   | 'missing-link'
   | 'bailout'
   | 'election-near'
-  | 'tier-passed';
+  | 'tier-passed'
+  | 'research';
 
 /** A note shown once, the first time what it explains appears in a game. */
 export interface Tip {
@@ -91,6 +100,13 @@ export const TIPS: readonly Tip[] = [
     title: 'A new tier',
     text: 'The country has passed into a higher tier of prosperity, and the map shows it. People now expect more, so approval settles lower for the same budget. Hold the top tier for a year, with debt in check, to win.',
   },
+  {
+    id: 'research',
+    when: 'research',
+    target: 'research',
+    title: 'Research',
+    text: 'The research tab holds the technology tree. Research is a project with no site: the treasury must hold its whole cost, it is paid in instalments after the budget and pauses when the treasury cannot pay. One technology is researched at a time, and it is known for good from the quarter after its last instalment.',
+  },
 ];
 
 /** What a tip may be shown for: the game as it stands and what the player has planned. */
@@ -100,13 +116,16 @@ export interface TipView {
   readonly risks: readonly Risk[];
   /** The sites the player has planned to build on this quarter. */
   readonly plannedSiteIds: readonly string[];
+  /** The technology the player has planned to research this quarter, if any. */
+  readonly plannedResearch?: Technology | null;
 }
 
 /** How many quarters before the election quarter its tip is shown: a year ahead. */
 const ELECTION_NOTICE_QUARTERS = 3;
 
 /** The tip conditions that hold now. */
-export function tipsDue({ game, risks, plannedSiteIds }: TipView): ReadonlySet<TipCondition> {
+export function tipsDue(view: TipView): ReadonlySet<TipCondition> {
+  const { game, risks, plannedSiteIds, plannedResearch } = view;
   const due = new Set<TipCondition>();
   if (game.outcome.status !== 'playing') return due;
   if (game.dilemma !== null) due.add('dilemma');
@@ -123,5 +142,10 @@ export function tipsDue({ game, risks, plannedSiteIds }: TipView): ReadonlySet<T
   if (game.austerity !== null) due.add('bailout');
   if (electionStatus(game).quartersAway <= ELECTION_NOTICE_QUARTERS) due.add('election-near');
   if (TIERS.indexOf(game.tier) > TIERS.indexOf(game.startingTier)) due.add('tier-passed');
+  // Research appears once the player plans it, or once it is under way.
+  const research = researchStatuses(game, plannedResearch ?? null);
+  if (research.some((status) => ['planned', 'researching', 'paused'].includes(status.state))) {
+    due.add('research');
+  }
   return due;
 }

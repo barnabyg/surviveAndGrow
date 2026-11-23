@@ -23,6 +23,7 @@ import {
   type GameState,
   type Range,
   type RegionUnrest,
+  type Technology,
   type TradeOrder,
   UNREST_KINDS,
   UPKEEP_ORDER_RULE,
@@ -42,6 +43,8 @@ interface BudgetPanelProps {
   readonly reliefRegionId: string | null;
   /** The sites building is to start on this quarter, whose instalments are a fixed cost. */
   readonly startProjects: readonly string[];
+  /** The technology research is to start on this quarter, whose instalments are one too. */
+  readonly startResearch: Technology | null;
   /** The loans to be taken this quarter, whose money arrives as it ends. */
   readonly borrow: readonly Borrowing[];
   /** The goods to be bought abroad this quarter, paid for and arriving as it ends. */
@@ -76,8 +79,8 @@ export function budgetTab(pending: Budget, committed: Budget): DecisionTab {
 
 export function BudgetPanel(props: BudgetPanelProps) {
   const { game, committed, pending, reliefRegionId, startProjects, borrow, trade } = props;
-  const { dilemmaChoice } = props;
-  const held = { reliefRegionId, startProjects, borrow, trade, dilemmaChoice };
+  const { dilemmaChoice, startResearch } = props;
+  const held = { reliefRegionId, startProjects, startResearch, borrow, trade, dilemmaChoice };
   const { onChange, onCommit, onReset } = props;
   const changes = countChanges(pending, committed);
   // The same projection twice: where the committed budget leads, and where the sliders would.

@@ -75,12 +75,17 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     target: 'budget',
     title: 'Budget',
-    text: 'The decisions are in tabs: budget, projects, finance, trade and relief, each saying where it stands. The budget sets the tax rate and spending on agriculture, food relief, health, education, security and upkeep. Move a slider and the projection shows what it would do. Nothing counts until you commit it.',
+    text: 'The decisions are in tabs: budget, projects, research, finance, trade and relief, each saying where it stands. The budget sets the tax rate and spending on agriculture, food relief, health, education, security and upkeep. Move a slider and the projection shows what it would do. Nothing counts until you commit it.',
   },
   {
     target: 'projects',
     title: 'Projects',
     text: 'Anything with a cost, a build time and a lasting effect: irrigation, roads, ports, mines, power. Browse projects lists every one the treasury can cover now. A project planned now starts when the quarter ends, and can be taken back until then. Underfunded upkeep lets what you built decay.',
+  },
+  {
+    target: 'research',
+    title: 'Research',
+    text: 'The technology tree. Research is a project with no site: one technology at a time, paid for in instalments and known for good once finished. Its tab says when nothing is being researched.',
   },
   {
     target: 'finance',
