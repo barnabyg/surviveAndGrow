@@ -23,6 +23,7 @@ import {
   type Region,
   type Settlement,
   type SettlementLook,
+  type SurveyState,
   type TradeOrder,
   UNREST_KINDS,
 } from '../sim';
@@ -336,14 +337,12 @@ export function MapView(props: MapViewProps) {
           />
         ))}
 
-        {surveyStatuses(game, { startSurveys: plannedSurveys })
-          .filter(({ state }) => state !== 'barren' && state !== 'surveyed')
-          .map((status) => {
-            const region = country.regions.find((each) => each.id === status.regionId);
-            return region === undefined ? null : (
-              <SurveyMark key={region.id} region={region} state={status.state} palette={palette} />
-            );
-          })}
+        {surveyStatuses(game, { startSurveys: plannedSurveys }).map(({ regionId, state }) => {
+          const region = country.regions.find((each) => each.id === regionId);
+          return region === undefined || !isMarked(state) ? null : (
+            <SurveyMark key={region.id} region={region} state={state} palette={palette} />
+          );
+        })}
       </g>
 
       {/* Trade routes go under the sites, so a lane never covers its port. */}
@@ -387,8 +386,16 @@ export function MapView(props: MapViewProps) {
   );
 }
 
+/** How a region stands for a survey while the map marks it: it may still hide a deposit. */
+type MarkedSurveyState = Exclude<SurveyState, 'barren' | 'surveyed'>;
+
+/** Whether the map marks a region standing so for a survey. */
+function isMarked(state: SurveyState): state is MarkedSurveyState {
+  return state !== 'barren' && state !== 'surveyed';
+}
+
 /** How a region not yet surveyed is marked: what the magnifying glass says of it. */
-const SURVEY_MARK_WORDS: Readonly<Record<string, string>> = {
+const SURVEY_MARK_WORDS: Readonly<Record<MarkedSurveyState, string>> = {
   unsurveyed: 'not yet surveyed: a deposit of ore may lie here',
   planned: 'survey planned',
   surveying: 'being surveyed',
@@ -397,7 +404,7 @@ const SURVEY_MARK_WORDS: Readonly<Record<string, string>> = {
 
 interface SurveyMarkProps {
   readonly region: Region;
-  readonly state: string;
+  readonly state: MarkedSurveyState;
   readonly palette: MapPalette;
 }
 
@@ -414,7 +421,7 @@ function SurveyMark({ region, state, palette }: SurveyMarkProps) {
       className="map__survey"
       transform={`translate(${x} ${y - 30})`}
       role="img"
-      aria-label={`${region.name}: ${SURVEY_MARK_WORDS[state] ?? ''}`}
+      aria-label={`${region.name}: ${SURVEY_MARK_WORDS[state]}`}
     >
       <circle r="9" fill={palette.tagBackground} />
       <circle

@@ -463,11 +463,21 @@ export const PROJECT_TARGET_KINDS = ['site', 'technology', 'survey'] as const;
 export type ProjectTargetKind = (typeof PROJECT_TARGET_KINDS)[number];
 
 /**
+ * How a finished project of each kind stands: a site operating, from which it may decay, a
+ * technology known and a region surveyed.
+ */
+export const PROJECT_TARGET_FINISHED = {
+  site: 'operating',
+  technology: 'known',
+  survey: 'surveyed',
+} as const satisfies Readonly<Record<ProjectTargetKind, ProjectStatus>>;
+
+/**
  * How the report and the treasury's breakdown speak of a project of each kind: the headline
- * of each report entry, the work it is ("2 of its 3 quarters of building"), what it takes
- * ("the 3 quarters it takes to build"), what a quarter without money did, what finishing
- * means, the line it pays in the treasury's breakdown ("Building Lowmere irrigation"), and
- * the kinds of report its entries are.
+ * of each report entry, the work it is ("2 of its 3 quarters of building"), what it is for
+ * ("the site"), what finishing it is ("the 3 quarters it takes to build"), what a quarter
+ * without money did, what finishing means, the line it pays in the treasury's breakdown
+ * ("Building Lowmere irrigation"), and the kinds of report its entries are.
  */
 export interface ProjectWords {
   readonly begins: string;
@@ -475,7 +485,8 @@ export interface ProjectWords {
   readonly paused: string;
   readonly finished: string;
   readonly work: string;
-  readonly takes: string;
+  readonly subject: string;
+  readonly toFinish: string;
   readonly idle: string;
   readonly finishedCause: string;
   readonly paying: string;
@@ -493,7 +504,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     paused: 'Paused',
     finished: 'Finished',
     work: 'building',
-    takes: 'it takes to build',
+    subject: 'the site',
+    toFinish: 'to build',
     idle: 'nothing was built this quarter',
     finishedCause: 'It is in use from next quarter.',
     paying: 'Building',
@@ -509,7 +521,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     paused: 'Research paused',
     finished: 'Research finished',
     work: 'research',
-    takes: 'it takes to research',
+    subject: 'the technology',
+    toFinish: 'to research',
     idle: 'no research was done this quarter',
     finishedCause: 'It is known from next quarter.',
     paying: 'Researching',
@@ -525,7 +538,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     paused: 'Survey paused',
     finished: 'Survey finished',
     work: 'surveying',
-    takes: 'it takes to survey',
+    subject: 'the region',
+    toFinish: 'to survey',
     idle: 'no surveying was done this quarter',
     finishedCause: 'The surveyors have reported.',
     paying: 'Surveying',

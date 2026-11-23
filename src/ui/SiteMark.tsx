@@ -1,6 +1,7 @@
 import {
   formatMoney,
   isInUseState,
+  listed,
   siteTerms,
   SITE_POWER_ROLES,
   SITE_STATE_NAMES,
@@ -101,7 +102,7 @@ export function SiteMark(props: SiteMarkProps) {
   const inUse = isInUseState(status.state);
   const closed = status.state === 'closed';
   const locked = status.state === 'locked';
-  const needs = status.lockedBy.map(technologyName).join(' and ');
+  const needs = listed(status.lockedBy.map(technologyName));
   // A site not yet begun still has its whole cost to pay, so it says what that is.
   const cost = status.state === 'empty' ? formatMoney(siteTerms(site.type).cost) : null;
   const description = [

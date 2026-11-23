@@ -15,10 +15,16 @@ import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import { MIGRATIONS, SAVE_FORMAT_VERSION, toCurrentFormat, type SaveMigration } from './migrations';
 import type { PriceShock } from './priceShocks';
-import { projectTerms, siteOf, targetKey, type Project, type ProjectTarget } from './projects';
+import {
+  projectTerms,
+  siteOf,
+  standsAs,
+  targetKey,
+  type Project,
+  type ProjectTarget,
+} from './projects';
 import type { ReportEntry } from './report';
 import { knownTechnologies, technologyOf } from './technology';
-import { isInUseState } from './upkeep';
 import type { RngState } from './rng';
 import { technologiesNeeded } from './sites';
 import {
@@ -333,13 +339,10 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
     const quartersPaid = whole(item.quartersPaid, `${itemPath}.quartersPaid`, 0);
     const buildQuarters = projectTerms(every, target)?.buildQuarters ?? 0;
     if (quartersPaid > buildQuarters) {
-      const what = { site: 'the site', technology: 'the technology', survey: 'the region' }[
-        target.kind
-      ];
-      const takes = PROJECT_TARGET_WORDS[target.kind].takes.replace('it takes', '');
+      const { subject, toFinish } = PROJECT_TARGET_WORDS[target.kind];
       fail(
         `${itemPath}.quartersPaid`,
-        `is ${quartersPaid}, but ${what} takes ${formatQuarters(buildQuarters)}${takes}`,
+        `is ${quartersPaid}, but ${subject} takes ${formatQuarters(buildQuarters)} ${toFinish}`,
       );
     }
     const status = oneOf(
@@ -348,12 +351,8 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
       PROJECT_STATUSES,
       'a state of building',
     );
-    const fits = {
-      site: status !== 'known' && status !== 'surveyed',
-      technology: !isInUseState(status) && status !== 'surveyed',
-      survey: status === 'building' || status === 'paused' || status === 'surveyed',
-    }[target.kind];
-    if (!fits) fail(`${itemPath}.status`, `is "${status}", which a ${target.kind} never is`);
+    if (!standsAs(target.kind, status))
+      fail(`${itemPath}.status`, `is "${status}", which a ${target.kind} never is`);
     if (target.kind === 'survey' && depositIn(country, target.regionId) === null) {
       fail(`${itemPath}.target.regionId`, 'is a region where the country hides no deposit');
     }

@@ -22,13 +22,16 @@ import {
 } from './technology';
 import { formatMoney, formatQuarters, listed } from './text';
 import type { Contribution, GameDate, Money } from './types';
-import { inUse } from './upkeep';
+import { inUse, isInUseState } from './upkeep';
 import {
+  PROJECT_TARGET_FINISHED,
+  PROJECT_TARGET_KINDS,
   PROJECT_TARGET_WORDS,
   SITE_EFFECT_DEFINITIONS,
   SITE_EFFECTS,
   TECHNOLOGIES,
   type ProjectStatus,
+  type ProjectTargetKind,
   type ProjectWords,
   type SiteEffect,
   type SiteState,
@@ -168,14 +171,15 @@ export function projectTerms(country: Country, target: ProjectTarget): ProjectTe
       cost,
       buildQuarters: surveyQuarters,
       effect: 'It finds whether a deposit of ore lies there, and how large it is.',
-      finished: 'surveyed',
+      finished: PROJECT_TARGET_FINISHED.survey,
       words,
     };
   }
   if (target.kind === 'technology') {
     if (!TECHNOLOGIES.includes(target.technology)) return null;
     const { name, cost, researchQuarters, effect } = technologyTerms(target.technology);
-    return { name, cost, buildQuarters: researchQuarters, effect, finished: 'known', words };
+    const finished = PROJECT_TARGET_FINISHED.technology;
+    return { name, cost, buildQuarters: researchQuarters, effect, finished, words };
   }
   const site = country.sites.find((candidate) => candidate.id === target.siteId);
   if (site === undefined) return null;
@@ -186,7 +190,7 @@ export function projectTerms(country: Country, target: ProjectTarget): ProjectTe
     cost,
     buildQuarters,
     effect,
-    finished: 'operating',
+    finished: PROJECT_TARGET_FINISHED.site,
     words,
   };
 }
@@ -256,15 +260,38 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
   };
 }
 
+/** How a project on no site stands once finished: a technology known, a region surveyed. */
+type FinishedOffSite = (typeof PROJECT_TARGET_FINISHED)[Exclude<ProjectTargetKind, 'site'>];
+
 /**
- * How a project on a site can stand: never known, which only research becomes, nor surveyed,
- * which only a survey becomes.
+ * How a project on a site can stand: never as a project on no site finishes, which only
+ * research and surveys do.
  */
-export type SiteProjectState = Exclude<ProjectStatus, 'known' | 'surveyed'>;
+export type SiteProjectState = Exclude<ProjectStatus, FinishedOffSite>;
+
+/** Whether a project stands as only a project on no site finishes. */
+function finishedOffSite(status: ProjectStatus): status is FinishedOffSite {
+  return PROJECT_TARGET_KINDS.some(
+    (kind) => kind !== 'site' && PROJECT_TARGET_FINISHED[kind] === status,
+  );
+}
 
 /** How a site's project stands. Only a project on no site is ever finished otherwise than in use. */
 export function siteStateOf({ status }: Pick<Project, 'status'>): SiteProjectState {
-  return status === 'known' || status === 'surveyed' ? 'operating' : status;
+  return finishedOffSite(status) ? 'operating' : status;
+}
+
+/**
+ * Whether a project of this kind can stand so: being built or paused, as any can, or finished
+ * as its kind finishes, which for one finished in use is in good repair or decaying.
+ */
+export function standsAs(kind: ProjectTargetKind, status: ProjectStatus): boolean {
+  const finished = PROJECT_TARGET_FINISHED[kind];
+  if (isInUseState(status)) return isInUseState(finished);
+  const finishes: readonly ProjectStatus[] = PROJECT_TARGET_KINDS.map(
+    (each) => PROJECT_TARGET_FINISHED[each],
+  );
+  return status === finished || !finishes.includes(status);
 }
 
 /**
@@ -429,7 +456,7 @@ export function resolveProjects(
 
 /** Whether a project is finished: a site in use, a technology known or a region surveyed. */
 function isFinished(project: Project): boolean {
-  return inUse(project) || project.status === 'known' || project.status === 'surveyed';
+  return inUse(project) || project.status === PROJECT_TARGET_FINISHED[project.target.kind];
 }
 
 /**
@@ -580,7 +607,7 @@ function startedEntry({ words, ...terms }: ProjectTerms): ReportEntry {
     kind: words.reportKinds.started,
     seriousness: 'notable',
     headline: `${words.begins}: ${terms.name}`,
-    cause: `It costs ${formatMoney(terms.cost)}, paid over the ${formatQuarters(terms.buildQuarters)} ${words.takes}.`,
+    cause: `It costs ${formatMoney(terms.cost)}, paid over the ${formatQuarters(terms.buildQuarters)} it takes ${words.toFinish}.`,
     ...placed(terms),
   };
 }
