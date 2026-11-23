@@ -181,6 +181,7 @@ function play(
             budget: withinAusterity(state, decisions.budget),
             startProjects: [],
             startResearch: null,
+            startSurveys: [],
             borrow: [],
             trade: [],
             dilemmaChoice: null,
