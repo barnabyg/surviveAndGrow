@@ -361,6 +361,17 @@ export const balance = {
       effects: {},
       infrastructurePermille: 0,
     },
+    // A dam is a power station, its power reaching a region only along a power line, that
+    // also holds back 40% of how far weather, drought and flood move its own region's harvest:
+    // less than an irrigation scheme does. Nearly twice a station's cost and slower to build
+    // than a port, so one started late in a term opens after the election.
+    dam: {
+      cost: 550,
+      buildQuarters: 8,
+      upkeep: 7,
+      effects: { harvestWeather: 600 },
+      infrastructurePermille: 100,
+    },
   } satisfies Record<SiteType, SiteBalance>,
   /**
    * What can be researched (`TECHNOLOGY_DEFINITIONS` gives each its name and prerequisites).
@@ -405,13 +416,22 @@ export const balance = {
         shallowPort: { capacityPermille: 250 },
       },
     },
-    // Power from a station then adds 25% to a region's output, not 20%, and 18.7 points of
-    // infrastructure access, not 15.
+    // Power from a station, a dam among them, then adds 25% to a region's output, not 20%,
+    // and 18.7 points of infrastructure access, not 15.
     gridEfficiency: {
       cost: 150,
       researchQuarters: 5,
       effects: {},
-      improves: { powerStation: { powerPermille: 250 } },
+      improves: { powerStation: { powerPermille: 250 }, dam: { powerPermille: 250 } },
+    },
+    // The fourth tier, joining both branches. It does nothing of itself: it unlocks the dam
+    // (`SITE_TYPE_DEFINITIONS`), which pays off only where a country has a site for one.
+    // Improved irrigation, which it needs, improves irrigation schemes and not dams.
+    hydropower: {
+      cost: 200,
+      researchQuarters: 6,
+      effects: {},
+      improves: {},
     },
   } satisfies Record<Technology, TechnologyBalance>,
   /**

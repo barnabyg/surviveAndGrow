@@ -27,6 +27,7 @@ import {
   SITE_FORMS,
   SITE_TYPE_NAMES,
   SITE_TYPES,
+  TECHNOLOGIES,
   TERRAINS,
   type DecorationKind,
   type DilemmaType,
@@ -35,6 +36,7 @@ import {
   type PriceShockType,
   type SettlementSize,
   type SiteType,
+  type Technology,
   type Terrain,
 } from './vocabulary';
 
@@ -44,10 +46,20 @@ import {
  * growth, which format 1 cannot say, and format 3 added sites that are alternatives to each
  * other, which format 2 cannot, format 4 added debt the game starts with, which format 3
  * cannot, format 5 added border crossings, which format 4 cannot, format 6 added floods,
- * which format 5 cannot, format 7 added world price shocks, which format 6 cannot, and format
- * 8 added hidden deposits that a survey may find, which format 7 cannot.
+ * which format 5 cannot, format 7 added world price shocks, which format 6 cannot, format 8
+ * added hidden deposits that a survey may find, which format 7 cannot, and format 9 added sites
+ * locked until a technology is known, among them dams, which format 8 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 8;
+export const COUNTRY_FORMAT_VERSION = 9;
+
+/**
+ * The country file format that first lets a site say which technology it needs, and name a
+ * type of site that research unlocks.
+ */
+const LOCKED_SITE_FORMAT = 9;
+
+/** The country file format that first lets a file name each type of site added after format 1. */
+const SITE_TYPE_FORMATS: Readonly<Partial<Record<SiteType, number>>> = { dam: LOCKED_SITE_FORMAT };
 
 /** The country file format that first lets a file hide deposits for surveys to find. */
 const DEPOSIT_FORMAT = 8;
@@ -119,6 +131,11 @@ interface SiteDetails {
    * on either rules the other out. The file may say so on either side or on both.
    */
   readonly alternatives: readonly string[];
+  /**
+   * The technology the country file says must be known before the site can be started, if it
+   * says one. A type research unlocks needs its own as well (`technologiesNeeded`).
+   */
+  readonly needs?: Technology;
 }
 
 /**
@@ -267,6 +284,7 @@ function readSite(
   regions: readonly Region[],
   ids: Map<string, string>,
   names: Map<string, string>,
+  formatVersion: number,
   /** The region the site stands in when it is not the site's to say: a deposit's mine's. */
   regionOf?: string,
 ): Site {
@@ -286,10 +304,18 @@ function readSite(
     regionId,
     dependsOn: readSiteIds(reader, site, path, 'dependsOn'),
     alternatives: readSiteIds(reader, site, path, 'alternatives'),
+    ...readNeeds(reader, site, path, formatVersion),
   };
   // A type the game does not know says nothing about how the site should be given.
   if (!SITE_TYPES.some((type) => type === site.type))
     return { ...details, form: 'place', at: [0, 0] };
+  const typeFormat = SITE_TYPE_FORMATS[details.type] ?? OLDEST_COUNTRY_FORMAT_VERSION;
+  if (formatVersion < typeFormat) {
+    reader.fault(
+      join(path, 'type'),
+      `is "${details.type}", which needs country file format ${typeFormat} or later`,
+    );
+  }
   const typeName = SITE_TYPE_NAMES[details.type].toLowerCase();
 
   if (SITE_FORMS[details.type] === 'route') {
@@ -330,6 +356,34 @@ function readSite(
     reader.fault(join(path, 'at'), `is (${at[0]}, ${at[1]}), outside its region "${regionId}"`);
   }
   return { ...details, form: 'place', at };
+}
+
+/**
+ * The technology a site of a file of format 9 or later says it needs, in `needs`: one of the
+ * game's own. Nothing when it says none.
+ */
+function readNeeds(
+  reader: Reader,
+  site: Json,
+  path: string,
+  formatVersion: number,
+): { readonly needs?: Technology } {
+  const value = site.needs;
+  if (value === undefined) return {};
+  const needsPath = join(path, 'needs');
+  if (formatVersion < LOCKED_SITE_FORMAT) {
+    reader.fault(needsPath, `needs country file format ${LOCKED_SITE_FORMAT} or later`);
+    return {};
+  }
+  const technology = TECHNOLOGIES.find((candidate) => candidate === value);
+  if (technology !== undefined) return { needs: technology };
+  reader.fault(
+    needsPath,
+    typeof value === 'string'
+      ? `is "${value}", which is not a technology this game has (${TECHNOLOGIES.join(', ')})`
+      : wrongKind(value, 'the id of a technology'),
+  );
+  return {};
 }
 
 /**
@@ -381,10 +435,27 @@ function readDeposits(
         'must be left out: a deposit’s mine stands in the deposit’s region',
       );
     }
-    const mine = readSite(reader, mineFile, minePath, regions, siteIds, siteNames, regionId);
+    const mine = readSite(
+      reader,
+      mineFile,
+      minePath,
+      regions,
+      siteIds,
+      siteNames,
+      formatVersion,
+      regionId,
+    );
     const routePath = join(path, 'route');
     const routeFile = reader.object(item, 'route', path);
-    const route = readSite(reader, routeFile, routePath, regions, siteIds, siteNames);
+    const route = readSite(
+      reader,
+      routeFile,
+      routePath,
+      regions,
+      siteIds,
+      siteNames,
+      formatVersion,
+    );
     const parts = [
       { site: mine, written: mineFile, at: minePath, role: 'source', part: 'mine' },
       { site: route, written: routeFile, at: routePath, role: 'link', part: 'route' },
@@ -734,7 +805,7 @@ export function loadCountry(file: unknown): Country {
         Reflect.deleteProperty(fields, key);
       }
     }
-    return readSite(reader, fields, path, regions, siteIds, siteNames);
+    return readSite(reader, fields, path, regions, siteIds, siteNames, formatVersion);
   });
   const sites = checkAlternatives(reader, listed);
   const deposits = readDeposits(reader, file, formatVersion, regions, siteIds, siteNames);

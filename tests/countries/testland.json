@@ -1,5 +1,5 @@
 {
-  "formatVersion": 8,
+  "formatVersion": 9,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -175,6 +175,26 @@
         [788, 292]
       ],
       "dependsOn": ["north-station"]
+    },
+    {
+      "id": "sand-dam",
+      "type": "dam",
+      "name": "Sandreach dam",
+      "region": "sandreach",
+      "at": [640, 330]
+    },
+    {
+      "id": "sand-dam-line",
+      "type": "powerLine",
+      "name": "Power line, Sandreach dam to Sandreach",
+      "region": "sandreach",
+      "route": [
+        [648, 342],
+        [668, 400],
+        [705, 455]
+      ],
+      "dependsOn": ["sand-dam"],
+      "needs": "hydropower"
     }
   ],
   "deposits": [
@@ -182,7 +202,10 @@
       "id": "north-ore",
       "region": "northfield",
       "likelihood": 0.5,
-      "tonnes": { "min": 200000, "max": 400000 },
+      "tonnes": {
+        "min": 200000,
+        "max": 400000
+      },
       "mine": {
         "id": "north-mine",
         "type": "mine",
@@ -205,7 +228,12 @@
     }
   ],
   "crossings": [
-    { "id": "elsewhere-gate", "name": "Elsewhere gate", "neighbour": "elsewhere", "tonnes": 15000 }
+    {
+      "id": "elsewhere-gate",
+      "name": "Elsewhere gate",
+      "neighbour": "elsewhere",
+      "tonnes": 15000
+    }
   ],
   "dilemmaLikelihood": {
     "grainOffer": 0.3,
@@ -230,8 +258,16 @@
     },
     "foodReserve": 30000,
     "loans": [
-      { "amount": 7, "rate": 7, "quarters": 8 },
-      { "amount": 4, "rate": 9.5, "quarters": 12 }
+      {
+        "amount": 7,
+        "rate": 7,
+        "quarters": 8
+      },
+      {
+        "amount": 4,
+        "rate": 9.5,
+        "quarters": 12
+      }
     ]
   }
 }

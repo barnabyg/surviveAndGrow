@@ -32,6 +32,8 @@ const SYMBOLS: Readonly<Record<SiteType, string>> = {
   powerStation: 'M2,-7 L-4,1 H0 L-2,7 L4,-1 H0 Z',
   // A pylon with its two cross-arms.
   powerLine: 'M0,-7 L-5,7 M0,-7 L5,7 M-6,-3 H6 M-3,2 H3',
+  // A dam wall, with the water it holds back above it.
+  dam: 'M-5,7 L-3,-1 H3 L5,7 Z M-7,-4 C-5,-6 -3,-6 -1,-4 C1,-2 3,-2 5,-4 L7,-5',
 };
 
 /**

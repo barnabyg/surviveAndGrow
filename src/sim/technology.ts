@@ -1,6 +1,7 @@
 import { percentOff } from './arithmetic';
 import { balance, type SiteImprovement } from './balance';
 import type { Project } from './projects';
+import { siteTerms } from './sites';
 import { listed } from './text';
 import type { Money } from './types';
 import {
@@ -32,12 +33,17 @@ export interface TechnologyTerms {
   readonly prerequisites: readonly Technology[];
   /** The technologies it is a prerequisite of: what it leads to in the tree. */
   readonly leadsTo: readonly Technology[];
+  /** The types of site it unlocks, which cannot be started until it is known. */
+  readonly unlocks: readonly SiteType[];
 }
 
 /** The terms of a technology, from its definition and its balance values. */
 export function technologyTerms(technology: Technology): TechnologyTerms {
   const { name, prerequisites } = TECHNOLOGY_DEFINITIONS[technology];
   const { cost, researchQuarters } = balance.technologies[technology];
+  const unlocks = SITE_TYPES.filter(
+    (type) => SITE_TYPE_DEFINITIONS[type].unlockedBy === technology,
+  );
   return {
     technology,
     name,
@@ -51,11 +57,15 @@ export function technologyTerms(technology: Technology): TechnologyTerms {
         ),
       ),
       ...improvementSentences(technology),
+      ...unlocks.map(
+        (type) => `Unlocks ${pluralsOf([type]).toLowerCase()}. ${siteTerms(type).effect}`,
+      ),
     ].join(' '),
     prerequisites,
     leadsTo: TECHNOLOGIES.filter((other) =>
       TECHNOLOGY_DEFINITIONS[other].prerequisites.includes(technology),
     ),
+    unlocks,
   };
 }
 

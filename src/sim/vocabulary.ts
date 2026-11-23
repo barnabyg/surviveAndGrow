@@ -127,6 +127,7 @@ export const SITE_TYPES = [
   'shallowPort',
   'powerStation',
   'powerLine',
+  'dam',
 ] as const;
 export type SiteType = (typeof SITE_TYPES)[number];
 
@@ -152,8 +153,10 @@ export type PowerRole = (typeof POWER_ROLES)[number];
 
 /**
  * What the engine knows of each type of site: its name, how it is laid out, the part it
- * plays in a chain, if any, and in bringing power, if any. What it costs and what it does
- * are balance values (`balance.sites`), so a type is added here and there and in no rule.
+ * plays in a chain, if any, and in bringing power, if any, and the technology that unlocks
+ * it, if one must be known before a site of the type can be started. What it costs and what
+ * it does are balance values (`balance.sites`), so a type is added here and there and in no
+ * rule.
  */
 export const SITE_TYPE_DEFINITIONS: Readonly<
   Record<
@@ -165,6 +168,7 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
       readonly form: SiteForm;
       readonly chainRole: ChainRole | null;
       readonly powerRole: PowerRole | null;
+      readonly unlockedBy: Technology | null;
     }
   >
 > = {
@@ -174,6 +178,7 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
     form: 'place',
     chainRole: null,
     powerRole: null,
+    unlockedBy: null,
   },
   farmRoad: {
     name: 'Farm road',
@@ -181,6 +186,7 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
     form: 'route',
     chainRole: null,
     powerRole: null,
+    unlockedBy: null,
   },
   grainStore: {
     name: 'Grain store',
@@ -188,22 +194,39 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
     form: 'place',
     chainRole: null,
     powerRole: null,
+    unlockedBy: null,
   },
-  mine: { name: 'Mine', plural: 'Mines', form: 'place', chainRole: 'source', powerRole: null },
+  mine: {
+    name: 'Mine',
+    plural: 'Mines',
+    form: 'place',
+    chainRole: 'source',
+    powerRole: null,
+    unlockedBy: null,
+  },
   trunkRoad: {
     name: 'Trunk road',
     plural: 'Trunk roads',
     form: 'route',
     chainRole: 'link',
     powerRole: null,
+    unlockedBy: null,
   },
-  port: { name: 'Port', plural: 'Ports', form: 'place', chainRole: 'outlet', powerRole: null },
+  port: {
+    name: 'Port',
+    plural: 'Ports',
+    form: 'place',
+    chainRole: 'outlet',
+    powerRole: null,
+    unlockedBy: null,
+  },
   shallowPort: {
     name: 'Shallow port',
     plural: 'Shallow ports',
     form: 'place',
     chainRole: 'outlet',
     powerRole: null,
+    unlockedBy: null,
   },
   powerStation: {
     name: 'Power station',
@@ -211,6 +234,7 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
     form: 'place',
     chainRole: null,
     powerRole: 'station',
+    unlockedBy: null,
   },
   powerLine: {
     name: 'Power line',
@@ -218,6 +242,17 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
     form: 'route',
     chainRole: null,
     powerRole: 'line',
+    unlockedBy: null,
+  },
+  // A power station that also steadies its own region's harvest, as irrigation does. It is
+  // unlocked by research.
+  dam: {
+    name: 'Dam',
+    plural: 'Dams',
+    form: 'place',
+    chainRole: null,
+    powerRole: 'station',
+    unlockedBy: 'hydropower',
   },
 };
 
@@ -355,6 +390,7 @@ export const TECHNOLOGIES = [
   'coldStorage',
   'roadEngineering',
   'gridEfficiency',
+  'hydropower',
 ] as const;
 export type Technology = (typeof TECHNOLOGIES)[number];
 
@@ -376,6 +412,7 @@ export const TECHNOLOGY_DEFINITIONS: Readonly<
   coldStorage: { name: 'Cold storage', prerequisites: ['droughtResistantSeed'] },
   roadEngineering: { name: 'Road engineering', prerequisites: ['improvedIrrigation'] },
   gridEfficiency: { name: 'Grid efficiency', prerequisites: ['coldStorage'] },
+  hydropower: { name: 'Hydropower', prerequisites: ['improvedIrrigation', 'gridEfficiency'] },
 };
 
 /**
@@ -527,10 +564,12 @@ export const SURVEY_STATE_NAMES: Readonly<Record<SurveyState, string>> = {
 /**
  * How a site stands: empty until a project is started on it, and then as the project stands.
  * A site no project has been started on is closed once one has been started on one of its
- * alternatives, and can then never be built.
+ * alternatives, and can then never be built. One that needs a technology not yet known is
+ * locked until it is, and is then empty like any other.
  */
 export const SITE_STATES = [
   'empty',
+  'locked',
   'closed',
   'building',
   'paused',
@@ -541,6 +580,7 @@ export type SiteState = (typeof SITE_STATES)[number];
 
 export const SITE_STATE_NAMES: Readonly<Record<SiteState, string>> = {
   empty: 'Empty',
+  locked: 'Locked',
   closed: 'Closed',
   building: 'Under construction',
   paused: 'Paused',

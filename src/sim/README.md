@@ -104,7 +104,8 @@ reads it counts them: the harvest, the preview's forecast, the risks ahead and t
 the weather moves a harvest answers to the effects in `WEATHER_HELD_BY`, and each event's hold
 to the effects its definition lists (`heldBy` in `balance.events`), which is how
 drought-resistant seed softens drought but not flood. A technology that improves something new
-everywhere adds an effect there; one that unlocks a site type is for that ticket to add.
+everywhere adds an effect there; one that unlocks a type of site is named by the type
+(`unlockedBy` in `SITE_TYPE_DEFINITIONS`).
 
 A technology can instead improve a type of site (`improves` in `balance.technologies`, a
 `SiteImprovement`): leave less of what the site's effect bears on, raise what it carries in a
@@ -118,6 +119,20 @@ breakdown splits the figure and names them: `earningLines` and `powerLines` for 
 and treasury breakdowns, the spoilage line in `food.ts`, and the site's own sentence
 (`siteTerms` with the technologies known). `technologyGains` (`research.ts`) says what a
 technology does in this game, from the sites in use, for the research tab.
+
+## Locked sites
+
+A site may need technologies known before it can be started (`technologiesNeeded` in
+`sites.ts`): the one that unlocks its type, such as hydropower for a dam, and the one its country
+file names in `needs` (format 9). Until they are known it is `locked` (`siteStatus`, whose
+`lockedBy` names them), and `targetFault` refuses to start it, so the turn, the plan and the
+interface refuse alike. Nothing about a lock is kept: once the technologies are known the site
+is empty like any other. A closed site stays closed whatever it needs. The opening budget's
+upkeep, when the file leaves it out, does not count locked sites (`countryStart.ts`), and
+`technologyGains` names the sites a technology unlocks for the research tab. A dam is a power
+station by its power role, so everything that reads stations counts it; its harvest steadying
+is its `harvestWeather` effect, and `weatherHold` lists what lessens the weather's hold on a
+region's harvest for the region's card.
 
 ## Surveys and deposits
 

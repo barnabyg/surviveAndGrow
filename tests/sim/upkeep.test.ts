@@ -5,6 +5,7 @@ import {
   previewQuarter,
   risksAhead,
   siteStatus,
+  technologiesNeeded,
   type Budget,
   type Country,
   type Decisions,
@@ -184,13 +185,18 @@ describe('when upkeep cannot keep every site in good repair', () => {
 
 describe('a country file that leaves its starting upkeep out', () => {
   it.each(bothCountries)(
-    'starts %s with enough upkeep to keep in good repair every site that can stand together',
+    'starts %s with enough upkeep to keep in good repair every site that can stand together and needs no research',
     (_name, country) => {
       const game = createGame(country(), 1);
       const upkeepOf = (siteId: string) => siteStatus(game, siteId).upkeep;
+      // A site locked until research is done is left out.
+      const open = game.country.sites.filter((site) => technologiesNeeded(site).length === 0);
+      const isOpen = (id: string) => open.some((site) => site.id === id);
       // Of two alternatives, only one can be built: the one that costs more to keep up counts.
-      const needed = game.country.sites
-        .filter((site) => !site.alternatives.some((id) => upkeepOf(id) > upkeepOf(site.id)))
+      const needed = open
+        .filter(
+          (site) => !site.alternatives.some((id) => isOpen(id) && upkeepOf(id) > upkeepOf(site.id)),
+        )
         .reduce((total, site) => total + upkeepOf(site.id), 0);
 
       expect(game.budget.spending.upkeep).toBeGreaterThanOrEqual(needed);

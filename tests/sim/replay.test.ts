@@ -98,14 +98,16 @@ function fingerprint(
 /**
  * Each fixed game as it was played before a project had a target, when every project was on a
  * site. Never change these to make a test pass: a game that plays differently is a change in
- * the rules.
+ * the rules. The hashes were pinned again when sites could be locked: each site's status gained
+ * what locks it, and each country a dam none of these games can research. With those left out
+ * of the fingerprint, every game hashed as before.
  */
 const outcomes = [
   {
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'builds',
-    hash: 'edd09c5ac160f8629223f7e7a0669b25db8481b134704aa0d25edc107a614550',
+    hash: 'b830bb93b708d23d1cdec884c6e57952152794ff29fb4e5965a8c0fe7c5c7bfb',
     summary: {
       date: { year: 6, quarter: 1 },
       treasury: 2,
@@ -122,6 +124,7 @@ const outcomes = [
         'saltmouth-quay paused 3',
         'arden-power-line operating 2',
         'lowmere-power-line operating 2',
+        'korr-falls-dam locked 0',
       ],
       austere: '',
     },
@@ -130,7 +133,7 @@ const outcomes = [
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'bailedOut',
-    hash: '0a1d19d39215e63886ee4d71e4d71de309fa4327e0a6e8647097b3cb2fe0e0a5',
+    hash: 'e071fe31278ea5bb8154e99c99193862bd8d037012aba11418ce93ee6f2d9966',
     summary: {
       date: { year: 6, quarter: 1 },
       treasury: 2,
@@ -139,6 +142,7 @@ const outcomes = [
         'lowmere-road operating 3',
         'lowmere-irrigation operating 3',
         'lowmere-store paused 0',
+        'korr-falls-dam locked 0',
       ],
       austere: '2 3 4 5 6 7 8 9',
     },
@@ -147,7 +151,7 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'builds',
-    hash: '141b880ced8c4698f4c2a50621623101f82d44471af804757fafa572ffb14973',
+    hash: 'ecde23e260e9b2b7a3e9341a046f9686fccbd9d5f9592bb5178a7d4d713c2e95',
     summary: {
       date: { year: 7, quarter: 1 },
       treasury: 1,
@@ -157,6 +161,8 @@ const outcomes = [
         'sand-road decaying 3',
         'north-power-line decaying 2',
         'sand-power-line decaying 2',
+        'sand-dam locked 0',
+        'sand-dam-line locked 0',
       ],
       austere: '',
     },
@@ -165,7 +171,7 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'bailedOut',
-    hash: '9bf4c3e8864fffbf7ba8e8b08c93b50dddf176437ee773b9b84ff5511a09ee55',
+    hash: '41b8c60562986f938f65ebe0ba47657c9b910e25730076255a0638d2df74d3dd',
     summary: {
       date: { year: 7, quarter: 1 },
       treasury: 3,
@@ -176,6 +182,8 @@ const outcomes = [
         'sand-road paused 0',
         'north-power-line decaying 2',
         'sand-power-line decaying 2',
+        'sand-dam locked 0',
+        'sand-dam-line locked 0',
       ],
       austere: '',
     },

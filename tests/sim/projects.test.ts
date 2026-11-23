@@ -9,6 +9,7 @@ import {
   projectStartFault,
   siteOf,
   siteStatus,
+  technologiesNeeded,
   startFault,
   type Budget,
   type Country,
@@ -74,12 +75,16 @@ function entriesOf(report: TurnReport | undefined, kind: string) {
 }
 
 describe.each(bothCountries)('the sites of %s', (_name, country) => {
-  it('are all empty when a game starts', () => {
+  it('are all empty when a game starts, but those locked until research is done', () => {
     const game = createGame(country(), 3);
 
     expect(game.projects).toEqual([]);
     for (const site of game.country.sites) {
-      expect(siteStatus(game, site.id)).toMatchObject({ state: 'empty', quartersPaid: 0 });
+      const locked = technologiesNeeded(site).length > 0;
+      expect(siteStatus(game, site.id)).toMatchObject({
+        state: locked ? 'locked' : 'empty',
+        quartersPaid: 0,
+      });
     }
   });
 
@@ -181,6 +186,7 @@ describe('starting a project in Tavara', () => {
       siteId: 'lowmere-irrigation',
       state: 'building',
       closedBy: null,
+      lockedBy: [],
       quartersPaid: 1,
       buildQuarters: 3,
       cost: 120,

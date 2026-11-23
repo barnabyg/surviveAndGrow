@@ -100,9 +100,22 @@ export function testlandFormat6File(): unknown {
 
 /** Testland's file as format 7 could write it: it hides no deposit for a survey to find. */
 export function testlandFormat7File(): unknown {
-  const file = structuredClone(testlandFile) as Chances & { deposits?: unknown };
+  const file = testlandFormat8File() as Chances & { deposits?: unknown };
   delete file.deposits;
   file.formatVersion = 7;
+  return file;
+}
+
+/**
+ * Testland's file as format 8 could write it: it has no dam, and no site that needs a
+ * technology, since naming either needs format 9.
+ */
+export function testlandFormat8File(): unknown {
+  const file = structuredClone(testlandFile) as Chances & {
+    sites: { type: string; needs?: string }[];
+  };
+  file.sites = file.sites.filter((site) => site.type !== 'dam' && site.needs === undefined);
+  file.formatVersion = 8;
   return file;
 }
 

@@ -420,6 +420,7 @@ describe('what the research tab says a technology would improve in this game', (
       chains: [],
       regions: [],
       awaiting: 'No grain store is in use yet, so it improves nothing until one is built.',
+      unlocks: [],
     });
     expect(technologyGains(start, 'droughtResistantSeed').awaiting).toBeNull();
   });

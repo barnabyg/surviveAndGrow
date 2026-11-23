@@ -1,5 +1,5 @@
 {
-  "formatVersion": 8,
+  "formatVersion": 9,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -539,6 +539,14 @@
         [476, 192]
       ],
       "dependsOn": ["korr-falls-station"]
+    },
+    {
+      "id": "korr-falls-dam",
+      "type": "dam",
+      "name": "Korr Falls dam",
+      "region": "korr-highlands",
+      "at": [626, 148],
+      "alternatives": ["korr-falls-station"]
     }
   ],
   "deposits": [
@@ -546,7 +554,10 @@
       "id": "westhaven-ore",
       "region": "salt-coast",
       "likelihood": 0.6,
-      "tonnes": { "min": 150000, "max": 350000 },
+      "tonnes": {
+        "min": 150000,
+        "max": 350000
+      },
       "mine": {
         "id": "westhaven-mine",
         "type": "mine",
@@ -571,7 +582,10 @@
       "id": "dustwell-ore",
       "region": "dry-east",
       "likelihood": 0.35,
-      "tonnes": { "min": 400000, "max": 900000 },
+      "tonnes": {
+        "min": 400000,
+        "max": 900000
+      },
       "mine": {
         "id": "dustwell-mine",
         "type": "mine",
@@ -599,8 +613,18 @@
     }
   ],
   "crossings": [
-    { "id": "korr-pass", "name": "Korr Pass", "neighbour": "voskar", "tonnes": 50000 },
-    { "id": "selama-bridge", "name": "Selama bridge", "neighbour": "selama", "tonnes": 40000 }
+    {
+      "id": "korr-pass",
+      "name": "Korr Pass",
+      "neighbour": "voskar",
+      "tonnes": 50000
+    },
+    {
+      "id": "selama-bridge",
+      "name": "Selama bridge",
+      "neighbour": "selama",
+      "tonnes": 40000
+    }
   ],
   "dilemmaLikelihood": {
     "grainOffer": 0.35,

@@ -137,7 +137,7 @@ export function tradeRoutes(
   const known = knownTechnologies(game.projects);
   const missing = country.sites.flatMap((site): TradeRoute[] => {
     const state = siteStatus(game, site.id).state;
-    const unbuilt = state === 'empty' || state === 'building' || state === 'paused';
+    const unbuilt = ['empty', 'locked', 'building', 'paused'].includes(state);
     const path = lanePath(country, site.id);
     if (SITE_CHAIN_ROLES[site.type] !== 'outlet' || !unbuilt || path === null) return [];
     return [

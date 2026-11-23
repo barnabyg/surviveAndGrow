@@ -5,15 +5,22 @@ import { nextDate } from './calendar';
 import { regionName, type Country, type Site } from './country';
 import { surveyFault, surveyFindings, surveyOf, surveyTerms } from './deposits';
 import type { ReportEntry } from './report';
-import { improvementsOf, infrastructureOf, siteEffectsOf, siteTerms } from './sites';
+import {
+  improvementsOf,
+  infrastructureOf,
+  siteEffectsOf,
+  siteTerms,
+  technologiesNeeded,
+} from './sites';
 import {
   knownTechnologies,
   technologyEffectsOf,
   technologyFault,
+  technologyName,
   technologyOf,
   technologyTerms,
 } from './technology';
-import { formatMoney, formatQuarters } from './text';
+import { formatMoney, formatQuarters, listed } from './text';
 import type { Contribution, GameDate, Money } from './types';
 import { inUse } from './upkeep';
 import {
@@ -185,14 +192,19 @@ export function projectTerms(country: Country, target: ProjectTarget): ProjectTe
 }
 
 /**
- * How one site stands: empty, closed by building on one of its alternatives, being built, or
- * in use in good repair or decaying.
+ * How one site stands: empty, locked until a technology is known, closed by building on one
+ * of its alternatives, being built, or in use in good repair or decaying.
  */
 export interface SiteStatus {
   readonly siteId: string;
   readonly state: SiteState;
   /** The alternative whose project closed the site, or null while it is not closed. */
   readonly closedBy: string | null;
+  /**
+   * The technologies not yet known that the site needs before it can be started, in the
+   * tree's order: empty unless it is locked.
+   */
+  readonly lockedBy: readonly Technology[];
   readonly quartersPaid: number;
   readonly buildQuarters: number;
   readonly cost: Money;
@@ -211,7 +223,10 @@ interface Building {
   readonly projects: readonly Project[];
 }
 
-/** How a site stands. A site the country does not have is reported as empty and free. */
+/**
+ * How a site stands. A site the country does not have is reported as empty and free. One
+ * closed by an alternative is closed, whatever it needs.
+ */
 export function siteStatus({ country, projects }: Building, siteId: string): SiteStatus {
   const site = country.sites.find((candidate) => candidate.id === siteId);
   const project = projectOnSite(projects, siteId);
@@ -222,10 +237,15 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
     project === undefined
       ? (site?.alternatives.find((id) => projectOnSite(projects, id) !== undefined) ?? null)
       : null;
+  const needed = project === undefined && closedBy === null && site ? technologiesNeeded(site) : [];
+  const known = needed.length === 0 ? [] : knownTechnologies(projects);
+  const lockedBy = needed.filter((technology) => !known.includes(technology));
+  const unbegun = closedBy !== null ? 'closed' : lockedBy.length > 0 ? 'locked' : 'empty';
   return {
     siteId,
-    state: project === undefined ? (closedBy === null ? 'empty' : 'closed') : siteStateOf(project),
+    state: project === undefined ? unbegun : siteStateOf(project),
     closedBy,
+    lockedBy,
     quartersPaid,
     buildQuarters: terms?.buildQuarters ?? 0,
     cost: terms?.cost ?? 0,
@@ -295,10 +315,11 @@ export function projectStartFault(
 
 /**
  * What is wrong with starting a project for this target beside those listed before it, or
- * null when nothing is. A project is started on an empty site, not on one closed by building
- * on one of its alternatives nor together with one. Research is started on a technology whose
- * prerequisites are known, while no other is being researched (`technologyFault`). A survey
- * is started once in a region where a deposit may lie (`surveyFault`).
+ * null when nothing is. A project is started on an empty site, not on one locked until a
+ * technology is known, nor on one closed by building on one of its alternatives nor together
+ * with one. Research is started on a technology whose prerequisites are known, while no other
+ * is being researched (`technologyFault`). A survey is started once in a region where a deposit
+ * may lie (`surveyFault`).
  */
 function targetFault(
   { country, projects }: Building,
@@ -324,9 +345,13 @@ function targetFault(
   if (project !== undefined) {
     return `${site.name} is already ${inUse(project) ? 'built' : 'being built'}.`;
   }
-  const { closedBy } = siteStatus({ country, projects }, site.id);
+  const { closedBy, lockedBy } = siteStatus({ country, projects }, site.id);
   if (closedBy !== null) {
     return `${site.name} is ruled out: building began on ${nameOf(closedBy)}, its alternative.`;
+  }
+  if (lockedBy.length > 0) {
+    const must = lockedBy.length === 1 ? 'must' : 'must each';
+    return `${site.name} is locked: ${listed(lockedBy.map(technologyName))} ${must} be researched first.`;
   }
   const rival = sitesAmong(alongside).find((id) => site.alternatives.includes(id));
   if (rival !== undefined) {

@@ -263,7 +263,7 @@ describe('a country file with power', () => {
     const file = withValue(testlandFile, ['sites', lineIndex, 'dependsOn'], ['alpha-store']);
 
     expect(faultsOf(file)).toEqual([
-      `sites[${lineIndex}].dependsOn must lead, directly or through other power lines, to a power station: a power line carries power only from one.`,
+      `sites[${lineIndex}].dependsOn must lead, directly or through other power lines, to a power station or dam: a power line carries power only from one.`,
     ]);
   });
 

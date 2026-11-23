@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import { createGame, loadCountry, surveyStatuses } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { tavara, testland, testlandFormat7File } from './countries';
+import { tavara, testland, testlandFormat7File, testlandFormat8File } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
 
 /** Testland's one deposit, as its file writes it. */
@@ -66,7 +66,7 @@ describe('a country file in format 8', () => {
   });
 
   it('cannot hide deposits in a format 7 file', () => {
-    expect(faultsOf(withValue(testlandFile, ['formatVersion'], 7))).toEqual([
+    expect(faultsOf(withValue(testlandFormat8File(), ['formatVersion'], 7))).toEqual([
       'deposits needs country file format 8 or later.',
     ]);
   });

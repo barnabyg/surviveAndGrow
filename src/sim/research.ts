@@ -5,6 +5,7 @@ import { livingStandards, type ProsperitySituation } from './prosperity';
 import {
   instalment,
   onSite,
+  siteStatus,
   sitesInUse,
   onSurvey,
   onTechnology,
@@ -12,7 +13,7 @@ import {
   type Project,
   type ProjectStarting,
 } from './projects';
-import { improvedEffect, improves } from './sites';
+import { improvedEffect, improves, technologiesNeeded } from './sites';
 import {
   knownTechnologies,
   technologyName,
@@ -142,6 +143,13 @@ export interface RegionGain {
   readonly infrastructure: number;
 }
 
+/** A site of the country's that a technology unlocks, and the region it stands in. */
+export interface SiteUnlock {
+  readonly siteId: string;
+  readonly name: string;
+  readonly regionName: string;
+}
+
 /**
  * What a technology does in this game, from the sites in use: what it would do once known, or
  * what it does, for one known. A technology that improves a type of site pays off only where
@@ -156,6 +164,11 @@ export interface TechnologyGains {
    * the technology improves no type of site.
    */
   readonly awaiting: string | null;
+  /**
+   * The country's sites that need the technology before they can be started, in the country
+   * file's order, less those an alternative has closed.
+   */
+  readonly unlocks: readonly SiteUnlock[];
 }
 
 /** What a technology does in this game, from the sites in use (`TechnologyGains`). */
@@ -220,7 +233,12 @@ export function technologyGains(
     improved.length === 0 || sites.length > 0
       ? null
       : `No ${orListed(improved)} is in use yet, so it improves nothing until one is built.`;
-  return { sites, chains: chainGains, regions, awaiting };
+  const unlocks = game.country.sites.flatMap((site): SiteUnlock[] =>
+    technologiesNeeded(site).includes(technology) && siteStatus(game, site.id).closedBy === null
+      ? [{ siteId: site.id, name: site.name, regionName: regionName(game.country, site.regionId) }]
+      : [],
+  );
+  return { sites, chains: chainGains, regions, awaiting, unlocks };
 }
 
 /** Names as alternatives: "A", "A or B", "A, B or C". */

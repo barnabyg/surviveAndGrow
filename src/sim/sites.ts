@@ -9,7 +9,9 @@ import {
   SITE_EFFECT_DEFINITIONS,
   SITE_EFFECTS,
   SITE_POWER_ROLES,
+  SITE_TYPE_DEFINITIONS,
   SITE_TYPES,
+  TECHNOLOGIES,
   TECHNOLOGY_DEFINITIONS,
   type SiteEffect,
   type SiteType,
@@ -78,6 +80,21 @@ export function improvedEffect(
 ): string | null {
   if (!improves(technology, site.type)) return null;
   return effectOf(site.type, decaying, site.capacity, [...known, technology], { known, note });
+}
+
+/**
+ * The technologies that must be known before a site can be started, in the tree's order: the
+ * one that unlocks its type, if any, and the one the country file says it needs, if any.
+ * Until they are known the site is locked.
+ */
+export function technologiesNeeded(site: {
+  readonly type: SiteType;
+  readonly needs?: Technology;
+}): readonly Technology[] {
+  const { unlockedBy } = SITE_TYPE_DEFINITIONS[site.type];
+  return TECHNOLOGIES.filter(
+    (technology) => technology === unlockedBy || technology === site.needs,
+  );
 }
 
 /** The types of site that make power. */
@@ -196,18 +213,20 @@ export interface PowerGain {
 }
 
 /**
- * What power gives a region a power line links to a station of the type given, or to any
- * station when none is, raised by the technologies `known` that improve it. While the station
- * or a line of the link decays, it gives only part of it.
+ * What power gives a region a power line links to a station of the type given, or to the
+ * station that gives most when none is, raised by the technologies `known` that improve it.
+ * While the station or a line of the link decays, it gives only part of it.
  */
 export function powerGain(
   decaying = false,
   known: readonly Technology[] = [],
   station?: SiteType,
 ): PowerGain {
-  const added = (station === undefined ? STATION_TYPES : [station]).flatMap((type) =>
-    improvementsOf(type, known).map(([, improvement]) => improvement.powerPermille ?? 0),
-  );
+  const addedBy = (type: SiteType) =>
+    sum(improvementsOf(type, known).map(([, improvement]) => improvement.powerPermille ?? 0));
+  const added = [
+    station === undefined ? Math.max(...STATION_TYPES.map(addedBy)) : addedBy(station),
+  ];
   const outputPermille = raised(balance.power.outputPermille, added);
   const infrastructurePermille = raised(balance.power.infrastructurePermille, added);
   return decaying

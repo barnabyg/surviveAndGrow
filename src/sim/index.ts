@@ -106,8 +106,10 @@ export {
   type ChainLink,
   type OreEarnings,
 } from './chains';
-export { oreTonnesOf } from './sites';
+export { oreTonnesOf, powerGain, technologiesNeeded } from './sites';
+export { weatherHold, type WeatherHold, type WeatherHoldLine } from './weatherHold';
 export {
+  leftIn,
   onSite,
   onSurvey,
   onTechnology,
@@ -127,6 +129,7 @@ export {
   type ChainGain,
   type RegionGain,
   type SiteGain,
+  type SiteUnlock,
   type TechnologyGains,
   type TechnologyStatus,
 } from './research';
@@ -282,6 +285,7 @@ export {
   TIERS,
   UNREST_KINDS,
   UNREST_NAMES,
+  WEATHER_HELD_BY,
   type ApprovalDriver,
   type ChainRole,
   type CreditRating,
