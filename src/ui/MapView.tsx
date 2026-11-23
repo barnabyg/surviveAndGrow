@@ -26,7 +26,7 @@ import {
   type TradeOrder,
   UNREST_KINDS,
 } from '../sim';
-import { infrastructureOf, lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
+import { infrastructureWords, lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
 import { TIER_PALETTES, type MapPalette } from './mapPalette';
 import { SiteMark } from './SiteMark';
 import { TradeRouteMark } from './TradeRouteMark';
@@ -457,7 +457,7 @@ function RegionShape(props: RegionShapeProps) {
       : lens === 'living'
         ? `living standard ${formatIndex(livingStandardOf(game, region.id))}`
         : lens === 'infrastructure'
-          ? `infrastructure access ${formatIndex(infrastructureOf(game, region.id))}`
+          ? infrastructureWords(game, region.id).description
           : `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
     ...events.map((event) => describeEvent(game, event)),
     ...(unrest === null ? [] : [unrest]),
@@ -524,7 +524,7 @@ function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLab
       : lens === 'living'
         ? `Living standard: ${formatIndex(livingStandardOf(game, region.id))}`
         : lens === 'infrastructure'
-          ? `Infrastructure: ${formatIndex(infrastructureOf(game, region.id))}`
+          ? infrastructureWords(game, region.id).figure
           : stage === 'adequate'
             ? `Food: ${FOOD_STAGE_NAMES[stage]}`
             : null;

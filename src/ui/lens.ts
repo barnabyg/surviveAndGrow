@@ -5,7 +5,9 @@ import {
   FOOD_STAGES,
   formatIndex,
   formatPercent,
+  listed,
   livingStandards,
+  technologyName,
   type GameState,
   type Region,
   type RegionState,
@@ -113,6 +115,41 @@ export function infrastructureOf(game: GameState, regionId: string): number {
     livingStandards(game).find((standard) => standard.regionId === regionId)?.scores
       .infrastructure ?? 0
   );
+}
+
+/** A region's infrastructure access as the lens states it, on the map and in the region's name. */
+export interface InfrastructureWords {
+  /** Lettered under the region's name: `Infrastructure: 21.9 with Grid efficiency`. */
+  readonly figure: string;
+  /** Read out with the region: `infrastructure access 21.9 (21.5 without Grid efficiency)`. */
+  readonly description: string;
+}
+
+/**
+ * A region's infrastructure access as the lens states it, naming the technologies known that
+ * raise it, through the power the region is brought, and what it would be without them.
+ */
+export function infrastructureWords(game: GameState, regionId: string): InfrastructureWords {
+  const standard = livingStandards(game).find((each) => each.regionId === regionId);
+  const access = standard?.scores.infrastructure ?? 0;
+  const power = standard?.power;
+  const added =
+    power === undefined
+      ? 0
+      : power.infrastructurePermille - power.unimproved.infrastructurePermille;
+  if (power === undefined || added === 0 || power.improvedBy.length === 0) {
+    return {
+      figure: `Infrastructure: ${formatIndex(access)}`,
+      description: `infrastructure access ${formatIndex(access)}`,
+    };
+  }
+  const total = standard?.infrastructure.reduce((sum, part) => sum + part.amount, 0) ?? 0;
+  const unimproved = Math.min(1000, total - added);
+  const technologies = listed(power.improvedBy.map(technologyName));
+  return {
+    figure: `Infrastructure: ${formatIndex(access)} with ${technologies}`,
+    description: `infrastructure access ${formatIndex(access)} (${formatIndex(unimproved)} without ${technologies})`,
+  };
 }
 
 /**

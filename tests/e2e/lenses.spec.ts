@@ -1,5 +1,22 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { decisions, endQuarters, startGame, tavaraWithDroughtIn, testlandFile } from './app';
+import {
+  createGame,
+  loadCountry,
+  onSite,
+  onTechnology,
+  saveGame,
+  type GameState,
+  type Project,
+} from '../../src/sim';
+import {
+  decisions,
+  endQuarters,
+  openApp,
+  startGame,
+  tavaraWith,
+  tavaraWithDroughtIn,
+  testlandFile,
+} from './app';
 
 const map = (page: Page, country = 'Republic of Tavara') =>
   page.getByRole('group', { name: `Map of ${country}` });
@@ -339,5 +356,51 @@ test('a second country is seen through the same lenses', async ({ page }) => {
   );
   expect(await fillOf(region(page, 'Northfield', 'Testland'))).toBe(
     await swatchOf(scale(page, 'Infrastructure'), 'None'),
+  );
+});
+
+test('the infrastructure lens names the technology that raises a region’s access', async ({
+  page,
+}) => {
+  // A game begun with Korr Falls power station and its line to Arden in use, and grid
+  // efficiency known, which makes the power the line brings add more.
+  const countryFile = tavaraWith({});
+  const start = createGame(loadCountry(countryFile), 1);
+  const finished = (target: Project['target']): Project => ({
+    target,
+    began: start.date,
+    quartersPaid: 1,
+    status: target.kind === 'technology' ? 'known' : 'operating',
+    opened: start.date,
+  });
+  const game: GameState = {
+    ...start,
+    projects: [
+      finished(onSite('korr-falls-station')),
+      finished(onSite('arden-power-line')),
+      finished(onTechnology('droughtResistantSeed')),
+      finished(onTechnology('coldStorage')),
+      finished(onTechnology('gridEfficiency')),
+    ],
+  };
+  await page.addInitScript(
+    ([key, text]) => {
+      if (window.localStorage.getItem(key) === null) window.localStorage.setItem(key, text);
+    },
+    [
+      'survive-and-grow/save/file/countries/under-test.json',
+      JSON.stringify(saveGame(game, null)),
+    ] as const,
+  );
+  await openApp(page, { countryFile });
+  await page.getByRole('button', { name: 'Resume saved game' }).click();
+
+  await lens(page, 'Infrastructure').click();
+  await expect(map(page).getByText(/^Infrastructure: [\d.]+ with Grid efficiency$/)).toHaveCount(1);
+  await expect(region(page, 'Arden Vale')).toHaveAccessibleName(
+    /^Arden Vale, infrastructure access [\d.]+ \([\d.]+ without Grid efficiency\)$/,
+  );
+  await expect(region(page, 'Lowmere Plains')).toHaveAccessibleName(
+    /^Lowmere Plains, infrastructure access [\d.]+$/,
   );
 });

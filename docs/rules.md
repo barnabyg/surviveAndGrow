@@ -461,7 +461,9 @@ main figures from the balance values and fails if this file, the README or
   lens colours each region by its food situation, and the approval lens by its approval, with
   hatching over a region on strike and cross-hatching over one in protest. The living-standards
   lens colours each region by its living standard, and the infrastructure lens by its
-  infrastructure access, from none upwards; one site in use moves a region up a step. The
+  infrastructure access, from none upwards; one site in use moves a region up a step. Where a
+  technology known raises a region's access, through the power it is brought, the region's
+  figure names it, and its description says what the access would be without it. The
   infrastructure lens also marks every link missing from a chain, ringed, with no site picked
   out, so you can see what each region has built and what it still lacks. It marks the trade
   links too: every port not yet in use has a dotted shipping lane tagged "✕ Missing trade link",

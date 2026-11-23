@@ -85,8 +85,8 @@ drought or a flood does not starve a region first.
   technology is researched at a time. Drought-resistant seed makes weather and drought move every
   region's harvest less. What builds on it improves what you have built: irrigation schemes, grain
   stores, trunk roads and ports, and power stations each do more, but only where one is in use.
-  Each technology says what it would improve in your game, and a site's card names the technology
-  behind each figure it moves. Hydropower unlocks the dam: until then a dam's site is locked,
+  Each technology says what it would improve in your game, and a site's card, the breakdowns
+  and the infrastructure lens name the technology behind each figure it moves. Hydropower unlocks the dam: until then a dam's site is locked,
   marked with a padlock, and its card names the research it needs.
 - **A dam does two jobs.** It powers the regions its lines reach, like a power station, and
   steadies its own region's harvest. It is dear and slow to build, and in Tavara it is an
