@@ -69,6 +69,15 @@ const SITE_TYPE_FORMATS: Readonly<Partial<Record<SiteType, number>>> = {
   school: SERVICE_SITE_FORMAT,
 };
 
+/**
+ * The country file format that first lets a site say it needs each technology added since a
+ * site could say so at all.
+ */
+const TECHNOLOGY_FORMATS: Readonly<Partial<Record<Technology, number>>> = {
+  publicHealth: SERVICE_SITE_FORMAT,
+  teacherTraining: SERVICE_SITE_FORMAT,
+};
+
 /** The country file format that first lets a file hide deposits for surveys to find. */
 const DEPOSIT_FORMAT = 8;
 
@@ -368,7 +377,7 @@ function readSite(
 
 /**
  * The technology a site of a file of format 9 or later says it needs, in `needs`: one of the
- * game's own. Nothing when it says none.
+ * game's own, in a file of a format that can name it. Nothing when it says none.
  */
 function readNeeds(
   reader: Reader,
@@ -384,7 +393,17 @@ function readNeeds(
     return {};
   }
   const technology = TECHNOLOGIES.find((candidate) => candidate === value);
-  if (technology !== undefined) return { needs: technology };
+  if (technology !== undefined) {
+    const technologyFormat = TECHNOLOGY_FORMATS[technology] ?? LOCKED_SITE_FORMAT;
+    if (formatVersion < technologyFormat) {
+      reader.fault(
+        needsPath,
+        `is "${technology}", which needs country file format ${technologyFormat} or later`,
+      );
+      return {};
+    }
+    return { needs: technology };
+  }
   reader.fault(
     needsPath,
     typeof value === 'string'

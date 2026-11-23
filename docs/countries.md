@@ -38,8 +38,8 @@ type costs, how long it takes and what it does are the game's, not the country's
   cannot say this, and still load as they are.
 - In a file of `"formatVersion": 9`, a site may name in `needs` a technology that must be known
   before it can be started, one of the game's own: `droughtResistantSeed`, `improvedIrrigation`,
-  `coldStorage`, `roadEngineering`, `gridEfficiency`, `hydropower`, `publicHealth` or
-  `teacherTraining`. A name the game does not
+  `coldStorage`, `roadEngineering`, `gridEfficiency` or `hydropower`, or from format 10
+  `publicHealth` or `teacherTraining`. A name the game does not
   have is a fault. Until it is known the site is **locked**: on the map with a padlock, and
   impossible to start. A file of format 9 may also name a `dam`, which research unlocks of itself:
   every dam is locked until `hydropower` is known, whether or not it says so. A dam is a power

@@ -132,6 +132,16 @@ describe('a country file with clinics and schools', () => {
     }
   });
 
+  it('lets a site need public health or teacher training from format 10, and not before', () => {
+    for (const { technology } of SERVICE_SITES) {
+      const needing = (file: unknown) => withValue(file, ['sites', 0, 'needs'], technology);
+      expect(loadCountry(needing(testlandFile)).sites[0]?.needs).toBe(technology);
+      expect(faultsOf(needing(testlandFormat9File()))).toEqual([
+        `sites[0].needs is "${technology}", which needs country file format 10 or later.`,
+      ]);
+    }
+  });
+
   it('still loads a file of format 9 as it is, with no clinic or school', () => {
     const country = loadCountry(testlandFormat9File());
     expect(country.formatVersion).toBe(9);
