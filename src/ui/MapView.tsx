@@ -337,12 +337,20 @@ export function MapView(props: MapViewProps) {
           />
         ))}
 
-        {surveyStatuses(game, { startSurveys: plannedSurveys }).map(({ regionId, state }) => {
-          const region = country.regions.find((each) => each.id === regionId);
-          return region === undefined || !isMarked(state) ? null : (
-            <SurveyMark key={region.id} region={region} state={state} palette={palette} />
-          );
-        })}
+        {surveyStatuses(game, { startSurveys: plannedSurveys })
+          .flatMap(({ regionId, state }) => {
+            const region = country.regions.find((each) => each.id === regionId);
+            return region === undefined || !isMarked(state) ? [] : [{ region, state }];
+          })
+          .map(({ region, state }, index) => (
+            <SurveyMark
+              key={region.id}
+              region={region}
+              state={state}
+              palette={palette}
+              toured={index === 0}
+            />
+          ))}
       </g>
 
       {/* Trade routes go under the sites, so a lane never covers its port. */}
@@ -406,6 +414,8 @@ interface SurveyMarkProps {
   readonly region: Region;
   readonly state: MarkedSurveyState;
   readonly palette: MapPalette;
+  /** Whether this is the mark the tour's step on surveys picks out: the first on the map. */
+  readonly toured: boolean;
 }
 
 /**
@@ -413,12 +423,13 @@ interface SurveyMarkProps {
  * shape the legend explains. Its glass is filled once a survey is planned or under way, and its
  * name says which, so the mark never rests on colour alone.
  */
-function SurveyMark({ region, state, palette }: SurveyMarkProps) {
+function SurveyMark({ region, state, palette, toured }: SurveyMarkProps) {
   const [x, y] = region.label;
   const underway = state !== 'unsurveyed';
   return (
     <g
       className="map__survey"
+      data-tour={toured ? 'survey' : undefined}
       transform={`translate(${x} ${y - 30})`}
       role="img"
       aria-label={`${region.name}: ${SURVEY_MARK_WORDS[state]}`}

@@ -447,9 +447,11 @@ main figures from the balance values and fails if this file, the README or
 - **Tour** in the top bar opens a guided tour of the screen in a game in play. A step at a time,
   it shades the screen but for one part of it, drawn round with a thick outline, and says beside
   it what that part is for: the vital signs, the end-quarter button, the left column, the lenses,
-  the map, the timeline and legend, and each decision panel. It says how far through it is, and
+  the map, a region marked for a survey, the timeline and legend, and each decision panel,
+  research among them. It says how far through it is, and
   Back, Next (or the arrow keys) and End tour (or Escape) move through it. A part not on screen,
-  such as the dilemma panel with no dilemma waiting, is passed over; a decision tab is shown
+  such as the dilemma panel with no dilemma waiting, or the mark of a region to survey once none
+  is left, is passed over; a decision tab is shown
   while the tour or a lesson points at it, and the tab the player chose comes back after. The tour holds the screen while it is
   open.
 - **Tutorial** on the start screen starts the tutorial game: a fixed game whose first year, on

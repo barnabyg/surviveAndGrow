@@ -1,8 +1,8 @@
 /**
  * One step of the guided tour of the main screen. The step picks out the element marked
  * `data-tour="<target>"`, or with a null target stands alone in the middle of the screen.
- * A step whose element is not on screen, such as the dilemma panel with no dilemma waiting,
- * is passed over.
+ * A step whose element is not on screen, such as the dilemma panel with no dilemma waiting
+ * or the mark of a region to survey once every region is surveyed, is passed over.
  */
 export interface TourStep {
   readonly target: string | null;
@@ -56,6 +56,11 @@ export const TOUR_STEPS: readonly TourStep[] = [
     target: 'map',
     title: 'The map',
     text: 'Regions, build sites, roads, power lines and trade routes. Select a region to see its figures and send it relief, a site to see what building there costs and needs, or a route to see what it carries. A mine earns nothing until a road links it to a port.',
+  },
+  {
+    target: 'survey',
+    title: 'Surveys',
+    text: 'A magnifying glass marks a region that may hide a deposit of ore. Select the region, and its card says what a survey costs, how likely it is to find a deposit and how large one could be. A survey is a project with no site, and each region is surveyed once. A deposit found puts a mine and its road on the map to be built.',
   },
   {
     target: 'timeline',
