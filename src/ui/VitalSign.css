@@ -1,14 +1,31 @@
+/* A sign grows to at most 380px and never shrinks below what its figure and a narrowed trend
+   line need side by side, so where the top bar is too narrow for them all, the signs fold onto
+   a second line rather than draw one over the other. */
 .vital {
   position: relative;
-  flex: 0 1 380px;
-  min-width: 0;
+  flex: 1 1 150px;
+  max-width: 380px;
   display: flex;
   align-items: flex-start;
-  gap: 20px;
+  gap: 12px;
 }
 
+/* The figure takes the room its trend line leaves, keeps its unit beside it and never
+   narrows below it: the trend line gives way first. */
 .vital__figures {
-  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.vital__value {
+  white-space: nowrap;
+}
+
+/* The trend line gives up width before the figure does, down to a short line. */
+.vital > .trend {
+  flex: 0 1 150px;
+  width: 32px;
+  min-width: 32px;
+  height: auto;
 }
 
 .vital__button {
@@ -40,7 +57,14 @@
 
 /* The lines beneath the figure are cut short, with their whole text in the tooltip, so a
    narrow window never stacks them a word to a line: the change and the note to one line, a
-   warning to two. */
+   warning to two. They claim no width of their own (contain), so the figure, not the line
+   beneath it, sets how narrow a sign may be. */
+.vital__change,
+.vital__figures > .vital__note,
+.vital__remark {
+  contain: inline-size;
+}
+
 .vital__change,
 .vital__figures > .vital__note {
   overflow: hidden;
@@ -95,7 +119,8 @@
 /* The election, shown as one more vital sign in the top bar */
 .vital--election,
 .vital--austerity {
-  flex: 0 1 220px;
+  flex: 1 1 90px;
+  max-width: 220px;
 }
 
 .vital--election .label,

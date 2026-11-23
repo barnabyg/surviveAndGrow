@@ -6,26 +6,30 @@
 }
 
 /* Six tabs share the column: each takes the room its words need, and a note too long for
-   its share wraps onto a second line rather than being cut short. */
+   its share wraps onto a second line rather than being cut short. Each tab is drawn as a
+   tab, boxed above the line, so the row reads as tabs and not as a line of text; the one on
+   show is open to the panel beneath it and marked in amber along its top. */
 .tabs {
   display: grid;
   grid-auto-columns: auto;
   grid-auto-flow: column;
   gap: 2px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-strong);
 }
 
 .tab {
   min-width: 0;
-  padding: 6px 4px 8px;
+  padding: 5px 4px 6px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  border: none;
-  border-bottom: 2px solid transparent;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--line);
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
   margin-bottom: -1px;
-  background: none;
+  background: var(--card);
   color: var(--muted);
   font: inherit;
   text-align: left;
@@ -33,6 +37,7 @@
 }
 
 .tab:hover {
+  border-color: var(--line-strong);
   color: var(--text);
 }
 
@@ -42,8 +47,11 @@
 }
 
 .tab[aria-selected='true'] {
-  border-bottom-color: var(--amber);
+  border-color: var(--line-strong);
+  border-top-color: var(--amber);
+  background: var(--panel);
   color: var(--text);
+  box-shadow: 0 1px 0 var(--panel);
 }
 
 .tab__title {

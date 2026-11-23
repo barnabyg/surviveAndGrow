@@ -1,13 +1,20 @@
+/* The bar wraps rather than run off the screen: where the vital signs leave no room, the
+   actions move to a line of their own and End quarter stays in reach. */
 .topbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 14px 40px;
+  gap: 14px 28px;
   padding: 12px 28px;
   background: var(--panel);
   border-bottom: 1px solid var(--line);
 }
 
+/* Its basis is the width the name takes over two lines, so the bar decides where to wrap
+   with the name already folded, as it is drawn. */
 .topbar__identity {
+  flex: 0 1 160px;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -22,6 +29,7 @@
 }
 
 .topbar__actions {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -32,8 +40,14 @@
   color: var(--muted);
 }
 
+/* The signs take the room the bar leaves beside the name and the actions. They never take
+   less than about the width of all seven in a row, so on a narrower screen they have a line of
+   their own (and the actions the next) rather than stack in a column; where even a whole
+   line is too narrow, the last of them fold onto a second. */
 .vitals {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+  min-width: min(100%, 1150px);
   display: flex;
-  gap: 12px 36px;
+  flex-wrap: wrap;
+  gap: 12px 20px;
 }
