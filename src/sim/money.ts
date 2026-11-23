@@ -10,8 +10,10 @@ import { serveDebts, takeDebts, type Borrowing } from './debt';
 import {
   resolveProjects,
   siteEffects,
+  startsOf,
   type BuildingOutcome,
   type Project,
+  type ProjectTarget,
   type SiteEffects,
 } from './projects';
 import type { Decisions, GameState } from './state';
@@ -48,6 +50,7 @@ export function resolveMoney(
   state: Pick<
     GameState,
     | 'country'
+    | 'seed'
     | 'treasury'
     | 'regions'
     | 'projects'
@@ -58,7 +61,7 @@ export function resolveMoney(
     | 'foodReserve'
   >,
   decisions: Decisions,
-  starts: readonly string[] = decisions.startProjects ?? [],
+  starts: readonly ProjectTarget[] = startsOf(decisions),
   borrowing: readonly Borrowing[] = decisions.borrow ?? [],
   trading: readonly TradeOrder[] = decisions.trade ?? [],
 ): QuarterMoney {

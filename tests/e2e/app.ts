@@ -182,7 +182,7 @@ export async function endQuarters(page: Page, count: number): Promise<void> {
 }
 
 /** The decision tabs, by name: Budget, Projects, Finance, Trade and Relief. */
-export type DecisionTabName = 'Budget' | 'Projects' | 'Finance' | 'Trade' | 'Relief';
+export type DecisionTabName = 'Budget' | 'Projects' | 'Research' | 'Finance' | 'Trade' | 'Relief';
 
 /** Opens one of the decision tabs, as the player would, and gives its panel. */
 export async function openTab(page: Page, name: DecisionTabName): Promise<Locator> {

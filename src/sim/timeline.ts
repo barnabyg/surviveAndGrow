@@ -2,12 +2,17 @@ import { balance } from './balance';
 import { dateOfQuarter, isHarvestQuarter, quarterNumber } from './calendar';
 import type { Country } from './country';
 import { debtName, maturityOf, paysAtMaturity, type Borrowing, type Debt } from './debt';
-import type { Project } from './projects';
+import {
+  projectOnSite,
+  siteOf,
+  siteStateOf,
+  type Project,
+  type SiteProjectState,
+} from './projects';
 import { siteTerms } from './sites';
 import type { Outcome } from './state';
 import { termBounds, termOf } from './terms';
 import type { GameDate, Money } from './types';
-import type { ProjectStatus } from './vocabulary';
 
 /** One quarter of the term, as the timeline shows it. */
 export interface TermQuarter {
@@ -77,7 +82,7 @@ export interface SiteSchedule {
    * How the site stands. A site nothing has been built on yet is `planned`: its schedule
    * is drawn as if building began in the quarter being decided.
    */
-  readonly state: 'planned' | ProjectStatus;
+  readonly state: 'planned' | SiteProjectState;
   /** The first quarter of building. */
   readonly begins: number;
   /**
@@ -117,7 +122,7 @@ export function scheduleAhead(
   starts: readonly string[],
   paused: readonly string[],
 ): SiteSchedule[] {
-  return [...game.projects.map((project) => project.siteId), ...starts].map((siteId) =>
+  return [...game.projects.flatMap((project) => siteOf(project) ?? []), ...starts].map((siteId) =>
     scheduleOf(game, siteId, paused.includes(siteId) ? 1 : 0),
   );
 }
@@ -125,7 +130,7 @@ export function scheduleAhead(
 function scheduleOf(game: Building, siteId: string, delay: number): SiteSchedule {
   const site = game.country.sites.find((candidate) => candidate.id === siteId);
   if (site === undefined) throw new RangeError(`There is no site "${siteId}".`);
-  const project = game.projects.find((candidate) => candidate.siteId === siteId);
+  const project = projectOnSite(game.projects, siteId);
   const now = quarterNumber(game.date);
   const quartersLeft = siteTerms(site.type).buildQuarters - (project?.quartersPaid ?? 0);
   const opens =
@@ -133,7 +138,7 @@ function scheduleOf(game: Building, siteId: string, delay: number): SiteSchedule
   const { first, last } = termBounds(termOf(game));
   return {
     siteId,
-    state: project?.status ?? 'planned',
+    state: project === undefined ? 'planned' : siteStateOf(project),
     begins: project === undefined ? now : quarterNumber(project.began),
     opens,
     inUseBeforeVote: Math.max(0, last - Math.max(opens, first) + 1),

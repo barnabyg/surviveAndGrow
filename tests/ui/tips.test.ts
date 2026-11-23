@@ -42,7 +42,12 @@ describe('the first-time tips', () => {
   });
 
   it('can each arise in the country as it ships', () => {
-    const covered = new Set([...ARISES.map(([condition]) => condition), 'weather-warning']);
+    const covered = new Set([
+      ...ARISES.map(([condition]) => condition),
+      'weather-warning',
+      'research',
+      'survey',
+    ]);
     expect(TIPS.filter((tip) => !covered.has(tip.when))).toEqual([]);
   });
 
@@ -57,6 +62,48 @@ describe('the first-time tips', () => {
     const game = createGame(tavaraAsShipped(), 1);
     const risks = risksAhead(game, { budget: game.budget });
     expect(tipsDue({ game, risks, plannedSiteIds: [] }).has('weather-warning')).toBe(true);
+  });
+
+  it('wait for research once the player plans it, and while it is under way', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    const seed = 'droughtResistantSeed';
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [], plannedResearch: seed })).toContain(
+      'research',
+    );
+    const decisions = { budget: game.budget, startResearch: seed } as const;
+    const underway = advanceQuarter(game, decisions).state;
+    expect(tipsDue({ game: underway, risks: [], plannedSiteIds: [] })).toContain('research');
+  });
+
+  it('wait for a survey once the player plans one, and while it is under way', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    expect(
+      tipsDue({ game, risks: [], plannedSiteIds: [], plannedSurveys: ['salt-coast'] }),
+    ).toContain('survey');
+    const decisions = { budget: game.budget, startSurveys: ['salt-coast'] };
+    const underway = advanceQuarter(game, decisions).state;
+    expect(tipsDue({ game: underway, risks: [], plannedSiteIds: [] })).toContain('survey');
+  });
+
+  it('wait for research once the player first opens the research tab', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [], openTab: 'research' })).toContain(
+      'research',
+    );
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [], openTab: 'budget' })).not.toContain(
+      'research',
+    );
+  });
+
+  it('wait for a survey once the player first picks out a region that could be surveyed', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    // The Salt Coast hides a deposit, so its card offers a survey; Arden Vale hides none.
+    expect(
+      tipsDue({ game, risks: [], plannedSiteIds: [], selectedRegionId: 'salt-coast' }),
+    ).toContain('survey');
+    expect(
+      tipsDue({ game, risks: [], plannedSiteIds: [], selectedRegionId: 'arden-vale' }),
+    ).not.toContain('survey');
   });
 
   it('wait for nothing in a game that has only just begun, risks ahead aside', () => {

@@ -1,8 +1,18 @@
-import { chainsThrough, electionStatus, TIERS, type GameState, type Risk } from '../sim';
+import {
+  chainsThrough,
+  electionStatus,
+  researchStatuses,
+  surveyStatus,
+  surveyStatuses,
+  TIERS,
+  type GameState,
+  type Risk,
+  type Technology,
+} from '../sim';
 
 /**
- * What a first-time tip waits for. Each is read from the game as it stands, the risks ahead
- * and the projects the player has planned, by `tipsDue`.
+ * What a first-time tip waits for. Each is read from the game as it stands, the risks ahead,
+ * the projects the player has planned and what the player has open, by `tipsDue`.
  */
 export type TipCondition =
   | 'dilemma'
@@ -13,7 +23,9 @@ export type TipCondition =
   | 'missing-link'
   | 'bailout'
   | 'election-near'
-  | 'tier-passed';
+  | 'tier-passed'
+  | 'research'
+  | 'survey';
 
 /** A note shown once, the first time what it explains appears in a game. */
 export interface Tip {
@@ -91,22 +103,48 @@ export const TIPS: readonly Tip[] = [
     title: 'A new tier',
     text: 'The country has passed into a higher tier of prosperity, and the map shows it. People now expect more, so approval settles lower for the same budget. Hold the top tier for a year, with debt in check, to win.',
   },
+  {
+    id: 'research',
+    when: 'research',
+    target: 'research',
+    title: 'Research',
+    text: 'The research tab holds the technology tree. Research is a project with no site: the treasury must hold its whole cost, it is paid in instalments after the budget and pauses when the treasury cannot pay. One technology is researched at a time, and it is known for good from the quarter after its last instalment.',
+  },
+  {
+    id: 'survey',
+    when: 'survey',
+    target: 'map',
+    title: 'Surveys',
+    text: 'A region marked with a magnifying glass may hide a deposit of ore. Its card says what a survey costs, how likely it is to find one and how large it could be. A survey is paid like any project and each region is surveyed once. If it finds a deposit, its mine and road appear on the map to be built.',
+  },
 ];
 
-/** What a tip may be shown for: the game as it stands and what the player has planned. */
+/**
+ * What a tip may be shown for: the game as it stands, what the player has planned and what
+ * the player has open.
+ */
 export interface TipView {
   readonly game: GameState;
   /** The risks ahead under the decisions in force. */
   readonly risks: readonly Risk[];
   /** The sites the player has planned to build on this quarter. */
   readonly plannedSiteIds: readonly string[];
+  /** The technology the player has planned to research this quarter, if any. */
+  readonly plannedResearch?: Technology | null;
+  /** The regions the player has planned to survey this quarter. */
+  readonly plannedSurveys?: readonly string[];
+  /** The decisions tab the player has open, if known. */
+  readonly openTab?: string | null;
+  /** The region the player has picked out on the map, whose card is open, if any. */
+  readonly selectedRegionId?: string | null;
 }
 
 /** How many quarters before the election quarter its tip is shown: a year ahead. */
 const ELECTION_NOTICE_QUARTERS = 3;
 
 /** The tip conditions that hold now. */
-export function tipsDue({ game, risks, plannedSiteIds }: TipView): ReadonlySet<TipCondition> {
+export function tipsDue(view: TipView): ReadonlySet<TipCondition> {
+  const { game, risks, plannedSiteIds, plannedResearch, plannedSurveys } = view;
   const due = new Set<TipCondition>();
   if (game.outcome.status !== 'playing') return due;
   if (game.dilemma !== null) due.add('dilemma');
@@ -123,5 +161,21 @@ export function tipsDue({ game, risks, plannedSiteIds }: TipView): ReadonlySet<T
   if (game.austerity !== null) due.add('bailout');
   if (electionStatus(game).quartersAway <= ELECTION_NOTICE_QUARTERS) due.add('election-near');
   if (TIERS.indexOf(game.tier) > TIERS.indexOf(game.startingTier)) due.add('tier-passed');
+  // Research is explained once the player opens its tab, plans it, or has it under way.
+  const research = researchStatuses(game, plannedResearch ?? null);
+  const researching = research.some((status) =>
+    ['planned', 'researching', 'paused'].includes(status.state),
+  );
+  if (view.openTab === 'research' || researching) due.add('research');
+  // Surveys are explained once the player opens the card of a region that could be surveyed,
+  // plans one, or has one under way.
+  const plan = { startSurveys: plannedSurveys ?? [] };
+  const surveys = surveyStatuses(game, plan);
+  const surveying = surveys.some((status) =>
+    ['planned', 'surveying', 'paused'].includes(status.state),
+  );
+  const regionId = view.selectedRegionId ?? null;
+  const offered = regionId !== null && surveyStatus(game, regionId, plan).state !== 'barren';
+  if (offered || surveying) due.add('survey');
   return due;
 }

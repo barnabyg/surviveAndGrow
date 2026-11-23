@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
+  capacityOfTonnes,
   createGame,
   loadCountry,
   loadSave,
-  priceStatus,
   SAVE_FORMAT_VERSION,
   SaveError,
   saveGame,
+  startFault,
+  surveyedRegions,
   type Budget,
   type Country,
   type Decisions,
@@ -17,7 +19,8 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import format9Save from '../saves/format-9.json';
+import format11Save from '../saves/format-11.json';
+import format12Save from '../saves/format-12.json';
 import {
   bothCountries,
   tavara,
@@ -113,7 +116,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(9);
+    expect(save.formatVersion).toBe(12);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -275,7 +278,7 @@ describe('a game on a country that starts in debt', () => {
 
     const resumed = loadSave(save);
     expect(resumed).toEqual({ game: state, report });
-    expect(resumed.game.country.formatVersion).toBe(7);
+    expect(resumed.game.country.formatVersion).toBe(9);
     expect(resumed.game.country.start.loans).toEqual(start.country.start.loans);
     expect(resumed.game.debts.map((debt) => debt.number)).toEqual([1, 2]);
     expect(advanceQuarter(resumed.game, steward(resumed.game))).toEqual(
@@ -343,8 +346,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 10))).toBe(
-      'The saved game was written by a newer release of the game (save format 10; this release reads format 9). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 13))).toBe(
+      'The saved game was written by a newer release of the game (save format 13; this release reads format 12). Open it with that release.',
     );
   });
 
@@ -359,8 +362,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when the country it carries will not load', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 8))).toBe(
-      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 8, but this game reads versions 1 to 7.',
+    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 10))).toBe(
+      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 10, but this game reads versions 1 to 9.',
     );
     expect(refusal(without(save, ['country', 'file']))).toMatch(/country cannot be loaded/);
     expect(refusal(without(save, ['country']))).toBe(
@@ -464,9 +467,15 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
     ],
     [
       'a project on a site the country does not have',
-      ['state', 'projects', 0, 'siteId'],
+      ['state', 'projects', 0, 'target', 'siteId'],
       'moon-base',
-      'state.projects[0].siteId is "moon-base", which is not a site this game has',
+      'state.projects[0].target.siteId is "moon-base", which is not a site this game has',
+    ],
+    [
+      'a project for something the game does not have',
+      ['state', 'projects', 0, 'target', 'kind'],
+      'laboratory',
+      'state.projects[0].target.kind is "laboratory", which is not a kind of project this game has',
     ],
     [
       'a project in a state of building the game does not have',
@@ -705,80 +714,157 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 9', () => {
-  it('still opens on the game it was written from, with two world price shocks announced', () => {
-    const { game, report } = loadSave(format9Save);
+describe('the save kept from save format 12', () => {
+  it('still opens on the game it was written from, a deposit found and a survey under way', () => {
+    const { game, report } = loadSave(format12Save);
 
     expect(game.date).toEqual({ year: 1, quarter: 3 });
-    expect(game.priceShocks).toEqual([
-      {
-        type: 'failedHarvestsAbroad',
-        announced: { year: 1, quarter: 2 },
-        begins: { year: 1, quarter: 4 },
-      },
-      { type: 'oreGlut', announced: { year: 1, quarter: 2 }, begins: { year: 1, quarter: 4 } },
+    expect(
+      game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+    ).toEqual([
+      [{ kind: 'survey', regionId: 'salt-coast' }, 'surveyed', 2],
+      [{ kind: 'survey', regionId: 'dry-east' }, 'building', 1],
     ]);
-    expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
+    expect(surveyedRegions(game.projects)).toEqual(['salt-coast']);
+    expect(game.country.sites.slice(-2).map((site) => [site.id, site.capacity])).toEqual([
+      ['westhaven-mine', capacityOfTonnes(290_000)],
+      ['westhaven-trunk-road', undefined],
+    ]);
+    expect(report?.entries.map((entry) => entry.headline)).toEqual(
+      expect.arrayContaining(['Survey finished: Salt Coast', 'Survey begins: The Dry East']),
+    );
   });
 
-  it('plays on, each shock moving its price as it begins', () => {
-    const { game } = loadSave(format9Save);
+  it('plays on, the Dry East surveyed, with the Westhaven mine there to be built', () => {
+    const { game } = loadSave(format12Save);
 
     const { state, report } = advanceQuarter(game, answering(game, steward(game)));
 
-    expect(priceStatus(state, 'grain').figure?.contributions).toContainEqual({
-      label: 'Failed harvests abroad',
-      amount: 36,
-    });
-    expect(priceStatus(state, 'ore').figure?.contributions).toContainEqual({
-      label: 'Ore glut',
-      amount: -20,
-    });
-    expect(report.entries.map((entry) => entry.headline)).toContain(
-      'Ore glut pushes the world ore price down',
+    expect(report.entries).toContainEqual(
+      expect.objectContaining({
+        headline: 'Survey finished: The Dry East',
+        cause:
+          'The surveyors have reported. They found a deposit of ore whose mine could yield 800,000 t a quarter. Dustwell mine and Trunk road, Dustwell mine to Saltmouth can be built from next quarter.',
+      }),
     );
+    expect(surveyedRegions(state.projects)).toEqual(['salt-coast', 'dry-east']);
+    expect(
+      startFault({ ...state, treasury: 2000 }, ['westhaven-mine', 'dustwell-mine']),
+    ).toBeNull();
   });
 
-  it('remembers what each trade link carried in the quarter before it was saved', () => {
-    const { game } = loadSave(format9Save);
-
-    // The 20,000 t bought in its second quarter crossed the border at Korr Pass.
-    expect(game.tradeCarried).toEqual([{ routeId: 'korr-pass', ore: 0, grain: 20_000 }]);
-  });
-
-  it('refuses what was carried by a link the country does not have, or one listed twice', () => {
-    const unknown = withValue(format9Save, ['state', 'tradeCarried', 0, 'routeId'], 'nowhere');
-    const doubled = withValue(
-      format9Save,
-      ['state', 'tradeCarried'],
-      [
-        { routeId: 'korr-pass', ore: 0, grain: 1000 },
-        { routeId: 'korr-pass', ore: 0, grain: 1000 },
-      ],
-    );
-    const negative = withValue(format9Save, ['state', 'tradeCarried', 0, 'grain'], -1000);
-
-    expect(() => loadSave(unknown)).toThrow(/state\.tradeCarried\[0\]\.routeId/);
-    expect(() => loadSave(doubled)).toThrow(/state\.tradeCarried lists one trade link twice/);
-    expect(() => loadSave(negative)).toThrow(/state\.tradeCarried\[0\]\.grain/);
-  });
-
-  it('refuses a shock the game does not have, or two of one kind', () => {
-    const unknown = withValue(format9Save, ['state', 'priceShocks', 0, 'type'], 'locusts');
-    const twice = withValue(format9Save, ['state', 'priceShocks', 1, 'type'], 'oreGlut');
-    const doubled = withValue(twice, ['state', 'priceShocks', 0, 'type'], 'oreGlut');
-
-    expect(() => loadSave(unknown)).toThrow(/state\.priceShocks\[0\]\.type/);
-    expect(() => loadSave(doubled)).toThrow(/state\.priceShocks holds two shocks of one kind/);
-  });
-
-  // This holds for as long as format 9 is the current format: saving must write exactly
+  // This holds for as long as format 12 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(9);
-    const { game, report } = loadSave(format9Save);
+    expect(SAVE_FORMAT_VERSION).toBe(12);
+    const { game, report } = loadSave(format12Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format9Save);
+    expect(stored(saveGame(game, report))).toEqual(format12Save);
+  });
+});
+
+describe('a saved survey is refused', () => {
+  const projects = ['state', 'projects'];
+
+  it('when its region is not one of the country’s, or hides no deposit', () => {
+    expect(
+      refusal(withValue(format12Save, [...projects, 0, 'target', 'regionId'], 'atlantis')),
+    ).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[0].target.regionId is "atlantis", which is not a region this game has.',
+    );
+    expect(
+      refusal(withValue(format12Save, [...projects, 0, 'target', 'regionId'], 'arden-vale')),
+    ).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[0].target.regionId is a region where the country hides no deposit.',
+    );
+  });
+
+  it('when a survey is in use, or a site surveyed', () => {
+    expect(refusal(withValue(format12Save, [...projects, 1, 'status'], 'operating'))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[1].status is "operating", which a survey never is.',
+    );
+    expect(refusal(withValue(format11Save, [...projects, 0, 'status'], 'surveyed'))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[0].status is "surveyed", which a site never is.',
+    );
+  });
+
+  it('when it has paid for more quarters than the survey takes', () => {
+    expect(refusal(withValue(format12Save, [...projects, 1, 'quartersPaid'], 3))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[1].quartersPaid is 3, but the region takes 2 quarters to survey.',
+    );
+  });
+
+  it('when it builds on a deposit no survey has found', () => {
+    const { game } = loadSave(format12Save);
+    const [found] = saveGame(game, null).state.projects;
+    const building = {
+      ...found,
+      target: { kind: 'site', siteId: 'dustwell-mine' },
+      status: 'building',
+      quartersPaid: 0,
+      opened: null,
+    };
+    expect(refusal(withValue(format12Save, projects, [found, building]))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects builds on dustwell-mine, a site of a deposit no survey has found.',
+    );
+  });
+});
+
+describe('a saved project on a site is refused', () => {
+  it('when the site is locked until a technology not yet known', () => {
+    const { game } = loadSave(format12Save);
+    const [surveyed] = saveGame(game, null).state.projects;
+    const dam = {
+      target: { kind: 'site', siteId: 'korr-falls-dam' },
+      began: { year: 1, quarter: 1 },
+      quartersPaid: 0,
+      status: 'building',
+      opened: null,
+    };
+    // A save whose country has a dam: the current Tavara, which format 8 could not carry.
+    const country = { id: 'tavara', formatVersion: tavaraFile.formatVersion, file: tavaraFile };
+    const withDam = withValue(
+      withValue(format12Save, ['country'], country),
+      ['state', 'projects'],
+      [surveyed, dam],
+    );
+    expect(refusal(withDam)).toBe(
+      'The saved game is damaged and cannot be opened: state.projects builds on korr-falls-dam before hydropower is known.',
+    );
+  });
+});
+
+describe('a saved project for a technology is refused', () => {
+  const projects = ['state', 'projects'];
+  const research = [...projects, 1];
+
+  it('when the technology is not one the game has', () => {
+    expect(refusal(withValue(format11Save, [...research, 'target', 'technology'], 'x'))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[1].target.technology is "x", which is not a technology this game has.',
+    );
+  });
+
+  it('when research is in use, or a site known', () => {
+    expect(refusal(withValue(format11Save, [...research, 'status'], 'decaying'))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[1].status is "decaying", which a technology never is.',
+    );
+    expect(refusal(withValue(format11Save, [...projects, 0, 'status'], 'known'))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[0].status is "known", which a site never is.',
+    );
+  });
+
+  it('when it has paid for more quarters than the technology takes to research', () => {
+    expect(refusal(withValue(format11Save, [...research, 'quartersPaid'], 5))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[1].quartersPaid is 5, but the technology takes 4 quarters to research.',
+    );
+  });
+
+  it('when it researches one technology twice', () => {
+    const { game } = loadSave(format11Save);
+    const [, seed] = saveGame(game, null).state.projects;
+    expect(refusal(withValue(format11Save, projects, [seed, seed]))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects has two projects for the same thing.',
+    );
   });
 });

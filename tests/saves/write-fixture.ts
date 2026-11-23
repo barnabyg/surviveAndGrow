@@ -9,6 +9,7 @@ import {
   pendingDilemma,
   SAVE_FORMAT_VERSION,
   saveGame,
+  type Decisions,
   type TurnReport,
 } from '../../src/sim';
 
@@ -22,41 +23,39 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   const file = path.join(import.meta.dirname, `format-${SAVE_FORMAT_VERSION}.json`);
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
-  // Tavara as it ships, with chance pinned: no drought, the teachers asking for a rise now and
-  // then, and world price shocks likelier than it ships with, so that seed 2026 announces both
-  // as its second quarter begins. Format 9 added world price shocks, announced ahead and in
-  // force for a set time. The game keeps the budget it starts with, starts building Korrgate
-  // mine in its first quarter, buys 10,000 tonnes of grain for the national reserve in its
-  // first quarter and 20,000 in its second, and is saved as Year 1 · Quarter 3 begins: failed
-  // harvests abroad and an ore glut are both announced, to move the prices from Year 1 ·
-  // Quarter 4, and the last report has the second import in it.
+  // Tavara as it ships, with chance pinned: no drought and the teachers asking for a rise now
+  // and then. Format 12 let a project survey a region. The game, on seed 3, starts a survey of
+  // the Salt Coast in its first quarter and one of the Dry East in its second, on the budget it
+  // starts with. It is saved as Year 1 · Quarter 3 begins: the Salt Coast surveyed, its
+  // Westhaven deposit found and on the map, and the Dry East one of its two quarters surveyed.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
-    priceShockLikelihood: { failedHarvestsAbroad: 0.1, oreGlut: 0.6 },
   });
-  const imports = [10_000, 20_000];
-  let game = createGame(country, 2026);
+  const quarters: Partial<Decisions>[] = [
+    { startSurveys: ['salt-coast'] },
+    { startSurveys: ['dry-east'] },
+  ];
+  let game = createGame(country, 3);
   let report: TurnReport | null = null;
-  for (const tonnes of imports) {
+  for (const decisions of quarters) {
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
-    const result = advanceQuarter(game, {
-      budget: game.budget,
-      startProjects: game.date.quarter === 1 ? ['korr-mine'] : [],
-      trade: tonnes === 0 ? [] : [{ good: 'grain', direction: 'import', tonnes }],
-      dilemmaChoice,
-    });
+    const result = advanceQuarter(game, { budget: game.budget, ...decisions, dilemmaChoice });
     game = result.state;
     report = result.report;
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
   expect(game.date).toEqual({ year: 1, quarter: 3 });
-  expect(game.priceShocks.map((shock) => shock.type)).toEqual(['failedHarvestsAbroad', 'oreGlut']);
-  expect(game.projects.map((project) => project.siteId)).toEqual(['korr-mine']);
-  expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
+  expect(
+    game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+  ).toEqual([
+    [{ kind: 'survey', regionId: 'salt-coast' }, 'surveyed', 2],
+    [{ kind: 'survey', regionId: 'dry-east' }, 'building', 1],
+  ]);
+  expect(game.country.sites.map((site) => site.id)).toContain('westhaven-mine');
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

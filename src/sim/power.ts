@@ -1,9 +1,11 @@
 import type { Country, Site } from './country';
-import { siteStatus, type Project } from './projects';
-import { powerGain } from './sites';
+import { projectOnSite, siteStatus, type Project } from './projects';
+import { improvementsOf, powerGain, type PowerGain } from './sites';
+import { knownTechnologies, technologyName } from './technology';
+import { listed } from './text';
 import type { Money } from './types';
 import { inUse } from './upkeep';
-import { SITE_POWER_ROLES } from './vocabulary';
+import { SITE_POWER_ROLES, type Technology } from './vocabulary';
 
 interface Building {
   readonly country: Country;
@@ -26,6 +28,10 @@ export interface RegionPower {
   readonly outputPermille: number;
   /** What power adds to the region's infrastructure access, in thousandths of the whole. */
   readonly infrastructurePermille: number;
+  /** What power would add if no technology improved it: the same as above while none does. */
+  readonly unimproved: PowerGain;
+  /** The technologies known that make power add more, in the order they became known. */
+  readonly improvedBy: readonly Technology[];
 }
 
 /** A way from a power line to a station in use, and whether anything on it is decaying. */
@@ -42,6 +48,7 @@ interface Link {
  * one, and otherwise from the first in the country file.
  */
 export function regionPower(building: Building): RegionPower[] {
+  const known = knownTechnologies(building.projects);
   const links = building.country.sites.flatMap((site) => {
     if (SITE_POWER_ROLES[site.type] !== 'line') return [];
     const link = linkOf(building, site, new Set());
@@ -51,12 +58,23 @@ export function regionPower(building: Building): RegionPower[] {
     const reaching = links.filter(({ line }) => line.regionId === region.id);
     const best = reaching.find((link) => !link.weakened) ?? reaching[0];
     if (best === undefined) return unpowered(region.id);
+    const station = building.country.sites.find((site) => site.id === best.stationId)?.type;
+    const gain = powerGain(best.weakened, known, station);
+    const unimproved = powerGain(best.weakened, [], station);
     return {
       regionId: region.id,
       lineId: best.line.id,
       stationId: best.stationId,
       weakened: best.weakened,
-      ...powerGain(best.weakened),
+      ...gain,
+      unimproved,
+      improvedBy:
+        gain.outputPermille === unimproved.outputPermille &&
+        gain.infrastructurePermille === unimproved.infrastructurePermille
+          ? []
+          : known.filter((technology) =>
+              station === undefined ? false : improvementsOf(station, [technology]).length > 0,
+            ),
     };
   });
 }
@@ -70,12 +88,34 @@ export function unpowered(regionId: string): RegionPower {
     weakened: false,
     outputPermille: 0,
     infrastructurePermille: 0,
+    unimproved: { outputPermille: 0, infrastructurePermille: 0 },
+    improvedBy: [],
   };
 }
 
 /** What power adds to an output, in Money: a whole share of it, rounded down. */
-export function poweredOutput(output: Money, power: RegionPower): Money {
+export function poweredOutput(output: Money, power: Pick<PowerGain, 'outputPermille'>): Money {
   return Math.floor((output * power.outputPermille) / 1000);
+}
+
+/**
+ * What power adds to a region, as a breakdown lists it: what it would add without the
+ * technologies that improve it, under the label given, and beside it what they add, naming
+ * them: "Power from Korr Falls station: Grid efficiency". `part` reads one figure off a gain.
+ */
+export function powerLines(
+  label: string,
+  power: RegionPower,
+  part: (gain: PowerGain) => number,
+): { readonly label: string; readonly amount: number }[] {
+  const base = part(power.unimproved);
+  const improved = part(power) - base;
+  return [
+    { label, amount: base },
+    ...(improved === 0
+      ? []
+      : [{ label: `${label}: ${listed(power.improvedBy.map(technologyName))}`, amount: improved }]),
+  ];
 }
 
 /**
@@ -85,7 +125,7 @@ export function poweredOutput(output: Money, power: RegionPower): Money {
  */
 function linkOf(building: Building, site: Site, seen: ReadonlySet<string>): Link | null {
   const role = SITE_POWER_ROLES[site.type];
-  const project = building.projects.find((candidate) => candidate.siteId === site.id);
+  const project = projectOnSite(building.projects, site.id);
   if (role === null || seen.has(site.id) || project === undefined || !inUse(project)) return null;
   const decaying = project.status === 'decaying';
   if (role === 'station') return { stationId: site.id, weakened: decaying };

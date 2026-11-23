@@ -92,10 +92,22 @@ Prosperity, tiers and people.
   forced austerity. Rules: rules.md, Borrowing and the credit rating, and Bailout and austerity;
   balance: `docs/balance/phase-3.md`.
 
+- **Technology** (Phase 5, under way): a tree bought with money and time, using the project
+  mechanism: research is a project on no site, one technology at a time, known for good once
+  finished. It unlocks and improves what already exists; the first technology, drought-resistant
+  seed, makes weather and drought move every region's harvest less, and the tiers built on it
+  improve irrigation schemes, grain stores, trunk roads and ports, and power stations, so they pay
+  off only where the player has built them. Hydropower, joining both branches, unlocks the dam.
+  Rules: rules.md, Research, and Locked sites and the dam.
+- **Surveys** (Phase 5, under way): exploration with visible risk. A country file hides deposits
+  in its regions, each with a likelihood and a range of sizes; a survey is a project on a region
+  that shows both before the player commits, and reports nothing or a deposit of a definite size,
+  whose mine and road then join the map to be built like any other. The result comes from the
+  seed and the deposit, not the random generator, so it is fair and the same seed finds the same.
+  Rules: rules.md, Surveys.
+
 ### Still to come
 
-- **Technology** (Phase 5): a tree bought with money and time, using the project mechanism. It
-  unlocks and improves what already exists.
 - **Military** (Phase 6): kept abstract. Defence spending buys deterrence against neighbours and
   loyalty from the army. There is no tactical combat.
 
@@ -116,9 +128,12 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
   others for good, and the site card says so before the player commits.
 - **Power reaches the country along lines.** A station powers the regions its lines reach, and a
   powered region produces more. A site can need power like any other link of its chain.
-- **Site states are visible:** empty, closed, under construction, operating, decaying.
-- **Sites are revealed over time** (Phase 5). Surveys uncover deposits, and research unlocks new
-  site types.
+- **Site states are visible:** empty, locked, closed, under construction, operating, decaying.
+- **Sites are revealed over time** (Phase 5). Surveys uncover deposits, whose mine and road then
+  appear on the map; a region not yet surveyed is marked with a magnifying glass. Research
+  unlocks new site types: a dam is on the map from the start, locked and wearing a padlock, until
+  hydropower is known. A dam is a power station that also steadies its own region's harvest, and
+  a country may offer it as an alternative to a power station.
 - **Lenses:** the map switches between country, food, approval, living standards and infrastructure
   views.
 - **The infrastructure lens shows what is built and what is missing,** region by region, with every
@@ -148,7 +163,8 @@ lenses and the selected site's card, over the term timeline of 20 quarters to th
 harvests, projects and bond maturities marked. The right column is what you do: pinned at its
 top, any dilemma waiting and the quarter ahead (balance, treasury, approval, food reserve and the
 election forecast); below it, tabs for the budget sliders with a live projection, projects
-(underway, with a catalogue of those affordable), loans and bonds, the trade panel (grain
+(underway, with a catalogue of those affordable), research (the technology tree), loans and
+bonds, the trade panel (grain
 imports and exports, what the trade links carry, and the world grain price's sign), and food
 relief. Each
 tab says where it stands, so a decision out of sight is not forgotten.

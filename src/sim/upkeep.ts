@@ -1,7 +1,7 @@
 import { sum } from './arithmetic';
 import { balance } from './balance';
 import type { Country, Site } from './country';
-import type { Project } from './projects';
+import { siteOf, type Project } from './projects';
 import type { ReportEntry } from './report';
 import { siteTerms } from './sites';
 import { capitalised, formatMoney } from './text';
@@ -39,7 +39,7 @@ export interface UpkeepOutcome {
  */
 export function sitesNeedingUpkeep({ country, projects }: Building): readonly Site[] {
   return projects.flatMap((project) => {
-    const site = country.sites.find((candidate) => candidate.id === project.siteId);
+    const site = country.sites.find((candidate) => candidate.id === siteOf(project));
     return site !== undefined && inUse(project) ? [site] : [];
   });
 }
@@ -97,7 +97,7 @@ export function resolveUpkeep(
 ): { readonly projects: readonly Project[]; readonly entries: readonly ReportEntry[] } {
   const entries: ReportEntry[] = [];
   const after = projects.map((project): Project => {
-    const site = country.sites.find((candidate) => candidate.id === project.siteId);
+    const site = country.sites.find((candidate) => candidate.id === siteOf(project));
     if (site === undefined) return project;
     if (project.status === 'operating' && upkeep.short.includes(site.id)) {
       entries.push(decayingEntry(site, upkeep));
@@ -129,7 +129,7 @@ export function damageSites(
 ): { readonly projects: readonly Project[]; readonly entries: readonly ReportEntry[] } {
   const entries: ReportEntry[] = [];
   const after = projects.map((project): Project => {
-    const site = country.sites.find((candidate) => candidate.id === project.siteId);
+    const site = country.sites.find((candidate) => candidate.id === siteOf(project));
     const struck = damage.find((done) => done.regionId === site?.regionId);
     if (site === undefined || struck === undefined || project.status !== 'operating') {
       return project;

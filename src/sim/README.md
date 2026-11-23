@@ -61,6 +61,97 @@ for collapse (`collapse.ts`), holds the election (`election.ts`), checks for vic
 dilemma, records the vital signs (`history.ts`), and compiles the report (`report.ts`), whose
 entries keep the order written there.
 
+## Projects and their targets
+
+A project names its target, what it is for (`ProjectTarget` in `projects.ts`): a site, built
+on, a technology, researched, or a region, surveyed. What a project
+shares is written once and takes no notice of the target: `projectStartFault` bars any new
+project during austerity and when the treasury does not hold the whole cost of everything started
+together, and `resolveProjects` pays the instalments after the budget, the oldest project first,
+pauses a project the treasury cannot pay for, and puts a finished one in use from the next
+quarter. Taking a plan back is the interface's: a plan is not a project until the quarter ends.
+
+Only what depends on the target is written for each kind: its name, region, cost, build time,
+effect, the status it finishes with (`PROJECT_TARGET_FINISHED` in `vocabulary.ts`, which
+`siteStateOf`, `standsAs` and a save's check read) and the words the report and the treasury's
+breakdown use for it (`projectTerms`, with the words in `PROJECT_TARGET_WORDS`), what else
+stops it being started (`targetFault`), and how a save holds it (`readTarget` in `save.ts`). A
+quarter's decisions start sites (`startProjects`), research (`startResearch`) and surveys
+(`startSurveys`); `startsOf` turns them into targets in that order. The interface checks a
+plan against everything else planned with `planFault` (`surveys.ts`), so that the treasury
+covers them all. A project on no site is resolved like any other: it takes
+its turn for instalments in the order it was started and pauses in the same way, but it has no
+site, so `siteOf` gives null for it. Everything that reads the sites in use (`siteStatus`,
+`sitesInUse`, `siteEffects`, upkeep, chains, power, trade links and the timeline) passes over
+it, it needs no upkeep and nothing decays it, and its report entries name no region. Its
+lasting effect is for its own kind to say. A new kind of target is added to `ProjectTarget` and
+to `PROJECT_TARGET_KINDS` in `vocabulary.ts`, and is a save-format change.
+
+## Technologies and research
+
+The technology tree is the engine's, like its site types. A technology's name and
+prerequisites are in `TECHNOLOGY_DEFINITIONS` (`vocabulary.ts`), and its cost, research time and
+effects in `balance.technologies`; `technology.ts` reads them (`technologyTerms`), says which
+are known (`knownTechnologies`) and what stops research starting (`technologyFault`: one at a
+time, prerequisites known). `research.ts` gives the interface the whole tree as it stands
+(`researchStatuses`). Research into a technology is a project whose target is that technology:
+it is paid for, paused and barred like any other, and once its last instalment is paid it is
+`known` rather than in use.
+
+A technology's effects use the same vocabulary as a site's (`SITE_EFFECTS`): each leaves a
+share, in thousandths, of what it bears on, in every region or once across the nation.
+`siteEffects` folds the technologies known into what the sites in use do, so everything that
+reads it counts them: the harvest, the preview's forecast, the risks ahead and the map. How far
+the weather moves a harvest answers to the effects in `WEATHER_HELD_BY`, and each event's hold
+to the effects its definition lists (`heldBy` in `balance.events`), which is how
+drought-resistant seed softens drought but not flood. A technology that improves something new
+everywhere adds an effect there; one that unlocks a type of site is named by the type
+(`unlockedBy` in `SITE_TYPE_DEFINITIONS`).
+
+A technology can instead improve a type of site (`improves` in `balance.technologies`, a
+`SiteImprovement`): leave less of what the site's effect bears on, raise what it carries in a
+chain, or, for a power station, raise what its power gives a region. It pays off only where
+such a site is in use. The rules that read a site take the technologies known
+(`siteEffectsOf`, `capacityOf`, `powerGain` in `sites.ts`, through `siteEffects`, `chainOf`,
+`regionPower` and `tradeLinks`, each of which reads them from the projects), so the turn, the
+preview and the risks ahead count them alike. Each of those also says what the figure would be
+without them (`unimproved`) and which technologies moved it (`improvedBy`), so that every
+breakdown splits the figure and names them: `earningLines` and `powerLines` for the region
+and treasury breakdowns, the spoilage line in `food.ts`, and the site's own sentence
+(`siteTerms` with the technologies known). `technologyGains` (`research.ts`) says what a
+technology does in this game, from the sites in use, for the research tab.
+
+## Locked sites
+
+A site may need technologies known before it can be started (`technologiesNeeded` in
+`sites.ts`): the one that unlocks its type, such as hydropower for a dam, and the one its country
+file names in `needs` (format 9). Until they are known it is `locked` (`siteStatus`, whose
+`lockedBy` names them), and `targetFault` refuses to start it, so the turn, the plan and the
+interface refuse alike. Nothing about a lock is kept: once the technologies are known the site
+is empty like any other. A closed site stays closed whatever it needs. The opening budget's
+upkeep, when the file leaves it out, does not count locked sites (`countryStart.ts`), and
+`technologyGains` names the sites a technology unlocks for the research tab. A dam is a power
+station by its power role, so everything that reads stations counts it; its harvest steadying
+is its `harvestWeather` effect, and `weatherHold` lists what lessens the weather's hold on a
+region's harvest for the region's card.
+
+## Surveys and deposits
+
+A country file may hide deposits (`Deposit` in `country.ts`, read by `readDeposits` and
+checked by `checkDeposits` in `siteChecks.ts`): a mine and the trunk road that serves it, in a
+region, with a likelihood and a range of sizes. A deposit's sites are not among the country's
+`sites` until a survey of its region finds it. A survey is a project whose target is a region
+(`SurveyTarget`); it finishes `surveyed`, and the report says what it found
+(`surveyFindings`, in `resolveProjects`).
+
+Whether a deposit is there and how large it is come from the seed and the deposit's id alone
+(`depositFind` in `deposits.ts`, keyed with `drawAt`), so the generator is untouched and the
+same seed always finds the same. Nothing about the find is kept in the state: `withFinds` adds
+the found deposits' sites to the country from the surveys finished and the seed, as a quarter
+ends (`game.ts`) and as a save is loaded (`save.ts`), and a found mine carries the size found
+as its own `capacity`, which `siteCapacity` (`sites.ts`) gives the chain in place of the type's.
+`surveys.ts` gives the interface each region as it stands for a survey (`surveyStatuses`).
+
 ## Adding a mechanic
 
 A new mechanic usually touches most of these:

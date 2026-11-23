@@ -13,9 +13,9 @@ import {
 import { readStart } from './countryStart';
 import type { StartingLoan } from './debt';
 import { contains } from './geometry';
-import { checkAlternatives, checkDependencies } from './siteChecks';
+import { checkAlternatives, checkDependencies, checkDeposits } from './siteChecks';
 import { formatTonnes } from './text';
-import type { Money } from './types';
+import type { Money, Range } from './types';
 import {
   DECORATION_KINDS,
   DILEMMA_TYPES,
@@ -23,9 +23,11 @@ import {
   PRICE_SHOCK_TYPES,
   LABEL_SIDES,
   SETTLEMENT_SIZES,
+  SITE_CHAIN_ROLES,
   SITE_FORMS,
   SITE_TYPE_NAMES,
   SITE_TYPES,
+  TECHNOLOGIES,
   TERRAINS,
   type DecorationKind,
   type DilemmaType,
@@ -34,6 +36,7 @@ import {
   type PriceShockType,
   type SettlementSize,
   type SiteType,
+  type Technology,
   type Terrain,
 } from './vocabulary';
 
@@ -43,9 +46,23 @@ import {
  * growth, which format 1 cannot say, and format 3 added sites that are alternatives to each
  * other, which format 2 cannot, format 4 added debt the game starts with, which format 3
  * cannot, format 5 added border crossings, which format 4 cannot, format 6 added floods,
- * which format 5 cannot, and format 7 added world price shocks, which format 6 cannot.
+ * which format 5 cannot, format 7 added world price shocks, which format 6 cannot, format 8
+ * added hidden deposits that a survey may find, which format 7 cannot, and format 9 added sites
+ * locked until a technology is known, among them dams, which format 8 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 7;
+export const COUNTRY_FORMAT_VERSION = 9;
+
+/**
+ * The country file format that first lets a site say which technology it needs, and name a
+ * type of site that research unlocks.
+ */
+const LOCKED_SITE_FORMAT = 9;
+
+/** The country file format that first lets a file name each type of site added after format 1. */
+const SITE_TYPE_FORMATS: Readonly<Partial<Record<SiteType, number>>> = { dam: LOCKED_SITE_FORMAT };
+
+/** The country file format that first lets a file hide deposits for surveys to find. */
+const DEPOSIT_FORMAT = 8;
 
 /** The country file format that first lets a file say how likely each world price shock is. */
 const PRICE_SHOCK_FORMAT = 7;
@@ -104,10 +121,21 @@ interface SiteDetails {
    */
   readonly dependsOn: readonly string[];
   /**
+   * What the site produces in a quarter in good repair, counted as `balance.sites` counts a
+   * capacity, when it is not its type's: only the mine of a deposit a survey has found has
+   * one, the size the survey revealed.
+   */
+  readonly capacity?: Money;
+  /**
    * The ids of the sites this one is an alternative to, in the country file's order. Building
    * on either rules the other out. The file may say so on either side or on both.
    */
   readonly alternatives: readonly string[];
+  /**
+   * The technology the country file says must be known before the site can be started, if it
+   * says one. A type research unlocks needs its own as well (`technologiesNeeded`).
+   */
+  readonly needs?: Technology;
 }
 
 /**
@@ -141,6 +169,26 @@ export interface Crossing {
   readonly tonnes: number;
 }
 
+/**
+ * A deposit of ore the country file hides: a mine and the trunk road that would carry its ore
+ * towards a port, in a region. It is not on the map, and nothing can be built on it, until a
+ * survey of its region finds it. Whether it is there, by its likelihood, and how large it is,
+ * within its range, are drawn from the seed and the deposit (`deposits.ts`).
+ */
+export interface Deposit {
+  readonly id: string;
+  /** The region it lies in, which its mine stands in. A region holds at most one. */
+  readonly regionId: string;
+  /** The chance, above 0 and at most 1, that a survey of its region finds it there. */
+  readonly likelihood: number;
+  /** The least and the most ore its mine could produce a quarter, in tonnes. */
+  readonly tonnes: Range;
+  /** The mine, which depends on the route and on any of the country's sites it names. */
+  readonly mine: Site;
+  /** The trunk road that serves the mine, which depends on the country's sites it names. */
+  readonly route: Site;
+}
+
 /** Sea is whatever the regions and neighbours leave uncovered. A sea entry only names it. */
 export interface Sea {
   readonly name: string;
@@ -172,8 +220,13 @@ export interface Country {
   };
   readonly regions: readonly Region[];
   readonly settlements: readonly Settlement[];
-  /** Where things can be built, in the country file's order. */
+  /**
+   * Where things can be built, in the country file's order, and then the sites of each
+   * deposit a survey has found, in the order the deposits are listed (`withFinds`).
+   */
   readonly sites: readonly Site[];
+  /** The deposits the file hides, found or not, in the file's order. */
+  readonly deposits: readonly Deposit[];
   /** The border crossings, in the country file's order. */
   readonly crossings: readonly Crossing[];
   /**
@@ -231,8 +284,11 @@ function readSite(
   regions: readonly Region[],
   ids: Map<string, string>,
   names: Map<string, string>,
+  formatVersion: number,
+  /** The region the site stands in when it is not the site's to say: a deposit's mine's. */
+  regionOf?: string,
 ): Site {
-  const regionId = reader.text(site, 'region', path);
+  const regionId = regionOf ?? reader.text(site, 'region', path);
   const named = regions.find((candidate) => candidate.id === regionId);
   if (regionId !== '' && named === undefined) {
     reader.fault(join(path, 'region'), `is "${regionId}", which is not the id of a region`);
@@ -248,10 +304,18 @@ function readSite(
     regionId,
     dependsOn: readSiteIds(reader, site, path, 'dependsOn'),
     alternatives: readSiteIds(reader, site, path, 'alternatives'),
+    ...readNeeds(reader, site, path, formatVersion),
   };
   // A type the game does not know says nothing about how the site should be given.
   if (!SITE_TYPES.some((type) => type === site.type))
     return { ...details, form: 'place', at: [0, 0] };
+  const typeFormat = SITE_TYPE_FORMATS[details.type] ?? OLDEST_COUNTRY_FORMAT_VERSION;
+  if (formatVersion < typeFormat) {
+    reader.fault(
+      join(path, 'type'),
+      `is "${details.type}", which needs country file format ${typeFormat} or later`,
+    );
+  }
   const typeName = SITE_TYPE_NAMES[details.type].toLowerCase();
 
   if (SITE_FORMS[details.type] === 'route') {
@@ -292,6 +356,199 @@ function readSite(
     reader.fault(join(path, 'at'), `is (${at[0]}, ${at[1]}), outside its region "${regionId}"`);
   }
   return { ...details, form: 'place', at };
+}
+
+/**
+ * The technology a site of a file of format 9 or later says it needs, in `needs`: one of the
+ * game's own. Nothing when it says none.
+ */
+function readNeeds(
+  reader: Reader,
+  site: Json,
+  path: string,
+  formatVersion: number,
+): { readonly needs?: Technology } {
+  const value = site.needs;
+  if (value === undefined) return {};
+  const needsPath = join(path, 'needs');
+  if (formatVersion < LOCKED_SITE_FORMAT) {
+    reader.fault(needsPath, `needs country file format ${LOCKED_SITE_FORMAT} or later`);
+    return {};
+  }
+  const technology = TECHNOLOGIES.find((candidate) => candidate === value);
+  if (technology !== undefined) return { needs: technology };
+  reader.fault(
+    needsPath,
+    typeof value === 'string'
+      ? `is "${value}", which is not a technology this game has (${TECHNOLOGIES.join(', ')})`
+      : wrongKind(value, 'the id of a technology'),
+  );
+  return {};
+}
+
+/**
+ * The deposits a file of format 8 or later hides in `deposits`, at most one in a region. Each
+ * names its region, how likely it is to be there, the range of its size in tonnes of ore a
+ * quarter, its mine, which stands in its region and depends on its route, and its route, a
+ * trunk road. Their sites share the country's ids and names, and neither may name
+ * alternatives. What their sites may depend on is checked with the rest (`checkDeposits`).
+ */
+function readDeposits(
+  reader: Reader,
+  file: Json,
+  formatVersion: number,
+  regions: readonly Region[],
+  siteIds: Map<string, string>,
+  siteNames: Map<string, string>,
+): Deposit[] {
+  if (file.deposits === undefined) return [];
+  if (formatVersion < DEPOSIT_FORMAT) {
+    reader.fault('deposits', `needs country file format ${DEPOSIT_FORMAT} or later`);
+    return [];
+  }
+  const ids = new Map<string, string>();
+  const held = new Map<string, string>();
+  return reader.list(file, 'deposits', '', (item, path): Deposit => {
+    const id = reader.unique(item, 'id', path, ids);
+    const regionId = reader.text(item, 'region', path);
+    if (regionId !== '') {
+      const earlier = held.get(regionId);
+      if (!regions.some((region) => region.id === regionId)) {
+        reader.fault(join(path, 'region'), `is "${regionId}", which is not the id of a region`);
+      } else if (earlier !== undefined) {
+        reader.fault(
+          join(path, 'region'),
+          `is "${regionId}", which already holds ${earlier}: a region holds at most one deposit`,
+        );
+      } else {
+        held.set(regionId, path);
+      }
+    }
+    const likelihood = readLikelihood(reader, item, path);
+    const tonnes = readTonnes(reader, item, path);
+
+    const minePath = join(path, 'mine');
+    const mineFile = reader.object(item, 'mine', path);
+    if (mineFile.region !== undefined) {
+      reader.fault(
+        join(minePath, 'region'),
+        'must be left out: a deposit’s mine stands in the deposit’s region',
+      );
+    }
+    const mine = readSite(
+      reader,
+      mineFile,
+      minePath,
+      regions,
+      siteIds,
+      siteNames,
+      formatVersion,
+      regionId,
+    );
+    const routePath = join(path, 'route');
+    const routeFile = reader.object(item, 'route', path);
+    const route = readSite(
+      reader,
+      routeFile,
+      routePath,
+      regions,
+      siteIds,
+      siteNames,
+      formatVersion,
+    );
+    const parts = [
+      { site: mine, written: mineFile, at: minePath, role: 'source', part: 'mine' },
+      { site: route, written: routeFile, at: routePath, role: 'link', part: 'route' },
+    ] as const;
+    for (const { site, written, at, role, part } of parts) {
+      const known = SITE_TYPES.some((type) => type === written.type);
+      if (known && SITE_CHAIN_ROLES[site.type] !== role) {
+        reader.fault(
+          join(at, 'type'),
+          `is "${site.type}", but a deposit’s ${part} must be a ${typeNamesOf(role)}`,
+        );
+      }
+      if (written.alternatives !== undefined) {
+        reader.fault(
+          join(at, 'alternatives'),
+          'must be left out: a deposit’s site has no alternatives',
+        );
+      }
+    }
+    if (route.id !== '' && !mine.dependsOn.includes(route.id)) {
+      reader.fault(
+        join(minePath, 'dependsOn'),
+        `must include "${route.id}", the deposit’s route: its ore leaves along it`,
+      );
+    }
+    return {
+      id,
+      regionId,
+      likelihood,
+      tonnes,
+      mine: { ...mine, alternatives: [] },
+      route: { ...route, alternatives: [] },
+    };
+  });
+}
+
+/** The names of the types of site that play one part in a chain: "trunk road". */
+function typeNamesOf(role: 'source' | 'link'): string {
+  return SITE_TYPES.filter((type) => SITE_CHAIN_ROLES[type] === role)
+    .map((type) => SITE_TYPE_NAMES[type].toLowerCase())
+    .join(' or ');
+}
+
+/** How likely a deposit is to be there: a chance above 0, since one never there is no deposit. */
+function readLikelihood(reader: Reader, deposit: Json, path: string): number {
+  const before = reader.faults.length;
+  const chance = reader.number(deposit, 'likelihood', path);
+  if (reader.faults.length > before) return 0;
+  if (chance <= 0 || chance > 1) {
+    reader.fault(
+      join(path, 'likelihood'),
+      `is ${chance}, but must be a chance above 0 and at most 1`,
+    );
+    return 0;
+  }
+  return chance;
+}
+
+/**
+ * The range of a deposit's size, in tonnes of ore a quarter: each end a whole number of
+ * `balance.surveys.tonnesStep` from one step to `mostTonnes`, the least first.
+ */
+function readTonnes(reader: Reader, deposit: Json, path: string): Range {
+  const { tonnesStep: step, mostTonnes } = balance.surveys;
+  const rangePath = join(path, 'tonnes');
+  if (!isRecord(deposit.tonnes)) {
+    reader.fault(rangePath, wrongKind(deposit.tonnes, 'an object with a min and a max'));
+    return { min: step, max: step };
+  }
+  const written = deposit.tonnes;
+  const end = (key: 'min' | 'max'): number | null => {
+    const before = reader.faults.length;
+    const tonnes = reader.number(written, key, rangePath);
+    if (reader.faults.length > before) return null;
+    if (!Number.isInteger(tonnes / step) || tonnes < step || tonnes > mostTonnes) {
+      reader.fault(
+        join(rangePath, key),
+        `is ${tonnes}, but must be a whole number of ${formatTonnes(step)} from ${formatTonnes(step)} to ${formatTonnes(mostTonnes)}`,
+      );
+      return null;
+    }
+    return tonnes;
+  };
+  const min = end('min');
+  const max = end('max');
+  if (min !== null && max !== null && min > max) {
+    reader.fault(
+      rangePath,
+      `runs from ${formatTonnes(min)} down to ${formatTonnes(max)}, but its min must be no more than its max`,
+    );
+    return { min, max: min };
+  }
+  return { min: min ?? step, max: max ?? min ?? step };
 }
 
 /**
@@ -548,10 +805,18 @@ export function loadCountry(file: unknown): Country {
         Reflect.deleteProperty(fields, key);
       }
     }
-    return readSite(reader, fields, path, regions, siteIds, siteNames);
+    return readSite(reader, fields, path, regions, siteIds, siteNames, formatVersion);
   });
   const sites = checkAlternatives(reader, listed);
-  checkDependencies(reader, sites);
+  const deposits = readDeposits(reader, file, formatVersion, regions, siteIds, siteNames);
+  checkDependencies(reader, [
+    ...sites.map((site, index) => ({ site, path: `sites[${index}]` })),
+    ...deposits.flatMap((deposit, index) => [
+      { site: deposit.mine, path: `deposits[${index}].mine` },
+      { site: deposit.route, path: `deposits[${index}].route` },
+    ]),
+  ]);
+  checkDeposits(reader, sites, deposits);
 
   const map = reader.object(file, 'map', '');
   const neighbourIds = new Map<string, string>();
@@ -590,6 +855,7 @@ export function loadCountry(file: unknown): Country {
     regions,
     settlements,
     sites,
+    deposits,
     crossings: readCrossings(reader, file, formatVersion, countryMap.neighbours),
     dilemmaLikelihood: readChances(
       reader,

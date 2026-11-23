@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from 'react';
-import type { GameState, Risk } from '../sim';
+import type { GameState, Risk, Technology } from '../sim';
 import { cardPlace, outlinePlace, useSpotlight } from './spotlight';
 import { readTipsOff, readTipsSeen, storeTipSeen, storeTipsOff } from './storage';
 import { TIPS, tipsDue, type Tip } from './tips';
@@ -9,6 +9,12 @@ interface TipsInput {
   readonly game: GameState;
   readonly risks: readonly Risk[];
   readonly plannedSiteIds: readonly string[];
+  readonly plannedResearch: Technology | null;
+  readonly plannedSurveys: readonly string[];
+  /** The decisions tab open. */
+  readonly openTab: string | null;
+  /** The region picked out on the map, if any. */
+  readonly selectedRegionId: string | null;
   /** Whether the tour or a lesson is open, which a tip waits behind. */
   readonly quiet: boolean;
 }
@@ -25,10 +31,11 @@ export interface TipsState {
  * The first-time tips in a game. The first tip whose condition holds and which has not been
  * seen is shown; dismissing it marks it seen, in every game and country.
  */
-export function useTips({ game, risks, plannedSiteIds, quiet }: TipsInput): TipsState {
+export function useTips(input: TipsInput): TipsState {
+  const { quiet, ...view } = input;
   const [on, setOn] = useState(() => !readTipsOff());
   const [seen, setSeen] = useState(readTipsSeen);
-  const due = on && !quiet ? tipsDue({ game, risks, plannedSiteIds }) : new Set();
+  const due = on && !quiet ? tipsDue(view) : new Set();
   const tip = TIPS.find((candidate) => due.has(candidate.when) && !seen.has(candidate.id)) ?? null;
   return {
     tip,

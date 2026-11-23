@@ -14,6 +14,7 @@ import type {
   SiteEffect,
   SiteType,
   SpendingArea,
+  Technology,
   Tier,
 } from './vocabulary';
 
@@ -56,6 +57,42 @@ export interface SiteBalance {
    * capacity. What the ore shipped earns follows the world ore price.
    */
   readonly capacity?: number;
+}
+
+/**
+ * The balance values of one technology: what researching it costs, in Money units, paid over
+ * the `researchQuarters` it takes, and what it does once known. Each effect leaves that many
+ * thousandths of what it bears on in every region, or across the nation for an effect whose
+ * reach is the nation (`SITE_EFFECT_DEFINITIONS`), multiplying with what the sites in use do.
+ */
+export interface TechnologyBalance {
+  readonly cost: number;
+  readonly researchQuarters: number;
+  readonly effects: Readonly<Partial<Record<SiteEffect, number>>>;
+  /**
+   * What it does for each type of site it improves. It pays off only where such a site is in
+   * use, and adds to what the site does before decay takes its share.
+   */
+  readonly improves: Readonly<Partial<Record<SiteType, SiteImprovement>>>;
+}
+
+/**
+ * How a technology improves a type of site in use. Each part is left out where it does not
+ * apply.
+ */
+export interface SiteImprovement {
+  /**
+   * What it leaves, in thousandths, of what the site's own effect leaves of the same thing: an
+   * irrigation scheme that leaves 500 of the weather's hold, improved by 800, leaves 400.
+   */
+  readonly effects?: Readonly<Partial<Record<SiteEffect, number>>>;
+  /** What it adds to what the site produces or carries in a chain, in thousandths of it. */
+  readonly capacityPermille?: number;
+  /**
+   * For a power station, what it adds to what its power gives each region it reaches, output
+   * and infrastructure access alike, in thousandths of it.
+   */
+  readonly powerPermille?: number;
 }
 
 /**
@@ -324,7 +361,94 @@ export const balance = {
       effects: {},
       infrastructurePermille: 0,
     },
+    // A dam is a power station, its power reaching a region only along a power line, that
+    // also holds back 40% of how far weather, drought and flood move its own region's harvest:
+    // less than an irrigation scheme does. Nearly twice a station's cost and slower to build
+    // than a port, so one started late in a term opens after the election.
+    dam: {
+      cost: 550,
+      buildQuarters: 8,
+      upkeep: 7,
+      effects: { harvestWeather: 600 },
+      infrastructurePermille: 100,
+    },
   } satisfies Record<SiteType, SiteBalance>,
+  /**
+   * What can be researched (`TECHNOLOGY_DEFINITIONS` gives each its name and prerequisites).
+   * Research is a project on no site: paid in instalments after the budget, paused when the
+   * treasury cannot pay, and known from the quarter after its last instalment. One
+   * technology is researched at a time.
+   */
+  technologies: {
+    // Weather and drought move every region's harvest 30% less; a flood's water it does not
+    // hold back. It multiplies with irrigation where a region has both.
+    droughtResistantSeed: {
+      cost: 80,
+      researchQuarters: 4,
+      effects: { weatherAndDrought: 700 },
+      improves: {},
+    },
+    // The second tier improves what has been built, so it pays off only where the player
+    // has built it. An irrigation scheme then takes 60% off the weather's hold, not 50%.
+    improvedIrrigation: {
+      cost: 100,
+      researchQuarters: 4,
+      effects: {},
+      improves: { irrigation: { effects: { harvestWeather: 800 } } },
+    },
+    // A grain store then saves 40% of the reserve's spoilage, not 25%.
+    coldStorage: {
+      cost: 80,
+      researchQuarters: 3,
+      effects: {},
+      improves: { grainStore: { effects: { reserveSpoilage: 800 } } },
+    },
+    // The third tier. Trunk roads and ports carry a quarter more, so a chain held back by its
+    // road or its port ships more, and a port carries more grain across the border. A mine
+    // produces no more: a chain its mine holds back gains nothing.
+    roadEngineering: {
+      cost: 150,
+      researchQuarters: 5,
+      effects: {},
+      improves: {
+        trunkRoad: { capacityPermille: 250 },
+        port: { capacityPermille: 250 },
+        shallowPort: { capacityPermille: 250 },
+      },
+    },
+    // Power from a station, a dam among them, then adds 25% to a region's output, not 20%,
+    // and 18.7 points of infrastructure access, not 15.
+    gridEfficiency: {
+      cost: 150,
+      researchQuarters: 5,
+      effects: {},
+      improves: { powerStation: { powerPermille: 250 }, dam: { powerPermille: 250 } },
+    },
+    // The fourth tier, joining both branches. It does nothing of itself: it unlocks the dam
+    // (`SITE_TYPE_DEFINITIONS`), which pays off only where a country has a site for one.
+    // Improved irrigation, which it needs, improves irrigation schemes and not dams.
+    hydropower: {
+      cost: 200,
+      researchQuarters: 6,
+      effects: {},
+      improves: {},
+    },
+  } satisfies Record<Technology, TechnologyBalance>,
+  /**
+   * Surveys. A survey of a region is a project on no site, like research: it costs `cost`
+   * Money units, paid over the `surveyQuarters` it takes, and is paid for, paused and barred
+   * like any project. What it finds is the country file's: a hidden deposit, there or not by
+   * its likelihood, of a size somewhere in its range. A deposit's size is a whole number of
+   * `tonnesStep` tonnes of ore a quarter, from one step to `mostTonnes`.
+   */
+  surveys: {
+    // Cheap beside the mine it may reveal, so that a gamble on one is worth taking, but dear
+    // enough that surveying every region at once stretches an opening treasury.
+    cost: 40,
+    surveyQuarters: 2,
+    tonnesStep: 10_000,
+    mostTonnes: 1_500_000,
+  },
   /**
    * What power gives a region while a power line in use links it to a power station in use:
    * `outputPermille` thousandths more output, before anything a chain adds, and
@@ -857,7 +981,11 @@ export const balance = {
       // It begins in the planting season, two quarters before the harvest it spoils.
       conditions: { beginsInQuarters: [2] },
       endsAfterHarvest: true,
-      effects: { harvestPermille: 600, decaysSites: false },
+      effects: {
+        harvestPermille: 600,
+        decaysSites: false,
+        heldBy: ['harvestWeather', 'weatherAndDrought'],
+      },
       announcement: {
         begins: 'The rains have failed.',
         ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',
@@ -872,8 +1000,9 @@ export const balance = {
       endsAfterHarvest: true,
       // It takes less of the harvest than a drought, but the water damages every site in use
       // in the region: each decays until its upkeep is paid again. Irrigation softens what it
-      // does to the harvest as it softens the weather (`sites.irrigation.effects`).
-      effects: { harvestPermille: 700, decaysSites: true },
+      // does to the harvest as it softens the weather (`sites.irrigation.effects`), but
+      // drought-resistant seed does not.
+      effects: { harvestPermille: 700, decaysSites: true, heldBy: ['harvestWeather'] },
       announcement: {
         begins: 'The rivers have burst their banks.',
         ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',

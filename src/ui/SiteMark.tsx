@@ -1,10 +1,12 @@
 import {
   formatMoney,
   isInUseState,
+  listed,
   siteTerms,
   SITE_POWER_ROLES,
   SITE_STATE_NAMES,
   SITE_TYPE_NAMES,
+  technologyName,
   type Point,
   type Site,
   type SiteStatus,
@@ -32,6 +34,8 @@ const SYMBOLS: Readonly<Record<SiteType, string>> = {
   powerStation: 'M2,-7 L-4,1 H0 L-2,7 L4,-1 H0 Z',
   // A pylon with its two cross-arms.
   powerLine: 'M0,-7 L-5,7 M0,-7 L5,7 M-6,-3 H6 M-3,2 H3',
+  // A dam wall, with the water it holds back above it.
+  dam: 'M-5,7 L-3,-1 H3 L5,7 Z M-7,-4 C-5,-6 -3,-6 -1,-4 C1,-2 3,-2 5,-4 L7,-5',
 };
 
 /**
@@ -87,6 +91,7 @@ interface SiteMarkProps {
  * A missing link in the chain picked out wears a cross and a tag, and its route is dotted;
  * ringed, it also wears a broken ring, and its route's dots are larger.
  * A site closed by building on one of its alternatives is faded and struck through.
+ * A site locked until research is done is faded and dashed, and wears a padlock.
  */
 export function SiteMark(props: SiteMarkProps) {
   const { site, status, planned, palette, selected, missingLink, ringed, idle, closedBy } = props;
@@ -96,6 +101,8 @@ export function SiteMark(props: SiteMarkProps) {
   const decaying = status.state === 'decaying';
   const inUse = isInUseState(status.state);
   const closed = status.state === 'closed';
+  const locked = status.state === 'locked';
+  const needs = listed(status.lockedBy.map(technologyName));
   // A site not yet begun still has its whole cost to pay, so it says what that is.
   const cost = status.state === 'empty' ? formatMoney(siteTerms(site.type).cost) : null;
   const description = [
@@ -105,6 +112,7 @@ export function SiteMark(props: SiteMarkProps) {
     ...(underWay ? [`${progressOf(status)} quarters built`] : []),
     ...(cost === null ? [] : [cost]),
     ...(closed && closedBy !== null ? [`ruled out by ${closedBy}`] : []),
+    ...(locked ? [`needs ${needs} researched first`] : []),
     ...(missingLink ? ['missing link'] : []),
     ...(idle ? ['earning nothing: its chain is not complete'] : []),
   ].join(', ');
@@ -136,7 +144,13 @@ export function SiteMark(props: SiteMarkProps) {
         }
       }}
     >
-      <title>{cost === null ? site.name : `${site.name} · ${cost}`}</title>
+      <title>
+        {cost !== null
+          ? `${site.name} · ${cost}`
+          : locked
+            ? `${site.name} · locked: needs ${needs}`
+            : site.name}
+      </title>
       {site.form === 'route' && (
         <RouteLine
           route={site.route}
@@ -144,7 +158,7 @@ export function SiteMark(props: SiteMarkProps) {
           started={planned || underWay}
           missing={missingLink}
           bold={ringed}
-          closed={closed}
+          closed={closed || locked}
           power={SITE_POWER_ROLES[site.type] === 'line'}
           palette={palette}
           selected={selected}
@@ -166,21 +180,22 @@ export function SiteMark(props: SiteMarkProps) {
         <circle
           r="13"
           fill={inUse ? palette.siteLine : palette.site}
-          fillOpacity={inUse || selected ? 0.95 : closed ? 0.35 : 0.75}
+          fillOpacity={inUse || selected ? 0.95 : closed || locked ? 0.35 : 0.75}
           stroke={inUse ? palette.site : palette.siteLine}
           strokeWidth="1.5"
-          {...(status.state === 'empty' || closed ? { strokeDasharray: '3 3' } : {})}
+          {...(status.state === 'empty' || closed || locked ? { strokeDasharray: '3 3' } : {})}
         />
         <path
           d={SYMBOLS[site.type]}
           fill="none"
           stroke={inUse ? palette.site : palette.siteLine}
-          strokeOpacity={closed ? 0.45 : 1}
+          strokeOpacity={closed || locked ? 0.45 : 1}
           strokeWidth="1.5"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         {closed && <ClosedStrike palette={palette} />}
+        {locked && <Padlock palette={palette} />}
         {decaying && <WarningTriangle palette={palette} />}
         {missingLink && <MissingCross palette={palette} />}
       </g>
@@ -234,6 +249,37 @@ function ClosedStrike({ palette }: { readonly palette: MapPalette }) {
     <g className="map__site-closed" strokeLinecap="round">
       <path d="M-10,10 L10,-10" stroke={palette.tagBackground} strokeWidth="5" />
       <path d="M-10,10 L10,-10" stroke={palette.tagText} strokeWidth="2.5" />
+    </g>
+  );
+}
+
+/** The padlock worn at the top left of a site's marker while research must unlock it. */
+function Padlock({ palette }: { readonly palette: MapPalette }) {
+  return (
+    <g className="map__site-locked" transform="translate(-12,-12)">
+      <path
+        d="M-3.5,-1 V-4 A3.5,3.5 0 0 1 3.5,-4 V-1"
+        fill="none"
+        stroke={palette.tagBackground}
+        strokeWidth="4.5"
+      />
+      <path
+        d="M-3.5,-1 V-4 A3.5,3.5 0 0 1 3.5,-4 V-1"
+        fill="none"
+        stroke={palette.tagText}
+        strokeWidth="2"
+      />
+      <rect
+        x="-6"
+        y="-1.5"
+        width="12"
+        height="9"
+        rx="1.5"
+        fill={palette.tagBackground}
+        stroke={palette.tagText}
+        strokeWidth="1.5"
+      />
+      <path d="M0,1.5 V4" stroke={palette.tagText} strokeWidth="2" strokeLinecap="round" />
     </g>
   );
 }

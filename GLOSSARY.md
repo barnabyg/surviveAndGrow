@@ -16,7 +16,34 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 
 - **Site**: a place in the country file where one thing can be built: an irrigation scheme, a road,
   a port, a mine, a power station and so on.
-- **Project**: building on a site, from planning until it is in use.
+- **Project**: anything with a cost, a build time and a lasting effect, from planning until it is
+  finished: building on a site, until it is in use, research, until its technology is known, or
+  a survey, until its region is surveyed.
+- **Target**: what a project is for: a site, a technology or a region (`ProjectTarget` in
+  `src/sim/projects.ts`). Every project is paid for, paused and barred in the same way, whatever
+  its target.
+- **Technology**: one entry of the engine's technology tree, such as drought-resistant seed. It
+  has prerequisites, a cost, a research time and a lasting effect once **known**. The list is the
+  engine's (`TECHNOLOGIES` in `src/sim/vocabulary.ts`); a country file cannot add one. Not
+  "tech" or "upgrade".
+- **Improvement**: what a technology does for a type of site (`improves` in
+  `balance.technologies`): it leaves less of what the site's effect bears on, raises what the site
+  carries in a chain, or raises what a power station's power gives a region. It pays off only
+  where such a site is in use, and every figure it moves names it. Not "upgrade" or "bonus".
+- **Locked site**: a site that cannot be started until the technologies it needs are known: the
+  one that unlocks its type (a dam needs hydropower) and any its country file names in `needs`.
+  It is on the map, marked with a padlock, and is an empty site like any other once they are
+  known. Not "hidden", which is a deposit's state before a survey.
+- **Dam**: a type of site research unlocks. It is a power station that also lessens how far the
+  weather moves its own region's harvest, as irrigation does.
+- **Research**: the project that makes a technology known. It is on no site, needs no upkeep and
+  never decays, and one technology is researched at a time.
+- **Deposit**: ore a country file hides in a region (`deposits`): a mine and the trunk road that
+  would serve it, with a likelihood and a range of sizes. It is not on the map, and nothing can be
+  built on it, until a survey finds it; then its sites are built like any other. Whether it is
+  there, and its size, come from the seed and the deposit. Not "resource" or "field".
+- **Survey**: the project that finds out whether a region holds a deposit, and how large. It is
+  on no site, and a region is **surveyed** once, whatever it found.
 - **Chain**: sites that only earn together. A mine's chain is the mine, a trunk road and a port (or
   shallow port); the chain ships no more than its weakest link.
 - **Alternatives**: sites that play the same part in a chain, of which only one can be built.

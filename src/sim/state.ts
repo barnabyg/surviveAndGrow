@@ -16,7 +16,14 @@ import type { SiteSchedule } from './timeline';
 import type { TradeOrder, WorldPrices } from './trade';
 import type { RouteCarriage } from './tradeRoutes';
 import type { Figure, GameDate, Money, Range } from './types';
-import type { CreditRating, FoodStage, PriceShockType, Tier, Unrest } from './vocabulary';
+import type {
+  CreditRating,
+  FoodStage,
+  PriceShockType,
+  Technology,
+  Tier,
+  Unrest,
+} from './vocabulary';
 
 /** What is true of one region at one moment. National figures are derived from the regions. */
 export interface RegionState {
@@ -180,6 +187,20 @@ export interface Decisions {
    * may be started during austerity.
    */
   readonly startProjects?: readonly string[];
+  /**
+   * The technology to start researching this quarter, or null for none. Its prerequisites
+   * must be known, nothing else may be being researched, and the treasury must hold its whole
+   * cost beside that of the sites started. Its first instalment is paid as the quarter ends,
+   * after those of the sites. It may not be started during austerity.
+   */
+  readonly startResearch?: Technology | null;
+  /**
+   * The regions to start surveying this quarter, each once and only where the country file
+   * hides a deposit, never one surveyed before. The treasury must hold their whole cost beside
+   * that of the sites and the research started. Their first instalments are paid as the
+   * quarter ends, after the research's. None may be started during austerity.
+   */
+  readonly startSurveys?: readonly string[];
   /**
    * What to borrow this quarter, each from the menu of loans. The money arrives as the
    * quarter ends, and repayments begin the quarter after. Together with what is owed it must

@@ -7,6 +7,7 @@ import {
   livingStandards,
   regionName,
   regionPower,
+  siteOf,
   siteTerms,
   type Budget,
   type Country,
@@ -83,6 +84,7 @@ describe('the power sites', () => {
       cost: 300,
       buildQuarters: 5,
       upkeep: 5,
+      improvedBy: [],
       effect:
         'Powers each region a power line links to it: the region produces 20% more and gains 15.0 points of infrastructure access.',
       decayingEffect:
@@ -92,6 +94,7 @@ describe('the power sites', () => {
       cost: 60,
       buildQuarters: 2,
       upkeep: 1,
+      improvedBy: [],
       effect:
         'Brings power from a power station to its region: the region produces 20% more and gains 15.0 points of infrastructure access.',
       decayingEffect:
@@ -133,7 +136,7 @@ describe.each(countries)('power in %s', (_name, country) => {
       { budget, startProjects: [line.id, station.id] },
       ...quarters(3, { budget }),
     ]);
-    expect(early.state.projects.find((project) => project.siteId === line.id)?.status).toBe(
+    expect(early.state.projects.find((project) => siteOf(project) === line.id)?.status).toBe(
       'operating',
     );
     expect(
@@ -154,6 +157,8 @@ describe.each(countries)('power in %s', (_name, country) => {
       weakened: false,
       outputPermille: 200,
       infrastructurePermille: 150,
+      unimproved: { outputPermille: 200, infrastructurePermille: 150 },
+      improvedBy: [],
     });
   });
 
@@ -203,7 +208,7 @@ describe.each(countries)('power in %s', (_name, country) => {
     // A quarter without upkeep leaves both decaying from the next.
     const { state } = play(built.state, quarters(2, { budget: solvent(country(), 0) }));
 
-    expect(state.projects.find((project) => project.siteId === station.id)?.status).toBe(
+    expect(state.projects.find((project) => siteOf(project) === station.id)?.status).toBe(
       'decaying',
     );
     expect(regionPower(state).find((power) => power.regionId === line.regionId)).toMatchObject({
@@ -258,7 +263,7 @@ describe('a country file with power', () => {
     const file = withValue(testlandFile, ['sites', lineIndex, 'dependsOn'], ['alpha-store']);
 
     expect(faultsOf(file)).toEqual([
-      `sites[${lineIndex}].dependsOn must lead, directly or through other power lines, to a power station: a power line carries power only from one.`,
+      `sites[${lineIndex}].dependsOn must lead, directly or through other power lines, to a power station or dam: a power line carries power only from one.`,
     ]);
   });
 

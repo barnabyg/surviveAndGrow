@@ -4,6 +4,7 @@ import { spendingFault, taxOn, taxRateFault, type Budget } from './budget';
 import type { Country, Region, Site } from './country';
 import { join, type Json, type Reader } from './countryReader';
 import { levelRepaymentOf, type StartingLoan } from './debt';
+import { technologiesNeeded } from './sites';
 import { formatMoney, formatPercent } from './text';
 import type { Money } from './types';
 import { upkeepForEvery } from './upkeep';
@@ -14,7 +15,7 @@ import { SPENDING_AREAS, type SpendingArea } from './vocabulary';
  * is held to the same rules as a budget the player sets. Upkeep may be left out: the game
  * then starts with enough to keep in good repair every one of the country's sites that can
  * stand together, which costs nothing until they are built, since upkeep is spent only as
- * far as it is needed.
+ * far as it is needed. A site locked until research is done is left out of it.
  */
 function readBudget(reader: Reader, budget: Json, path: string, sites: readonly Site[]): Budget {
   const spendingPath = join(path, 'spending');
@@ -30,7 +31,8 @@ function readBudget(reader: Reader, budget: Json, path: string, sites: readonly 
   const spending = Object.fromEntries(
     SPENDING_AREAS.map((area) => {
       if (area === 'upkeep' && written.upkeep === undefined) {
-        return [area, upkeepForEvery(costliestTogether(sites).map((site) => site.type))];
+        const open = sites.filter((site) => technologiesNeeded(site).length === 0);
+        return [area, upkeepForEvery(costliestTogether(open).map((site) => site.type))];
       }
       const before = reader.faults.length;
       const amount = reader.money(written, area, spendingPath);

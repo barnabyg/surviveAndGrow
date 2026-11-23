@@ -5,17 +5,19 @@
   gap: 16px;
 }
 
+/* Six tabs share the column: each takes the room its words need, and a note too long for
+   its share wraps onto a second line rather than being cut short. */
 .tabs {
   display: grid;
-  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-columns: auto;
   grid-auto-flow: column;
-  gap: 4px;
+  gap: 2px;
   border-bottom: 1px solid var(--line);
 }
 
 .tab {
   min-width: 0;
-  padding: 6px 6px 8px;
+  padding: 6px 4px 8px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -54,11 +56,9 @@
 
 .tab__note {
   max-width: 100%;
-  overflow: hidden;
   font-size: 12px;
+  line-height: 1.3;
   color: var(--label);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tab__note--pending {

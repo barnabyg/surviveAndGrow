@@ -5,8 +5,12 @@ import {
   austerityStatus,
   debtStatus,
   electionStatus,
+  knownTechnologies,
+  loadCountry,
   loadSave,
   pendingDilemma,
+  priceStatus,
+  siteOf,
   siteStatus,
   termRecords,
   victoryStatus,
@@ -20,6 +24,9 @@ import format5Save from '../saves/format-5.json';
 import format6Save from '../saves/format-6.json';
 import format7Save from '../saves/format-7.json';
 import format8Save from '../saves/format-8.json';
+import format9Save from '../saves/format-9.json';
+import format10Save from '../saves/format-10.json';
+import format11Save from '../saves/format-11.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './playing';
 
@@ -51,7 +58,7 @@ describe('the save kept from save format 1', () => {
     expect(game.events).toEqual([
       { type: 'drought', regionId: 'dry-east', began: { year: 1, quarter: 2 } },
     ]);
-    expect(game.projects.map((project) => [project.siteId, project.status])).toEqual([
+    expect(game.projects.map((project) => [siteOf(project), project.status])).toEqual([
       ['lowmere-store', 'operating'],
       ['lowmere-road', 'operating'],
       ['lowmere-irrigation', 'building'],
@@ -366,7 +373,7 @@ describe('the save kept from save format 6', () => {
       game.debts.map((debt) => [debt.kind, debt.borrowed, debt.owed, debt.quartersLeft]),
     ).toEqual([['bailout', 296, 279, 15]]);
     expect(game.budget.taxRatePercent).toBe(25);
-    expect(game.projects.map((project) => [project.siteId, project.status])).toEqual([
+    expect(game.projects.map((project) => [siteOf(project), project.status])).toEqual([
       ['lowmere-irrigation', 'building'],
     ]);
     expect(report?.entries.map((entry) => entry.kind)).toContain('projectStarted');
@@ -452,7 +459,7 @@ describe('the save kept from save format 8', () => {
 
     expect(game.date).toEqual({ year: 1, quarter: 4 });
     expect(game.worldPrices).toEqual({ grain: [240, 223, 209, 247], ore: [100, 107, 96, 99] });
-    expect(game.projects.map((project) => [project.siteId, project.status])).toEqual([
+    expect(game.projects.map((project) => [siteOf(project), project.status])).toEqual([
       ['korr-mine', 'building'],
     ]);
     expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
@@ -490,5 +497,164 @@ describe('the save kept from save format 8', () => {
     const { game } = loadSave(format8Save);
 
     expect(game.tradeCarried).toEqual([]);
+  });
+});
+
+describe('the save kept from save format 9', () => {
+  it('still opens on the game it was written from, with two world price shocks announced', () => {
+    const { game, report } = loadSave(format9Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 3 });
+    expect(game.priceShocks).toEqual([
+      {
+        type: 'failedHarvestsAbroad',
+        announced: { year: 1, quarter: 2 },
+        begins: { year: 1, quarter: 4 },
+      },
+      { type: 'oreGlut', announced: { year: 1, quarter: 2 }, begins: { year: 1, quarter: 4 } },
+    ]);
+    expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
+  });
+
+  it('plays on, each shock moving its price as it begins', () => {
+    const { game } = loadSave(format9Save);
+
+    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
+
+    expect(priceStatus(state, 'grain').figure?.contributions).toContainEqual({
+      label: 'Failed harvests abroad',
+      amount: 36,
+    });
+    expect(priceStatus(state, 'ore').figure?.contributions).toContainEqual({
+      label: 'Ore glut',
+      amount: -20,
+    });
+    expect(report.entries.map((entry) => entry.headline)).toContain(
+      'Ore glut pushes the world ore price down',
+    );
+  });
+
+  it('remembers what each trade link carried in the quarter before it was saved', () => {
+    const { game } = loadSave(format9Save);
+
+    // The 20,000 t bought in its second quarter crossed the border at Korr Pass.
+    expect(game.tradeCarried).toEqual([{ routeId: 'korr-pass', ore: 0, grain: 20_000 }]);
+  });
+
+  it('refuses what was carried by a link the country does not have, or one listed twice', () => {
+    const unknown = withValue(format9Save, ['state', 'tradeCarried', 0, 'routeId'], 'nowhere');
+    const doubled = withValue(
+      format9Save,
+      ['state', 'tradeCarried'],
+      [
+        { routeId: 'korr-pass', ore: 0, grain: 1000 },
+        { routeId: 'korr-pass', ore: 0, grain: 1000 },
+      ],
+    );
+    const negative = withValue(format9Save, ['state', 'tradeCarried', 0, 'grain'], -1000);
+
+    expect(() => loadSave(unknown)).toThrow(/state\.tradeCarried\[0\]\.routeId/);
+    expect(() => loadSave(doubled)).toThrow(/state\.tradeCarried lists one trade link twice/);
+    expect(() => loadSave(negative)).toThrow(/state\.tradeCarried\[0\]\.grain/);
+  });
+
+  it('refuses a shock the game does not have, or two of one kind', () => {
+    const unknown = withValue(format9Save, ['state', 'priceShocks', 0, 'type'], 'locusts');
+    const twice = withValue(format9Save, ['state', 'priceShocks', 1, 'type'], 'oreGlut');
+    const doubled = withValue(twice, ['state', 'priceShocks', 0, 'type'], 'oreGlut');
+
+    expect(() => loadSave(unknown)).toThrow(/state\.priceShocks\[0\]\.type/);
+    expect(() => loadSave(doubled)).toThrow(/state\.priceShocks holds two shocks of one kind/);
+  });
+
+  it('is lifted to format 10 with each project naming the site it is on', () => {
+    const { game } = loadSave(format9Save);
+
+    expect(game.projects.map((project) => project.target)).toEqual([
+      { kind: 'site', siteId: 'korr-mine' },
+    ]);
+  });
+});
+
+describe('the save kept from save format 10', () => {
+  it('still opens on the game it was written from, a site in use and decaying and another paused', () => {
+    const { game, report } = loadSave(format10Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(game.projects.map((project) => [project.target, project.status])).toEqual([
+      [{ kind: 'site', siteId: 'lowmere-store' }, 'decaying'],
+      [{ kind: 'site', siteId: 'lowmere-irrigation' }, 'paused'],
+    ]);
+    expect(report?.entries.map((entry) => entry.headline)).toContain('Paused: Lowmere irrigation');
+  });
+
+  it('plays on, building where it left off once the treasury can pay', () => {
+    const { game } = loadSave(format10Save);
+
+    const decisions = answering(
+      game,
+      // Every tax the country can bear and nothing spent but upkeep, so the treasury grows.
+      steward(game, {
+        taxRatePercent: 40,
+        spending: {
+          agriculture: 0,
+          foodRelief: 0,
+          health: 0,
+          education: 0,
+          security: 0,
+          upkeep: 200,
+        },
+      }),
+    );
+    const { state, report } = advanceQuarter(game, decisions);
+
+    expect(state.projects.map((project) => [project.quartersPaid, project.status])).toEqual([
+      [2, 'operating'],
+      [2, 'building'],
+    ]);
+    expect(report.entries.map((entry) => entry.headline)).toContain(
+      'Building resumes: Lowmere irrigation',
+    );
+  });
+
+  it('is lifted to format 11 as it was, knowing no technology', () => {
+    const { game } = loadSave(format10Save);
+
+    expect(game.projects.every((project) => project.target.kind === 'site')).toBe(true);
+    expect(game.projects.map((project) => project.status)).toEqual(['decaying', 'paused']);
+  });
+});
+
+describe('the save kept from save format 11', () => {
+  it('still opens on the game it was written from, a site in use and research under way', () => {
+    const { game } = loadSave(format11Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(
+      game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+    ).toEqual([
+      [{ kind: 'site', siteId: 'lowmere-store' }, 'operating', 2],
+      [{ kind: 'technology', technology: 'droughtResistantSeed' }, 'building', 3],
+    ]);
+    expect(knownTechnologies(game.projects)).toEqual([]);
+  });
+
+  it('plays on, the research finishing and the seed known from the next quarter', () => {
+    const { game } = loadSave(format11Save);
+
+    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
+
+    expect(report.entries.map((entry) => entry.headline)).toContain(
+      'Research finished: Drought-resistant seed',
+    );
+    expect(state.projects[1]).toMatchObject({ status: 'known', opened: state.date });
+    expect(knownTechnologies(state.projects)).toEqual(['droughtResistantSeed']);
+  });
+
+  it('is lifted to format 12 as it was, having surveyed nothing and found no deposit', () => {
+    const { game } = loadSave(format11Save);
+
+    expect(game.projects.some((project) => project.target.kind === 'survey')).toBe(false);
+    expect(game.country.sites).toEqual(loadCountry(game.country.source).sites);
   });
 });

@@ -92,9 +92,30 @@ export function testlandFormat5File(): unknown {
 
 /** Testland's file as format 6 could write it: no world price shock ever comes. */
 export function testlandFormat6File(): unknown {
-  const file = structuredClone(testlandFile) as Chances;
+  const file = testlandFormat7File() as Chances;
   delete file.priceShockLikelihood;
   file.formatVersion = 6;
+  return file;
+}
+
+/** Testland's file as format 7 could write it: it hides no deposit for a survey to find. */
+export function testlandFormat7File(): unknown {
+  const file = testlandFormat8File() as Chances & { deposits?: unknown };
+  delete file.deposits;
+  file.formatVersion = 7;
+  return file;
+}
+
+/**
+ * Testland's file as format 8 could write it: it has no dam, and no site that needs a
+ * technology, since naming either needs format 9.
+ */
+export function testlandFormat8File(): unknown {
+  const file = structuredClone(testlandFile) as Chances & {
+    sites: { type: string; needs?: string }[];
+  };
+  file.sites = file.sites.filter((site) => site.type !== 'dam' && site.needs === undefined);
+  file.formatVersion = 8;
   return file;
 }
 

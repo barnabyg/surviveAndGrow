@@ -140,7 +140,6 @@ function rich(file: unknown, glut: number): Country {
   const calm = withDroughtChance(copy, {});
   return loadCountry({
     ...(calm.source as object),
-    formatVersion: 7,
     priceShockLikelihood: { oreGlut: glut },
   });
 }

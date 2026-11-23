@@ -59,10 +59,34 @@ export function MapLegend() {
         Closed by an alternative
       </li>
       <li>
+        <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+          <circle
+            r="5"
+            cx="1.5"
+            cy="1.5"
+            fill="none"
+            stroke="currentColor"
+            strokeOpacity="0.5"
+            strokeWidth="1.5"
+            strokeDasharray="2.5 2.5"
+          />
+          <path d="M-6,-3 V-5 A2.5,2.5 0 0 1 -1,-5 V-3" fill="none" stroke="currentColor" />
+          <rect x="-7" y="-3" width="7" height="5" rx="1" fill="currentColor" />
+        </svg>
+        Locked: research must unlock it first
+      </li>
+      <li>
         <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
           <path d="M1,8 H25" stroke="currentColor" strokeWidth="2" strokeDasharray="7 5" />
         </svg>
         Possible route
+      </li>
+      <li>
+        <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+          <circle cx="-1.5" cy="-1.5" r="3.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M1,1 L5,5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        Not yet surveyed: a deposit may lie there (filled while a survey is under way)
       </li>
       <li>
         <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">

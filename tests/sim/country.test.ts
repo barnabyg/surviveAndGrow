@@ -18,6 +18,7 @@ import {
   testlandFormat3File,
   testlandFormat4File,
   testlandFormat5File,
+  testlandFormat7File,
   testlandInDebt,
 } from './countries';
 import { faultsOf, valueAt, withValue, without } from './files';
@@ -26,7 +27,7 @@ describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
     const country = tavara();
 
-    expect(tavaraAsShipped().formatVersion).toBe(7);
+    expect(tavaraAsShipped().formatVersion).toBe(9);
     expect(country.regions.map((region) => [region.name, region.terrain])).toEqual([
       ['Korr Highlands', 'highlands'],
       ['Salt Coast', 'coast'],
@@ -70,6 +71,7 @@ describe('a valid country file', () => {
       ['Power line, Korr Falls to Arden', 'powerLine', 'arden-vale', 'route'],
       ['Power line, Korr Falls to Lowmere', 'powerLine', 'lowmere-plains', 'route'],
       ['Power line, Korr Falls to Korrgate', 'powerLine', 'korr-highlands', 'route'],
+      ['Korr Falls dam', 'dam', 'korr-highlands', 'place'],
     ]);
   });
 
@@ -194,6 +196,31 @@ describe('a valid country file', () => {
           [788, 292],
         ],
       },
+      {
+        id: 'sand-dam',
+        type: 'dam',
+        name: 'Sandreach dam',
+        regionId: 'sandreach',
+        dependsOn: [],
+        alternatives: [],
+        form: 'place',
+        at: [640, 330],
+      },
+      {
+        id: 'sand-dam-line',
+        type: 'powerLine',
+        name: 'Power line, Sandreach dam to Sandreach',
+        regionId: 'sandreach',
+        dependsOn: ['sand-dam'],
+        alternatives: [],
+        needs: 'hydropower',
+        form: 'route',
+        route: [
+          [648, 342],
+          [668, 400],
+          [705, 455],
+        ],
+      },
     ]);
   });
 });
@@ -204,6 +231,7 @@ describe('the types of site', () => {
       cost: 120,
       buildQuarters: 3,
       upkeep: 4,
+      improvedBy: [],
       effect: 'Weather, drought and flood move its region’s harvest 50% less.',
       decayingEffect: 'Weather, drought and flood move its region’s harvest 25% less.',
     });
@@ -211,6 +239,7 @@ describe('the types of site', () => {
       cost: 100,
       buildQuarters: 3,
       upkeep: 3,
+      improvedBy: [],
       effect: '50% less of its region’s surplus is lost on the way to the national reserve.',
       decayingEffect:
         '25% less of its region’s surplus is lost on the way to the national reserve.',
@@ -219,6 +248,7 @@ describe('the types of site', () => {
       cost: 60,
       buildQuarters: 2,
       upkeep: 2,
+      improvedBy: [],
       effect: '25% less of the national reserve spoils each quarter.',
       decayingEffect: '13% less of the national reserve spoils each quarter.',
     });
@@ -229,6 +259,7 @@ describe('the types of site', () => {
       cost: 400,
       buildQuarters: 6,
       upkeep: 6,
+      improvedBy: [],
       effect:
         'Ships 600,000 t of ore a quarter, worth $60.0m at the usual world ore price, to add to its region’s output, but only while its chain to a port is complete.',
       decayingEffect:
@@ -238,6 +269,7 @@ describe('the types of site', () => {
       cost: 300,
       buildQuarters: 5,
       upkeep: 5,
+      improvedBy: [],
       effect: 'Carries up to 720,000 t of a mine’s ore a quarter along its chain.',
       decayingEffect: 'Carries up to 360,000 t of a mine’s ore a quarter along its chain.',
     });
@@ -245,6 +277,7 @@ describe('the types of site', () => {
       cost: 500,
       buildQuarters: 8,
       upkeep: 8,
+      improvedBy: [],
       effect:
         'Ships up to 900,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
       decayingEffect:
@@ -254,6 +287,7 @@ describe('the types of site', () => {
       cost: 250,
       buildQuarters: 5,
       upkeep: 4,
+      improvedBy: [],
       effect:
         'Ships up to 360,000 t a quarter across the border: a mine’s ore first, and grain bought or sold abroad in what is left.',
       decayingEffect:
@@ -365,7 +399,7 @@ describe('a country file in format 3', () => {
   it('may mark sites as alternatives, each ruling out the other whichever side says so', () => {
     const country = testland();
 
-    expect(country.formatVersion).toBe(7);
+    expect(country.formatVersion).toBe(9);
     expect(valueAt(testlandFile, ['sites', 5, 'alternatives'])).toBeUndefined();
     expect(country.sites.map((site) => [site.id, site.alternatives])).toEqual([
       ['north-irrigation', []],
@@ -378,6 +412,8 @@ describe('a country file in format 3', () => {
       ['north-station', []],
       ['north-power-line', []],
       ['sand-power-line', []],
+      ['sand-dam', []],
+      ['sand-dam-line', []],
     ]);
     // Saying so on both sides says nothing more.
     const both = withValue(testlandFile, ['sites', 5, 'alternatives'], ['alpha-quay']);
@@ -390,7 +426,7 @@ describe('a country file in format 3', () => {
     const withoutQuay = withValue(
       withValue(testlandFormat3File(), ['formatVersion'], 2),
       ['sites'],
-      (valueAt(testlandFile, ['sites']) as { id: string }[]).filter(
+      (valueAt(testlandFormat3File(), ['sites']) as { id: string }[]).filter(
         (site) => site.id !== 'alpha-quay',
       ),
     );
@@ -447,7 +483,7 @@ describe('a country file in format 4', () => {
   it('may say the loans the game starts with, each with its own terms', () => {
     const country = testlandInDebt();
 
-    expect(country.formatVersion).toBe(7);
+    expect(country.formatVersion).toBe(9);
     expect(country.start.loans).toEqual([
       { owed: 70, annualRateBasisPoints: 700, quarters: 8 },
       { owed: 40, annualRateBasisPoints: 950, quarters: 12 },
@@ -656,9 +692,9 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it is written for another version of the format', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 8);
+    const file = withValue(testlandFile, ['formatVersion'], 10);
 
-    expect(faultsOf(file)).toEqual(['formatVersion is 8, but this game reads versions 1 to 7.']);
+    expect(faultsOf(file)).toEqual(['formatVersion is 10, but this game reads versions 1 to 9.']);
   });
 
   it('when its format version is not a number', () => {
@@ -748,14 +784,14 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it has no regions', () => {
-    const empty = withValue(withValue(testlandFile, ['regions'], []), ['settlements'], []);
+    const empty = withValue(withValue(testlandFormat7File(), ['regions'], []), ['settlements'], []);
     const file = withValue(empty, ['sites'], []);
 
     expect(faultsOf(file)).toEqual(['regions must list at least one region.']);
   });
 
   it('when it lists no sites at all', () => {
-    const file = without(testlandFile, ['sites']);
+    const file = without(testlandFormat7File(), ['sites']);
 
     expect(faultsOf(file)).toEqual(['sites is missing.']);
   });
@@ -764,7 +800,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
     const file = withValue(testlandFile, ['sites', 0, 'type'], 'airport');
 
     expect(faultsOf(file)).toEqual([
-      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port, shallowPort, powerStation, powerLine.',
+      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port, shallowPort, powerStation, powerLine, dam.',
     ]);
   });
 

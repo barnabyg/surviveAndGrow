@@ -1,4 +1,11 @@
-import { formatTonnes, tradeRoutes, type GameState, type TradeOrder } from '../sim';
+import {
+  formatTonnes,
+  listed,
+  technologyName,
+  tradeRoutes,
+  type GameState,
+  type TradeOrder,
+} from '../sim';
 import { routeTitle } from './TradeRouteMark';
 import './map-card.css';
 
@@ -22,7 +29,11 @@ export function TradeRouteCard({ game, routeId, plannedTrade, onClose }: TradeRo
   const neighbour = game.country.map.neighbours.find(
     (candidate) => candidate.id === crossing?.neighbourId,
   );
-  const capacity = formatTonnes(route.capacity);
+  // A technology that makes the lane carry more is named beside what it carries.
+  const capacity =
+    route.improvedBy.length === 0
+      ? formatTonnes(route.capacity)
+      : `${formatTonnes(route.capacity)} (${formatTonnes(route.unimproved)} without ${listed(route.improvedBy.map(technologyName))})`;
   const kind = route.kind === 'crossing' ? 'Border crossing' : 'Shipping lane';
   const { carried, planned } = route;
   const rows: [label: string, last: number, now: number][] = [
@@ -80,8 +91,9 @@ export function TradeRouteCard({ game, routeId, plannedTrade, onClose }: TradeRo
             </tbody>
           </table>
           <p className="map-card__note" role="status">
-            Capacity {capacity} a quarter: {formatTonnes(route.capacity - planned.total)} of it free
-            this quarter, with the mines’ ore and the grain ordered so far.
+            Capacity {formatTonnes(route.capacity)} a quarter:{' '}
+            {formatTonnes(route.capacity - planned.total)} of it free this quarter, with the mines’
+            ore and the grain ordered so far.
           </p>
         </>
       )}

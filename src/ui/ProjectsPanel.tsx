@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   buildingBarred,
+  knownTechnologies,
   SITE_TYPE_NAMES,
   formatMoney,
   siteStatus,
   siteTerms,
-  startFault,
+  onSite,
+  planFault,
   termCalendar,
   type GameState,
   type Preview,
+  type ProjectPlan,
   type Site,
   type SiteStatus,
+  type Technology,
   formatQuarters,
 } from '../sim';
 import { opening } from './schedule';
@@ -24,6 +28,8 @@ interface ProjectsPanelProps {
   readonly preview: Preview;
   /** The sites the player means to start building on when the quarter ends. */
   readonly plannedSiteIds: readonly string[];
+  /** Everything the player means to start this quarter, which the treasury must cover too. */
+  readonly plan: ProjectPlan;
   /** Plans building on a site this quarter, or takes the plan back. */
   readonly onPlan: (siteId: string, planned: boolean) => void;
 }
@@ -51,7 +57,8 @@ export function projectsTab(game: GameState, plannedSiteIds: readonly string[]):
  * what they will do. Below them is every empty site the treasury can cover now, on top of
  * whatever is already planned for this quarter.
  */
-export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: ProjectsPanelProps) {
+export function ProjectsPanel(props: ProjectsPanelProps) {
+  const { game, preview, plannedSiteIds, plan, onPlan } = props;
   const [browsing, setBrowsing] = useState(false);
   const sites = game.country.sites.map((site) => ({
     site,
@@ -66,11 +73,10 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
   );
   // Austerity forbids starting anything, whatever the treasury holds.
   const barred = buildingBarred(game);
+  const locked = sites.filter(({ status }) => status.state === 'locked').length;
   const affordable = sites.filter(
     ({ site, status, planned }) =>
-      status.state === 'empty' &&
-      !planned &&
-      startFault(game, [...plannedSiteIds, site.id]) === null,
+      status.state === 'empty' && !planned && planFault(game, plan, onSite(site.id)) === null,
   );
 
   // When each opens is the simulation's to say, so the list agrees with the timeline.
@@ -91,6 +97,7 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
         <ProjectCard
           key={site.id}
           site={site}
+          known={knownTechnologies(game.projects)}
           status={status}
           planned={planned}
           opens={openingOf(site.id)}
@@ -131,8 +138,12 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
             {affordable.length === 0
               ? sites.some(({ status, planned }) => status.state === 'empty' && !planned)
                 ? 'The treasury does not hold the whole cost of any empty site.'
-                : 'Every site is built on or spoken for.'
+                : locked > 0
+                  ? 'Every site open to building is built on or spoken for.'
+                  : 'Every site is built on or spoken for.'
               : `${affordable.length} affordable now`}
+            {locked > 0 &&
+              ` · ${locked} locked until research unlocks ${locked === 1 ? 'it' : 'them'}`}
           </span>
         </div>
       )}
@@ -155,6 +166,8 @@ export function ProjectsPanel({ game, preview, plannedSiteIds, onPlan }: Project
 
 interface ProjectCardProps {
   readonly site: Site;
+  /** The technologies known, which may improve what the site does. */
+  readonly known: readonly Technology[];
   readonly status: SiteStatus;
   readonly planned: boolean;
   /** When it opens as things stand, such as "next quarter", or null if it has no schedule. */
@@ -165,8 +178,9 @@ interface ProjectCardProps {
 }
 
 /** One project under way or planned: how far it has got, as a bar and in words. */
-function ProjectCard({ site, status, planned, opens, unpaid, onCancel }: ProjectCardProps) {
-  const { effect } = siteTerms(site.type);
+function ProjectCard(props: ProjectCardProps) {
+  const { site, known, status, planned, opens, unpaid, onCancel } = props;
+  const { effect } = siteTerms(site.type, site.capacity, known);
   return (
     <div className="project" role="group" aria-label={site.name}>
       <div className="project__head">
@@ -269,7 +283,7 @@ function ProjectCatalogue({ game, sites, onPlan, onClose }: ProjectCatalogueProp
       </p>
       <div className="catalogue__kinds">
         {kinds.map(({ type, sites: ofKind }) => {
-          const terms = siteTerms(type);
+          const terms = siteTerms(type, undefined, knownTechnologies(game.projects));
           const titleId = `catalogue-${type}`;
           return (
             <section key={type} className="catalogue__kind" aria-labelledby={titleId}>

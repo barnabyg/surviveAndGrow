@@ -5,7 +5,7 @@ import { balance } from './balance';
 import { nextDate } from './calendar';
 import { regionName } from './country';
 import { defeatChancePermille, electionStatus } from './election';
-import { damagesSites, eventName, eventsThatMayBegin, harvestCutBy } from './events';
+import { damagesSites, eventName, eventsThatMayBegin, harvestCutBy, holdsIn } from './events';
 import { bailoutRisk, bondsAhead, creditRisk, maturityRisk, treasuryRisk } from './financeRisks';
 import { checkDecisions } from './decisions';
 import { resolveQuarter } from './game';
@@ -180,6 +180,7 @@ function play(
             ...decisions,
             budget: withinAusterity(state, decisions.budget),
             startProjects: [],
+            startResearch: null,
             borrow: [],
             trade: [],
             dilemmaChoice: null,
@@ -270,7 +271,7 @@ function eventRisk(scope: Scope): Risk[] {
     .map((event) => {
       const index = state.country.regions.findIndex((region) => region.id === event.regionId);
       const name = eventName(event.type);
-      const cut = harvestCutBy(event.type, sites.inRegion.harvestWeather[index] ?? 1000);
+      const cut = harvestCutBy(event.type, holdsIn(sites, index)[event.type]);
       const percent = Math.round(event.chance * 100);
       const names = sitesInUse(state)
         .filter((inUse) => inUse.site.regionId === event.regionId)

@@ -17,6 +17,7 @@ import {
   endEventsAfterHarvest,
   eventsLeave,
   holdOn,
+  holdsIn,
   rollEvents,
   rollWeather,
   siteDamageOf,
@@ -25,7 +26,8 @@ import {
 import { foodSituation, forecastFood, reliefFor, resolveFood, withExported } from './food';
 import { vitalSigns } from './history';
 import { quartersToHarvest, resolveMoney, withTraded } from './money';
-import { siteEffects } from './projects';
+import { withFinds } from './deposits';
+import { siteEffects, sitesAmong } from './projects';
 import { prosperityFigure, prosperityStatus, resolveServices } from './prosperity';
 import { pushesInto, rollPriceShocks, turnShocks } from './priceShocks';
 import { compileReport, type ReportEntry } from './report';
@@ -166,7 +168,7 @@ export function resolveQuarter(
     ...(passed === null ? [] : [passed]),
     ...ended.map((event) => endEntry(state.country, event)),
     ...begun.map((event) =>
-      beginEntry(state.country, event, holdOn(state.country, upkept.projects, event.regionId)),
+      beginEntry(state.country, event, holdOn(state.country, upkept.projects, event)),
     ),
     ...damaged.entries,
     ...shocks.entries,
@@ -176,6 +178,8 @@ export function resolveQuarter(
   return {
     state: {
       ...state,
+      // A deposit a survey found this quarter is on the map, to be built, from the next.
+      country: withFinds(state.country, damaged.projects, state.seed),
       date,
       treasury: finances.treasury,
       // A bailout brings the budget in force within the austerity it imposes.
@@ -246,7 +250,7 @@ export function resolveQuarter(
       entries: compileReport(entries),
     },
     spendingCut: budget.cut,
-    pausedSites: building.paused,
+    pausedSites: sitesAmong(building.paused),
     upkeepShort: finances.upkeep.short,
     missedPayment: serviced.missed,
     missedOn: serviced.missedOn,
@@ -420,7 +424,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
         state.events,
         region.id,
         quarter,
-        atHarvest.inRegion.harvestWeather[index] ?? 1000,
+        holdsIn(atHarvest, index),
       ),
     ),
     bestHarvestPermille: eventsLeave(state, atHarvest),
@@ -443,13 +447,13 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     debtBurden: { min: lived.debtBurdenAt(high), max: lived.debtBurdenAt(low) },
     creditRating: credit.credit.rating,
     creditScore: exactly(credit.after.score),
-    pausedSites: building.paused,
+    pausedSites: sitesAmong(building.paused),
     upkeep: {
       needed: finances.upkeep.needed,
       spent: finances.upkeep.spent,
       short: finances.upkeep.short,
     },
-    schedule: scheduleAhead(state, decisions.startProjects ?? [], building.paused),
+    schedule: scheduleAhead(state, decisions.startProjects ?? [], sitesAmong(building.paused)),
     balance: exactly(finances.balance),
     treasury: exactly(finances.treasury),
     spendingCut: finances.cut,

@@ -80,6 +80,21 @@ drought or a flood does not starve a region first.
   pushes the ore price down, for three quarters. Each is announced two quarters ahead, in the
   report, under the price and among the risks: stock the reserve before grain grows dear, and don't
   borrow against the mine before its ore cheapens.
+- **Research for the long run.** The research tab holds the technology tree. Research is a
+  project with no site, paid in instalments like a site and known for good once finished; one
+  technology is researched at a time. Drought-resistant seed makes weather and drought move every
+  region's harvest less. What builds on it improves what you have built: irrigation schemes, grain
+  stores, trunk roads and ports, and power stations each do more, but only where one is in use.
+  Each technology says what it would improve in your game, and a site's card, the breakdowns
+  and the infrastructure lens name the technology behind each figure it moves. Hydropower unlocks the dam: until then a dam's site is locked,
+  marked with a padlock, and its card names the research it needs.
+- **A dam does two jobs.** It powers the regions its lines reach, like a power station, and
+  steadies its own region's harvest. It is dear and slow to build, and in Tavara it is an
+  alternative to the Korr Falls power station: build one or the other.
+- **Survey for ore.** A region marked with a magnifying glass may hide a deposit. Its card shows
+  what a survey costs, how likely it is to find one and how large it could be; if it finds one,
+  a new mine and road appear on the map, earning what the survey found once their chain reaches a
+  port. A region is surveyed once, and the same seed always finds the same.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
@@ -121,7 +136,8 @@ The rules as built, one heading per mechanic, are in [docs/rules.md](docs/rules.
 ## Write a country
 
 A country is one data file; the engine contains no country-specific code. The format, and how to
-try a country of your own with `?country=`, are in [docs/countries.md](docs/countries.md).
+try a country of your own with `?country=`, are in [docs/countries.md](docs/countries.md). A
+country can hide deposits of ore for surveys to find, and lock a site until a technology is known.
 
 ## Check it
 

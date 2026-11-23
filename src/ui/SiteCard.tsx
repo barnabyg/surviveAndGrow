@@ -6,6 +6,8 @@ import {
   formatMoney,
   formatPrice,
   formatTonnes,
+  knownTechnologies,
+  listed,
   oreEarnings,
   oreTonnesOf,
   portTonnesOf,
@@ -18,14 +20,17 @@ import {
   SITE_TYPE_NAMES,
   siteStatus,
   siteTerms,
-  startFault,
+  onSite,
+  planFault,
   termCalendar,
+  technologyName,
   tradeCapacity,
   UPKEEP_ORDER_RULE,
   type Chain,
   type GameState,
   type SiteSchedule,
   formatQuarters,
+  type ProjectPlan,
 } from '../sim';
 import { formatDate } from './format';
 import { opening } from './schedule';
@@ -38,6 +43,8 @@ interface SiteCardProps {
   readonly siteId: string;
   /** The sites the player means to start building on when the quarter ends. */
   readonly plannedSiteIds: readonly string[];
+  /** Everything the player means to start this quarter, which the treasury must cover too. */
+  readonly plan: ProjectPlan;
   /** When each project is built and in use, as the decisions in force will leave it. */
   readonly schedule: readonly SiteSchedule[];
   /** The sites whose instalment the treasury will not cover this quarter. */
@@ -55,11 +62,13 @@ interface SiteCardProps {
  * the plan can be taken back.
  */
 export function SiteCard(props: SiteCardProps) {
-  const { game, siteId, plannedSiteIds, schedule, pausedSites, upkeepShort, onPlan, onClose } =
-    props;
+  const { game, siteId, plannedSiteIds, plan, schedule, pausedSites, upkeepShort } = props;
+  const { onPlan, onClose } = props;
   const site = game.country.sites.find((candidate) => candidate.id === siteId);
   if (!site) return null;
-  const terms = siteTerms(site.type);
+  const known = knownTechnologies(game.projects);
+  // What it does counts the technologies known that improve it, and names them.
+  const terms = siteTerms(site.type, site.capacity, known);
   const status = siteStatus(game, site.id);
   const planned = plannedSiteIds.includes(site.id);
   const underWay = status.state === 'building' || status.state === 'paused';
@@ -76,7 +85,7 @@ export function SiteCard(props: SiteCardProps) {
   const rivals = listed(site.alternatives.map(nameOf));
   // An empty site can be started unless the treasury cannot cover it with what is planned.
   const fault =
-    status.state === 'empty' && !planned ? startFault(game, [...plannedSiteIds, site.id]) : null;
+    status.state === 'empty' && !planned ? planFault(game, plan, onSite(site.id)) : null;
 
   return (
     <section className="map-card" aria-labelledby="site-card-title">
@@ -125,6 +134,13 @@ export function SiteCard(props: SiteCardProps) {
         <p className="warning-note">
           ▲ Starting it closes {rivals} for good: they are alternatives, and only one of them can be
           built.
+        </p>
+      )}
+      {status.state === 'locked' && (
+        <p className="warning-note" role="status" aria-label="Locked">
+          Locked: {listed(status.lockedBy.map(technologyName))} must be researched first, in the
+          Research tab. Once {status.lockedBy.length === 1 ? 'it is' : 'they are'} known,{' '}
+          {site.name} can be built, and does what is said above.
         </p>
       )}
       {status.closedBy !== null && (
@@ -292,14 +308,20 @@ function TradeLinkNote({ game, siteId }: { readonly game: GameState; readonly si
   if (link === undefined) {
     return (
       <p className="map-card__note">
-        Once in use, it adds {formatTonnes(portTonnesOf(site.type))} a quarter to the{' '}
-        {formatTonnes(capacity.total)} the trade links carry now.
+        Once in use, it adds{' '}
+        {formatTonnes(portTonnesOf(site.type, false, knownTechnologies(game.projects)))} a quarter
+        to the {formatTonnes(capacity.total)} the trade links carry now.
       </p>
     );
   }
+  const improved =
+    link.improvedBy.length === 0
+      ? ''
+      : ` (${formatTonnes(link.unimproved)} without ${listed(link.improvedBy.map(technologyName))})`;
   return (
     <p className="map-card__note" role="status">
-      Trade link: it carries {formatTonnes(link.tonnes)} a quarter across the border
+      Trade link: it carries {formatTonnes(link.tonnes)}
+      {improved} a quarter across the border
       {link.decaying ? ', half its capacity while it decays' : ''}. Of the{' '}
       {formatTonnes(capacity.total)} all the trade links carry, the mines’ ore takes{' '}
       {formatTonnes(capacity.ore)}, leaving {formatTonnes(capacity.total - capacity.ore)} for grain
@@ -323,13 +345,6 @@ function PowerReach({ game, siteId }: { readonly game: GameState; readonly siteI
       power station in use.
     </p>
   );
-}
-
-/** Names in a sentence: "A", "A and B", "A, B and C". */
-function listed(names: readonly string[]): string {
-  return names.length < 2
-    ? (names[0] ?? '')
-    : `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`;
 }
 
 function Fact({ label, value }: { readonly label: string; readonly value: string }) {

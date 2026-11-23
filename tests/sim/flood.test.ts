@@ -8,6 +8,7 @@ import {
   type GameState,
   loadCountry,
   risksAhead,
+  siteOf,
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
@@ -104,7 +105,7 @@ describe('a flood in Lowmere Plains, where an irrigation scheme can be built', (
   it('sets the region’s sites in use decaying as it begins', () => {
     const [before, during, after] = [3, 4, 5].map(
       (index) =>
-        played.states[index]?.projects.find((project) => project.siteId === 'lowmere-irrigation')
+        played.states[index]?.projects.find((project) => siteOf(project) === 'lowmere-irrigation')
           ?.status,
     );
 
@@ -200,8 +201,12 @@ describe('flood likelihoods in a country file', () => {
   });
 
   it('need country file format 6', () => {
-    // Tavara as format 6 wrote it, before it could name world price shocks.
-    const format6 = without(tavaraFile, ['priceShockLikelihood']);
+    // Tavara as format 6 wrote it, before it could name world price shocks or dams.
+    const format6 = withValue(
+      without(without(tavaraFile, ['deposits']), ['priceShockLikelihood']),
+      ['sites'],
+      tavaraFile.sites.filter((site) => site.type !== 'dam'),
+    );
     const faults = faultsOf(withValue(format6, ['formatVersion'], 5));
 
     expect(faults).toEqual([

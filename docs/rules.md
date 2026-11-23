@@ -106,7 +106,8 @@ main figures from the balance values and fails if this file, the README or
   road and $0.2m for a grain store. Upkeep is a spending area with its own slider, and it is spent
   only as far as the sites in use need it, so setting more than they need costs nothing. The
   budget panel shows what they need against what is spent, and a game starts with enough upkeep
-  for every site the country has, counting only the costlier of two alternatives.
+  for every site the country has, counting only the costlier of two alternatives and none that
+  is locked.
 - When upkeep falls short, by a cut to the slider or because the treasury cuts every area, sites
   decay. Upkeep keeps sites in good repair in the order building began on them, so the newest
   decay first. A decaying site does half of what it does in good repair, and adds half as much to
@@ -142,6 +143,28 @@ main figures from the balance values and fails if this file, the README or
   on one, the other is closed: it is faded and struck through on the map, and its card says which
   choice closed it and offers no start.
 
+## Locked sites and the dam
+
+- Some sites are **locked** until research is done: a site of a type research unlocks, such as a
+  dam, and any site its country file says needs a technology. A locked site is faded and dashed
+  on the map and wears a padlock, which the legend explains. Its card names the research it
+  needs and says what the site would do, and offers no start; it cannot be planned, the
+  affordable list leaves it out, and the projects tab counts it apart. Once the research is known
+  it is an empty site like any other. A site closed by its alternative stays closed.
+- A **dam** is unlocked by **Hydropower**. It is a power station: a power line in use that leads
+  to it powers its region as from any station, and grid efficiency improves it in the same way.
+  It also takes 40% off how far weather, drought and flood move its own region's harvest, less
+  than an irrigation scheme does, and improved irrigation does not improve it. It is large and
+  slow to build: $55.0m over 8 quarters, $0.7m upkeep, adding 10 points to its region's
+  infrastructure access. A country may offer it as an alternative to a power station: Tavara's
+  Korr Falls dam, in the Korr Highlands, is one to Korr Falls power station, so the lines from
+  the station serve whichever is built. In the test country the dam stands alone, with a line of
+  its own locked behind the same research.
+- A dam in use shows in its region's breakdowns: its power as a line of the region's output and
+  infrastructure access ("Power from Korr Falls dam"), and its steadying in the region card's
+  breakdown of how much less the weather moves its harvest, which lists each site in use there
+  and each technology known that lessens it, and what they take off together.
+
 ## Power
 
 - Power reaches a region along a power line. Tavara has one power station, at Korr Falls ($30.0m,
@@ -155,6 +178,78 @@ main figures from the balance values and fails if this file, the README or
   site's card names the regions it powers. Power lines are drawn as fine dashed lines in every
   state. A site can need power to produce: in the test country, the mine's chain runs through a
   power line and its station as well as a trunk road and a port.
+
+## Research
+
+- The **Research** tab in the right column shows the technology tree: every technology, whether
+  it is known, being researched and how far it has got, planned, available or locked, what it
+  costs and how long it takes, what it needs and leads to, and what it does. Each state is named
+  in words beside a symbol. The tab's note says what is being researched, or that nothing is, so
+  an idle research slot is not forgotten.
+- Research is a project on no site. Start it from the tab, which shows its cost and research
+  time first. Its prerequisites must be known, nothing else may be being researched, the treasury
+  must hold its whole cost beside any sites planned, and austerity must not be in force; the tab
+  says why when it cannot be started. It begins when the quarter ends, so until then the plan can
+  be taken back. **One technology is researched at a time.**
+- It is paid in instalments over its research time with the other projects, after the budget and
+  the oldest first, and pauses like them when the treasury cannot pay. It needs no upkeep and
+  never decays. Finishing it is reported, and the technology is known for good from the next
+  quarter.
+- Drought-resistant seed costs $8.0m over 4 quarters and needs nothing. Once known, weather and
+  drought move every region's harvest 30% less, so a drought takes 28% of a harvest instead of
+  40%. It does not hold back a flood's water. Where a region has irrigation too, the two multiply
+  together. The harvest report names it, and the harvest forecast, a drought's description on the
+  map and the risks ahead count it.
+- The rest of the tree **improves what is built**. Each technology improves a type of site, so it
+  pays off only where such a site is in use. A decaying site does only part of what the improved
+  site does, as it does of its own figures:
+  - **Improved irrigation** (needs drought-resistant seed; $10.0m over 4 quarters): an irrigation
+    scheme takes 60% off how far weather, drought and flood move its region's harvest, not 50%.
+  - **Cold storage** (needs drought-resistant seed; $8.0m over 3 quarters): a grain store saves 40%
+    of what spoils in the national reserve, not 25%.
+  - **Road engineering** (needs improved irrigation; $15.0m over 5 quarters): trunk roads, ports
+    and shallow ports carry 25% more. A chain held back by its road or its port ships more (a
+    mine shipping through a shallow port, 450,000 tonnes a quarter instead of 360,000), and a port
+    carries more grain across the border. A chain its mine holds back gains nothing.
+  - **Grid efficiency** (needs cold storage; $15.0m over 5 quarters): a powered region produces
+    25% more, not 20%, and gains 18.7 points of infrastructure access, not 15, whether its power
+    comes from a power station or a dam.
+- **Hydropower** (needs improved irrigation and grid efficiency; $20.0m over 6 quarters) does
+  nothing of itself: it unlocks the dam (see Locked sites and the dam). Its card in the Research
+  tab names the sites of this country it unlocks, and their regions.
+- A site's card gives each figure a known technology moves beside what it would be without it, as
+  in "40% (25% without Cold storage)", and so do a port's trade link and its shipping lane, and
+  the report of a site finished while the technology is known. The
+  region's output and infrastructure access, the treasury's tax and the food reserve each give
+  what a technology adds as a line of its own that names it ("Korrgate mine: Road engineering",
+  "Kept from spoiling by Cold storage"). The harvest report names improved irrigation where an
+  irrigation scheme is in use. The preview and the risks ahead count every technology known.
+- Each technology in the Research tab says what it would improve in this game: every site in use
+  it improves, with the figures it would move beside what they are now, and every chain and
+  region it would move, and by how much. One whose sites are not built yet says it improves
+  nothing until one is.
+
+## Surveys
+
+- A country may hide deposits of ore, at most one in a region. A region that may hide one is
+  marked on the map with a magnifying glass until it has been surveyed; the legend says so. A
+  region the country hides nothing in cannot be surveyed, and its card says nothing of surveys.
+- A **survey** is a project on no site. Start it from the region's card, which shows first what
+  it costs ($4.0m over 2 quarters), the chance that it finds a deposit and the range of sizes one
+  could be, in tonnes of ore a quarter. The treasury must hold its whole cost beside everything
+  else planned, and austerity must not be in force; the card says why when it cannot be started.
+  It begins when the quarter ends, so until then the plan can be taken back. **A region is
+  surveyed once.**
+- It is paid in instalments with the other projects, after the budget and the oldest first, and
+  pauses like them when the treasury cannot pay. Several regions may be surveyed at once.
+- When it finishes, the report says what it found: nothing, or a deposit of a definite size. The
+  region is surveyed either way. A deposit's mine and the trunk road that serves it appear on the
+  map from the next quarter, and are built like any mine and road. The mine produces the size the
+  survey found, not a mine's usual 600,000 tonnes, and earns at the world ore price through its
+  chain like any other.
+- Whether a deposit is there and how large it is depend on the game's seed and the deposit alone:
+  the same seed always finds the same deposits, and surveying changes neither the weather, the
+  events, the risks ahead nor the preview.
 
 ## Borrowing and the credit rating
 
@@ -335,8 +430,9 @@ main figures from the balance values and fails if this file, the README or
 - In any game, a first-time tip explains a mechanic the first time it appears, drawn round the
   part of the screen it concerns like a lesson: a dilemma, a bailout, a drought or flood warned of
   in risks ahead, a strike or protest, a world price shock announced, a planned project whose
-  chain is missing a link, a site decaying, the election four quarters away, and a prosperity
-  tier passed. When several are due, the first in that order shows. Got it dismisses one, and the
+  chain is missing a link, a site decaying, the election four quarters away, a prosperity tier
+  passed, research, once its tab is first opened or research is planned, and surveys, once the
+  card of a region that may hide a deposit is first opened or a survey is planned. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
   waits while the tour or a lesson is open. The tips are written in `src/ui/tips.ts`.
@@ -366,7 +462,9 @@ main figures from the balance values and fails if this file, the README or
   lens colours each region by its food situation, and the approval lens by its approval, with
   hatching over a region on strike and cross-hatching over one in protest. The living-standards
   lens colours each region by its living standard, and the infrastructure lens by its
-  infrastructure access, from none upwards; one site in use moves a region up a step. The
+  infrastructure access, from none upwards; one site in use moves a region up a step. Where a
+  technology known raises a region's access, through the power it is brought, the region's
+  figure names it, and its description says what the access would be without it. The
   infrastructure lens also marks every link missing from a chain, ringed, with no site picked
   out, so you can see what each region has built and what it still lacks. It marks the trade
   links too: every port not yet in use has a dotted shipping lane tagged "✕ Missing trade link",

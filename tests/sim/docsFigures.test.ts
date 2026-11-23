@@ -53,7 +53,18 @@ function oreTonnes(capacity: number): string {
   return formatCount((capacity * 100_000) / balance.trade.goods.ore.usualDollarsPerTonne);
 }
 
-const { sites, finance, trade, priceShocks, events } = balance;
+const { sites, finance, trade, priceShocks, events, technologies, surveys } = balance;
+const seed = technologies.droughtResistantSeed;
+const { improvedIrrigation, coldStorage, roadEngineering, gridEfficiency, hydropower } =
+  technologies;
+/** What a site's effect leaves, improved by what a technology leaves of it. */
+const improvedLeft = (own: number, by: number) => Math.floor((own * by) / 1000);
+/** A figure raised by a share in thousandths of it. */
+const raised = (figure: number, permille: number) =>
+  Math.floor((figure * (1000 + permille)) / 1000);
+/** A technology's cost and research time, as the rules give them. */
+const researched = (technology: { cost: number; researchQuarters: number }) =>
+  `${formatMoney(technology.cost)} over ${String(technology.researchQuarters)} quarters`;
 const { tiers } = balance.prosperity;
 const { strikes, protests } = balance.unrest;
 const { grain, ore } = trade.goods;
@@ -78,6 +89,25 @@ const RULES: readonly string[] = [
   `A mine ships ${oreTonnes(sites.mine.capacity)} tonnes of ore a quarter abroad`,
   `a trunk road ${formatMoney(sites.trunkRoad.capacity)} a quarter (${oreTonnes(sites.trunkRoad.capacity)} tonnes) and a port ${formatMoney(sites.port.capacity)} (${oreTonnes(sites.port.capacity)} tonnes)`,
   `(${formatMoney(sites.mine.cost)}, ${formatMoney(sites.trunkRoad.cost)} and ${formatMoney(sites.port.cost)}; ${String(sites.mine.buildQuarters)}, ${String(sites.trunkRoad.buildQuarters)} and ${String(sites.port.buildQuarters)} quarters to build; ${formatMoney(sites.mine.upkeep)}, ${formatMoney(sites.trunkRoad.upkeep)} and ${formatMoney(sites.port.upkeep)} upkeep)`,
+  // Research
+  `Drought-resistant seed costs ${formatMoney(seed.cost)} over ${String(seed.researchQuarters)} quarters`,
+  `weather and drought move every region's harvest ${cut(seed.effects.weatherAndDrought)} less, so a drought takes ${cut(1000 - Math.floor(((1000 - events.drought.effects.harvestPermille) * seed.effects.weatherAndDrought) / 1000))} of a harvest instead of ${cut(events.drought.effects.harvestPermille)}`,
+  `Improved irrigation** (needs drought-resistant seed; ${researched(improvedIrrigation)})`,
+  `an irrigation scheme takes ${cut(improvedLeft(sites.irrigation.effects.harvestWeather, improvedIrrigation.improves.irrigation.effects.harvestWeather))} off how far weather, drought and flood move its region's harvest, not ${cut(sites.irrigation.effects.harvestWeather)}`,
+  `Cold storage** (needs drought-resistant seed; ${researched(coldStorage)})`,
+  `a grain store saves ${cut(improvedLeft(sites.grainStore.effects.reserveSpoilage, coldStorage.improves.grainStore.effects.reserveSpoilage))} of what spoils in the national reserve, not ${cut(sites.grainStore.effects.reserveSpoilage)}`,
+  `Road engineering** (needs improved irrigation; ${researched(roadEngineering)})`,
+  `carry ${percent(roadEngineering.improves.trunkRoad.capacityPermille)} more`,
+  `${oreTonnes(raised(sites.shallowPort.capacity, roadEngineering.improves.shallowPort.capacityPermille))} tonnes a quarter instead of ${oreTonnes(sites.shallowPort.capacity)}`,
+  `Grid efficiency** (needs cold storage; ${researched(gridEfficiency)})`,
+  `${percent(raised(balance.power.outputPermille, gridEfficiency.improves.powerStation.powerPermille))} more, not ${percent(balance.power.outputPermille)}, and gains ${String(raised(balance.power.infrastructurePermille, gridEfficiency.improves.powerStation.powerPermille) / 10)} points of infrastructure access, not ${String(balance.power.infrastructurePermille / 10)}`,
+  `Hydropower** (needs improved irrigation and grid efficiency; ${researched(hydropower)})`,
+  // Locked sites and the dam
+  `It also takes ${cut(sites.dam.effects.harvestWeather)} off how far weather, drought and flood move its own region's harvest`,
+  `${formatMoney(sites.dam.cost)} over ${String(sites.dam.buildQuarters)} quarters, ${formatMoney(sites.dam.upkeep)} upkeep, adding ${String(sites.dam.infrastructurePermille / 10)} points`,
+  // Surveys
+  `what it costs (${formatMoney(surveys.cost)} over ${String(surveys.surveyQuarters)} quarters)`,
+  `not a mine's usual ${oreTonnes(sites.mine.capacity)} tonnes`,
   // Borrowing
   `offers a loan of ${listOr(loans.amounts.map(formatMoney))} over ${listOr(loans.terms.map((term) => String(term.quarters)))} quarters, at ${listOr(loans.terms.map((term) => rate(term.annualRateBasisPoints)))} a year to a nation rated A`,
   // Bailout and austerity
@@ -102,6 +132,7 @@ const COUNTRIES: readonly string[] = [
   `a \`drought\` (${cut(events.drought.effects.harvestPermille)} off its harvest)`,
   `a \`flood\` (${cut(events.flood.effects.harvestPermille)} off its harvest`,
   `in whole thousands from ${formatCount(trade.crossings.leastTonnes)} to ${formatCount(trade.crossings.mostTonnes)}`,
+  `each a whole number of ${formatCount(surveys.tonnesStep)} t from ${formatCount(surveys.tonnesStep)} t to ${formatCount(surveys.mostTonnes)} t`,
   `one on each neighbour carrying ${formatCount(trade.crossings.unlistedTonnes)} tonnes`,
 ];
 

@@ -1,5 +1,4 @@
-import { createContext, useContext, useRef, useState, type ReactNode } from 'react';
-import { readDecisionTab, storeDecisionTab } from './storage';
+import { createContext, useContext, useRef, type ReactNode } from 'react';
 import { TourTarget } from './spotlight';
 import './DecisionPanel.css';
 
@@ -13,11 +12,19 @@ export interface DecisionTab {
   readonly pending?: boolean;
 }
 
+/** The tab the player has open: the one chosen last, or the first when that is not a tab. */
+function openTab(tabs: readonly DecisionTab[], chosen: string | null): string | null {
+  return tabs.some((tab) => tab.id === chosen) ? chosen : (tabs[0]?.id ?? null);
+}
+
 /** The id of the panel on show in the decisions column. */
 const ActiveTab = createContext<string | null>(null);
 
 interface DecisionTabsProps {
   readonly tabs: readonly DecisionTab[];
+  /** The tab the player chose last, if any: the first is shown when it is not one of these. */
+  readonly chosen: string | null;
+  readonly onChoose: (id: string) => void;
   /** The panels, each a DecisionPanel whose id is one of the tabs. */
   readonly children: ReactNode;
 }
@@ -25,21 +32,20 @@ interface DecisionTabsProps {
 /**
  * The decisions column as tabs, one panel on show at a time, so the column needs little
  * scrolling. Each tab says where its panel stands, so a panel out of sight still shows
- * what is pending in it. The browser remembers the tab chosen. While the guided tour or a
- * lesson points at a panel, its tab is shown, and the chosen one comes back after.
+ * what is pending in it. While the guided tour or a lesson points at a panel, its tab is
+ * shown, and the chosen one comes back after.
  */
-export function DecisionTabs({ tabs, children }: DecisionTabsProps) {
-  const first = tabs[0]?.id ?? null;
-  const [stored, setChosen] = useState(readDecisionTab);
-  const chosen = tabs.some((tab) => tab.id === stored) ? stored : first;
+export function DecisionTabs({
+  tabs,
+  chosen: last,
+  onChoose: choose,
+  children,
+}: DecisionTabsProps) {
+  const chosen = openTab(tabs, last);
   const toured = useContext(TourTarget);
   const active = tabs.some((tab) => tab.id === toured) ? toured : chosen;
   const list = useRef<HTMLDivElement>(null);
 
-  const choose = (id: string) => {
-    setChosen(id);
-    storeDecisionTab(id);
-  };
   // The arrow keys move between tabs, as in any tab list, and Home and End to either end.
   const step = (from: number, key: string) => {
     const last = tabs.length - 1;

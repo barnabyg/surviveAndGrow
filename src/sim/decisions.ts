@@ -2,7 +2,7 @@ import { austerityBudgetFault } from './austerity';
 import { checkBudget } from './budget';
 import { borrowFault } from './debt';
 import { choiceFault } from './dilemmas';
-import { startFault } from './projects';
+import { projectStartFault, startsOf } from './projects';
 import type { Decisions, GameState } from './state';
 import { tradeFault } from './trade';
 
@@ -21,7 +21,7 @@ export function checkDecisions(state: GameState, decisions: Decisions, mustAnswe
   if (target !== null && !state.regions.some((region) => region.id === target)) {
     throw new RangeError(`There is no region "${target}" to send food relief to.`);
   }
-  const fault = startFault(state, decisions.startProjects ?? []);
+  const fault = projectStartFault(state, startsOf(decisions));
   if (fault !== null) throw new RangeError(fault);
   const borrowing = borrowFault(state, decisions.borrow ?? []);
   if (borrowing !== null) throw new RangeError(borrowing);

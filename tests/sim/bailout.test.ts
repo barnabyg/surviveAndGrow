@@ -8,6 +8,7 @@ import {
   loanOffers,
   previewQuarter,
   risksAhead,
+  siteOf,
   startFault,
   type Borrowing,
   type Budget,
@@ -300,7 +301,7 @@ describe('austerity', () => {
 
     const next = advanceQuarter(austere, steward(austere, withinAusterity(austere, game.budget)));
 
-    expect(next.state.projects.find((project) => project.siteId === site)?.quartersPaid).toBe(2);
+    expect(next.state.projects.find((project) => siteOf(project) === site)?.quartersPaid).toBe(2);
   });
 
   it('ends on schedule when every payment is made, and is reported', () => {

@@ -116,6 +116,8 @@ describe.each(countries)('trade capacity in $name', ({ country, crossings }) => 
       kind: 'port',
       tonnes: 900_000,
       decaying: false,
+      unimproved: 900_000,
+      improvedBy: [],
     });
 
     // Upkeep cut to nothing: the port goes without, and decays from the next quarter.

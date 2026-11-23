@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { dilemma, endQuarters, startGame, tavaraWith } from './app';
+import { dilemma, endQuarters, openTab, startGame, tavaraWith } from './app';
 
 const tipCard = (page: Page) => page.locator('.lessons__card', { hasText: 'First-time tip' });
 const tipsButton = (page: Page) =>
@@ -40,6 +40,25 @@ async function seeTheDilemmaTipOnce(page: Page): Promise<void> {
 test('a tip explains the first dilemma once, and not the next', async ({ page }) => {
   await startGame(page, { countryFile: quietButForTeachers(), tips: true });
   await seeTheDilemmaTipOnce(page);
+});
+
+test('research and surveys are explained the first time the player meets them', async ({
+  page,
+}) => {
+  await startGame(page, { countryFile: quietButForTeachers(), tips: true });
+  await expect(tipCard(page)).toHaveCount(0);
+
+  await openTab(page, 'Research');
+  await expect(tipCard(page).getByRole('heading', { name: 'Research' })).toBeVisible();
+  await tipCard(page).getByRole('button', { name: 'Got it' }).click();
+  await expect(tipCard(page)).toHaveCount(0);
+
+  // A region that hides nothing offers no survey; one that may hide a deposit does.
+  const map = page.getByRole('group', { name: 'Map of Republic of Tavara' });
+  await map.getByRole('button', { name: /^Arden Vale/ }).click();
+  await expect(tipCard(page)).toHaveCount(0);
+  await map.getByRole('button', { name: /^Salt Coast/ }).click();
+  await expect(tipCard(page).getByRole('heading', { name: 'Surveys' })).toBeVisible();
 });
 
 test('tips can be turned off, and on again to show them afresh', async ({ page }) => {

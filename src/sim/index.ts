@@ -18,6 +18,7 @@ export {
   regionName,
   type Country,
   type Crossing,
+  type Deposit,
   type Decoration,
   type Neighbour,
   type Point,
@@ -105,8 +106,56 @@ export {
   type ChainLink,
   type OreEarnings,
 } from './chains';
-export { oreTonnesOf } from './sites';
-export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
+export { percentOff } from './arithmetic';
+export { oreTonnesOf, powerGain, technologiesNeeded } from './sites';
+export { weatherHold, type WeatherHold, type WeatherHoldLine } from './weatherHold';
+export {
+  leftIn,
+  onSite,
+  onSurvey,
+  onTechnology,
+  projectStartFault,
+  siteOf,
+  siteEffects,
+  siteStatus,
+  startFault,
+  type Project,
+  type ProjectTarget,
+  type SiteStatus,
+} from './projects';
+export {
+  researchFault,
+  researchStatuses,
+  technologyGains,
+  type ChainGain,
+  type RegionGain,
+  type SiteGain,
+  type SiteUnlock,
+  type TechnologyGains,
+  type TechnologyStatus,
+} from './research';
+export {
+  capacityOfTonnes,
+  depositFind,
+  depositIn,
+  surveyedRegions,
+  surveyFindings,
+  surveyTerms,
+  type SurveyTerms,
+} from './deposits';
+export {
+  planFault,
+  surveyStatus,
+  surveyStatuses,
+  type ProjectPlan,
+  type SurveyStatus,
+} from './surveys';
+export {
+  knownTechnologies,
+  technologyName,
+  technologyTerms,
+  type TechnologyTerms,
+} from './technology';
 export { regionPower, type RegionPower } from './power';
 export {
   livingStandards,
@@ -187,9 +236,11 @@ export {
   formatQuarters,
   formatSignedPoints,
   formatTonnes,
+  listed,
   quartersWord,
 } from './text';
 export {
+  DOLLARS_PER_MONEY,
   exactly,
   MONEY_PER_MILLION,
   type Contribution,
@@ -226,10 +277,16 @@ export {
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
+  SURVEY_STATE_NAMES,
+  SURVEY_STATES,
+  TECHNOLOGIES,
+  TECHNOLOGY_DEFINITIONS,
+  TECHNOLOGY_STATE_NAMES,
   TIER_NAMES,
   TIERS,
   UNREST_KINDS,
   UNREST_NAMES,
+  WEATHER_HELD_BY,
   type ApprovalDriver,
   type ChainRole,
   type CreditRating,
@@ -244,6 +301,7 @@ export {
   type Likelihood,
   type PowerRole,
   type ProjectStatus,
+  type ProjectTargetKind,
   type ProsperityPart,
   type ReportKind,
   type RiskKind,
@@ -253,6 +311,9 @@ export {
   type SiteState,
   type SiteType,
   type SpendingArea,
+  type SurveyState,
+  type Technology,
+  type TechnologyState,
   type Terrain,
   type Tier,
   type TradeDirection,

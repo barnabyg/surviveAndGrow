@@ -1,0 +1,93 @@
+/* The technology tree: every technology, and research started from it */
+
+.research {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.research__tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* A technology is drawn like a project, and its state is named beside a symbol. */
+.technology {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  background: var(--card);
+  border-left: 3px solid transparent;
+  border-radius: 10px;
+}
+
+.technology--known {
+  border-left-color: var(--blue);
+}
+
+.technology--researching,
+.technology--planned {
+  border-left-color: var(--amber);
+}
+
+.technology--paused {
+  border-left-color: var(--danger);
+}
+
+.technology--locked {
+  opacity: 0.8;
+}
+
+.technology__state {
+  font-family: var(--font-figures);
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.technology__links {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  font-size: 14px;
+}
+
+.technology__links div {
+  display: flex;
+  gap: 6px;
+}
+
+.technology__links dt {
+  color: var(--label);
+}
+
+.technology__links dd {
+  margin: 0;
+}
+
+.research .button {
+  min-height: 44px;
+  font-size: 15px;
+}
+
+/* What a technology improves in this game: the sites in use, the chains and the regions. */
+.technology__gains {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.technology__gains ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
