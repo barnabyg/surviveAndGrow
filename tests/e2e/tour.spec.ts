@@ -1,6 +1,6 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { TOUR_STEPS } from '../../src/ui/tourSteps';
-import { decisions, dilemma, startGame, tavaraWith } from './app';
+import { decisions, dilemma, expectDrawnRound, startGame, tavaraWith } from './app';
 
 const tour = (page: Page) => page.locator('dialog.tour');
 const spotlight = (page: Page) => page.locator('.tour__spotlight');
@@ -10,27 +10,6 @@ const shownSteps = TOUR_STEPS.filter((step) => step.target !== 'dilemma-panel');
 
 /** The top bar's button that opens the tour. */
 const tourButton = (page: Page) => page.getByRole('banner').getByRole('button', { name: 'Tour' });
-
-/**
- * Sees the tour's outline drawn round an element, and no wider than to pick it out, once it
- * has finished moving there.
- */
-async function expectOutlined(page: Page, element: Locator): Promise<void> {
-  await expect(async () => {
-    const target = await element.boundingBox();
-    const outline = await spotlight(page).boundingBox();
-    expect(target).not.toBeNull();
-    expect(outline).not.toBeNull();
-    if (target !== null && outline !== null) {
-      expect(outline.x).toBeLessThanOrEqual(target.x);
-      expect(outline.y).toBeLessThanOrEqual(target.y);
-      expect(outline.x + outline.width).toBeGreaterThanOrEqual(target.x + target.width);
-      expect(outline.y + outline.height).toBeGreaterThanOrEqual(target.y + target.height);
-      expect(outline.width).toBeLessThan(target.width + 40);
-      expect(outline.height).toBeLessThan(target.height + 40);
-    }
-  }).toPass();
-}
 
 test('the tour walks the whole screen, a step at a time', async ({ page }) => {
   await startGame(page);
@@ -44,7 +23,7 @@ test('the tour walks the whole screen, a step at a time', async ({ page }) => {
       await expect(spotlight(page)).toHaveCount(0);
     } else {
       // The outline is drawn round the part of the screen the step is about.
-      await expectOutlined(page, page.locator(`[data-tour="${step.target}"]`));
+      await expectDrawnRound(spotlight(page), page.locator(`[data-tour="${step.target}"]`));
     }
     const back = tour(page).getByRole('button', { name: 'Back' });
     if (index === 0) await expect(back).toBeDisabled();
@@ -112,7 +91,10 @@ test('the tour explains surveys on the map and research in its tab, in screen or
   await expect(heading('Surveys')).toBeVisible();
   await expect(tour(page)).toContainText('A magnifying glass marks a region that may hide');
   const map = page.getByRole('group', { name: 'Map of Republic of Tavara' });
-  await expectOutlined(page, map.getByRole('img', { name: /^Salt Coast: not yet surveyed/ }));
+  await expectDrawnRound(
+    spotlight(page),
+    map.getByRole('img', { name: /^Salt Coast: not yet surveyed/ }),
+  );
   await next.click();
   await expect(heading('The term')).toBeVisible();
 
@@ -124,7 +106,7 @@ test('the tour explains surveys on the map and research in its tab, in screen or
   await expect(tour(page)).toContainText('The technology tree.');
   const researchTab = decisions(page).getByRole('tab', { name: 'Research', exact: true });
   await expect(researchTab).toHaveAttribute('aria-selected', 'true');
-  await expectOutlined(page, page.locator('#research-panel'));
+  await expectDrawnRound(spotlight(page), page.locator('#research-panel'));
   await expect(page.locator('#research-panel')).toContainText('Drought-resistant seed');
   await next.click();
   await expect(heading('Borrowing')).toBeVisible();

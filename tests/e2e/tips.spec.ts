@@ -1,5 +1,14 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
-import { decisions, dilemma, endQuarters, openTab, reports, startGame, tavaraWith } from './app';
+import { expect, test, type Page } from '@playwright/test';
+import {
+  decisions,
+  dilemma,
+  endQuarters,
+  expectDrawnRound,
+  openTab,
+  reports,
+  startGame,
+  tavaraWith,
+} from './app';
 
 const tipCard = (page: Page) => page.locator('.lessons__card', { hasText: 'First-time tip' });
 const tipsButton = (page: Page) =>
@@ -120,6 +129,15 @@ test('the survey tip shows once, however the player meets surveys again', async 
   await endQuarters(page, 1);
   await expect(reports(page).getByText('Survey begins: The Dry East')).toBeVisible();
   await expect(tipCard(page)).toHaveCount(0);
+
+  // Seen once, it is not shown in the next game either.
+  await page.reload();
+  await page.getByRole('button', { name: 'Start new game' }).click();
+  await mapOf(page)
+    .getByRole('button', { name: /^Salt Coast/ })
+    .click();
+  await expect(regionCard(page)).toBeVisible();
+  await expect(tipCard(page)).toHaveCount(0);
 });
 
 test('Tips silences the research and survey tips, and turned on again shows both afresh', async ({
@@ -153,24 +171,6 @@ test('Tips silences the research and survey tips, and turned on again shows both
   await expect(tipCard(page)).toHaveCount(0);
 });
 
-/** Sees a tip's outline drawn round an element, and no wider than to pick it out. */
-async function expectTipDrawnRound(page: Page, element: Locator): Promise<void> {
-  await expect(async () => {
-    const target = await element.boundingBox();
-    const outline = await page.locator('.lessons__outline').boundingBox();
-    expect(target).not.toBeNull();
-    expect(outline).not.toBeNull();
-    if (target !== null && outline !== null) {
-      expect(outline.x).toBeLessThanOrEqual(target.x);
-      expect(outline.y).toBeLessThanOrEqual(target.y);
-      expect(outline.x + outline.width).toBeGreaterThanOrEqual(target.x + target.width);
-      expect(outline.y + outline.height).toBeGreaterThanOrEqual(target.y + target.height);
-      expect(outline.width).toBeLessThan(target.width + 40);
-      expect(outline.height).toBeLessThan(target.height + 40);
-    }
-  }).toPass();
-}
-
 test('a tip about a panel behind another tab is drawn round the tab that opens it', async ({
   page,
 }) => {
@@ -184,7 +184,7 @@ test('a tip about a panel behind another tab is drawn round the tab that opens i
 
   // The research panel is not on screen, so the tip points at its tab and leaves the budget open.
   const researchTab = decisions(page).getByRole('tab', { name: 'Research', exact: true });
-  await expectTipDrawnRound(page, researchTab);
+  await expectDrawnRound(page.locator('.lessons__outline'), researchTab);
   await expect(decisions(page).getByRole('tab', { name: 'Budget', exact: true })).toHaveAttribute(
     'aria-selected',
     'true',
@@ -192,7 +192,7 @@ test('a tip about a panel behind another tab is drawn round the tab that opens i
 
   // Once its tab is opened, the tip is drawn round the panel.
   await researchTab.click();
-  await expectTipDrawnRound(page, research);
+  await expectDrawnRound(page.locator('.lessons__outline'), research);
 });
 
 test('tips can be turned off, and on again to show them afresh', async ({ page }) => {

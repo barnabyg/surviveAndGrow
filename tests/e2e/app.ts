@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import type { Locator, Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 interface CountryFile extends Record<string, unknown> {
   formatVersion: number;
@@ -200,4 +200,25 @@ export async function openCatalogue(page: Page): Promise<Locator> {
 /** Plans a project from the catalogue, which closes it. */
 export async function planProject(page: Page, name: string): Promise<void> {
   await (await openCatalogue(page)).getByRole('button', { name: `Plan ${name}` }).click();
+}
+
+/**
+ * Sees an outline drawn round an element, and no wider than to pick it out, once it has
+ * finished moving there: the tour's outline, or a tip's.
+ */
+export async function expectDrawnRound(outline: Locator, element: Locator): Promise<void> {
+  await expect(async () => {
+    const target = await element.boundingBox();
+    const drawn = await outline.boundingBox();
+    expect(target).not.toBeNull();
+    expect(drawn).not.toBeNull();
+    if (target !== null && drawn !== null) {
+      expect(drawn.x).toBeLessThanOrEqual(target.x);
+      expect(drawn.y).toBeLessThanOrEqual(target.y);
+      expect(drawn.x + drawn.width).toBeGreaterThanOrEqual(target.x + target.width);
+      expect(drawn.y + drawn.height).toBeGreaterThanOrEqual(target.y + target.height);
+      expect(drawn.width).toBeLessThan(target.width + 40);
+      expect(drawn.height).toBeLessThan(target.height + 40);
+    }
+  }).toPass();
 }
