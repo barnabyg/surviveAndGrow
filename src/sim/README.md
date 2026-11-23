@@ -63,23 +63,46 @@ entries keep the order written there.
 
 ## Projects and their targets
 
-A project names its target, what it is for (`ProjectTarget` in `projects.ts`). Every project is
-on a site for now; research and surveys are to be targets of their own kinds. What a project
+A project names its target, what it is for (`ProjectTarget` in `projects.ts`): a site, built
+on, or a technology, researched. Surveys are to be a target of their own kind. What a project
 shares is written once and takes no notice of the target: `projectStartFault` bars any new
 project during austerity and when the treasury does not hold the whole cost of everything started
 together, and `resolveProjects` pays the instalments after the budget, the oldest project first,
 pauses a project the treasury cannot pay for, and puts a finished one in use from the next
 quarter. Taking a plan back is the interface's: a plan is not a project until the quarter ends.
 
-Only what depends on the target is written for each kind: its name, region, cost, build time
-and effect (`projectTerms`), what else stops it being started (`targetFault`), and how a save
-holds it (`readTarget` in `save.ts`). A project on no site is resolved like any other: it takes
+Only what depends on the target is written for each kind: its name, region, cost, build time,
+effect, the status it finishes with and the words the report and the treasury's breakdown use
+for it (`projectTerms`, with the words in `PROJECT_TARGET_WORDS` in `vocabulary.ts`), what else
+stops it being started (`targetFault`), and how a save holds it (`readTarget` in `save.ts`). A
+quarter's decisions start sites (`startProjects`) and research (`startResearch`); `startsOf`
+turns both into targets, the sites first. A project on no site is resolved like any other: it takes
 its turn for instalments in the order it was started and pauses in the same way, but it has no
 site, so `siteOf` gives null for it. Everything that reads the sites in use (`siteStatus`,
 `sitesInUse`, `siteEffects`, upkeep, chains, power, trade links and the timeline) passes over
 it, it needs no upkeep and nothing decays it, and its report entries name no region. Its
 lasting effect is for its own kind to say. A new kind of target is added to `ProjectTarget` and
 to `PROJECT_TARGET_KINDS` in `vocabulary.ts`, and is a save-format change.
+
+## Technologies and research
+
+The technology tree is the engine's, like its site types. A technology's name and
+prerequisites are in `TECHNOLOGY_DEFINITIONS` (`vocabulary.ts`), and its cost, research time and
+effects in `balance.technologies`; `technology.ts` reads them (`technologyTerms`), says which
+are known (`knownTechnologies`) and what stops research starting (`technologyFault`: one at a
+time, prerequisites known). `research.ts` gives the interface the whole tree as it stands
+(`researchStatuses`). Research into a technology is a project whose target is that technology:
+it is paid for, paused and barred like any other, and once its last instalment is paid it is
+`known` rather than in use.
+
+A technology's effects use the same vocabulary as a site's (`SITE_EFFECTS`): each leaves a
+share, in thousandths, of what it bears on, in every region or once across the nation.
+`siteEffects` folds the technologies known into what the sites in use do, so everything that
+reads it counts them: the harvest, the preview's forecast, the risks ahead and the map. How far
+the weather moves a harvest answers to the effects in `WEATHER_HELD_BY`, and each event's hold
+to the effects its definition lists (`heldBy` in `balance.events`), which is how
+drought-resistant seed softens drought but not flood. A technology that improves something new
+adds an effect there; one that unlocks a site type is for that ticket to add.
 
 ## Adding a mechanic
 

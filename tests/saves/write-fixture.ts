@@ -9,7 +9,7 @@ import {
   pendingDilemma,
   SAVE_FORMAT_VERSION,
   saveGame,
-  type Budget,
+  type Decisions,
   type TurnReport,
 } from '../../src/sim';
 
@@ -24,32 +24,19 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought and the teachers asking for a rise now
-  // and then. Format 10 gave each project a target, what it is for: so far always a site. The
-  // game starts Lowmere grain store in its first quarter and Lowmere irrigation in its
-  // second, on the budget it starts with, and in its third spends more than the treasury
-  // holds, so that the scheme is paused and the store goes without its upkeep. It is saved as
-  // Year 1 · Quarter 4 begins, with the grain store in use and decaying, the scheme paused one
-  // quarter into building and the pause in the last report.
+  // and then. Format 11 let a project research a technology. The game starts Lowmere grain
+  // store and research into drought-resistant seed in its first quarter, on the budget it
+  // starts with, and plays two more. It is saved as Year 1 · Quarter 4 begins, with the grain
+  // store in use and the seed three of its four quarters researched.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
   });
-  const overspent: Budget = {
-    taxRatePercent: 5,
-    spending: {
-      agriculture: 200,
-      foodRelief: 200,
-      health: 200,
-      education: 200,
-      security: 200,
-      upkeep: 200,
-    },
-  };
-  const quarters = [
-    { startProjects: ['lowmere-store'] },
-    { startProjects: ['lowmere-irrigation'] },
-    { startProjects: [], budget: overspent },
+  const quarters: Partial<Decisions>[] = [
+    { startProjects: ['lowmere-store'], startResearch: 'droughtResistantSeed' },
+    {},
+    {},
   ];
   let game = createGame(country, 2026);
   let report: TurnReport | null = null;
@@ -63,11 +50,12 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
   expect(game.date).toEqual({ year: 1, quarter: 4 });
-  expect(game.projects.map((project) => [project.target, project.status])).toEqual([
-    [{ kind: 'site', siteId: 'lowmere-store' }, 'decaying'],
-    [{ kind: 'site', siteId: 'lowmere-irrigation' }, 'paused'],
+  expect(
+    game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+  ).toEqual([
+    [{ kind: 'site', siteId: 'lowmere-store' }, 'operating', 2],
+    [{ kind: 'technology', technology: 'droughtResistantSeed' }, 'building', 3],
   ]);
-  expect(report?.entries.map((entry) => entry.headline)).toContain('Paused: Lowmere irrigation');
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

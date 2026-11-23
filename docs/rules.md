@@ -156,6 +156,28 @@ main figures from the balance values and fails if this file, the README or
   state. A site can need power to produce: in the test country, the mine's chain runs through a
   power line and its station as well as a trunk road and a port.
 
+## Research
+
+- The **Research** tab in the right column shows the technology tree: every technology, whether
+  it is known, being researched and how far it has got, planned, available or locked, what it
+  costs and how long it takes, what it needs and leads to, and what it does. Each state is named
+  in words beside a symbol. The tab's note says what is being researched, or that nothing is, so
+  an idle research slot is not forgotten.
+- Research is a project on no site. Start it from the tab, which shows its cost and research
+  time first. Its prerequisites must be known, nothing else may be being researched, the treasury
+  must hold its whole cost beside any sites planned, and austerity must not be in force; the tab
+  says why when it cannot be started. It begins when the quarter ends, so until then the plan can
+  be taken back. **One technology is researched at a time.**
+- It is paid in instalments over its research time with the other projects, after the budget and
+  the oldest first, and pauses like them when the treasury cannot pay. It needs no upkeep and
+  never decays. Finishing it is reported, and the technology is known for good from the next
+  quarter.
+- Drought-resistant seed costs $8.0m over 4 quarters and needs nothing. Once known, weather and
+  drought move every region's harvest 30% less, so a drought takes 28% of a harvest instead of
+  40%. It does not hold back a flood's water. Where a region has irrigation too, the two multiply
+  together. The harvest report names it, and the harvest forecast, a drought's description on the
+  map and the risks ahead count it.
+
 ## Borrowing and the credit rating
 
 - The nation can borrow. The finance panel in the right column offers a loan of $10.0m, $25.0m

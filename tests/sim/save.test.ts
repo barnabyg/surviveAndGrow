@@ -3,6 +3,7 @@ import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   createGame,
+  knownTechnologies,
   loadCountry,
   loadSave,
   SAVE_FORMAT_VERSION,
@@ -16,7 +17,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import format10Save from '../saves/format-10.json';
+import format11Save from '../saves/format-11.json';
 import {
   bothCountries,
   tavara,
@@ -112,7 +113,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(10);
+    expect(save.formatVersion).toBe(11);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -342,8 +343,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 11))).toBe(
-      'The saved game was written by a newer release of the game (save format 11; this release reads format 10). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 12))).toBe(
+      'The saved game was written by a newer release of the game (save format 12; this release reads format 11). Open it with that release.',
     );
   });
 
@@ -710,43 +711,73 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 10', () => {
-  it('still opens on the game it was written from, a site in use and decaying and another paused', () => {
-    const { game, report } = loadSave(format10Save);
+describe('the save kept from save format 11', () => {
+  it('still opens on the game it was written from, a site in use and research under way', () => {
+    const { game } = loadSave(format11Save);
 
     expect(game.date).toEqual({ year: 1, quarter: 4 });
-    expect(game.projects.map((project) => [project.target, project.status])).toEqual([
-      [{ kind: 'site', siteId: 'lowmere-store' }, 'decaying'],
-      [{ kind: 'site', siteId: 'lowmere-irrigation' }, 'paused'],
+    expect(
+      game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+    ).toEqual([
+      [{ kind: 'site', siteId: 'lowmere-store' }, 'operating', 2],
+      [{ kind: 'technology', technology: 'droughtResistantSeed' }, 'building', 3],
     ]);
-    expect(report?.entries.map((entry) => entry.headline)).toContain('Paused: Lowmere irrigation');
+    expect(knownTechnologies(game.projects)).toEqual([]);
   });
 
-  it('plays on, building where it left off once the treasury can pay', () => {
-    const { game } = loadSave(format10Save);
+  it('plays on, the research finishing and the seed known from the next quarter', () => {
+    const { game } = loadSave(format11Save);
 
-    const decisions = answering(
-      game,
-      steward(game, { ...austere, spending: { ...austere.spending, upkeep: 200 } }),
-    );
-    const { state, report } = advanceQuarter(game, decisions);
+    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
 
-    expect(state.projects.map((project) => [project.quartersPaid, project.status])).toEqual([
-      [2, 'operating'],
-      [2, 'building'],
-    ]);
     expect(report.entries.map((entry) => entry.headline)).toContain(
-      'Building resumes: Lowmere irrigation',
+      'Research finished: Drought-resistant seed',
     );
+    expect(state.projects[1]).toMatchObject({ status: 'known', opened: state.date });
+    expect(knownTechnologies(state.projects)).toEqual(['droughtResistantSeed']);
   });
 
-  // This holds for as long as format 10 is the current format: saving must write exactly
+  // This holds for as long as format 11 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(10);
-    const { game, report } = loadSave(format10Save);
+    expect(SAVE_FORMAT_VERSION).toBe(11);
+    const { game, report } = loadSave(format11Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format10Save);
+    expect(stored(saveGame(game, report))).toEqual(format11Save);
+  });
+});
+
+describe('a saved project for a technology is refused', () => {
+  const projects = ['state', 'projects'];
+  const research = [...projects, 1];
+
+  it('when the technology is not one the game has', () => {
+    expect(refusal(withValue(format11Save, [...research, 'target', 'technology'], 'x'))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[1].target.technology is "x", which is not a technology this game has.',
+    );
+  });
+
+  it('when research is in use, or a site known', () => {
+    expect(refusal(withValue(format11Save, [...research, 'status'], 'decaying'))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[1].status is "decaying", which a technology never is.',
+    );
+    expect(refusal(withValue(format11Save, [...projects, 0, 'status'], 'known'))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[0].status is "known", which a site never is.',
+    );
+  });
+
+  it('when it has paid for more quarters than the technology takes to research', () => {
+    expect(refusal(withValue(format11Save, [...research, 'quartersPaid'], 5))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects[1].quartersPaid is 5, but the technology takes 4 quarters to research.',
+    );
+  });
+
+  it('when it researches one technology twice', () => {
+    const { game } = loadSave(format11Save);
+    const [, seed] = saveGame(game, null).state.projects;
+    expect(refusal(withValue(format11Save, projects, [seed, seed]))).toBe(
+      'The saved game is damaged and cannot be opened: state.projects has two projects for the same thing.',
+    );
   });
 });

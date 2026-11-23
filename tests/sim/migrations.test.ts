@@ -23,6 +23,7 @@ import format6Save from '../saves/format-6.json';
 import format7Save from '../saves/format-7.json';
 import format8Save from '../saves/format-8.json';
 import format9Save from '../saves/format-9.json';
+import format10Save from '../saves/format-10.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './playing';
 
@@ -569,5 +570,54 @@ describe('the save kept from save format 9', () => {
     expect(game.projects.map((project) => project.target)).toEqual([
       { kind: 'site', siteId: 'korr-mine' },
     ]);
+  });
+});
+
+describe('the save kept from save format 10', () => {
+  it('still opens on the game it was written from, a site in use and decaying and another paused', () => {
+    const { game, report } = loadSave(format10Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(game.projects.map((project) => [project.target, project.status])).toEqual([
+      [{ kind: 'site', siteId: 'lowmere-store' }, 'decaying'],
+      [{ kind: 'site', siteId: 'lowmere-irrigation' }, 'paused'],
+    ]);
+    expect(report?.entries.map((entry) => entry.headline)).toContain('Paused: Lowmere irrigation');
+  });
+
+  it('plays on, building where it left off once the treasury can pay', () => {
+    const { game } = loadSave(format10Save);
+
+    const decisions = answering(
+      game,
+      // Every tax the country can bear and nothing spent but upkeep, so the treasury grows.
+      steward(game, {
+        taxRatePercent: 40,
+        spending: {
+          agriculture: 0,
+          foodRelief: 0,
+          health: 0,
+          education: 0,
+          security: 0,
+          upkeep: 200,
+        },
+      }),
+    );
+    const { state, report } = advanceQuarter(game, decisions);
+
+    expect(state.projects.map((project) => [project.quartersPaid, project.status])).toEqual([
+      [2, 'operating'],
+      [2, 'building'],
+    ]);
+    expect(report.entries.map((entry) => entry.headline)).toContain(
+      'Building resumes: Lowmere irrigation',
+    );
+  });
+
+  it('is lifted to format 11 as it was, knowing no technology', () => {
+    const { game } = loadSave(format10Save);
+
+    expect(game.projects.every((project) => project.target.kind === 'site')).toBe(true);
+    expect(game.projects.map((project) => project.status)).toEqual(['decaying', 'paused']);
   });
 });

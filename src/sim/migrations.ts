@@ -21,7 +21,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 10;
+export const SAVE_FORMAT_VERSION = 11;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -40,6 +40,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   7: fromFormat7,
   8: fromFormat8,
   9: fromFormat9,
+  10: fromFormat10,
 };
 
 /**
@@ -260,6 +261,15 @@ function fromFormat9(older: Json): Json {
     formatVersion: 10,
     state: { ...state, projects: projectsWithTargets(state.projects) },
   };
+}
+
+/**
+ * Format 11 added research: a project's target may be a technology, and a technology once
+ * researched is known. A game written in format 10 has researched nothing and knows no
+ * technology, so it is read as it was.
+ */
+function fromFormat10(older: Json): Json {
+  return { ...older, formatVersion: 11 };
 }
 
 /**

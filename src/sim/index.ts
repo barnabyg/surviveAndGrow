@@ -108,6 +108,7 @@ export {
 export { oreTonnesOf } from './sites';
 export {
   onSite,
+  onTechnology,
   projectStartFault,
   siteOf,
   siteStatus,
@@ -116,6 +117,13 @@ export {
   type ProjectTarget,
   type SiteStatus,
 } from './projects';
+export { researchFault, researchStatuses, type TechnologyStatus } from './research';
+export {
+  knownTechnologies,
+  technologyName,
+  technologyTerms,
+  type TechnologyTerms,
+} from './technology';
 export { regionPower, type RegionPower } from './power';
 export {
   livingStandards,
@@ -235,6 +243,9 @@ export {
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
+  TECHNOLOGIES,
+  TECHNOLOGY_DEFINITIONS,
+  TECHNOLOGY_STATE_NAMES,
   TIER_NAMES,
   TIERS,
   UNREST_KINDS,
@@ -263,6 +274,8 @@ export {
   type SiteState,
   type SiteType,
   type SpendingArea,
+  type Technology,
+  type TechnologyState,
   type Terrain,
   type Tier,
   type TradeDirection,

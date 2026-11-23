@@ -155,6 +155,21 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Finished building report',
     path: 'M3,17 H17 M5,17 V9 L10,4 L15,9 V17 M7.5,12.5 L9.5,14.5 L13,10.5',
   },
+  // A flask, bubbling.
+  researchStarted: {
+    label: 'Research report',
+    path: 'M7,2 H13 M8.5,2 V8 L3.5,17 H16.5 L11.5,8 V2 M7,13 A1,1 0 1 1 6.99,13 M11,11.5 A1,1 0 1 1 10.99,11.5',
+  },
+  // The same flask with work stopped: two upright bars.
+  researchPaused: {
+    label: 'Paused research report',
+    path: 'M7,2 H13 M8.5,2 V8 L3.5,17 H16.5 L11.5,8 V2 M8.5,11.5 V15 M11.5,11.5 V15',
+  },
+  // The same flask, ticked.
+  researchCompleted: {
+    label: 'Finished research report',
+    path: 'M7,2 H13 M8.5,2 V8 L3.5,17 H16.5 L11.5,8 V2 M7,13 L9,15 L13,10.5',
+  },
   // A finished building with a crack running down it.
   siteDecaying: {
     label: 'Decaying site report',

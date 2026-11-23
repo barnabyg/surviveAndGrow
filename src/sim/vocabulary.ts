@@ -218,53 +218,199 @@ export const SITE_POWER_ROLES: Readonly<Record<SiteType, PowerRole | null>> = Ob
 ) as Record<SiteType, PowerRole | null>;
 
 /**
- * The things a site in use can lessen. A site's effect leaves a share, in thousandths, of
- * one of them; several sites bearing on the same thing multiply together.
+ * The things a site in use, or a technology known, can lessen. A site's or a technology's
+ * effect leaves a share, in thousandths, of one of them; several bearing on the same thing
+ * multiply together.
  */
-export const SITE_EFFECTS = ['harvestWeather', 'transportLoss', 'reserveSpoilage'] as const;
+export const SITE_EFFECTS = [
+  'harvestWeather',
+  'transportLoss',
+  'reserveSpoilage',
+  'weatherAndDrought',
+] as const;
 export type SiteEffect = (typeof SITE_EFFECTS)[number];
 
 /**
- * Where each effect falls: on the region the site belongs to, or on the whole nation, and
- * the sentence that tells the player what it does. `{percent}` is what the site takes off.
+ * Where each effect falls, and the sentences that tell the player what it does: `sentence`
+ * for a site, which bears on the region it belongs to or on the whole nation, and
+ * `everywhere` for a technology, which bears on every region at once. `{percent}` is what
+ * the site or technology takes off.
  */
 export const SITE_EFFECT_DEFINITIONS: Readonly<
-  Record<SiteEffect, { readonly reach: 'region' | 'nation'; readonly sentence: string }>
+  Record<
+    SiteEffect,
+    {
+      readonly reach: 'region' | 'nation';
+      readonly sentence: string;
+      readonly everywhere: string;
+    }
+  >
 > = {
   harvestWeather: {
     reach: 'region',
     sentence: 'Weather, drought and flood move its region’s harvest {percent}% less.',
+    everywhere: 'Weather, drought and flood move every region’s harvest {percent}% less.',
   },
   transportLoss: {
     reach: 'region',
     sentence: '{percent}% less of its region’s surplus is lost on the way to the national reserve.',
+    everywhere:
+      '{percent}% less of every region’s surplus is lost on the way to the national reserve.',
   },
   reserveSpoilage: {
     reach: 'nation',
     sentence: '{percent}% less of the national reserve spoils each quarter.',
+    everywhere: '{percent}% less of the national reserve spoils each quarter.',
+  },
+  weatherAndDrought: {
+    reach: 'region',
+    sentence: 'Weather and drought move its region’s harvest {percent}% less.',
+    everywhere: 'Weather and drought move every region’s harvest {percent}% less.',
   },
 };
 
 /**
- * How a project stands: being built, held up for want of money, or built and in use. A site
- * in use is operating while its upkeep is paid and decaying while it is not.
+ * The effects that lessen how far the weather moves a region's harvest. What lessens an
+ * event's hold on the harvest is the event's own (`balance.events`).
  */
-export const PROJECT_STATUSES = ['building', 'paused', 'operating', 'decaying'] as const;
+export const WEATHER_HELD_BY: readonly SiteEffect[] = ['harvestWeather', 'weatherAndDrought'];
+
+/**
+ * The technologies the engine knows, in the order the research tab shows them. A country file
+ * cannot add one. What each costs, how long it takes to research and what it does once known
+ * are balance values (`balance.technologies`); a technology is added here and there and in no
+ * rule.
+ */
+export const TECHNOLOGIES = ['droughtResistantSeed'] as const;
+export type Technology = (typeof TECHNOLOGIES)[number];
+
+/**
+ * What the engine knows of each technology: its name, and the technologies that must be known
+ * before it can be researched. Together the prerequisites make the technology tree.
+ */
+export const TECHNOLOGY_DEFINITIONS: Readonly<
+  Record<
+    Technology,
+    {
+      readonly name: string;
+      readonly prerequisites: readonly Technology[];
+    }
+  >
+> = {
+  droughtResistantSeed: { name: 'Drought-resistant seed', prerequisites: [] },
+};
+
+/**
+ * How a technology stands in the tree: known; being researched, or paused for want of money;
+ * planned to be started as the quarter ends; available, its prerequisites known; or locked
+ * until they are.
+ */
+export const TECHNOLOGY_STATES = [
+  'known',
+  'researching',
+  'paused',
+  'planned',
+  'available',
+  'locked',
+] as const;
+export type TechnologyState = (typeof TECHNOLOGY_STATES)[number];
+
+export const TECHNOLOGY_STATE_NAMES: Readonly<Record<TechnologyState, string>> = {
+  known: 'Known',
+  researching: 'Being researched',
+  paused: 'Paused',
+  planned: 'Planned',
+  available: 'Available',
+  locked: 'Locked',
+};
+
+/**
+ * How a project stands: being built, held up for want of money, or finished. A site, once
+ * built, is in use: operating while its upkeep is paid and decaying while it is not. A
+ * technology, once researched, is known.
+ */
+export const PROJECT_STATUSES = ['building', 'paused', 'operating', 'decaying', 'known'] as const;
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 /**
- * What a project can be for: a site, built on. A kind added here is a project's target of its
- * own in `projects.ts`, and a save-format change.
+ * What a project can be for: a site, built on, or a technology, researched. A kind added here
+ * is a project's target of its own in `projects.ts`, and a save-format change.
  */
-export const PROJECT_TARGET_KINDS = ['site'] as const;
+export const PROJECT_TARGET_KINDS = ['site', 'technology'] as const;
 export type ProjectTargetKind = (typeof PROJECT_TARGET_KINDS)[number];
+
+/**
+ * How the report and the treasury's breakdown speak of a project of each kind: the headline
+ * of each report entry, the work it is ("2 of its 3 quarters of building"), what it takes
+ * ("the 3 quarters it takes to build"), what a quarter without money did, what finishing
+ * means, the line it pays in the treasury's breakdown ("Building Lowmere irrigation"), and
+ * the kinds of report its entries are.
+ */
+export interface ProjectWords {
+  readonly begins: string;
+  readonly resumes: string;
+  readonly paused: string;
+  readonly finished: string;
+  readonly work: string;
+  readonly takes: string;
+  readonly idle: string;
+  readonly finishedCause: string;
+  readonly paying: string;
+  readonly reportKinds: {
+    readonly started: ReportKind;
+    readonly paused: ReportKind;
+    readonly finished: ReportKind;
+  };
+}
+
+export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWords>> = {
+  site: {
+    begins: 'Building begins',
+    resumes: 'Building resumes',
+    paused: 'Paused',
+    finished: 'Finished',
+    work: 'building',
+    takes: 'it takes to build',
+    idle: 'nothing was built this quarter',
+    finishedCause: 'It is in use from next quarter.',
+    paying: 'Building',
+    reportKinds: {
+      started: 'projectStarted',
+      paused: 'projectPaused',
+      finished: 'projectCompleted',
+    },
+  },
+  technology: {
+    begins: 'Research begins',
+    resumes: 'Research resumes',
+    paused: 'Research paused',
+    finished: 'Research finished',
+    work: 'research',
+    takes: 'it takes to research',
+    idle: 'no research was done this quarter',
+    finishedCause: 'It is known from next quarter.',
+    paying: 'Researching',
+    reportKinds: {
+      started: 'researchStarted',
+      paused: 'researchPaused',
+      finished: 'researchCompleted',
+    },
+  },
+};
 
 /**
  * How a site stands: empty until a project is started on it, and then as the project stands.
  * A site no project has been started on is closed once one has been started on one of its
  * alternatives, and can then never be built.
  */
-export const SITE_STATES = ['empty', 'closed', ...PROJECT_STATUSES] as const;
+export const SITE_STATES = [
+  'empty',
+  'closed',
+  'building',
+  'paused',
+  'operating',
+  'decaying',
+] as const;
 export type SiteState = (typeof SITE_STATES)[number];
 
 export const SITE_STATE_NAMES: Readonly<Record<SiteState, string>> = {
@@ -403,6 +549,9 @@ export const REPORT_KINDS = [
   'projectStarted',
   'projectPaused',
   'projectCompleted',
+  'researchStarted',
+  'researchPaused',
+  'researchCompleted',
   'siteDecaying',
   'siteRestored',
   'loanTaken',

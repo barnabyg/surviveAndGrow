@@ -8,9 +8,9 @@ import {
 } from './budget';
 import { serveDebts, takeDebts, type Borrowing } from './debt';
 import {
-  onSite,
   resolveProjects,
   siteEffects,
+  startsOf,
   type BuildingOutcome,
   type Project,
   type ProjectTarget,
@@ -60,7 +60,7 @@ export function resolveMoney(
     | 'foodReserve'
   >,
   decisions: Decisions,
-  starts: readonly ProjectTarget[] = (decisions.startProjects ?? []).map(onSite),
+  starts: readonly ProjectTarget[] = startsOf(decisions),
   borrowing: readonly Borrowing[] = decisions.borrow ?? [],
   trading: readonly TradeOrder[] = decisions.trade ?? [],
 ): QuarterMoney {

@@ -14,6 +14,7 @@ import type {
   SiteEffect,
   SiteType,
   SpendingArea,
+  Technology,
   Tier,
 } from './vocabulary';
 
@@ -56,6 +57,18 @@ export interface SiteBalance {
    * capacity. What the ore shipped earns follows the world ore price.
    */
   readonly capacity?: number;
+}
+
+/**
+ * The balance values of one technology: what researching it costs, in Money units, paid over
+ * the `researchQuarters` it takes, and what it does once known. Each effect leaves that many
+ * thousandths of what it bears on in every region, or across the nation for an effect whose
+ * reach is the nation (`SITE_EFFECT_DEFINITIONS`), multiplying with what the sites in use do.
+ */
+export interface TechnologyBalance {
+  readonly cost: number;
+  readonly researchQuarters: number;
+  readonly effects: Readonly<Partial<Record<SiteEffect, number>>>;
 }
 
 /**
@@ -325,6 +338,21 @@ export const balance = {
       infrastructurePermille: 0,
     },
   } satisfies Record<SiteType, SiteBalance>,
+  /**
+   * What can be researched (`TECHNOLOGY_DEFINITIONS` gives each its name and prerequisites).
+   * Research is a project on no site: paid in instalments after the budget, paused when the
+   * treasury cannot pay, and known from the quarter after its last instalment. One
+   * technology is researched at a time.
+   */
+  technologies: {
+    // Weather and drought move every region's harvest 30% less; a flood's water it does not
+    // hold back. It multiplies with irrigation where a region has both.
+    droughtResistantSeed: {
+      cost: 80,
+      researchQuarters: 4,
+      effects: { weatherAndDrought: 700 },
+    },
+  } satisfies Record<Technology, TechnologyBalance>,
   /**
    * What power gives a region while a power line in use links it to a power station in use:
    * `outputPermille` thousandths more output, before anything a chain adds, and
@@ -857,7 +885,11 @@ export const balance = {
       // It begins in the planting season, two quarters before the harvest it spoils.
       conditions: { beginsInQuarters: [2] },
       endsAfterHarvest: true,
-      effects: { harvestPermille: 600, decaysSites: false },
+      effects: {
+        harvestPermille: 600,
+        decaysSites: false,
+        heldBy: ['harvestWeather', 'weatherAndDrought'],
+      },
       announcement: {
         begins: 'The rains have failed.',
         ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',
@@ -872,8 +904,9 @@ export const balance = {
       endsAfterHarvest: true,
       // It takes less of the harvest than a drought, but the water damages every site in use
       // in the region: each decays until its upkeep is paid again. Irrigation softens what it
-      // does to the harvest as it softens the weather (`sites.irrigation.effects`).
-      effects: { harvestPermille: 700, decaysSites: true },
+      // does to the harvest as it softens the weather (`sites.irrigation.effects`), but
+      // drought-resistant seed does not.
+      effects: { harvestPermille: 700, decaysSites: true, heldBy: ['harvestWeather'] },
       announcement: {
         begins: 'The rivers have burst their banks.',
         ends: 'The harvest it spoiled is in, and the next growing year starts afresh.',

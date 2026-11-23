@@ -3,12 +3,21 @@ import { balance } from './balance';
 import type { BudgetOutcome } from './budget';
 import { isHarvestQuarter, nextQuarter, quartersUntilHarvest } from './calendar';
 import { regionName, type Country, type Region } from './country';
-import type { SiteEffects } from './projects';
+import { leftIn, type SiteEffects } from './projects';
 import type { ReportEntry } from './report';
 import type { Decisions, GameState, RegionShortfall, RegionState, ReliefDelivery } from './state';
 import { formatCount, formatQuarters, formatTonnes } from './text';
 import type { Contribution, Money, Quarter, Range } from './types';
-import { FOOD_STAGE_NAMES, FOOD_STAGES, type FoodStage } from './vocabulary';
+import { eventHeldBy } from './events';
+import { technologyEffectsOf, technologyTerms } from './technology';
+import {
+  EVENT_TYPES,
+  FOOD_STAGE_NAMES,
+  FOOD_STAGES,
+  WEATHER_HELD_BY,
+  type FoodStage,
+  type Technology,
+} from './vocabulary';
 
 /** What one region grew at a harvest, and where it went. All weights are in tonnes. */
 export interface RegionHarvest {
@@ -200,9 +209,10 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   const harvests: RegionHarvest[] = [];
   const harvested = fed.map((region, index): RegionState => {
     const land = regionOf(country, region.id);
-    // Irrigation leaves the weather only a part of its hold on the harvest.
+    // Irrigation, and drought-resistant seed once known, leave the weather only a part of its
+    // hold on the harvest.
     const weather = Math.trunc(
-      (region.weather * (inputs.sites.inRegion.harvestWeather[index] ?? 1000)) / 1000,
+      (region.weather * leftIn(inputs.sites, WEATHER_HELD_BY, index)) / 1000,
     );
     const grown =
       land === undefined
@@ -231,7 +241,7 @@ export function resolveFood(situation: FoodSituation, inputs: FoodInputs): FoodO
   if (lost > 0) contributions.push({ label: 'Lost in transport', amount: -lost });
   const delivered = sum(harvests.map((harvest) => harvest.surplus)) - lost;
   const harvest = { total: sum(harvests.map((entry) => entry.grown)), regions: harvests };
-  entries.push(harvestEntry(harvest));
+  entries.push(harvestEntry(harvest, inputs.sites.technologies));
 
   return {
     regions: harvested,
@@ -434,15 +444,25 @@ function hungerEntry(change: HungerChange): ReportEntry | null {
       };
 }
 
-/** What the turn report says when the harvest comes in. */
-function harvestEntry(harvest: Harvest): ReportEntry {
+/**
+ * What the turn report says when the harvest comes in, naming each technology known that
+ * lessened how far the weather or events moved it.
+ */
+function harvestEntry(harvest: Harvest, known: readonly Technology[]): ReportEntry {
   const lost = sum(harvest.regions.map((region) => region.lost));
   const delivered = sum(harvest.regions.map((region) => region.surplus)) - lost;
+  const held = new Set([...WEATHER_HELD_BY, ...EVENT_TYPES.flatMap(eventHeldBy)]);
+  const lessened = known
+    .filter((technology) => technologyEffectsOf(technology).some(([effect]) => held.has(effect)))
+    .map((technology) => {
+      const { name, effect } = technologyTerms(technology);
+      return ` ${name} is known: ${effect}`;
+    });
   return {
     kind: 'harvest',
     seriousness: 'notable',
     headline: 'The harvest is in',
-    cause: `The country grew ${formatTonnes(harvest.total)}. ${formatTonnes(delivered)} reached the national reserve, and ${formatTonnes(lost)} was lost on the way.`,
+    cause: `The country grew ${formatTonnes(harvest.total)}. ${formatTonnes(delivered)} reached the national reserve, and ${formatTonnes(lost)} was lost on the way.${lessened.join('')}`,
   };
 }
 

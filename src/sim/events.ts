@@ -2,13 +2,13 @@ import { percentOff } from './arithmetic';
 import { balance } from './balance';
 import { entersBeforeHarvest } from './calendar';
 import { regionName, type Country } from './country';
-import { siteEffects, type Project, type SiteEffects } from './projects';
+import { leftIn, siteEffects, type Project, type SiteEffects } from './projects';
 import { nextRandom, type RngState } from './rng';
 import type { ReportEntry } from './report';
 import type { GameState } from './state';
 import type { GameDate, Quarter } from './types';
 import type { SiteDamage } from './upkeep';
-import { EVENT_TYPES, type EventType } from './vocabulary';
+import { EVENT_TYPES, type EventType, type SiteEffect } from './vocabulary';
 
 /**
  * What an event is, as data: the conditions under which it can begin, how long it lasts
@@ -32,6 +32,11 @@ export interface EventDefinition {
      * decaying from that quarter, until a quarter in which its upkeep is paid restores it.
      */
     readonly decaysSites: boolean;
+    /**
+     * What lessens the event's hold on the harvest: the effects of the sites in use in its
+     * region and of the technologies known that soften it, multiplied together.
+     */
+    readonly heldBy: readonly SiteEffect[];
   };
 }
 
@@ -130,18 +135,34 @@ export function endEventsAfterHarvest(active: readonly ActiveEvent[]): {
 }
 
 /**
- * What the events now in force leave of a region's harvest, in thousandths. `hold` is what
- * irrigation leaves of an event's hold on the region: 1000 where there is none.
+ * What is left of each kind of event's hold on one region's harvest, in thousandths, once the
+ * sites in use there and the technologies known have softened it: 1000 where nothing does.
  */
+export type EventHolds = Readonly<Record<EventType, number>>;
+
+/** What the sites in use and the technologies known leave of each event's hold on a region. */
+export function holdsIn(sites: SiteEffects, regionIndex: number): EventHolds {
+  return Object.fromEntries(
+    EVENT_TYPES.map((type) => [type, leftIn(sites, definitions[type].effects.heldBy, regionIndex)]),
+  ) as Record<EventType, number>;
+}
+
+/** The effects that soften an event of this kind's hold on a harvest. */
+export function eventHeldBy(type: EventType): readonly SiteEffect[] {
+  return definitions[type].effects.heldBy;
+}
+
+/** What the events now in force leave of a region's harvest, in thousandths. */
 export function harvestPermille(
   active: readonly ActiveEvent[],
   regionId: string,
-  hold: number,
+  holds: EventHolds,
 ): number {
   return active
     .filter((event) => event.regionId === regionId)
     .reduce(
-      (permille, event) => Math.floor((permille * leftBy(definitions[event.type], hold)) / 1000),
+      (permille, event) =>
+        Math.floor((permille * leftBy(definitions[event.type], holds[event.type])) / 1000),
       1000,
     );
 }
@@ -161,10 +182,10 @@ export function worstHarvestPermille(
   active: readonly ActiveEvent[],
   regionId: string,
   quarter: Quarter,
-  hold: number,
+  holds: EventHolds,
 ): number {
   const region = country.regions.find((candidate) => candidate.id === regionId);
-  let worst = harvestPermille(active, regionId, hold);
+  let worst = harvestPermille(active, regionId, holds);
   for (const type of EVENT_TYPES) {
     const definition = definitions[type];
     const mayStillBegin =
@@ -174,7 +195,7 @@ export function worstHarvestPermille(
       (region?.eventLikelihood[type] ?? 0) > 0 &&
       !isActive(active, type, regionId);
     if (mayStillBegin) {
-      worst = Math.floor((worst * leftBy(definition, hold)) / 1000);
+      worst = Math.floor((worst * leftBy(definition, holds[type])) / 1000);
     }
   }
   return worst;
@@ -236,7 +257,7 @@ export function damagesSites(type: EventType): boolean {
 
 /**
  * How much of a region's harvest an event of this kind takes, as a whole percentage, where
- * irrigation leaves it only `hold` thousandths of its grip.
+ * the sites in use and the technologies known leave it only `hold` thousandths of its grip.
  */
 export function harvestCutBy(type: EventType, hold: number): number {
   return harvestCutPercent(definitions[type], hold);
@@ -256,7 +277,8 @@ export function endEntry(country: Country, event: ActiveEvent): ReportEntry {
 
 /**
  * An event in force and what it does to its region, in a few words: "Drought · harvest
- * −40%", or less where irrigation leaves it only `hold` thousandths of its grip.
+ * −40%", or less where the sites in use and the technologies known leave it only `hold`
+ * thousandths of its grip.
  */
 export function describeEventWithHold(event: ActiveEvent, hold: number): string {
   const definition = definitions[event.type];
@@ -284,29 +306,34 @@ export function rollWeather(
   return { shocks, rng: current };
 }
 
-/** What the events in force leave of each region's harvest, given the sites in use. */
+/**
+ * What the events in force leave of each region's harvest, given the sites in use and the
+ * technologies known.
+ */
 export function eventsLeave(
   state: Pick<GameState, 'regions' | 'events'>,
   sites: SiteEffects,
 ): number[] {
   return state.regions.map((region, index) =>
-    harvestPermille(state.events, region.id, sites.inRegion.harvestWeather[index] ?? 1000),
+    harvestPermille(state.events, region.id, holdsIn(sites, index)),
   );
 }
 
 /**
  * An event in force and what it does to its region as things stand, in a few words:
- * "Drought · harvest −40%", or less where irrigation is in use.
+ * "Drought · harvest −40%", or less where irrigation is in use or a technology softens it.
  */
 export function describeEvent(
   state: Pick<GameState, 'country' | 'projects'>,
   event: ActiveEvent,
 ): string {
-  return describeEventWithHold(event, holdOn(state.country, state.projects, event.regionId));
+  return describeEventWithHold(event, holdOn(state.country, state.projects, event));
 }
 
-/** What irrigation in use leaves of the weather's and of events' hold on one region. */
-export function holdOn(country: Country, projects: readonly Project[], regionId: string): number {
-  const index = country.regions.findIndex((region) => region.id === regionId);
-  return siteEffects({ country, projects }).inRegion.harvestWeather[index] ?? 1000;
+/**
+ * What the sites in use and the technologies known leave of an event's hold on its region.
+ */
+export function holdOn(country: Country, projects: readonly Project[], event: EventStrike): number {
+  const index = country.regions.findIndex((region) => region.id === event.regionId);
+  return holdsIn(siteEffects({ country, projects }), index)[event.type];
 }

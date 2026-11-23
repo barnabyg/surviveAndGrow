@@ -4,15 +4,26 @@ import { nextDate } from './calendar';
 import type { Country, Site } from './country';
 import type { ReportEntry } from './report';
 import { infrastructureOf, siteEffectsOf, siteTerms } from './sites';
+import {
+  knownTechnologies,
+  technologyEffectsOf,
+  technologyFault,
+  technologyOf,
+  technologyTerms,
+} from './technology';
 import { formatMoney, formatQuarters } from './text';
 import type { Contribution, GameDate, Money } from './types';
 import { inUse } from './upkeep';
 import {
+  PROJECT_TARGET_WORDS,
   SITE_EFFECT_DEFINITIONS,
   SITE_EFFECTS,
+  TECHNOLOGIES,
   type ProjectStatus,
+  type ProjectWords,
   type SiteEffect,
   type SiteState,
+  type Technology,
 } from './vocabulary';
 
 /** A project on a site: building it. */
@@ -21,17 +32,21 @@ export interface SiteTarget {
   readonly siteId: string;
 }
 
+/** A project on no site: researching a technology. */
+export interface TechnologyTarget {
+  readonly kind: 'technology';
+  readonly technology: Technology;
+}
+
 /**
- * What a project is for, one of `PROJECT_TARGET_KINDS`. Every project is on a site for now;
- * research and surveys, which are on no site, are to be targets of kinds of their own, added
- * to this union. Whatever its target, a project is paid for and paused in the same way
+ * What a project is for, one of `PROJECT_TARGET_KINDS`: a site, built on, or a technology,
+ * researched. Whatever its target, a project is paid for and paused in the same way
  * (`resolveProjects`) and barred in the same way (`projectStartFault`). Only what depends on
  * the target is written for each kind: its terms (`projectTerms`), what may stop it being
  * started (`targetFault`), the site it is on (`siteOf`), and how a save holds it
- * (`readTarget` in `save.ts`). With a single kind these need not ask which kind they have;
- * the compiler finds each of them for the kind added next.
+ * (`readTarget` in `save.ts`). A kind added to this union is found by the compiler in each.
  */
-export type ProjectTarget = SiteTarget;
+export type ProjectTarget = SiteTarget | TechnologyTarget;
 
 /**
  * Something being built or in use: anything with a cost, a build time and a lasting effect
@@ -54,9 +69,29 @@ export function onSite(siteId: string): ProjectTarget {
   return { kind: 'site', siteId };
 }
 
+/** The target of research into a technology. */
+export function onTechnology(technology: Technology): ProjectTarget {
+  return { kind: 'technology', technology };
+}
+
 /** The site a project is on, or null for a project that is on no site. */
 export function siteOf({ target }: Pick<Project, 'target'>): string | null {
-  return target.siteId;
+  return target.kind === 'site' ? target.siteId : null;
+}
+
+/**
+ * The projects a quarter's decisions start, in the order they are paid for: the sites to
+ * build on, as listed, and then the research, if any.
+ */
+export function startsOf(decisions: {
+  readonly startProjects?: readonly string[];
+  readonly startResearch?: Technology | null;
+}): ProjectTarget[] {
+  const research = decisions.startResearch ?? null;
+  return [
+    ...(decisions.startProjects ?? []).map(onSite),
+    ...(research === null ? [] : [onTechnology(research)]),
+  ];
 }
 
 /** The sites among these targets, in their order. */
@@ -80,8 +115,9 @@ export function targetKey(target: ProjectTarget): string {
 }
 
 /**
- * What a project costs and takes to finish, as its target sets them, and how the report
- * names it: by its name, and by its region when it is on one.
+ * What a project costs and takes to finish, as its target sets them, how it stands once
+ * finished, and how the report names it: by its name, and by its region when it is on one,
+ * in the words of its kind.
  */
 export interface ProjectTerms {
   readonly name: string;
@@ -90,14 +126,31 @@ export interface ProjectTerms {
   readonly buildQuarters: number;
   /** What it does once finished, as the report says it. */
   readonly effect: string;
+  /** How the finished project stands: a site is operating, a technology known. */
+  readonly finished: ProjectStatus;
+  readonly words: ProjectWords;
 }
 
-/** A project's terms, or null when the country has no such target. */
+/** A project's terms, or null when there is no such target: a site the country lacks. */
 export function projectTerms(country: Country, target: ProjectTarget): ProjectTerms | null {
+  const words = PROJECT_TARGET_WORDS[target.kind];
+  if (target.kind === 'technology') {
+    if (!TECHNOLOGIES.includes(target.technology)) return null;
+    const { name, cost, researchQuarters, effect } = technologyTerms(target.technology);
+    return { name, cost, buildQuarters: researchQuarters, effect, finished: 'known', words };
+  }
   const site = country.sites.find((candidate) => candidate.id === target.siteId);
   if (site === undefined) return null;
   const { cost, buildQuarters, effect } = siteTerms(site.type);
-  return { name: site.name, regionId: site.regionId, cost, buildQuarters, effect };
+  return {
+    name: site.name,
+    regionId: site.regionId,
+    cost,
+    buildQuarters,
+    effect,
+    finished: 'operating',
+    words,
+  };
 }
 
 /**
@@ -139,7 +192,7 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
       : null;
   return {
     siteId,
-    state: project?.status ?? (closedBy === null ? 'empty' : 'closed'),
+    state: project === undefined ? (closedBy === null ? 'empty' : 'closed') : siteStateOf(project),
     closedBy,
     quartersPaid,
     buildQuarters: terms?.buildQuarters ?? 0,
@@ -151,16 +204,27 @@ export function siteStatus({ country, projects }: Building, siteId: string): Sit
   };
 }
 
+/** How a project on a site can stand: never known, which only research becomes. */
+export type SiteProjectState = Exclude<ProjectStatus, 'known'>;
+
+/** How a site's project stands. Only research is ever known, so a site's never is. */
+export function siteStateOf({ status }: Pick<Project, 'status'>): SiteProjectState {
+  return status === 'known' ? 'operating' : status;
+}
+
 /**
  * What is wrong with starting projects on these sites this quarter, or null when the game
  * allows it: `projectStartFault` for projects on sites.
  */
-export function startFault(game: Starting, siteIds: readonly string[]): string | null {
+export function startFault(game: ProjectStarting, siteIds: readonly string[]): string | null {
   return projectStartFault(game, siteIds.map(onSite));
 }
 
 /** What starting projects needs of the game. */
-type Starting = Building & { readonly treasury: Money } & Pick<Austere, 'date' | 'austerity'>;
+export type ProjectStarting = Building & { readonly treasury: Money } & Pick<
+    Austere,
+    'date' | 'austerity'
+  >;
 
 /**
  * What is wrong with starting these projects this quarter, or null when the game allows it.
@@ -169,7 +233,7 @@ type Starting = Building & { readonly treasury: Money } & Pick<Austere, 'date' |
  * built. None is started during austerity.
  */
 export function projectStartFault(
-  game: Starting,
+  game: ProjectStarting,
   targets: readonly ProjectTarget[],
 ): string | null {
   const { country, treasury } = game;
@@ -183,7 +247,8 @@ export function projectStartFault(
     const fault = targetFault(game, target, started);
     if (fault !== null) return fault;
     const these = projectTerms(country, target);
-    if (these === null) throw new RangeError(`There is no ${target.kind} to start a project on.`);
+    if (these === null)
+      throw new RangeError(`There is no such ${target.kind} to start a project on.`);
     started.push(target);
     terms.push(these);
   }
@@ -196,13 +261,21 @@ export function projectStartFault(
 /**
  * What is wrong with starting a project for this target beside those listed before it, or
  * null when nothing is. A project is started on an empty site, not on one closed by building
- * on one of its alternatives nor together with one.
+ * on one of its alternatives nor together with one. Research is started on a technology whose
+ * prerequisites are known, while no other is being researched (`technologyFault`).
  */
 function targetFault(
   { country, projects }: Building,
   target: ProjectTarget,
   alongside: readonly ProjectTarget[],
 ): string | null {
+  if (target.kind === 'technology') {
+    if (!TECHNOLOGIES.includes(target.technology)) {
+      return `There is no technology "${target.technology}" to research.`;
+    }
+    const researching = alongside.flatMap((other) => technologyOf({ target: other }) ?? []);
+    return technologyFault(projects, target.technology, researching);
+  }
   const nameOf = (id: string) => country.sites.find((candidate) => candidate.id === id)?.name ?? id;
   const site = country.sites.find((candidate) => candidate.id === target.siteId);
   if (site === undefined) return `There is no site "${target.siteId}" to build on.`;
@@ -261,7 +334,7 @@ export function resolveProjects(
 
   const after = [...projects, ...begun].map((project): Project => {
     const terms = projectTerms(country, project.target);
-    if (terms === null || inUse(project)) return project;
+    if (terms === null || isFinished(project)) return project;
     const due = instalment(terms, project.quartersPaid);
     if (begun.includes(project)) entries.push(startedEntry(terms));
 
@@ -271,30 +344,57 @@ export function resolveProjects(
       return { ...project, status: 'paused' };
     }
     left -= due;
-    contributions.push({ label: `Building ${terms.name}`, amount: -due, ...placed(terms) });
+    contributions.push({
+      label: `${terms.words.paying} ${terms.name}`,
+      amount: -due,
+      ...placed(terms),
+    });
     const quartersPaid = project.quartersPaid + 1;
     if (project.status === 'paused') entries.push(resumedEntry(terms, quartersPaid));
     if (quartersPaid < terms.buildQuarters) return { ...project, quartersPaid, status: 'building' };
     entries.push(completedEntry(terms));
-    return { ...project, quartersPaid, status: 'operating', opened: nextDate(date) };
+    return { ...project, quartersPaid, status: terms.finished, opened: nextDate(date) };
   });
 
   return { projects: after, paid: available - left, contributions, paused, entries };
 }
 
+/** Whether a project is finished: a site in use, or a technology known. */
+function isFinished(project: Project): boolean {
+  return inUse(project) || project.status === 'known';
+}
+
 /**
- * What the sites in use do, as what each leaves of something, in thousandths: 1000 leaves
- * it whole. Several sites bearing on the same thing multiply together. An effect that falls
- * on its site's region is counted region by region; one that falls on the nation, once.
+ * What the sites in use and the technologies known do, as what each leaves of something, in
+ * thousandths: 1000 leaves it whole. Several bearing on the same thing multiply together. An
+ * effect that falls on its site's region is counted region by region; one that falls on the
+ * nation, once. A technology's effect falls on every region, or once on the nation.
  */
 export interface SiteEffects {
   /** For each effect, what is left of it in each region, in the country file's order. */
   readonly inRegion: Readonly<Record<SiteEffect, readonly number[]>>;
   /** For each effect, what is left of it across the nation. */
   readonly national: Readonly<Record<SiteEffect, number>>;
+  /** The technologies known, whose effects are counted here, in the order they became known. */
+  readonly technologies: readonly Technology[];
 }
 
-/** The effects of the sites in use as a quarter begins. */
+/**
+ * What these effects together leave of something in one region, in thousandths: those of
+ * the sites in use there and of the technologies known, multiplied together.
+ */
+export function leftIn(
+  sites: SiteEffects,
+  effects: readonly SiteEffect[],
+  regionIndex: number,
+): number {
+  return effects.reduce(
+    (left, effect) => Math.floor((left * (sites.inRegion[effect][regionIndex] ?? 1000)) / 1000),
+    1000,
+  );
+}
+
+/** The effects of the sites in use and the technologies known as a quarter begins. */
 export function siteEffects({ country, projects }: Building): SiteEffects {
   const inRegion = Object.fromEntries(
     SITE_EFFECTS.map((effect) => [effect, country.regions.map(() => 1000)]),
@@ -315,7 +415,17 @@ export function siteEffects({ country, projects }: Building): SiteEffects {
       }
     }
   }
-  return { inRegion, national };
+  const technologies = knownTechnologies(projects);
+  for (const technology of technologies) {
+    for (const [effect, permille] of technologyEffectsOf(technology)) {
+      if (SITE_EFFECT_DEFINITIONS[effect].reach === 'nation') {
+        national[effect] = leave(national[effect], permille);
+      } else {
+        inRegion[effect] = inRegion[effect].map((left) => leave(left, permille));
+      }
+    }
+  }
+  return { inRegion, national, technologies };
 }
 
 /** A site in use, and whether it is decaying for want of upkeep. */
@@ -343,7 +453,7 @@ export function infrastructureFrom({ site, decaying }: SiteInUse): number {
  * The instalment due after `quartersPaid` have been paid. The cost is split into equal
  * whole amounts, and the last instalment makes up whatever that leaves over.
  */
-function instalment(
+export function instalment(
   terms: Pick<ProjectTerms, 'cost' | 'buildQuarters'>,
   quartersPaid: number,
 ): Money {
@@ -355,46 +465,46 @@ function instalment(
 }
 
 /** Where a line or report entry about a project points: its region, if it is on one. */
-function placed({ regionId }: ProjectTerms): { readonly regionId?: string } {
+function placed({ regionId }: Pick<ProjectTerms, 'regionId'>): { readonly regionId?: string } {
   return regionId === undefined ? {} : { regionId };
 }
 
-function startedEntry(terms: ProjectTerms): ReportEntry {
+function startedEntry({ words, ...terms }: ProjectTerms): ReportEntry {
   return {
-    kind: 'projectStarted',
+    kind: words.reportKinds.started,
     seriousness: 'notable',
-    headline: `Building begins: ${terms.name}`,
-    cause: `It costs ${formatMoney(terms.cost)}, paid over the ${formatQuarters(terms.buildQuarters)} it takes to build.`,
+    headline: `${words.begins}: ${terms.name}`,
+    cause: `It costs ${formatMoney(terms.cost)}, paid over the ${formatQuarters(terms.buildQuarters)} ${words.takes}.`,
     ...placed(terms),
   };
 }
 
-function pausedEntry(terms: ProjectTerms, due: Money): ReportEntry {
+function pausedEntry({ words, ...terms }: ProjectTerms, due: Money): ReportEntry {
   return {
-    kind: 'projectPaused',
+    kind: words.reportKinds.paused,
     seriousness: 'warning',
-    headline: `Paused: ${terms.name}`,
-    cause: `The treasury could not cover its ${formatMoney(due)} instalment, so nothing was built this quarter.`,
+    headline: `${words.paused}: ${terms.name}`,
+    cause: `The treasury could not cover its ${formatMoney(due)} instalment, so ${words.idle}.`,
     ...placed(terms),
   };
 }
 
-function resumedEntry(terms: ProjectTerms, quartersPaid: number): ReportEntry {
+function resumedEntry({ words, ...terms }: ProjectTerms, quartersPaid: number): ReportEntry {
   return {
-    kind: 'projectStarted',
+    kind: words.reportKinds.started,
     seriousness: 'notable',
-    headline: `Building resumes: ${terms.name}`,
-    cause: `${quartersPaid} of its ${formatQuarters(terms.buildQuarters)} of building ${quartersPaid === 1 ? 'is' : 'are'} now done.`,
+    headline: `${words.resumes}: ${terms.name}`,
+    cause: `${quartersPaid} of its ${formatQuarters(terms.buildQuarters)} of ${words.work} ${quartersPaid === 1 ? 'is' : 'are'} now done.`,
     ...placed(terms),
   };
 }
 
-function completedEntry(terms: ProjectTerms): ReportEntry {
+function completedEntry({ words, ...terms }: ProjectTerms): ReportEntry {
   return {
-    kind: 'projectCompleted',
+    kind: words.reportKinds.finished,
     seriousness: 'notable',
-    headline: `Finished: ${terms.name}`,
-    cause: `It is in use from next quarter. ${terms.effect}`,
+    headline: `${words.finished}: ${terms.name}`,
+    cause: `${words.finishedCause} ${terms.effect}`,
     ...placed(terms),
   };
 }

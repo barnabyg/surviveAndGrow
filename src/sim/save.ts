@@ -14,8 +14,10 @@ import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import { MIGRATIONS, SAVE_FORMAT_VERSION, toCurrentFormat, type SaveMigration } from './migrations';
 import type { PriceShock } from './priceShocks';
-import { projectTerms, targetKey, type Project, type ProjectTarget } from './projects';
+import { projectTerms, siteOf, targetKey, type Project, type ProjectTarget } from './projects';
 import type { ReportEntry } from './report';
+import { knownTechnologies, technologyOf } from './technology';
+import { isInUseState } from './upkeep';
 import type { RngState } from './rng';
 import {
   damaged,
@@ -50,10 +52,13 @@ import {
   PRICE_SHOCK_TYPES,
   PROJECT_STATUSES,
   PROJECT_TARGET_KINDS,
+  PROJECT_TARGET_WORDS,
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SITE_CHAIN_ROLES,
   SPENDING_AREAS,
+  TECHNOLOGIES,
+  TECHNOLOGY_DEFINITIONS,
   TIERS,
   UNREST_LEVELS,
   type ApprovalDriver,
@@ -291,7 +296,9 @@ function readRegions(saved: unknown, path: string, regionIds: readonly string[])
 
 /**
  * The projects, each for something the country has, no two for the same thing, and none paid
- * for beyond the quarters it takes to finish.
+ * for beyond the quarters it takes to finish. A project on a site is never known, and research
+ * never in use. At most one technology is being researched, and none is researched before its
+ * prerequisites are known.
  */
 function readProjects(saved: unknown, path: string, country: Country): Project[] {
   const projects = list(saved, path, (item, itemPath): Project => {
@@ -303,27 +310,64 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
     const quartersPaid = whole(item.quartersPaid, `${itemPath}.quartersPaid`, 0);
     const buildQuarters = projectTerms(country, target)?.buildQuarters ?? 0;
     if (quartersPaid > buildQuarters) {
+      const what = target.kind === 'site' ? 'the site' : 'the technology';
+      const takes = PROJECT_TARGET_WORDS[target.kind].takes.replace('it takes', '');
       fail(
         `${itemPath}.quartersPaid`,
-        `is ${quartersPaid}, but the site takes ${formatQuarters(buildQuarters)} to build`,
+        `is ${quartersPaid}, but ${what} takes ${formatQuarters(buildQuarters)}${takes}`,
       );
     }
+    const status = oneOf(
+      item.status,
+      `${itemPath}.status`,
+      PROJECT_STATUSES,
+      'a state of building',
+    );
+    const fits = target.kind === 'site' ? status !== 'known' : !isInUseState(status);
+    if (!fits) fail(`${itemPath}.status`, `is "${status}", which a ${target.kind} never is`);
     return {
       target,
       began: date(item.began, `${itemPath}.began`),
       quartersPaid,
-      status: oneOf(item.status, `${itemPath}.status`, PROJECT_STATUSES, 'a state of building'),
+      status,
       opened: item.opened === null ? null : date(item.opened, `${itemPath}.opened`),
     };
   });
   const targets = projects.map((project) => targetKey(project.target));
-  if (new Set(targets).size !== projects.length) fail(path, 'builds on the same site twice');
+  if (new Set(targets).size !== projects.length) {
+    fail(
+      path,
+      projects.some((project) => siteOf(project) === null)
+        ? 'has two projects for the same thing'
+        : 'builds on the same site twice',
+    );
+  }
+  const research = projects.filter(
+    (project) => technologyOf(project) !== null && project.status !== 'known',
+  );
+  if (research.length > 1) fail(path, 'researches more than one technology at a time');
+  const known = knownTechnologies(projects);
+  const early = projects.flatMap((project) => {
+    const technology = technologyOf(project);
+    return technology === null
+      ? []
+      : TECHNOLOGY_DEFINITIONS[technology].prerequisites.filter(
+          (needed) => !known.includes(needed),
+        );
+  });
+  if (early.length > 0) fail(path, `researches a technology before ${early[0] ?? ''} is known`);
   return projects;
 }
 
-/** What a project is for: a site the country has. */
+/** What a project is for: a site the country has, or a technology the engine knows. */
 function readTarget(saved: Json, path: string, country: Country): ProjectTarget {
   const kind = oneOf(saved.kind, `${path}.kind`, PROJECT_TARGET_KINDS, 'a kind of project');
+  if (kind === 'technology') {
+    return {
+      kind,
+      technology: oneOf(saved.technology, `${path}.technology`, TECHNOLOGIES, 'a technology'),
+    };
+  }
   const siteIds = country.sites.map((site) => site.id);
   return { kind, siteId: oneOf(saved.siteId, `${path}.siteId`, siteIds, 'a site') };
 }
