@@ -68,25 +68,25 @@ for, and puts a finished one in use from the next quarter. Taking a plan back is
 plan is not a project until the quarter ends.
 
 Only what depends on the target is written for each kind: its name, region, cost, build time,
-effect, the status it finishes with (`PROJECT_TARGET_FINISHED` in `vocabulary.ts`, which
+effect, the status it finishes with (`PROJECT_TARGET_FINISHED` in `vocabulary/projects.ts`, which
 `siteStateOf`, `standsAs` and a save's check read) and the words the report, the treasury's
 breakdown and the risks ahead use for it (`projectTerms`, `PROJECT_TARGET_WORDS`), what else stops
 it being started (`targetFault`), and how a save holds it (`readTarget` in `save.ts`). A quarter's
 decisions start sites (`startProjects`), research (`startResearch`) and surveys (`startSurveys`);
 `startsOf` turns them into targets in that order. The interface checks a plan against everything
-else planned with `planFault` (`surveys.ts`), so that the treasury covers them all. A project on no
+else planned with `planFault` (`projects.ts`), so that the treasury covers them all. A project on no
 site is resolved like any other: it takes its turn for instalments in the order it was started and
 pauses in the same way, but it has no site, so `siteOf` gives null for it. Everything that reads the
 sites in use (`siteStatus`, `sitesInUse`, `siteEffects`, upkeep, chains, power, trade links and the
 timeline) passes over it, it needs no upkeep and nothing decays it, and its report entries name no
 region. Its lasting effect is for its own kind to say. A new kind of target is added to
-`ProjectTarget` and to `PROJECT_TARGET_KINDS` in `vocabulary.ts`, and is a save-format change.
+`ProjectTarget` and to `PROJECT_TARGET_KINDS` beside it, and is a save-format change.
 
 ## Technologies and research
 
 The technology tree is the engine's, like its site types. A technology's name and prerequisites are
-in `TECHNOLOGY_DEFINITIONS` (`vocabulary.ts`), and its cost, research time and effects in
-`balance.technologies`; `technology.ts` reads them (`technologyTerms`), says which are known
+in `TECHNOLOGY_DEFINITIONS` (`vocabulary/technologies.ts`), and its cost, research time and effects
+in `balance.technologies`; `technology.ts` reads them (`technologyTerms`), says which are known
 (`knownTechnologies`) and what stops research starting (`technologyFault`: one at a time,
 prerequisites known). `research.ts` gives the interface the tree as it stands (`researchStatuses`).
 Research into a technology is a project whose target is that technology: it is paid for, paused and
@@ -142,11 +142,12 @@ balance values and nowhere else.
 
 ## Surveys and deposits
 
-A country file may hide deposits (`Deposit` in `country.ts`, read by `readDeposits` and checked by
-`checkDeposits` in `siteChecks.ts`): a mine and the trunk road that serves it, in a region, with a
-likelihood and a range of sizes. A deposit's sites are not among the country's `sites` until a
-survey of its region finds it. A survey is a project whose target is a region (`SurveyTarget`); it
-finishes `surveyed`, and the report says what it found (`surveyFindings`, in `resolveProjects`).
+A country file may hide deposits (`Deposit` in `countryTypes.ts`, read by `readDeposits` in
+`countryDeposits.ts` and checked by `checkDeposits` in `siteChecks.ts`): a mine and the trunk road
+that serves it, in a region, with a likelihood and a range of sizes. A deposit's sites are not among
+the country's `sites` until a survey of its region finds it. A survey is a project whose target is a
+region (`SurveyTarget`); it finishes `surveyed`, and the report says what it found
+(`surveyFindings`, in `resolveProjects`).
 
 Whether a deposit is there and how large it is come from the seed and the deposit's id alone
 (`depositFind` in `deposits.ts`, keyed with `drawAt`), so the generator is untouched and the same
@@ -165,20 +166,22 @@ A new mechanic usually touches most of these:
   through `money.ts`, a decision it adds is checked in `decisions.ts`, and a new field in the
   opening state is set in `newGame.ts`.
 - A module of its own for its rules, called from `game.ts`.
-- `balance.ts`: its tuning values. No rule hard-codes a number.
-- `vocabulary.ts`: the names the player sees, and any new kind of site, event or spending. A new
-  kind of event goes at the end of `EVENT_TYPES`: the events that begin in the same quarter share
-  one roll in each region, taken in that order, so the others' strikes stay as they were.
-  `country.ts` says which country file format first lets a file name it. A world price shock is not
-  such an event: it goes at the end of `PRICE_SHOCK_TYPES`, with its sizes in `balance.priceShocks`.
+- `balance/`: its tuning values, in its mechanic's file. No rule hard-codes a number.
+- `vocabulary/`: the names the player sees, and any new kind of site, event or spending, in its
+  mechanic's file. `balance.ts` and `vocabulary.ts` gather the two folders: add a new file there. A
+  new kind of event goes at the end of `EVENT_TYPES`: the events that begin in the same quarter
+  share one roll in each region, taken in that order, so the others' strikes stay as they were.
+  `countryFormats.ts` says which country file format first lets a file name it. A world price shock
+  goes at the end of `PRICE_SHOCK_TYPES` instead, sized in `balance.priceShocks`.
 - `report.ts` and the entries it compiles: what the turn report says about it.
 - `risks.ts`: the warning ahead, if it can hurt the player. Every loss must be foreseeable. A danger
   of money (the treasury, a missed payment, a bond's maturity, the credit rating) goes in
   `financeRisks.ts`. Both read the quarters played and weigh each danger with `riskScope.ts`.
 - `approval.ts` or `prosperity.ts`, if it moves either.
-- `country.ts`: what a country file may say about it, and how that is checked. The file is read
-  through `countryReader.ts`; the starting treasury, budget and loans are read in `countryStart.ts`;
-  and the checks between sites, their dependencies and alternatives, are in `siteChecks.ts`.
+- `countryTypes.ts`: what a country file may say about it. `country.ts` (`loadCountry`) reads and
+  checks it, with sites in `countrySites.ts` and deposits in `countryDeposits.ts`, through
+  `countryReader.ts`; the starting treasury, budget and loans are read in `countryStart.ts`; and the
+  checks between sites, their dependencies and alternatives, are in `siteChecks.ts`.
 - `index.ts`: anything the interface needs.
 - `save.ts` and `migrations.ts`: a new field in the state is a save-format change. Follow
   [ADR 0001](../../docs/adr/0001-save-format.md): raise the format, add a migration, and keep a
@@ -188,8 +191,7 @@ A new mechanic usually touches most of these:
   `RegionCard.tsx`). `TopBar.tsx`, `ReportList.tsx`, `RisksPanel.tsx`, `MapView.tsx` and
   `LensBar.tsx` show a vital sign, a report, a risk ahead, the map and its lenses, and
   `MapLegend.tsx` explains a new mark on the map.
-- `src/ui/tips.ts`: its first-time tip. `src/ui/tourSteps.ts`: a step of the tour, if the screen
-  gains a part.
+- `src/ui/tips.ts`: its first-time tip. `src/ui/tourSteps.ts`: a tour step for a new part.
 - Tests: a whole-game test on both countries (`bothCountries` in `tests/sim/countries.ts` gives
   Tavara and the second country, `tests/countries/testland.json`, which gains the mechanic too), and
   a browser test in `tests/e2e/` on a country prepared in `tests/e2e/app.ts`.

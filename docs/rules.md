@@ -5,7 +5,7 @@ phase plan are in [design.md](design.md); where each rule lives in the code is i
 [src/sim/README.md](../src/sim/README.md); and what the screen shows is in [screen.md](screen.md).
 
 The figures here (costs, build times, upkeep, rates, limits, thresholds) come from
-[src/sim/balance.ts](../src/sim/balance.ts). A change to a figure there must change it here in
+the files in [src/sim/balance/](../src/sim/balance). A change to a figure there must change it here in
 the same commit. [tests/sim/docsFigures.test.ts](../tests/sim/docsFigures.test.ts) renders the
 main figures from the balance values and fails if this file, [playing.md](playing.md) or
 [countries.md](countries.md) does not state them; a figure it does not list is checked by no one.

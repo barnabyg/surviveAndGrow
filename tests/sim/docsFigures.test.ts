@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { balance, formatCount, formatMoney } from '../../src/sim';
 
 /**
- * The docs restate figures from `src/sim/balance.ts` by hand. Each check below renders one
+ * The docs restate figures from `src/sim/balance/` by hand. Each check below renders one
  * stated figure from the balance values and looks for it, word for word, in the doc that states
  * it, so a change to a value that leaves the doc behind fails here. A check that fails after a
  * deliberate change to the doc's wording is updated with the doc.
