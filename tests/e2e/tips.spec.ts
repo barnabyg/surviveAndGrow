@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { dilemma, endQuarters, openTab, startGame, tavaraWith } from './app';
+import { decisions, dilemma, endQuarters, openTab, reports, startGame, tavaraWith } from './app';
 
 const tipCard = (page: Page) => page.locator('.lessons__card', { hasText: 'First-time tip' });
 const tipsButton = (page: Page) =>
@@ -59,6 +59,98 @@ test('research and surveys are explained the first time the player meets them', 
   await expect(tipCard(page)).toHaveCount(0);
   await map.getByRole('button', { name: /^Salt Coast/ }).click();
   await expect(tipCard(page).getByRole('heading', { name: 'Surveys' })).toBeVisible();
+});
+
+/** Tavara with nothing to warn of and no dilemma, so only what the player does brings a tip. */
+const quiet = () => tavaraWith({ drought: [], flood: [] });
+const mapOf = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
+/** The card of the region picked out on the map: one of the two that may hide a deposit. */
+const regionCard = (page: Page) =>
+  page.getByRole('region', { name: /^Salt Coast$|^The Dry East$/ });
+
+test('the research tip shows once, however the player meets research again', async ({ page }) => {
+  await startGame(page, { countryFile: quiet(), tips: true });
+  const research = await openTab(page, 'Research');
+  await expect(tipCard(page).getByRole('heading', { name: 'Research' })).toBeVisible();
+  await tipCard(page).getByRole('button', { name: 'Got it' }).click();
+  await expect(tipCard(page)).toHaveCount(0);
+
+  // Its tab opened again, research planned and research under way would each bring it.
+  await openTab(page, 'Budget');
+  await openTab(page, 'Research');
+  await expect(tipCard(page)).toHaveCount(0);
+  await research.getByRole('button', { name: 'Research Drought-resistant seed' }).click();
+  await expect(
+    research.getByRole('button', { name: 'Cancel research into Drought-resistant seed' }),
+  ).toBeVisible();
+  await expect(tipCard(page)).toHaveCount(0);
+  await endQuarters(page, 1);
+  await expect(reports(page).getByText('Research begins: Drought-resistant seed')).toBeVisible();
+  await expect(tipCard(page)).toHaveCount(0);
+
+  // Seen once, it is not shown in the next game either.
+  await page.reload();
+  await page.getByRole('button', { name: 'Start new game' }).click();
+  await openTab(page, 'Research');
+  await expect(decisions(page).getByRole('tabpanel', { name: 'Research' })).toBeVisible();
+  await expect(tipCard(page)).toHaveCount(0);
+});
+
+test('the survey tip shows once, however the player meets surveys again', async ({ page }) => {
+  await startGame(page, { countryFile: quiet(), tips: true });
+  await mapOf(page)
+    .getByRole('button', { name: /^Salt Coast/ })
+    .click();
+  await expect(tipCard(page).getByRole('heading', { name: 'Surveys' })).toBeVisible();
+  await tipCard(page).getByRole('button', { name: 'Got it' }).click();
+  await expect(tipCard(page)).toHaveCount(0);
+
+  // Another region that may hide a deposit, a survey planned and one under way would each
+  // bring it.
+  await mapOf(page)
+    .getByRole('button', { name: /^The Dry East/ })
+    .click();
+  await expect(regionCard(page).getByRole('button', { name: 'Survey The Dry East' })).toBeVisible();
+  await expect(tipCard(page)).toHaveCount(0);
+  await regionCard(page).getByRole('button', { name: 'Survey The Dry East' }).click();
+  await expect(
+    regionCard(page).getByRole('button', { name: 'Cancel the survey of The Dry East' }),
+  ).toBeVisible();
+  await expect(tipCard(page)).toHaveCount(0);
+  await endQuarters(page, 1);
+  await expect(reports(page).getByText('Survey begins: The Dry East')).toBeVisible();
+  await expect(tipCard(page)).toHaveCount(0);
+});
+
+test('Tips silences the research and survey tips, and turned on again shows both afresh', async ({
+  page,
+}) => {
+  await startGame(page, { countryFile: quiet(), tips: true });
+  const research = await openTab(page, 'Research');
+  await expect(tipCard(page).getByRole('heading', { name: 'Research' })).toBeVisible();
+  await tipCard(page).getByRole('button', { name: 'Turn tips off' }).click();
+  await expect(tipCard(page)).toHaveCount(0);
+  await expect(tipsButton(page)).toHaveText('Tips off');
+
+  // Turned off, nothing about research or surveys brings a tip.
+  await research.getByRole('button', { name: 'Research Drought-resistant seed' }).click();
+  await mapOf(page)
+    .getByRole('button', { name: /^Salt Coast/ })
+    .click();
+  await regionCard(page).getByRole('button', { name: 'Survey Salt Coast' }).click();
+  await expect(
+    regionCard(page).getByRole('button', { name: 'Cancel the survey of Salt Coast' }),
+  ).toBeVisible();
+  await expect(tipCard(page)).toHaveCount(0);
+
+  // Turned on again, each is shown once more, in the tips' order.
+  await tipsButton(page).click();
+  await expect(tipsButton(page)).toHaveText('Tips on');
+  await expect(tipCard(page).getByRole('heading', { name: 'Research' })).toBeVisible();
+  await tipCard(page).getByRole('button', { name: 'Got it' }).click();
+  await expect(tipCard(page).getByRole('heading', { name: 'Surveys' })).toBeVisible();
+  await tipCard(page).getByRole('button', { name: 'Got it' }).click();
+  await expect(tipCard(page)).toHaveCount(0);
 });
 
 test('tips can be turned off, and on again to show them afresh', async ({ page }) => {
