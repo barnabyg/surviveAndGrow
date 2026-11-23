@@ -17,8 +17,9 @@ and when working one.
    `docs/playing.md`: replay its seed (`BALANCE_SEEDS` set to that seed, with the players it
    names) and correct every outcome it states, or replace it with the new phase's play-through
    and move the old one to its `docs/balance/phase-N.md` as historical. The unit tests check
-   each seed outcome it states (`tests/sim/playThrough.ts`), so tuning that moves one fails
-   there and names the sentence; a new outcome it states gets a check there too.
+   the seed figures it states (`tests/sim/playThrough.test.ts`, and `tests/sim/players.test.ts`
+   for how each game ends), so tuning that moves one fails there and names the sentence; a new
+   figure it states gets a check there too.
 
 ## Run sizes
 

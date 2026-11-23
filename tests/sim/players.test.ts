@@ -15,7 +15,12 @@ import {
 import { DEFAULT_TERMS, playGame, summarise, type GameResult } from '../balance/batch';
 import { SCRIPTED_PLAYERS, withinRules } from '../balance/players';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
-import { PLAY_THROUGH_SEED, playThroughOutcome, playThroughText } from './playThrough';
+import {
+  PLAY_THROUGH_PLAYERS,
+  PLAY_THROUGH_SEED,
+  playThroughOutcome,
+  playThroughText,
+} from './playThrough';
 import { gameResult } from './results';
 import { ENDINGS, GAME_TIMEOUT, playerNamed } from './scripted';
 
@@ -173,6 +178,16 @@ describe('the scripted players', () => {
     expect(decisions.borrow?.length).toBeGreaterThan(0);
     expect(withinRules(austere, decisions).borrow).toBeUndefined();
     expect(withinRules(austere, decisions).startProjects).toBeUndefined();
+  });
+});
+
+describe('the games the play-through in docs/playing.md states the ending of', () => {
+  it('are among the whole games played below, so that each ending is checked', () => {
+    expect(SEEDS).toContain(PLAY_THROUGH_SEED);
+    expect(shipped.map(([land]) => land)).toContain('Tavara');
+    expect(SCRIPTED_PLAYERS.map((player) => player.name)).toEqual(
+      expect.arrayContaining([...PLAY_THROUGH_PLAYERS]),
+    );
   });
 });
 

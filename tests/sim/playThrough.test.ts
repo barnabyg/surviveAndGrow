@@ -2,20 +2,24 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   createGame,
+  foodStatus,
   formatCount,
   GOOD_NAMES,
   MONEY_PER_MILLION,
+  tradeCapacity,
   type GameDate,
   type GameState,
   type TradeOrder,
 } from '../../src/sim';
+import { withinRules } from '../balance/players';
 import { tavaraAsShipped } from './countries';
 import { ordinal, PLAY_THROUGH_SEED, playThroughText } from './playThrough';
 import { playerNamed } from './scripted';
 
 /**
  * The play-through in docs/playing.md says what the timing trader does in the first quarters
- * of its seed. This plays those quarters and looks for each figure, word for word, in the doc.
+ * of its seed. This plays those quarters as the balance run plays them and looks for each
+ * figure, word for word, in the doc.
  * How each player's whole game on the seed ends is checked where those games are already
  * played, in players.test.ts.
  */
@@ -26,6 +30,10 @@ interface Played {
   /** The world grain price as the quarter began, in dollars a tonne. */
   readonly price: number;
   readonly announced: boolean;
+  /** Whether the food reserve was below its safe level as the quarter began. */
+  readonly belowSafeLevel: boolean;
+  /** What the border crossings carry between them, in tonnes, or null once a port carries too. */
+  readonly crossingsCarry: number | null;
   readonly orders: readonly TradeOrder[];
   /** What grain sold abroad brought the treasury, in Money units. */
   readonly income: number;
@@ -37,8 +45,9 @@ function firstQuarters(count: number): Played[] {
   const played: Played[] = [];
   let game: GameState = createGame(tavaraAsShipped(), PLAY_THROUGH_SEED);
   for (let quarter = 0; quarter < count; quarter += 1) {
-    const decisions = decide(game);
+    const decisions = withinRules(game, decide(game));
     const result = advanceQuarter(game, decisions);
+    const { links, total } = tradeCapacity(game);
     played.push({
       date: game.date,
       price: game.worldPrices.grain.at(-1) ?? 0,
@@ -48,6 +57,8 @@ function firstQuarters(count: number): Played[] {
           shock.announced.year === game.date.year &&
           shock.announced.quarter === game.date.quarter,
       ),
+      belowSafeLevel: foodStatus(game).belowSafeLevel,
+      crossingsCarry: links.length === game.country.crossings.length ? total : null,
       orders: decisions.trade ?? [],
       income: result.report.treasury.contributions
         .filter((contribution) => contribution.label === `${GOOD_NAMES.grain} exported`)
@@ -78,6 +89,8 @@ describe('the play-through in docs/playing.md', () => {
     expect(text).toContain(
       `In the ${ordinal(date?.quarter ?? 0)} quarter of the first year failed harvests abroad are announced`,
     );
+    expect(played[announcement]?.belowSafeLevel).toBe(true);
+    expect(text).toContain('The reserve is below its safe level, so buy grain');
   });
 
   it('says how much grain the timing trader buys before the price rises', () => {
@@ -94,7 +107,10 @@ describe('the play-through in docs/playing.md', () => {
 
     expect(sales).toHaveLength(2);
     expect(sold.size).toBe(1);
-    expect(text).toContain(`${formatCount([...sold][0] ?? 0)} t a quarter`);
+    expect(sales.map((quarter) => quarter.crossingsCarry)).toEqual([...sold, ...sold]);
+    expect(text).toContain(
+      `${formatCount([...sold][0] ?? 0)} t a quarter, all the border crossings carry`,
+    );
     expect(text).toContain(`at more than $${String(floor)} a tonne while the shock lasts`);
   });
 

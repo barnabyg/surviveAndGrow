@@ -114,7 +114,7 @@ the 400 games of Phase 5's confirmation run on Tavara, the timing trader wins in
 the middle of its games, against the chain builder's 38
 ([balance/phase-5.md](balance/phase-5.md)).
 
-Every outcome this section states for seed 1 is checked by a test that plays the same player on
-the same seed: the trades of the first quarters in `tests/sim/playThrough.test.ts`, and how each
-whole game ends in `tests/sim/players.test.ts`. When a change to the game moves one, the test
-fails, and the figure is corrected here.
+The figures this section states for seed 1 are checked by tests that play the same player on
+the same seed: the announcement and the trades of steps 2 and 3 in
+`tests/sim/playThrough.test.ts`, and how each whole game ends in `tests/sim/players.test.ts`.
+When a change to the game moves one, the test fails, and the figure is corrected here.

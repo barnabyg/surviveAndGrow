@@ -52,6 +52,9 @@ const INTRODUCED: ReadonlyMap<string, string> = new Map([
   ['Improver', 'the technologies that improve them,'],
 ]);
 
+/** The scripted players whose whole games the play-through says the ending of. */
+export const PLAY_THROUGH_PLAYERS: readonly string[] = [...INTRODUCED.keys()];
+
 /**
  * What the play-through says of a scripted player, from that player's whole game on its seed:
  * the words that introduce the player, then how its game ended. Null for a player it does not
