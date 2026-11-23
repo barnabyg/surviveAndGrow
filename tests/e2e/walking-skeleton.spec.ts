@@ -46,3 +46,34 @@ test('the main screen is a top bar above three columns', async ({ page }) => {
   expect(country.width).toBeGreaterThan(situation.width);
   expect(country.width).toBeGreaterThan(decisions.width);
 });
+
+test('the top bar’s signs and buttons stay on the screen at common widths, once quarters have been played', async ({
+  page,
+}) => {
+  // Seed 3: the Salt Coast survey finds a deposit, so a survey under way and its report are
+  // on show, and the vital signs carry trend lines, as they do once a quarter has ended.
+  await startGame(page, { seed: 3 });
+  const map = page.getByRole('group', { name: 'Map of Republic of Tavara' });
+  await map.getByRole('button', { name: /^Salt Coast/ }).click();
+  await page.getByRole('button', { name: 'Survey Salt Coast' }).click();
+  const topBar = page.getByRole('banner');
+  await topBar.getByRole('button', { name: 'End quarter' }).click();
+  await expect(topBar.getByText('Year 1 · Quarter 2 · Planting season')).toBeVisible();
+
+  for (const width of [1280, 1440, 1920, 2560]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const name of ['Tour', 'Restart', 'End quarter']) {
+      const box = await topBar.getByRole('button', { name, exact: true }).boundingBox();
+      if (!box) throw new Error(`${name} is missing at ${String(width)} px`);
+      expect(box.x, `${name} at ${String(width)} px`).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width, `${name} at ${String(width)} px`).toBeLessThanOrEqual(width);
+    }
+    for (const sign of await topBar.getByRole('group').all()) {
+      const box = await sign.boundingBox();
+      if (!box) continue;
+      expect(box.x + box.width, `a vital sign at ${String(width)} px`).toBeLessThanOrEqual(width);
+    }
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(scrollWidth, `the page at ${String(width)} px`).toBeLessThanOrEqual(width);
+  }
+});
