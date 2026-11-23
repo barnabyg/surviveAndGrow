@@ -30,6 +30,12 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
   `balance.technologies`): it leaves less of what the site's effect bears on, raises what the site
   carries in a chain, or raises what a power station's power gives a region. It pays off only
   where such a site is in use, and every figure it moves names it. Not "upgrade" or "bonus".
+- **Locked site**: a site that cannot be started until the technologies it needs are known: the
+  one that unlocks its type (a dam needs hydropower) and any its country file names in `needs`.
+  It is on the map, marked with a padlock, and is an empty site like any other once they are
+  known. Not "hidden", which is a deposit's state before a survey.
+- **Dam**: a type of site research unlocks. It is a power station that also lessens how far the
+  weather moves its own region's harvest, as irrigation does.
 - **Research**: the project that makes a technology known. It is on no site, needs no upkeep and
   never decays, and one technology is researched at a time.
 - **Deposit**: ore a country file hides in a region (`deposits`): a mine and the trunk road that

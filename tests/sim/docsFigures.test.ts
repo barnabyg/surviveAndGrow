@@ -55,7 +55,8 @@ function oreTonnes(capacity: number): string {
 
 const { sites, finance, trade, priceShocks, events, technologies, surveys } = balance;
 const seed = technologies.droughtResistantSeed;
-const { improvedIrrigation, coldStorage, roadEngineering, gridEfficiency } = technologies;
+const { improvedIrrigation, coldStorage, roadEngineering, gridEfficiency, hydropower } =
+  technologies;
 /** What a site's effect leaves, improved by what a technology leaves of it. */
 const improvedLeft = (own: number, by: number) => Math.floor((own * by) / 1000);
 /** A figure raised by a share in thousandths of it. */
@@ -100,6 +101,10 @@ const RULES: readonly string[] = [
   `${oreTonnes(raised(sites.shallowPort.capacity, roadEngineering.improves.shallowPort.capacityPermille))} tonnes a quarter instead of ${oreTonnes(sites.shallowPort.capacity)}`,
   `Grid efficiency** (needs cold storage; ${researched(gridEfficiency)})`,
   `${percent(raised(balance.power.outputPermille, gridEfficiency.improves.powerStation.powerPermille))} more, not ${percent(balance.power.outputPermille)}, and gains ${String(raised(balance.power.infrastructurePermille, gridEfficiency.improves.powerStation.powerPermille) / 10)} points of infrastructure access, not ${String(balance.power.infrastructurePermille / 10)}`,
+  `Hydropower** (needs improved irrigation and grid efficiency; ${researched(hydropower)})`,
+  // Locked sites and the dam
+  `It also takes ${cut(sites.dam.effects.harvestWeather)} off how far weather, drought and flood move its own region's harvest`,
+  `${formatMoney(sites.dam.cost)} over ${String(sites.dam.buildQuarters)} quarters, ${formatMoney(sites.dam.upkeep)} upkeep, adding ${String(sites.dam.infrastructurePermille / 10)} points`,
   // Surveys
   `what it costs (${formatMoney(surveys.cost)} over ${String(surveys.surveyQuarters)} quarters)`,
   `not a mine's usual ${oreTonnes(sites.mine.capacity)} tonnes`,

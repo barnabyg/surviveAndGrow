@@ -10,11 +10,11 @@ All positions are coordinates in a fixed map frame 1080 wide and 720 high.
 
 `sites` lists where things can be built. Each site has an `id`, a `name`, the `region` it belongs
 to and a `type` from the game's own list: `irrigation`, `farmRoad`, `grainStore`, `mine`,
-`trunkRoad`, `port`, `shallowPort`, `powerStation` or `powerLine`. What a type costs, how long it takes and what it does are
-the game's, not the country's.
+`trunkRoad`, `port`, `shallowPort`, `powerStation`, `powerLine` or, from format 9, `dam`. What a
+type costs, how long it takes and what it does are the game's, not the country's.
 
-- An irrigation scheme, a grain store, a mine, a port, a shallow port and a power station stand
-  in one place, given by `at`, which must lie inside the site's region.
+- An irrigation scheme, a grain store, a mine, a port, a shallow port, a power station and a dam
+  stand in one place, given by `at`, which must lie inside the site's region.
 - A farm road, a trunk road and a power line run along a line, given by `route` as two or more positions. Every position must
   lie inside the country, and the route must start or end in the site's region, which is the
   region the road serves or the line powers.
@@ -35,6 +35,30 @@ the game's, not the country's.
   site with alternatives depends on whichever of them is chosen: in Tavara the trunk road depends
   on Saltmouth port, and Saltmouth quay, its alternative, serves as well. Files of formats 1 and 2
   cannot say this, and still load as they are.
+- In a file of `"formatVersion": 9`, a site may name in `needs` a technology that must be known
+  before it can be started, one of the game's own: `droughtResistantSeed`, `improvedIrrigation`,
+  `coldStorage`, `roadEngineering`, `gridEfficiency` or `hydropower`. A name the game does not
+  have is a fault. Until it is known the site is **locked**: on the map with a padlock, and
+  impossible to start. A file of format 9 may also name a `dam`, which research unlocks of itself:
+  every dam is locked until `hydropower` is known, whether or not it says so. A dam is a power
+  station, so a power line may depend on it, and it may be an alternative to a power station. A
+  locked site does not count towards the upkeep the game starts with when the file leaves it out.
+  Files of earlier formats cannot say `needs` or name a dam, and still load as they are, with
+  nothing locked. Tavara offers Korr Falls dam as an alternative to its power station, so its
+  lines serve whichever is built; the test country has a dam standing alone, with a power line of
+  its own that says it needs `hydropower` too:
+
+```json
+{
+  "id": "sand-dam-line",
+  "type": "powerLine",
+  "name": "Power line, Sandreach dam to Sandreach",
+  "region": "sandreach",
+  "route": [[648, 342], [668, 400], [705, 455]],
+  "dependsOn": ["sand-dam"],
+  "needs": "hydropower"
+}
+```
 
 The starting budget in `start.budget` may leave out `upkeep`: the game then starts with enough
 upkeep to keep in good repair every one of the file's sites that can stand together, choosing the

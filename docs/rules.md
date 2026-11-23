@@ -106,7 +106,8 @@ main figures from the balance values and fails if this file, the README or
   road and $0.2m for a grain store. Upkeep is a spending area with its own slider, and it is spent
   only as far as the sites in use need it, so setting more than they need costs nothing. The
   budget panel shows what they need against what is spent, and a game starts with enough upkeep
-  for every site the country has, counting only the costlier of two alternatives.
+  for every site the country has, counting only the costlier of two alternatives and none that
+  is locked.
 - When upkeep falls short, by a cut to the slider or because the treasury cuts every area, sites
   decay. Upkeep keeps sites in good repair in the order building began on them, so the newest
   decay first. A decaying site does half of what it does in good repair, and adds half as much to
@@ -141,6 +142,28 @@ main figures from the balance values and fails if this file, the README or
   what starting it closes for good, and the two cannot be planned together. Once building begins
   on one, the other is closed: it is faded and struck through on the map, and its card says which
   choice closed it and offers no start.
+
+## Locked sites and the dam
+
+- Some sites are **locked** until research is done: a site of a type research unlocks, such as a
+  dam, and any site its country file says needs a technology. A locked site is faded and dashed
+  on the map and wears a padlock, which the legend explains. Its card names the research it
+  needs and says what the site would do, and offers no start; it cannot be planned, the
+  affordable list leaves it out, and the projects tab counts it apart. Once the research is known
+  it is an empty site like any other. A site closed by its alternative stays closed.
+- A **dam** is unlocked by **Hydropower**. It is a power station: a power line in use that leads
+  to it powers its region as from any station, and grid efficiency improves it in the same way.
+  It also takes 40% off how far weather, drought and flood move its own region's harvest, less
+  than an irrigation scheme does, and improved irrigation does not improve it. It is large and
+  slow to build: $55.0m over 8 quarters, $0.7m upkeep, adding 10 points to its region's
+  infrastructure access. A country may offer it as an alternative to a power station: Tavara's
+  Korr Falls dam, in the Korr Highlands, is one to Korr Falls power station, so the lines from
+  the station serve whichever is built. In the test country the dam stands alone, with a line of
+  its own locked behind the same research.
+- A dam in use shows in its region's breakdowns: its power as a line of the region's output and
+  infrastructure access ("Power from Korr Falls dam"), and its steadying in the region card's
+  breakdown of how much less the weather moves its harvest, which lists each site in use there
+  and each technology known that lessens it, and what they take off together.
 
 ## Power
 
@@ -189,7 +212,11 @@ main figures from the balance values and fails if this file, the README or
     mine shipping through a shallow port, 450,000 tonnes a quarter instead of 360,000), and a port
     carries more grain across the border. A chain its mine holds back gains nothing.
   - **Grid efficiency** (needs cold storage; $15.0m over 5 quarters): a powered region produces
-    25% more, not 20%, and gains 18.7 points of infrastructure access, not 15.
+    25% more, not 20%, and gains 18.7 points of infrastructure access, not 15, whether its power
+    comes from a power station or a dam.
+- **Hydropower** (needs improved irrigation and grid efficiency; $20.0m over 6 quarters) does
+  nothing of itself: it unlocks the dam (see Locked sites and the dam). Its card in the Research
+  tab names the sites of this country it unlocks, and their regions.
 - A site's card gives each figure a known technology moves beside what it would be without it, as
   in "40% (25% without Cold storage)", and so do a port's trade link and its shipping lane. The
   region's output and infrastructure access, the treasury's tax and the food reserve each give

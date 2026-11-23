@@ -86,7 +86,11 @@ drought or a flood does not starve a region first.
   region's harvest less. What builds on it improves what you have built: irrigation schemes, grain
   stores, trunk roads and ports, and power stations each do more, but only where one is in use.
   Each technology says what it would improve in your game, and a site's card names the technology
-  behind each figure it moves.
+  behind each figure it moves. Hydropower unlocks the dam: until then a dam's site is locked,
+  marked with a padlock, and its card names the research it needs.
+- **A dam does two jobs.** It powers the regions its lines reach, like a power station, and
+  steadies its own region's harvest. It is dear and slow to build, and in Tavara it is an
+  alternative to the Korr Falls power station: build one or the other.
 - **Survey for ore.** A region marked with a magnifying glass may hide a deposit. Its card shows
   what a survey costs, how likely it is to find one and how large it could be; if it finds one,
   a new mine and road appear on the map, earning what the survey found once their chain reaches a
@@ -133,7 +137,7 @@ The rules as built, one heading per mechanic, are in [docs/rules.md](docs/rules.
 
 A country is one data file; the engine contains no country-specific code. The format, and how to
 try a country of your own with `?country=`, are in [docs/countries.md](docs/countries.md). A
-country can hide deposits of ore for surveys to find.
+country can hide deposits of ore for surveys to find, and lock a site until a technology is known.
 
 ## Check it
 

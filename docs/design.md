@@ -97,7 +97,8 @@ Prosperity, tiers and people.
   finished. It unlocks and improves what already exists; the first technology, drought-resistant
   seed, makes weather and drought move every region's harvest less, and the tiers built on it
   improve irrigation schemes, grain stores, trunk roads and ports, and power stations, so they pay
-  off only where the player has built them. Rules: rules.md, Research.
+  off only where the player has built them. Hydropower, joining both branches, unlocks the dam.
+  Rules: rules.md, Research, and Locked sites and the dam.
 - **Surveys** (Phase 5, under way): exploration with visible risk. A country file hides deposits
   in its regions, each with a likelihood and a range of sizes; a survey is a project on a region
   that shows both before the player commits, and reports nothing or a deposit of a definite size,
@@ -127,10 +128,12 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
   others for good, and the site card says so before the player commits.
 - **Power reaches the country along lines.** A station powers the regions its lines reach, and a
   powered region produces more. A site can need power like any other link of its chain.
-- **Site states are visible:** empty, closed, under construction, operating, decaying.
+- **Site states are visible:** empty, locked, closed, under construction, operating, decaying.
 - **Sites are revealed over time** (Phase 5). Surveys uncover deposits, whose mine and road then
-  appear on the map; a region not yet surveyed is marked with a magnifying glass. Research is to
-  unlock new site types.
+  appear on the map; a region not yet surveyed is marked with a magnifying glass. Research
+  unlocks new site types: a dam is on the map from the start, locked and wearing a padlock, until
+  hydropower is known. A dam is a power station that also steadies its own region's harvest, and
+  a country may offer it as an alternative to a power station.
 - **Lenses:** the map switches between country, food, approval, living standards and infrastructure
   views.
 - **The infrastructure lens shows what is built and what is missing,** region by region, with every
