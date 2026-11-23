@@ -66,8 +66,8 @@ main figures from the balance values and fails if this file, the README or
   against the target of 42. Each region has a living standard built from food security, income
   per head, health, education and infrastructure access (the sites in use there, and power),
   weighted 15% each for the first four and 40% for infrastructure, so building is the main road
-  to prosperity. A small site in use adds 20 to 30 points of infrastructure access to its region,
-  a large one 10 to 40, and power 15. Prosperity is the regions' living standards averaged by
+  to prosperity. A small farming site in use adds 20 to 30 points of infrastructure access to its region,
+  a large one 10 to 40, a clinic or a school 5, and power 15. Prosperity is the regions' living standards averaged by
   population. The region list in the left column
   shows each region's living standard as a figure and a bar, so inequality shows at a glance.
 - Prosperity is divided into four tiers: Subsistence, then Developing from 30, Industrialising
@@ -83,7 +83,8 @@ main figures from the balance values and fails if this file, the README or
   keeps up. A region's card shows how many people it gained, or lost to famine, last quarter.
 - Health and education are lasting levels in each region. Spending on them builds the levels up
   over many quarters, and they wear down without it; a game starts with them where the starting
-  budget holds them. Their spending still moves approval at once, as before.
+  budget holds them. Their spending still moves approval at once, as before. A clinic or a school
+  in use lifts its own region's level further (see Clinics and schools).
 
 ## Building
 
@@ -165,6 +166,30 @@ main figures from the balance values and fails if this file, the README or
   breakdown of how much less the weather moves its harvest, which lists each site in use there
   and each technology known that lessens it, and what they take off together.
 
+## Clinics and schools
+
+- A **clinic** and a **school** are small sites that serve their region's people, so research
+  reaches prosperity through health and education as well as through infrastructure. **Public
+  health** unlocks the clinic and **Teacher training** the school; until then their sites are
+  locked. Each costs $8.0m over 3 quarters and $0.3m upkeep, and adds 5 points to its region's
+  infrastructure access.
+- A clinic in use lets its region's health level settle 15 points higher than health spending
+  alone holds it, and a school does the same for its education level. The level is not raised at
+  once: it climbs there over the quarters the site is in use, as it does towards what spending
+  holds, closing 5% of the gap each quarter for health and 4% for education. Several in one
+  region add up, and no level passes 100. No other region gains.
+- Like any site they need upkeep and decay without it, and a flood damages them. A decaying
+  clinic or school gives half. A level a site held up wears back down once the site gives less.
+- A region's card gives its health and education levels. Where a clinic or a school is in use,
+  it also breaks down where that level settles: what spending holds, under the budget
+  committed, and each clinic or school by name. A site's card says what it would do before it is
+  built, and the infrastructure breakdown names it too.
+- The preview's prosperity and the risks ahead count them, the warning that upkeep will fall
+  short among them.
+- Tavara has two clinic sites, at Dustwell in The Dry East and at Westhaven on the Salt Coast,
+  and two school sites, at Southbank in the South Delta and at Korrgate in the Korr Highlands.
+  The test country has one of each, side by side in Sandreach.
+
 ## Power
 
 - Power reaches a region along a power line. Tavara has one power station, at Korr Falls ($30.0m,
@@ -207,16 +232,19 @@ main figures from the balance values and fails if this file, the README or
     scheme takes 60% off how far weather, drought and flood move its region's harvest, not 50%.
   - **Cold storage** (needs drought-resistant seed; $8.0m over 3 quarters): a grain store saves 40%
     of what spoils in the national reserve, not 25%.
-  - **Road engineering** (needs improved irrigation; $15.0m over 5 quarters): trunk roads, ports
+  - **Road engineering** (needs improved irrigation; $7.5m over 5 quarters): trunk roads, ports
     and shallow ports carry 25% more. A chain held back by its road or its port ships more (a
     mine shipping through a shallow port, 450,000 tonnes a quarter instead of 360,000), and a port
     carries more grain across the border. A chain its mine holds back gains nothing.
-  - **Grid efficiency** (needs cold storage; $15.0m over 5 quarters): a powered region produces
+  - **Grid efficiency** (needs cold storage; $7.5m over 5 quarters): a powered region produces
     25% more, not 20%, and gains 18.7 points of infrastructure access, not 15, whether its power
     comes from a power station or a dam.
 - **Hydropower** (needs improved irrigation and grid efficiency; $20.0m over 6 quarters) does
   nothing of itself: it unlocks the dam (see Locked sites and the dam). Its card in the Research
   tab names the sites of this country it unlocks, and their regions.
+- **Public health** and **Teacher training** ($8.0m over 4 quarters each) are a branch of their
+  own: each needs nothing first and does nothing of itself. Public health unlocks the clinic and
+  teacher training the school (see Clinics and schools), and each names the sites it unlocks.
 - A site's card gives each figure a known technology moves beside what it would be without it, as
   in "40% (25% without Cold storage)", and so do a port's trade link and its shipping lane, and
   the report of a site finished while the technology is known. The
@@ -386,10 +414,18 @@ main figures from the balance values and fails if this file, the README or
   what it would do. The quarters ahead are played with the shocks announced pushing the prices,
   so the dangers one brings, such as a treasury a glut would empty, are weighed from the quarter
   it is announced.
+- The treasury runs out when it cannot cover the budget, and every area is cut, or when it
+  cannot cover an instalment on a project, which pauses. The warning says which gives way first
+  and when: the budget, or the oldest project left unpaid, named for what it is, whether
+  building on a site, research into a technology or the survey of a region. The instalments of
+  every project under way or planned are counted in each quarter played, so research or a
+  survey planned now is warned of when its instalments would leave a later quarter's budget
+  short.
 - While a mine earns, the game also plays the quarters ahead with ordinary weather and the world
   ore price slumping to the low end of its forecast. A treasury that would run out, or a
   repayment that would be missed, only in that slump is listed as unlikely, with the price it
-  would take.
+  would take and, for the treasury, what would give way: the budget, or the building, research
+  or survey that would pause.
 
 ## Dilemmas
 
@@ -411,9 +447,11 @@ main figures from the balance values and fails if this file, the README or
 - **Tour** in the top bar opens a guided tour of the screen in a game in play. A step at a time,
   it shades the screen but for one part of it, drawn round with a thick outline, and says beside
   it what that part is for: the vital signs, the end-quarter button, the left column, the lenses,
-  the map, the timeline and legend, and each decision panel. It says how far through it is, and
+  the map, a region marked for a survey, the timeline and legend, and each decision panel,
+  research among them. It says how far through it is, and
   Back, Next (or the arrow keys) and End tour (or Escape) move through it. A part not on screen,
-  such as the dilemma panel with no dilemma waiting, is passed over; a decision tab is shown
+  such as the dilemma panel with no dilemma waiting, or the mark of a region to survey once none
+  is left, is passed over; a decision tab is shown
   while the tour or a lesson points at it, and the tab the player chose comes back after. The tour holds the screen while it is
   open.
 - **Tutorial** on the start screen starts the tutorial game: a fixed game whose first year, on
@@ -435,7 +473,8 @@ main figures from the balance values and fails if this file, the README or
   card of a region that may hide a deposit is first opened or a survey is planned. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
-  waits while the tour or a lesson is open. The tips are written in `src/ui/tips.ts`.
+  waits while the tour or a lesson is open. A tip about a decision panel behind another tab is
+  drawn round the tab that opens it. The tips are written in `src/ui/tips.ts`.
 - Each figure in the top bar shows its change this quarter and any warning, such as the food
   reserve below its safe level. Its standing note (the debt burden, the loan rates, the safe
   level, the strike threshold, the prosperity tier) is in its tooltip and at the head of its

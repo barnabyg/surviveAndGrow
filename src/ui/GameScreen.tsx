@@ -371,6 +371,7 @@ export function GameScreen(props: GameScreenProps) {
                     report={report}
                     regionId={selectedRegionId}
                     preview={preview}
+                    budget={committed}
                     reliefRegionId={reliefRegionId}
                     onSendRelief={setReliefRegionId}
                     plan={plan}

@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -195,6 +195,20 @@
       ],
       "dependsOn": ["sand-dam"],
       "needs": "hydropower"
+    },
+    {
+      "id": "beta-clinic",
+      "type": "clinic",
+      "name": "Beta clinic",
+      "region": "sandreach",
+      "at": [755, 375]
+    },
+    {
+      "id": "beta-school",
+      "type": "school",
+      "name": "Beta school",
+      "region": "sandreach",
+      "at": [640, 470]
     }
   ],
   "deposits": [

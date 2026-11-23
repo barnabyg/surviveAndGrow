@@ -128,6 +128,8 @@ export const SITE_TYPES = [
   'powerStation',
   'powerLine',
   'dam',
+  'clinic',
+  'school',
 ] as const;
 export type SiteType = (typeof SITE_TYPES)[number];
 
@@ -253,6 +255,24 @@ export const SITE_TYPE_DEFINITIONS: Readonly<
     chainRole: null,
     powerRole: 'station',
     unlockedBy: 'hydropower',
+  },
+  // The small sites that serve a region's people: each raises one of its lasting services,
+  // on top of what spending builds (`balance.sites`). Each is unlocked by research of its own.
+  clinic: {
+    name: 'Clinic',
+    plural: 'Clinics',
+    form: 'place',
+    chainRole: null,
+    powerRole: null,
+    unlockedBy: 'publicHealth',
+  },
+  school: {
+    name: 'School',
+    plural: 'Schools',
+    form: 'place',
+    chainRole: null,
+    powerRole: null,
+    unlockedBy: 'teacherTraining',
   },
 };
 
@@ -391,6 +411,8 @@ export const TECHNOLOGIES = [
   'roadEngineering',
   'gridEfficiency',
   'hydropower',
+  'publicHealth',
+  'teacherTraining',
 ] as const;
 export type Technology = (typeof TECHNOLOGIES)[number];
 
@@ -413,6 +435,9 @@ export const TECHNOLOGY_DEFINITIONS: Readonly<
   roadEngineering: { name: 'Road engineering', prerequisites: ['improvedIrrigation'] },
   gridEfficiency: { name: 'Grid efficiency', prerequisites: ['coldStorage'] },
   hydropower: { name: 'Hydropower', prerequisites: ['improvedIrrigation', 'gridEfficiency'] },
+  // A branch of their own, apart from farming and infrastructure: each needs nothing first.
+  publicHealth: { name: 'Public health', prerequisites: [] },
+  teacherTraining: { name: 'Teacher training', prerequisites: [] },
 };
 
 /**
@@ -477,7 +502,10 @@ export const PROJECT_TARGET_FINISHED = {
  * of each report entry, the work it is ("2 of its 3 quarters of building"), what it is for
  * ("the site"), what finishing it is ("the 3 quarters it takes to build"), what a quarter
  * without money did, what finishing means, the line it pays in the treasury's breakdown
- * ("Building Lowmere irrigation"), and the kinds of report its entries are.
+ * ("Building Lowmere irrigation"), and the kinds of report its entries are. The risks ahead
+ * warn of an instalment the treasury cannot cover with `instalmentOn`, which comes before the
+ * project's name ("research into Hydropower") and is empty for a site, whose name says it
+ * all, and with `pauses`, which is what then pauses.
  */
 export interface ProjectWords {
   readonly begins: string;
@@ -490,6 +518,8 @@ export interface ProjectWords {
   readonly idle: string;
   readonly finishedCause: string;
   readonly paying: string;
+  readonly instalmentOn: string;
+  readonly pauses: string;
   readonly reportKinds: {
     readonly started: ReportKind;
     readonly paused: ReportKind;
@@ -509,6 +539,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     idle: 'nothing was built this quarter',
     finishedCause: 'It is in use from next quarter.',
     paying: 'Building',
+    instalmentOn: '',
+    pauses: 'building there',
     reportKinds: {
       started: 'projectStarted',
       paused: 'projectPaused',
@@ -526,6 +558,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     idle: 'no research was done this quarter',
     finishedCause: 'It is known from next quarter.',
     paying: 'Researching',
+    instalmentOn: 'research into',
+    pauses: 'the research',
     reportKinds: {
       started: 'researchStarted',
       paused: 'researchPaused',
@@ -543,6 +577,8 @@ export const PROJECT_TARGET_WORDS: Readonly<Record<ProjectTargetKind, ProjectWor
     idle: 'no surveying was done this quarter',
     finishedCause: 'The surveyors have reported.',
     paying: 'Surveying',
+    instalmentOn: 'the survey of',
+    pauses: 'the survey',
     reportKinds: {
       started: 'surveyStarted',
       paused: 'surveyPaused',
@@ -637,6 +673,25 @@ export const TIER_NAMES: Readonly<Record<Tier, string>> = {
 /** The public services whose level in each region lasts, built up by spending over time. */
 export const LASTING_SERVICES = ['health', 'education'] as const;
 export type LastingService = (typeof LASTING_SERVICES)[number];
+
+/** What each lasting service is called, in the middle of a sentence. */
+export const LASTING_SERVICE_NAMES: Readonly<Record<LastingService, string>> = {
+  health: 'health',
+  education: 'education',
+};
+
+/** What spending on each lasting service is called, as a line of a breakdown. */
+export const LASTING_SERVICE_SPENDING: Readonly<Record<LastingService, string>> = {
+  health: 'Health spending',
+  education: 'Education spending',
+};
+
+/**
+ * What a site that raises a lasting service does, in a sentence the player can be shown:
+ * `{service}` is the service and `{points}` how much higher its region's level settles.
+ */
+export const SERVICE_SITE_SENTENCE =
+  'Its region’s {service} level builds up to {points} higher than {service} spending alone holds it, over the quarters it is in use.';
 
 /** The stages of a region's food situation, from the best to the worst. */
 export const FOOD_STAGES = ['adequate', 'tight', 'shortage', 'famine'] as const;

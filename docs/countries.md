@@ -10,11 +10,12 @@ All positions are coordinates in a fixed map frame 1080 wide and 720 high.
 
 `sites` lists where things can be built. Each site has an `id`, a `name`, the `region` it belongs
 to and a `type` from the game's own list: `irrigation`, `farmRoad`, `grainStore`, `mine`,
-`trunkRoad`, `port`, `shallowPort`, `powerStation`, `powerLine` or, from format 9, `dam`. What a
+`trunkRoad`, `port`, `shallowPort`, `powerStation`, `powerLine`, from format 9 `dam`, or from
+format 10 `clinic` or `school`. What a
 type costs, how long it takes and what it does are the game's, not the country's.
 
-- An irrigation scheme, a grain store, a mine, a port, a shallow port, a power station and a dam
-  stand in one place, given by `at`, which must lie inside the site's region.
+- An irrigation scheme, a grain store, a mine, a port, a shallow port, a power station, a dam, a
+  clinic and a school stand in one place, given by `at`, which must lie inside the site's region.
 - A farm road, a trunk road and a power line run along a line, given by `route` as two or more positions. Every position must
   lie inside the country, and the route must start or end in the site's region, which is the
   region the road serves or the line powers.
@@ -37,7 +38,8 @@ type costs, how long it takes and what it does are the game's, not the country's
   cannot say this, and still load as they are.
 - In a file of `"formatVersion": 9`, a site may name in `needs` a technology that must be known
   before it can be started, one of the game's own: `droughtResistantSeed`, `improvedIrrigation`,
-  `coldStorage`, `roadEngineering`, `gridEfficiency` or `hydropower`. A name the game does not
+  `coldStorage`, `roadEngineering`, `gridEfficiency` or `hydropower`, or from format 10
+  `publicHealth` or `teacherTraining`. A name the game does not
   have is a fault. Until it is known the site is **locked**: on the map with a padlock, and
   impossible to start. A file of format 9 may also name a `dam`, which research unlocks of itself:
   every dam is locked until `hydropower` is known, whether or not it says so. A dam is a power
@@ -59,6 +61,13 @@ type costs, how long it takes and what it does are the game's, not the country's
   "needs": "hydropower"
 }
 ```
+
+- In a file of `"formatVersion": 10`, a site may be a `clinic` or a `school`. Research unlocks
+  each of itself, as it does a dam: every clinic is locked until `publicHealth` is known and
+  every school until `teacherTraining` is. One in use raises where its own region's health or
+  education level settles, so where a file puts them decides which regions can be lifted that
+  way. Files of earlier formats cannot name either, and still load as they are. Tavara has two of
+  each in four regions; the test country has one of each in the same region.
 
 The starting budget in `start.budget` may leave out `upkeep`: the game then starts with enough
 upkeep to keep in good repair every one of the file's sites that can stand together, choosing the

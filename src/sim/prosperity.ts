@@ -1,19 +1,21 @@
 import { apportion, clamp, sum } from './arithmetic';
 import { balance } from './balance';
 import { chainEarnings, earningLines } from './chains';
+import type { Budget } from './budget';
 import type { WorldPrices } from './trade';
 import type { Country } from './country';
 import { poweredOutput, powerLines, regionPower, unpowered, type RegionPower } from './power';
 import { infrastructureFrom, sitesInUse, type Project } from './projects';
+import { serviceOf } from './sites';
 import type { RegionState } from './state';
 import { DOLLARS_PER_MONEY, type Contribution, type Figure, type Money } from './types';
 import {
+  LASTING_SERVICE_SPENDING,
   LASTING_SERVICES,
   PROSPERITY_PART_NAMES,
   PROSPERITY_PARTS,
   type LastingService,
   type ProsperityPart,
-  type SpendingArea,
 } from './vocabulary';
 
 /** How a region or the nation scores on each part of its living standard, in thousandths. */
@@ -57,6 +59,12 @@ export interface ProsperitySituation {
   readonly projects: readonly Project[];
   /** The world prices, which set what a mine's chain earns. */
   readonly worldPrices: WorldPrices;
+}
+
+/** What the sites in use are read from. */
+interface Building {
+  readonly country: Country;
+  readonly projects: readonly Project[];
 }
 
 /** Each region's living standard. */
@@ -170,27 +178,101 @@ export function startingServices(country: Country): Readonly<Record<LastingServi
 
 /**
  * One quarter of the lasting services. Each region's level closes a share of the gap to
- * where the quarter's spending would hold it: it builds up while spending is above that and
- * wears down while it is below, so neither happens at once.
+ * where the quarter's spending and the sites in use there would hold it: it builds up while
+ * that is above the level and wears down while it is below, so neither happens at once.
  */
 export function resolveServices(
   regions: readonly RegionState[],
-  spent: Readonly<Record<SpendingArea, Money>>,
+  spent: Readonly<Record<LastingService, Money>>,
+  building: Building,
 ): RegionState[] {
-  const people = sum(regions.map((region) => region.population));
-  const settled = servicesFrom((service) => settledServiceLevel(service, spent[service], people));
-  return regions.map((region) => ({
+  const held = serviceParts(regions, spent, building);
+  return regions.map((region, index) => ({
     ...region,
     ...servicesFrom((service) => {
       const { buildPermillePerQuarter, wearPermillePerQuarter } =
         balance.prosperity.services[service];
-      const gap = settled[service] - region[service];
+      const gap = settlesAt(held[index]?.[service] ?? []) - region[service];
       const rate = gap > 0 ? buildPermillePerQuarter : wearPermillePerQuarter;
       // Rounded away from nothing, so a level arrives in the end and does not stall short.
       const step = Math.ceil((Math.abs(gap) * rate) / 1000);
       return region[service] + Math.sign(gap) * Math.min(step, Math.abs(gap));
     }),
   }));
+}
+
+/** How a lasting service stands in a region, and what holds it where it is heading. */
+export interface ServiceLevel {
+  readonly regionId: string;
+  readonly service: LastingService;
+  /** The level as it stands, in thousandths. */
+  readonly level: number;
+  /** Where the level settles if spending and the sites in use stay as they are. */
+  readonly settles: number;
+  /**
+   * What holds it there, in thousandths: spending on the service, then each site in use in
+   * the region that raises it. The level settles at their sum, up to the whole.
+   */
+  readonly parts: readonly Contribution[];
+}
+
+/**
+ * Each region's lasting services, in the country file's order: where each stands and where
+ * the budget given, the one in force unless another is, and the sites in use would hold it.
+ * The quarter's own reckoning (`resolveServices`) reads the same parts.
+ */
+export function serviceLevels(
+  state: Building & { readonly regions: readonly RegionState[]; readonly budget: Budget },
+  budget: Budget = state.budget,
+): ServiceLevel[] {
+  const held = serviceParts(state.regions, budget.spending, state);
+  return state.regions.flatMap((region, index) =>
+    LASTING_SERVICES.map((service) => {
+      const parts = held[index]?.[service] ?? [];
+      return {
+        regionId: region.id,
+        service,
+        level: region[service],
+        settles: settlesAt(parts),
+        parts,
+      };
+    }),
+  );
+}
+
+/**
+ * What holds each region's lasting services where they settle: what is spent on the service,
+ * judged per head across the nation, and each site in use in the region that raises it.
+ */
+function serviceParts(
+  regions: readonly RegionState[],
+  spent: Readonly<Record<LastingService, Money>>,
+  building: Building,
+): Record<LastingService, Contribution[]>[] {
+  const people = sum(regions.map((region) => region.population));
+  const inUse = sitesInUse(building);
+  return regions.map(({ id: regionId }) =>
+    servicesFrom((service) => [
+      {
+        label: LASTING_SERVICE_SPENDING[service],
+        amount: settledServiceLevel(service, spent[service], people),
+        regionId,
+      },
+      ...inUse
+        .filter(({ site }) => site.regionId === regionId)
+        .map(({ site, decaying }) => ({
+          label: site.name,
+          amount: serviceOf(site.type, service, decaying),
+          regionId,
+        }))
+        .filter((part) => part.amount > 0),
+    ]),
+  );
+}
+
+/** Where a service settles under what holds it: the sum of the parts, up to the whole. */
+function settlesAt(parts: readonly Contribution[]): number {
+  return Math.min(1000, sum(parts.map((part) => part.amount)));
 }
 
 function scoresOf(region: RegionState, infrastructure: number): ProsperityScores {
@@ -217,9 +299,11 @@ function weigh(scores: ProsperityScores): number {
   );
 }
 
-function servicesFrom(level: (service: LastingService) => number): Record<LastingService, number> {
-  return Object.fromEntries(LASTING_SERVICES.map((service) => [service, level(service)])) as Record<
+function servicesFrom<Value>(
+  of: (service: LastingService) => Value,
+): Record<LastingService, Value> {
+  return Object.fromEntries(LASTING_SERVICES.map((service) => [service, of(service)])) as Record<
     LastingService,
-    number
+    Value
   >;
 }

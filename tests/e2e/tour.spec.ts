@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { TOUR_STEPS } from '../../src/ui/tourSteps';
-import { decisions, dilemma, startGame, tavaraWith } from './app';
+import { decisions, dilemma, expectDrawnRound, startGame, tavaraWith } from './app';
 
 const tour = (page: Page) => page.locator('dialog.tour');
 const spotlight = (page: Page) => page.locator('.tour__spotlight');
@@ -22,20 +22,8 @@ test('the tour walks the whole screen, a step at a time', async ({ page }) => {
     if (step.target === null) {
       await expect(spotlight(page)).toHaveCount(0);
     } else {
-      // The outline is drawn round the part of the screen the step is about, once it has
-      // finished moving there.
-      await expect(async () => {
-        const target = await page.locator(`[data-tour="${step.target}"]`).boundingBox();
-        const outline = await spotlight(page).boundingBox();
-        expect(target).not.toBeNull();
-        expect(outline).not.toBeNull();
-        if (target !== null && outline !== null) {
-          expect(outline.x).toBeLessThanOrEqual(target.x);
-          expect(outline.y).toBeLessThanOrEqual(target.y);
-          expect(outline.x + outline.width).toBeGreaterThanOrEqual(target.x + target.width);
-          expect(outline.y + outline.height).toBeGreaterThanOrEqual(target.y + target.height);
-        }
-      }).toPass();
+      // The outline is drawn round the part of the screen the step is about.
+      await expectDrawnRound(spotlight(page), page.locator(`[data-tour="${step.target}"]`));
     }
     const back = tour(page).getByRole('button', { name: 'Back' });
     if (index === 0) await expect(back).toBeDisabled();
@@ -80,6 +68,61 @@ test('the tour opens from the top bar, works from the keyboard and shows the tab
   await expect(tour(page)).toHaveCount(0);
   await expect(opener).toBeFocused();
   await expect(budgetTab).toHaveAttribute('aria-selected', 'true');
+});
+
+test('the tour explains surveys on the map and research in its tab, in screen order', async ({
+  page,
+}) => {
+  await startGame(page);
+  const next = tour(page).getByRole('button', { name: 'Next' });
+  const heading = (name: string) => tour(page).getByRole('heading', { name, exact: true });
+  const walkTo = async (title: string) => {
+    for (let step = 0; step < TOUR_STEPS.length && !(await heading(title).isVisible()); step += 1) {
+      await next.click();
+    }
+    await expect(heading(title)).toBeVisible();
+  };
+  await tourButton(page).click();
+
+  // Surveys come straight after the map they are started from, at the first magnifying glass
+  // on it: Salt Coast is the first region of Tavara that may hide a deposit.
+  await walkTo('The map');
+  await next.click();
+  await expect(heading('Surveys')).toBeVisible();
+  await expect(tour(page)).toContainText('A magnifying glass marks a region that may hide');
+  const map = page.getByRole('group', { name: 'Map of Republic of Tavara' });
+  await expectDrawnRound(
+    spotlight(page),
+    map.getByRole('img', { name: /^Salt Coast: not yet surveyed/ }),
+  );
+  await next.click();
+  await expect(heading('The term')).toBeVisible();
+
+  // Research comes between the projects and the borrowing tabs, as its tab does, and the tab
+  // is shown while the tour points at it.
+  await walkTo('Projects');
+  await next.click();
+  await expect(heading('Research')).toBeVisible();
+  await expect(tour(page)).toContainText('The technology tree.');
+  const researchTab = decisions(page).getByRole('tab', { name: 'Research', exact: true });
+  await expect(researchTab).toHaveAttribute('aria-selected', 'true');
+  await expectDrawnRound(spotlight(page), page.locator('#research-panel'));
+  await expect(page.locator('#research-panel')).toContainText('Drought-resistant seed');
+  await next.click();
+  await expect(heading('Borrowing')).toBeVisible();
+});
+
+test('the tour passes surveys over where no region is left to survey', async ({ page }) => {
+  await startGame(page, { countryFile: { ...tavaraWith({}), deposits: [] } });
+  await tourButton(page).click();
+
+  // Neither the dilemma panel nor a magnifying glass is on screen.
+  await expect(tour(page)).toContainText(`1 of ${TOUR_STEPS.length - 2}`);
+  const mapStep = shownSteps.findIndex((step) => step.target === 'map');
+  for (let step = 0; step < mapStep; step += 1) await page.keyboard.press('ArrowRight');
+  await expect(tour(page).getByRole('heading', { name: 'The map' })).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(tour(page).getByRole('heading', { name: 'The term' })).toBeVisible();
 });
 
 test('the tour points at a dilemma waiting to be answered', async ({ page }) => {

@@ -31,6 +31,19 @@ export function tourSelector(target: string): string {
   return `[data-tour="${target}"]`;
 }
 
+/**
+ * The element drawn round for a target: the one marked, or, while that one is not shown, the
+ * element that labels it. A decision panel behind another tab stands nowhere on the screen,
+ * and is labelled by the tab that opens it, so a tip about it points there. The tour and the
+ * lessons show the tab they point at, so they find the panel itself.
+ */
+function standingFor(target: string): Element | null {
+  const marked = document.querySelector(tourSelector(target));
+  if (marked === null || marked.getClientRects().length > 0) return marked;
+  const label = marked.getAttribute('aria-labelledby');
+  return label === null ? null : document.getElementById(label);
+}
+
 /** The outline drawn round a box, a little outside it. */
 export function outlinePlace(box: Box): CSSProperties {
   return {
@@ -109,7 +122,7 @@ export function useSpotlight(
     const run = (wanted: string | null) => {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        const element = wanted === null ? null : document.querySelector(tourSelector(wanted));
+        const element = wanted === null ? null : standingFor(wanted);
         const rect = element?.getBoundingClientRect();
         const box =
           rect === undefined

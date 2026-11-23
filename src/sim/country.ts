@@ -47,10 +47,11 @@ import {
  * other, which format 2 cannot, format 4 added debt the game starts with, which format 3
  * cannot, format 5 added border crossings, which format 4 cannot, format 6 added floods,
  * which format 5 cannot, format 7 added world price shocks, which format 6 cannot, format 8
- * added hidden deposits that a survey may find, which format 7 cannot, and format 9 added sites
- * locked until a technology is known, among them dams, which format 8 cannot.
+ * added hidden deposits that a survey may find, which format 7 cannot, format 9 added sites
+ * locked until a technology is known, among them dams, which format 8 cannot, and format 10
+ * added clinics and schools, which format 9 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 9;
+export const COUNTRY_FORMAT_VERSION = 10;
 
 /**
  * The country file format that first lets a site say which technology it needs, and name a
@@ -58,8 +59,24 @@ export const COUNTRY_FORMAT_VERSION = 9;
  */
 const LOCKED_SITE_FORMAT = 9;
 
+/** The country file format that first lets a file name a site that serves a region's people. */
+const SERVICE_SITE_FORMAT = 10;
+
 /** The country file format that first lets a file name each type of site added after format 1. */
-const SITE_TYPE_FORMATS: Readonly<Partial<Record<SiteType, number>>> = { dam: LOCKED_SITE_FORMAT };
+const SITE_TYPE_FORMATS: Readonly<Partial<Record<SiteType, number>>> = {
+  dam: LOCKED_SITE_FORMAT,
+  clinic: SERVICE_SITE_FORMAT,
+  school: SERVICE_SITE_FORMAT,
+};
+
+/**
+ * The country file format that first lets a site say it needs each technology added since a
+ * site could say so at all.
+ */
+const TECHNOLOGY_FORMATS: Readonly<Partial<Record<Technology, number>>> = {
+  publicHealth: SERVICE_SITE_FORMAT,
+  teacherTraining: SERVICE_SITE_FORMAT,
+};
 
 /** The country file format that first lets a file hide deposits for surveys to find. */
 const DEPOSIT_FORMAT = 8;
@@ -360,7 +377,7 @@ function readSite(
 
 /**
  * The technology a site of a file of format 9 or later says it needs, in `needs`: one of the
- * game's own. Nothing when it says none.
+ * game's own, in a file of a format that can name it. Nothing when it says none.
  */
 function readNeeds(
   reader: Reader,
@@ -376,7 +393,17 @@ function readNeeds(
     return {};
   }
   const technology = TECHNOLOGIES.find((candidate) => candidate === value);
-  if (technology !== undefined) return { needs: technology };
+  if (technology !== undefined) {
+    const technologyFormat = TECHNOLOGY_FORMATS[technology] ?? LOCKED_SITE_FORMAT;
+    if (formatVersion < technologyFormat) {
+      reader.fault(
+        needsPath,
+        `is "${technology}", which needs country file format ${technologyFormat} or later`,
+      );
+      return {};
+    }
+    return { needs: technology };
+  }
   reader.fault(
     needsPath,
     typeof value === 'string'

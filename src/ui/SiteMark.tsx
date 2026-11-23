@@ -36,6 +36,11 @@ const SYMBOLS: Readonly<Record<SiteType, string>> = {
   powerLine: 'M0,-7 L-5,7 M0,-7 L5,7 M-6,-3 H6 M-3,2 H3',
   // A dam wall, with the water it holds back above it.
   dam: 'M-5,7 L-3,-1 H3 L5,7 Z M-7,-4 C-5,-6 -3,-6 -1,-4 C1,-2 3,-2 5,-4 L7,-5',
+  // A cross.
+  clinic: 'M-2,-6 H2 V-2 H6 V2 H2 V6 H-2 V2 H-6 V-2 H-2 Z',
+  // An open book.
+  school:
+    'M0,-4 V6 M0,-4 C-2,-6 -5,-6 -7,-5 V5 C-5,4 -2,4 0,6 M0,-4 C2,-6 5,-6 7,-5 V5 C5,4 2,4 0,6',
 };
 
 /**

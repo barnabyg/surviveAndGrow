@@ -1,5 +1,5 @@
 {
-  "formatVersion": 9,
+  "formatVersion": 10,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -547,6 +547,34 @@
       "region": "korr-highlands",
       "at": [626, 148],
       "alternatives": ["korr-falls-station"]
+    },
+    {
+      "id": "dustwell-clinic",
+      "type": "clinic",
+      "name": "Dustwell clinic",
+      "region": "dry-east",
+      "at": [892, 338]
+    },
+    {
+      "id": "westhaven-clinic",
+      "type": "clinic",
+      "name": "Westhaven clinic",
+      "region": "salt-coast",
+      "at": [240, 464]
+    },
+    {
+      "id": "southbank-school",
+      "type": "school",
+      "name": "Southbank school",
+      "region": "south-delta",
+      "at": [520, 600]
+    },
+    {
+      "id": "korrgate-school",
+      "type": "school",
+      "name": "Korrgate school",
+      "region": "korr-highlands",
+      "at": [424, 210]
     }
   ],
   "deposits": [

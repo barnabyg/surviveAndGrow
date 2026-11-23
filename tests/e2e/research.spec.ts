@@ -11,8 +11,9 @@ test('research is started from the tree, finishes, and the technology is known',
 }) => {
   await startGame(page);
 
-  // An idle research slot says so on its tab, and the tree shows the seed available.
-  await expect(researchTab(page)).toHaveAccessibleDescription('Idle · 1 available');
+  // An idle research slot says so on its tab, counting the seed and the two technologies that
+  // need nothing first, and the tree shows the seed available.
+  await expect(researchTab(page)).toHaveAccessibleDescription('Idle · 3 available');
   await expect(await seed(page)).toContainText('Available');
   await expect(await seed(page)).toContainText('$8.0m · 4 quarters');
   await expect(await seed(page)).toContainText(
@@ -33,7 +34,7 @@ test('research is started from the tree, finishes, and the technology is known',
     .getByRole('button', { name: 'Cancel research into Drought-resistant seed' })
     .click();
   await expect(await seed(page)).toContainText('Available');
-  await expect(researchTab(page)).toHaveAccessibleDescription('Idle · 1 available');
+  await expect(researchTab(page)).toHaveAccessibleDescription('Idle · 3 available');
 
   await (await seed(page)).getByRole('button', { name: 'Research Drought-resistant seed' }).click();
   await endQuarters(page, 1);
@@ -59,8 +60,9 @@ test('research is started from the tree, finishes, and the technology is known',
   await expect(await seed(page)).toContainText('Known');
   await expect(await seed(page)).toContainText('Known since Year 2, Quarter 1.');
   await expect((await seed(page)).getByRole('button')).toHaveCount(0);
-  // The seed known, what builds on it can be researched next.
-  await expect(researchTab(page)).toHaveAccessibleDescription('Idle · 2 available');
+  // The seed known, the two that build on it can be researched next, as the two that need
+  // nothing still can.
+  await expect(researchTab(page)).toHaveAccessibleDescription('Idle · 4 available');
 });
 
 test('the tree says why research cannot be started', async ({ page }) => {

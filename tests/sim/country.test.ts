@@ -27,7 +27,7 @@ describe('a valid country file', () => {
   it('describes the regions, settlements, neighbours and seas of Tavara', () => {
     const country = tavara();
 
-    expect(tavaraAsShipped().formatVersion).toBe(9);
+    expect(tavaraAsShipped().formatVersion).toBe(10);
     expect(country.regions.map((region) => [region.name, region.terrain])).toEqual([
       ['Korr Highlands', 'highlands'],
       ['Salt Coast', 'coast'],
@@ -72,6 +72,10 @@ describe('a valid country file', () => {
       ['Power line, Korr Falls to Lowmere', 'powerLine', 'lowmere-plains', 'route'],
       ['Power line, Korr Falls to Korrgate', 'powerLine', 'korr-highlands', 'route'],
       ['Korr Falls dam', 'dam', 'korr-highlands', 'place'],
+      ['Dustwell clinic', 'clinic', 'dry-east', 'place'],
+      ['Westhaven clinic', 'clinic', 'salt-coast', 'place'],
+      ['Southbank school', 'school', 'south-delta', 'place'],
+      ['Korrgate school', 'school', 'korr-highlands', 'place'],
     ]);
   });
 
@@ -220,6 +224,26 @@ describe('a valid country file', () => {
           [668, 400],
           [705, 455],
         ],
+      },
+      {
+        id: 'beta-clinic',
+        type: 'clinic',
+        name: 'Beta clinic',
+        regionId: 'sandreach',
+        dependsOn: [],
+        alternatives: [],
+        form: 'place',
+        at: [755, 375],
+      },
+      {
+        id: 'beta-school',
+        type: 'school',
+        name: 'Beta school',
+        regionId: 'sandreach',
+        dependsOn: [],
+        alternatives: [],
+        form: 'place',
+        at: [640, 470],
       },
     ]);
   });
@@ -399,7 +423,7 @@ describe('a country file in format 3', () => {
   it('may mark sites as alternatives, each ruling out the other whichever side says so', () => {
     const country = testland();
 
-    expect(country.formatVersion).toBe(9);
+    expect(country.formatVersion).toBe(10);
     expect(valueAt(testlandFile, ['sites', 5, 'alternatives'])).toBeUndefined();
     expect(country.sites.map((site) => [site.id, site.alternatives])).toEqual([
       ['north-irrigation', []],
@@ -414,6 +438,8 @@ describe('a country file in format 3', () => {
       ['sand-power-line', []],
       ['sand-dam', []],
       ['sand-dam-line', []],
+      ['beta-clinic', []],
+      ['beta-school', []],
     ]);
     // Saying so on both sides says nothing more.
     const both = withValue(testlandFile, ['sites', 5, 'alternatives'], ['alpha-quay']);
@@ -483,7 +509,7 @@ describe('a country file in format 4', () => {
   it('may say the loans the game starts with, each with its own terms', () => {
     const country = testlandInDebt();
 
-    expect(country.formatVersion).toBe(9);
+    expect(country.formatVersion).toBe(10);
     expect(country.start.loans).toEqual([
       { owed: 70, annualRateBasisPoints: 700, quarters: 8 },
       { owed: 40, annualRateBasisPoints: 950, quarters: 12 },
@@ -692,9 +718,9 @@ describe('an invalid country file is rejected with a message naming the fault', 
   });
 
   it('when it is written for another version of the format', () => {
-    const file = withValue(testlandFile, ['formatVersion'], 10);
+    const file = withValue(testlandFile, ['formatVersion'], 11);
 
-    expect(faultsOf(file)).toEqual(['formatVersion is 10, but this game reads versions 1 to 9.']);
+    expect(faultsOf(file)).toEqual(['formatVersion is 11, but this game reads versions 1 to 10.']);
   });
 
   it('when its format version is not a number', () => {
@@ -800,7 +826,7 @@ describe('an invalid country file is rejected with a message naming the fault', 
     const file = withValue(testlandFile, ['sites', 0, 'type'], 'airport');
 
     expect(faultsOf(file)).toEqual([
-      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port, shallowPort, powerStation, powerLine, dam.',
+      'sites[0].type is "airport", which is not one of: irrigation, farmRoad, grainStore, mine, trunkRoad, port, shallowPort, powerStation, powerLine, dam, clinic, school.',
     ]);
   });
 

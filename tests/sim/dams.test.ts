@@ -8,7 +8,6 @@ import {
   leftIn,
   livingStandards,
   loadCountry,
-  onTechnology,
   powerGain,
   regionPower,
   researchStatuses,
@@ -24,14 +23,13 @@ import {
   TECHNOLOGY_DEFINITIONS,
   WEATHER_HELD_BY,
   type Country,
-  type GameState,
   type Site,
   type Technology,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { testlandFormat8File, withChances } from './countries';
 import { faultsOf, withValue } from './files';
-import { steward } from './playing';
+import { knowing, steward } from './playing';
 
 /** A country with a treasury that pays for anything, and no drought, flood or dilemma. */
 function rich(file: unknown): Country {
@@ -71,23 +69,6 @@ function prerequisitesOf(technology: Technology): Technology[] {
   ];
 }
 
-/** The same game with the technologies given known, as if researched before it. */
-function knowing(game: GameState, technologies: readonly Technology[]): GameState {
-  return {
-    ...game,
-    projects: [
-      ...game.projects,
-      ...technologies.map((technology) => ({
-        target: onTechnology(technology),
-        began: game.date,
-        quartersPaid: technologyTerms(technology).researchQuarters,
-        status: 'known' as const,
-        opened: game.date,
-      })),
-    ],
-  };
-}
-
 const regionIndex = (country: Country, site: Site) =>
   country.regions.findIndex((region) => region.id === site.regionId);
 
@@ -97,11 +78,9 @@ const scenarios = [
 ] as const;
 
 describe('a country file that locks a site', () => {
-  it('ships Tavara and Testland at format 9, each with a dam placed its own way', () => {
+  it('gives Tavara and Testland each a dam, placed its own way', () => {
     const tavara = loadCountry(tavaraFile);
     const testland = loadCountry(testlandFile);
-    expect([tavara.formatVersion, testland.formatVersion]).toEqual([9, 9]);
-
     const tavaraDam = damOf(tavara);
     const testlandDam = damOf(testland);
     expect(tavaraDam.regionId).not.toBe(testlandDam.regionId);

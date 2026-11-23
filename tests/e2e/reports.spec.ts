@@ -78,10 +78,11 @@ test('the most serious report comes first, and selecting it picks out its region
     reports(page).getByRole('button', { name: /The treasury is shrinking/ }),
   ).toHaveCount(0);
 
-  // Picking another region on the map leaves the report behind.
+  // Picking another region on the map leaves the report behind. It is picked from the
+  // keyboard: the open card stands over the middle of the Salt Coast.
   await map(page)
     .getByRole('button', { name: /^Salt Coast/ })
-    .click();
+    .press('Enter');
   await expect(drought).toHaveAttribute('aria-pressed', 'false');
 
   // Selecting the report a second time lets go of the region.

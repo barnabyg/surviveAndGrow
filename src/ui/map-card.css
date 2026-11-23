@@ -23,7 +23,9 @@
 .map-card__list {
   margin: 0;
   display: flex;
-  gap: 20px;
+  /* A populous region's figures are wider than the card, so they run on to a second line. */
+  flex-wrap: wrap;
+  gap: 8px 20px;
   font-size: 15px;
 }
 

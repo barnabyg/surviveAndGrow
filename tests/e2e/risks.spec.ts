@@ -1,5 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
-import { decisions, endQuarters, risks, startGame, tavaraWithDroughtIn } from './app';
+import {
+  decisions,
+  endQuarters,
+  openTab,
+  reports,
+  risks,
+  startGame,
+  tavaraWith,
+  tavaraWithDroughtIn,
+} from './app';
 
 const map = (page: Page) => page.getByRole('group', { name: 'Map of Republic of Tavara' });
 
@@ -61,6 +70,70 @@ test('the risks answer to the budget once it is committed', async ({ page }) => 
   await expect(strikes).toContainText('Almost certain');
   // A danger to the whole country has no one place to show.
   await expect(risks(page).getByRole('button')).toHaveCount(0);
+});
+
+/**
+ * Tavara with no drought or flood, a treasury of the given size in millions, and $1.0m on
+ * security, which leaves its budget losing $1.0m a quarter: little enough that the treasury
+ * covers the budget for a year and an instalment of $2.0m a quarter is what it runs short of.
+ */
+function tavaraHolding(treasury: number) {
+  const country = tavaraWith({ drought: [], flood: [] }) as ReturnType<typeof tavaraWith> & {
+    start: { treasury: number; budget: { spending: Record<string, number> } };
+  };
+  country.start.treasury = treasury;
+  country.start.budget.spending.security = 1;
+  return country;
+}
+
+const emptyTreasury = (page: Page) =>
+  risks(page).getByRole('listitem').filter({ hasText: 'Empty treasury' });
+
+test('research planned that the treasury cannot see through is warned of before it pauses', async ({
+  page,
+}) => {
+  // $8.0m covers the seed's whole cost, as starting it needs, but not its instalments beside
+  // the budget's losses: two are paid and the third is not.
+  await startGame(page, { countryFile: tavaraHolding(8) });
+  await expect(risks(page)).toContainText('Next 4 quarters');
+  await expect(emptyTreasury(page)).toHaveCount(0);
+
+  const research = await openTab(page, 'Research');
+  await research.getByRole('button', { name: 'Research Drought-resistant seed' }).click();
+  await expect(emptyTreasury(page)).toContainText(
+    'As things stand the treasury cannot cover the instalment on research into Drought-resistant seed in 2 quarters, and the research will pause.',
+  );
+  await expect(emptyTreasury(page)).toContainText('Almost certain');
+
+  await endQuarters(page, 2);
+  await expect(emptyTreasury(page)).toContainText('this quarter, and the research will pause.');
+  await expect(reports(page).getByText('Research paused: Drought-resistant seed')).toHaveCount(0);
+  await endQuarters(page, 1);
+  await expect(reports(page).getByText('Research paused: Drought-resistant seed')).toBeVisible();
+});
+
+test('a survey planned that the treasury cannot see through is warned of before it pauses', async ({
+  page,
+}) => {
+  // $5.0m covers the survey's $4.0m, but not its second instalment after two quarters' losses.
+  await startGame(page, { countryFile: tavaraHolding(5) });
+  await expect(risks(page)).toContainText('Next 4 quarters');
+  await expect(emptyTreasury(page)).toHaveCount(0);
+
+  await map(page)
+    .getByRole('button', { name: /^Salt Coast/ })
+    .click();
+  await page
+    .getByRole('region', { name: 'Salt Coast', exact: true })
+    .getByRole('button', { name: 'Survey Salt Coast' })
+    .click();
+  await expect(emptyTreasury(page)).toContainText(
+    'As things stand the treasury cannot cover the instalment on the survey of Salt Coast next quarter, and the survey will pause.',
+  );
+  await expect(emptyTreasury(page)).toContainText('Almost certain');
+
+  await endQuarters(page, 2);
+  await expect(reports(page).getByText('Survey paused: Salt Coast')).toBeVisible();
 });
 
 test('beyond the first four risks the rest are folded away until asked for', async ({ page }) => {

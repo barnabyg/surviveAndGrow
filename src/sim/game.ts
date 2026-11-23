@@ -299,8 +299,9 @@ function liveQuarter(
     }),
     traded,
   );
-  // What was spent on health and education builds up, or lets wear down, their lasting levels.
-  const served = resolveServices(food.regions, finances.spent);
+  // What was spent on health and education, and the clinics and schools in use as the quarter
+  // began, build up their lasting levels or let them wear down.
+  const served = resolveServices(food.regions, finances.spent, state);
   // Prosperity is judged on the regions and the sites in use as the quarter leaves them.
   // Approval plays no part in it, so it is judged first, and the tier it reaches sets what
   // the public expects of the government from now on.

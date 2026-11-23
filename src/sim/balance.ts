@@ -57,6 +57,13 @@ export interface SiteBalance {
    * capacity. What the ore shipped earns follows the world ore price.
    */
   readonly capacity?: number;
+  /**
+   * For a site that serves its region's people, what it adds, in thousandths, to where the
+   * region's level of each lasting service settles, on top of what spending holds
+   * (`prosperity.services`). The level builds up to it over the quarters the site is in use,
+   * as it does to spending, and a decaying site adds only part of it.
+   */
+  readonly services?: Readonly<Partial<Record<LastingService, number>>>;
 }
 
 /**
@@ -372,6 +379,26 @@ export const balance = {
       effects: { harvestWeather: 600 },
       infrastructurePermille: 100,
     },
+    // The sites that serve a region's people. A clinic lets its region's health level settle
+    // 15 points higher than health spending alone holds it, and a school its education level,
+    // for that region only. Each costs less than an irrigation scheme and adds a quarter of
+    // what the smallest farming site does to infrastructure access.
+    clinic: {
+      cost: 80,
+      buildQuarters: 3,
+      upkeep: 3,
+      effects: {},
+      infrastructurePermille: 50,
+      services: { health: 150 },
+    },
+    school: {
+      cost: 80,
+      buildQuarters: 3,
+      upkeep: 3,
+      effects: {},
+      infrastructurePermille: 50,
+      services: { education: 150 },
+    },
   } satisfies Record<SiteType, SiteBalance>,
   /**
    * What can be researched (`TECHNOLOGY_DEFINITIONS` gives each its name and prerequisites).
@@ -405,9 +432,11 @@ export const balance = {
     },
     // The third tier. Trunk roads and ports carry a quarter more, so a chain held back by its
     // road or its port ships more, and a port carries more grain across the border. A mine
-    // produces no more: a chain its mine holds back gains nothing.
+    // produces no more: a chain its mine holds back gains nothing. It and grid efficiency
+    // cost less than the tiers below them: at twice this, what a builder spent on research
+    // held its mine's chain back longer than the improvements repaid (docs/balance/phase-5.md).
     roadEngineering: {
-      cost: 150,
+      cost: 75,
       researchQuarters: 5,
       effects: {},
       improves: {
@@ -419,7 +448,7 @@ export const balance = {
     // Power from a station, a dam among them, then adds 25% to a region's output, not 20%,
     // and 18.7 points of infrastructure access, not 15.
     gridEfficiency: {
-      cost: 150,
+      cost: 75,
       researchQuarters: 5,
       effects: {},
       improves: { powerStation: { powerPermille: 250 }, dam: { powerPermille: 250 } },
@@ -430,6 +459,21 @@ export const balance = {
     hydropower: {
       cost: 200,
       researchQuarters: 6,
+      effects: {},
+      improves: {},
+    },
+    // A branch of their own, each needing nothing first and doing nothing of itself: public
+    // health unlocks the clinic and teacher training the school, which pay off only where a
+    // country has a site for one. As cheap and quick as the first tier of the farming branch.
+    publicHealth: {
+      cost: 80,
+      researchQuarters: 4,
+      effects: {},
+      improves: {},
+    },
+    teacherTraining: {
+      cost: 80,
+      researchQuarters: 4,
       effects: {},
       improves: {},
     },

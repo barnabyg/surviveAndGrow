@@ -364,37 +364,39 @@ describe('the risks ahead in Tavara', () => {
     ]);
   });
 
+  // Revenue is $31.0m. Spending $69.0m out of it and the $42.0m treasury leaves $4.0m.
+  const spree: Budget = {
+    taxRatePercent: 18,
+    spending: {
+      agriculture: 200,
+      foodRelief: 200,
+      health: 200,
+      education: 60,
+      security: 30,
+      upkeep: 0,
+    },
+  };
+  // A budget that spends exactly what comes in, so the treasury pays only for projects.
+  const balanced: Budget = {
+    taxRatePercent: 18,
+    spending: {
+      agriculture: 110,
+      foodRelief: 70,
+      health: 70,
+      education: 60,
+      security: 0,
+      upkeep: 0,
+    },
+  };
+
   it('warn that building will pause when the treasury cannot cover an instalment', () => {
     const start = createGame(calm(), 3);
-    // Revenue is $31.0m. Spending $69.0m leaves $4.0m, which the first instalment takes.
-    const spree: Budget = {
-      taxRatePercent: 18,
-      spending: {
-        agriculture: 200,
-        foodRelief: 200,
-        health: 200,
-        education: 60,
-        security: 30,
-        upkeep: 0,
-      },
-    };
+    // The first instalment takes the $4.0m the spree leaves, and nothing is left for the next.
     const game = advanceQuarter(start, {
       budget: spree,
       startProjects: ['lowmere-irrigation'],
     }).state;
     expect(game.treasury).toBe(0);
-    // A budget that spends exactly what comes in leaves nothing for the next instalment.
-    const balanced: Budget = {
-      taxRatePercent: 18,
-      spending: {
-        agriculture: 110,
-        foodRelief: 70,
-        health: 70,
-        education: 60,
-        security: 0,
-        upkeep: 0,
-      },
-    };
 
     expect(ofKind(risksAhead(game, { budget: balanced }), 'treasury')).toEqual({
       kind: 'treasury',
@@ -403,6 +405,104 @@ describe('the risks ahead in Tavara', () => {
       reason:
         'As things stand the treasury cannot cover the instalment on Lowmere irrigation this quarter, and building there will pause.',
       withinQuarters: 1,
+    });
+  });
+
+  it('warn that research will pause the quarter before its instalment cannot be covered', () => {
+    const start = createGame(calm(), 3);
+    // The spree leaves $4.0m, and the first instalment on the seed, $2.0m of its $8.0m,
+    // leaves $2.0m.
+    const game = advanceQuarter(start, {
+      budget: spree,
+      startResearch: 'droughtResistantSeed',
+    }).state;
+    expect(game.treasury).toBe(20);
+
+    // A budget that spends what comes in leaves the $2.0m for this quarter's instalment, and
+    // nothing for the next.
+    expect(ofKind(risksAhead(game, { budget: balanced }), 'treasury')).toEqual({
+      kind: 'treasury',
+      likelihood: 'almostCertain',
+      headline: 'Empty treasury',
+      reason:
+        'As things stand the treasury cannot cover the instalment on research into Drought-resistant seed next quarter, and the research will pause.',
+      withinQuarters: 2,
+    });
+
+    const paid = advanceQuarter(game, { budget: balanced });
+    expect(paid.report.entries.map((entry) => entry.kind)).not.toContain('researchPaused');
+    expect(ofKind(risksAhead(paid.state, { budget: balanced }), 'treasury')).toMatchObject({
+      reason:
+        'As things stand the treasury cannot cover the instalment on research into Drought-resistant seed this quarter, and the research will pause.',
+      withinQuarters: 1,
+    });
+    const paused = advanceQuarter(paid.state, { budget: balanced });
+    expect(paused.report.entries).toContainEqual(
+      expect.objectContaining({
+        kind: 'researchPaused',
+        headline: 'Research paused: Drought-resistant seed',
+      }),
+    );
+  });
+
+  it('warn that a survey will pause when the treasury cannot cover its instalment', () => {
+    const start = createGame(calm(), 3);
+    // $2.0m more on security leaves $2.0m, which the first of the survey's two instalments takes.
+    const game = advanceQuarter(start, {
+      budget: { ...spree, spending: { ...spree.spending, security: 50 } },
+      startSurveys: ['salt-coast'],
+    }).state;
+    expect(game.treasury).toBe(0);
+
+    expect(ofKind(risksAhead(game, { budget: balanced }), 'treasury')).toEqual({
+      kind: 'treasury',
+      likelihood: 'almostCertain',
+      headline: 'Empty treasury',
+      reason:
+        'As things stand the treasury cannot cover the instalment on the survey of Salt Coast this quarter, and the survey will pause.',
+      withinQuarters: 1,
+    });
+  });
+
+  it('count a survey planned this quarter once, not as started again each quarter after', () => {
+    // The starting budget loses $5.0m a quarter, so $27.0m covers four more quarters of it
+    // and the survey's $4.0m, but not a survey begun afresh in each of them.
+    const game = play(createGame(calm(), 3), 3);
+    expect(game.treasury).toBe(270);
+    const planned: Decisions = { ...idle(game), startSurveys: ['salt-coast'] };
+
+    expect(ofKind(risksAhead(game, planned), 'treasury')).toBe(undefined);
+    // Played out, the treasury covers all four quarters.
+    const reports = [advanceQuarter(game, planned)];
+    for (let quarter = 1; quarter < 4; quarter += 1) {
+      const { state } = reports.at(-1) ?? {};
+      if (state !== undefined) reports.push(advanceQuarter(state, idle(state)));
+    }
+    expect(reports).toHaveLength(4);
+    expect(
+      reports.flatMap(({ report }) => report.entries.map((entry) => entry.kind)),
+    ).not.toContain('spendingCut');
+    expect(reports.at(-1)?.state.treasury).toBe(30);
+  });
+
+  it.each<[string, Pick<Decisions, 'startResearch' | 'startSurveys'>]>([
+    ['research', { startResearch: 'droughtResistantSeed' }],
+    ['a survey', { startSurveys: ['salt-coast'] }],
+  ])('warn when the instalments on %s would leave the treasury short of the budget', (_, plan) => {
+    // The starting budget loses $5.0m a quarter, and $22.0m covers four more quarters of it.
+    const game = play(createGame(calm(), 3), 4);
+    expect(game.treasury).toBe(220);
+    expect(ofKind(risksAhead(game, idle(game)), 'treasury')).toBe(undefined);
+
+    // $2.0m a quarter in instalments, on the seed for four quarters or the survey for two,
+    // leaves less than the fourth quarter's budget needs.
+    expect(ofKind(risksAhead(game, { ...idle(game), ...plan }), 'treasury')).toEqual({
+      kind: 'treasury',
+      likelihood: 'almostCertain',
+      headline: 'Empty treasury',
+      reason:
+        'As things stand the treasury cannot cover the budget in 3 quarters, and every area will be cut.',
+      withinQuarters: 4,
     });
   });
 

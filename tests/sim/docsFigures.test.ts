@@ -57,6 +57,8 @@ const { sites, finance, trade, priceShocks, events, technologies, surveys } = ba
 const seed = technologies.droughtResistantSeed;
 const { improvedIrrigation, coldStorage, roadEngineering, gridEfficiency, hydropower } =
   technologies;
+const { publicHealth } = technologies;
+const { services } = balance.prosperity;
 /** What a site's effect leaves, improved by what a technology leaves of it. */
 const improvedLeft = (own: number, by: number) => Math.floor((own * by) / 1000);
 /** A figure raised by a share in thousandths of it. */
@@ -105,6 +107,12 @@ const RULES: readonly string[] = [
   // Locked sites and the dam
   `It also takes ${cut(sites.dam.effects.harvestWeather)} off how far weather, drought and flood move its own region's harvest`,
   `${formatMoney(sites.dam.cost)} over ${String(sites.dam.buildQuarters)} quarters, ${formatMoney(sites.dam.upkeep)} upkeep, adding ${String(sites.dam.infrastructurePermille / 10)} points`,
+  // Clinics and schools
+  `a clinic or a school ${String(sites.clinic.infrastructurePermille / 10)}, and power ${String(balance.power.infrastructurePermille / 10)}`,
+  `Each costs ${formatMoney(sites.clinic.cost)} over ${String(sites.clinic.buildQuarters)} quarters and ${formatMoney(sites.clinic.upkeep)} upkeep, and adds ${String(sites.clinic.infrastructurePermille / 10)} points`,
+  `settle ${String(sites.clinic.services.health / 10)} points higher than health spending alone holds it`,
+  `closing ${percent(services.health.buildPermillePerQuarter)} of the gap each quarter for health and ${percent(services.education.buildPermillePerQuarter)} for education`,
+  `Public health** and **Teacher training** (${researched(publicHealth)} each)`,
   // Surveys
   `what it costs (${formatMoney(surveys.cost)} over ${String(surveys.surveyQuarters)} quarters)`,
   `not a mine's usual ${oreTonnes(sites.mine.capacity)} tonnes`,

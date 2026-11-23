@@ -100,14 +100,16 @@ function fingerprint(
  * site. Never change these to make a test pass: a game that plays differently is a change in
  * the rules. The hashes were pinned again when sites could be locked: each site's status gained
  * what locks it, and each country a dam none of these games can research. With those left out
- * of the fingerprint, every game hashed as before.
+ * of the fingerprint, every game hashed as before. They were pinned once more when each country
+ * gained clinics and schools, locked in these games as the dam is: with those sites left out of
+ * the fingerprint, every game again hashed as before.
  */
 const outcomes = [
   {
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'builds',
-    hash: 'b830bb93b708d23d1cdec884c6e57952152794ff29fb4e5965a8c0fe7c5c7bfb',
+    hash: '1e286020e64c33a777d9b256642b4a97d2fd4bdf52a1b624601ba25863d8ae33',
     summary: {
       date: { year: 6, quarter: 1 },
       treasury: 2,
@@ -125,6 +127,10 @@ const outcomes = [
         'arden-power-line operating 2',
         'lowmere-power-line operating 2',
         'korr-falls-dam locked 0',
+        'dustwell-clinic locked 0',
+        'westhaven-clinic locked 0',
+        'southbank-school locked 0',
+        'korrgate-school locked 0',
       ],
       austere: '',
     },
@@ -133,7 +139,7 @@ const outcomes = [
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'bailedOut',
-    hash: 'e071fe31278ea5bb8154e99c99193862bd8d037012aba11418ce93ee6f2d9966',
+    hash: '0f6763d6c12642a5ceb212663ff7d88a78057dac8745b23ac5c49e9ffb7d8aba',
     summary: {
       date: { year: 6, quarter: 1 },
       treasury: 2,
@@ -143,6 +149,10 @@ const outcomes = [
         'lowmere-irrigation operating 3',
         'lowmere-store paused 0',
         'korr-falls-dam locked 0',
+        'dustwell-clinic locked 0',
+        'westhaven-clinic locked 0',
+        'southbank-school locked 0',
+        'korrgate-school locked 0',
       ],
       austere: '2 3 4 5 6 7 8 9',
     },
@@ -151,7 +161,7 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'builds',
-    hash: 'ecde23e260e9b2b7a3e9341a046f9686fccbd9d5f9592bb5178a7d4d713c2e95',
+    hash: 'd2060dbc8060a16104baa934b7b31684fb11de87b4768cab908d0d7d015e5e4e',
     summary: {
       date: { year: 7, quarter: 1 },
       treasury: 1,
@@ -163,6 +173,8 @@ const outcomes = [
         'sand-power-line decaying 2',
         'sand-dam locked 0',
         'sand-dam-line locked 0',
+        'beta-clinic locked 0',
+        'beta-school locked 0',
       ],
       austere: '',
     },
@@ -171,7 +183,7 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'bailedOut',
-    hash: '41b8c60562986f938f65ebe0ba47657c9b910e25730076255a0638d2df74d3dd',
+    hash: '3de46725c5848c8a73e4eb6e4b885aac896745222c79191e07177213858c515b',
     summary: {
       date: { year: 7, quarter: 1 },
       treasury: 3,
@@ -184,6 +196,8 @@ const outcomes = [
         'sand-power-line decaying 2',
         'sand-dam locked 0',
         'sand-dam-line locked 0',
+        'beta-clinic locked 0',
+        'beta-school locked 0',
       ],
       austere: '',
     },
