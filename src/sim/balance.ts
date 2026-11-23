@@ -57,6 +57,13 @@ export interface SiteBalance {
    * capacity. What the ore shipped earns follows the world ore price.
    */
   readonly capacity?: number;
+  /**
+   * For a site that serves its region's people, what it adds, in thousandths, to where the
+   * region's level of each lasting service settles, on top of what spending holds
+   * (`prosperity.services`). The level builds up to it over the quarters the site is in use,
+   * as it does to spending, and a decaying site adds only part of it.
+   */
+  readonly services?: Readonly<Partial<Record<LastingService, number>>>;
 }
 
 /**
@@ -372,6 +379,27 @@ export const balance = {
       effects: { harvestWeather: 600 },
       infrastructurePermille: 100,
     },
+    // The small sites that serve a region's people. A clinic lets its region's health level
+    // settle 15 points higher than health spending alone holds it, and a school its education
+    // level: about what doubling a starting budget's spending on the service does, but for
+    // one region and for good. Cheaper than a grain store's worth of farming sites, and each
+    // adds a little to infrastructure access as any building does.
+    clinic: {
+      cost: 80,
+      buildQuarters: 3,
+      upkeep: 3,
+      effects: {},
+      infrastructurePermille: 50,
+      services: { health: 150 },
+    },
+    school: {
+      cost: 80,
+      buildQuarters: 3,
+      upkeep: 3,
+      effects: {},
+      infrastructurePermille: 50,
+      services: { education: 150 },
+    },
   } satisfies Record<SiteType, SiteBalance>,
   /**
    * What can be researched (`TECHNOLOGY_DEFINITIONS` gives each its name and prerequisites).
@@ -430,6 +458,21 @@ export const balance = {
     hydropower: {
       cost: 200,
       researchQuarters: 6,
+      effects: {},
+      improves: {},
+    },
+    // A branch of their own, each needing nothing first and doing nothing of itself: public
+    // health unlocks the clinic and teacher training the school, which pay off only where a
+    // country has a site for one. As cheap and quick as the first tier of the farming branch.
+    publicHealth: {
+      cost: 80,
+      researchQuarters: 4,
+      effects: {},
+      improves: {},
+    },
+    teacherTraining: {
+      cost: 80,
+      researchQuarters: 4,
       effects: {},
       improves: {},
     },

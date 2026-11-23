@@ -160,9 +160,11 @@ export { regionPower, type RegionPower } from './power';
 export {
   livingStandards,
   prosperityStatus,
+  serviceLevels,
   type LivingStandard,
   type ProsperityScores,
   type ProsperityStatus,
+  type ServiceLevel,
 } from './prosperity';
 export { settlementLook, settlementLooks, type SettlementLook } from './settlements';
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
@@ -263,6 +265,7 @@ export {
   GOOD_NAMES,
   GOODS,
   ORDERED_GOODS,
+  LASTING_SERVICES,
   LIKELIHOOD_NAMES,
   LIKELIHOODS,
   MAP_FRAME,
@@ -274,6 +277,7 @@ export {
   SITE_CHAIN_ROLES,
   SITE_POWER_ROLES,
   SITE_STATE_NAMES,
+  SITE_TYPE_DEFINITIONS,
   SITE_TYPE_NAMES,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
@@ -298,6 +302,7 @@ export {
   type FoodStage,
   type Good,
   type LabelSide,
+  type LastingService,
   type Likelihood,
   type PowerRole,
   type ProjectStatus,

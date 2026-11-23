@@ -201,11 +201,12 @@ describe('flood likelihoods in a country file', () => {
   });
 
   it('need country file format 6', () => {
-    // Tavara as format 6 wrote it, before it could name world price shocks or dams.
+    // Tavara as format 6 wrote it, before it could name world price shocks, dams, clinics or
+    // schools.
     const format6 = withValue(
       without(without(tavaraFile, ['deposits']), ['priceShockLikelihood']),
       ['sites'],
-      tavaraFile.sites.filter((site) => site.type !== 'dam'),
+      tavaraFile.sites.filter((site) => !['dam', 'clinic', 'school'].includes(site.type)),
     );
     const faults = faultsOf(withValue(format6, ['formatVersion'], 5));
 

@@ -111,11 +111,22 @@ export function testlandFormat7File(): unknown {
  * technology, since naming either needs format 9.
  */
 export function testlandFormat8File(): unknown {
-  const file = structuredClone(testlandFile) as Chances & {
+  const file = testlandFormat9File() as Chances & {
     sites: { type: string; needs?: string }[];
   };
   file.sites = file.sites.filter((site) => site.type !== 'dam' && site.needs === undefined);
   file.formatVersion = 8;
+  return file;
+}
+
+/**
+ * Testland's file as format 9 could write it: it has no clinic and no school, since naming
+ * either needs format 10.
+ */
+export function testlandFormat9File(): unknown {
+  const file = structuredClone(testlandFile) as Chances & { sites: { type: string }[] };
+  file.sites = file.sites.filter((site) => site.type !== 'clinic' && site.type !== 'school');
+  file.formatVersion = 9;
   return file;
 }
 

@@ -8,7 +8,6 @@ import {
   knownTechnologies,
   livingStandards,
   loadSave,
-  onTechnology,
   previewQuarter,
   regionPower,
   risksAhead,
@@ -28,7 +27,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { withChances, withoutPoweredMines } from './countries';
-import { steward } from './playing';
+import { knowing, steward } from './playing';
 
 /**
  * A country with a treasury that pays for everything it can build and for research, no
@@ -107,23 +106,6 @@ function prerequisitesOf(technology: Technology): Technology[] {
     ...prerequisitesOf(needed),
     needed,
   ]);
-}
-
-/** The same game with the technologies given known, as if researched before it. */
-function knowing(game: GameState, technologies: readonly Technology[]): GameState {
-  return {
-    ...game,
-    projects: [
-      ...game.projects,
-      ...technologies.map((technology) => ({
-        target: onTechnology(technology),
-        began: game.date,
-        quartersPaid: technologyTerms(technology).researchQuarters,
-        status: 'known' as const,
-        opened: game.date,
-      })),
-    ],
-  };
 }
 
 /** Plays quarters as a careful player, researching the technology given in the first if any. */

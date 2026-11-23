@@ -40,8 +40,12 @@ function tierOf(technology: Technology): number {
 }
 
 describe('the technology tree as it ships', () => {
-  it('has drought-resistant seed at its root and at least two tiers built on it', () => {
-    expect(TECHNOLOGIES.filter((technology) => tierOf(technology) === 1)).toEqual([SEED]);
+  it('has drought-resistant seed at its root with at least two tiers built on it, and a root each for health and education', () => {
+    expect(TECHNOLOGIES.filter((technology) => tierOf(technology) === 1)).toEqual([
+      SEED,
+      'publicHealth',
+      'teacherTraining',
+    ]);
     expect(Math.max(...TECHNOLOGIES.map(tierOf))).toBeGreaterThanOrEqual(3);
     // Every prerequisite comes before what needs it, so the tab reads down the tree.
     for (const technology of TECHNOLOGIES) {

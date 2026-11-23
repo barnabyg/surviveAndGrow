@@ -82,16 +82,23 @@ describe('the technology tree', () => {
     );
   });
 
-  it.each(bothCountries)('starts in %s with nothing known and the seed available', (_, country) => {
-    const game = createGame(country(), 1);
-    expect(knownTechnologies(game.projects)).toEqual([]);
-    // The seed needs nothing; everything else in the tree builds on it, so is locked.
-    const statuses = researchStatuses(game, null);
-    expect(statuses.map((status) => [status.technology, status.state])).toEqual(
-      TECHNOLOGIES.map((technology) => [technology, technology === SEED ? 'available' : 'locked']),
-    );
-    expect(statuses[0]?.fault).toBeNull();
-  });
+  it.each(bothCountries)(
+    'starts in %s with nothing known and each root available',
+    (_, country) => {
+      const game = createGame(country(), 1);
+      expect(knownTechnologies(game.projects)).toEqual([]);
+      // The seed needs nothing, nor do public health and teacher training, a branch each of its
+      // own; everything else builds on the seed, so is locked.
+      const statuses = researchStatuses(game, null);
+      expect(statuses.map((status) => [status.technology, status.state])).toEqual(
+        TECHNOLOGIES.map((technology) => [
+          technology,
+          TECHNOLOGY_DEFINITIONS[technology].prerequisites.length === 0 ? 'available' : 'locked',
+        ]),
+      );
+      expect(statuses[0]?.fault).toBeNull();
+    },
+  );
 });
 
 describe('research', () => {

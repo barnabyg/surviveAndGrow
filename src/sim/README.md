@@ -38,7 +38,8 @@ preview (`previewQuarter`) shares, so turn and preview cannot come to differ:
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
    `power.ts`) and the events in force (`events.ts`), from the reserve less the grain sold
    abroad. Grain bought abroad then reaches the national reserve.
-4. Health and education levels (`resolveServices` in `prosperity.ts`).
+4. Health and education levels (`resolveServices` in `prosperity.ts`), from what was spent and
+   the clinics and schools in use as the quarter began.
 5. Prosperity (`prosperity.ts`) and the tier it reaches (`tiers.ts`), which sets expectations.
    Prosperity, and the debt burden the quarter leaves, are judged at the world prices once
    they have moved.
@@ -134,6 +135,20 @@ upkeep, when the file leaves it out, does not count locked sites (`countryStart.
 station by its power role, so everything that reads stations counts it; its harvest steadying
 is its `harvestWeather` effect, and `weatherHold` lists what lessens the weather's hold on a
 region's harvest for the region's card.
+
+## Clinics and schools
+
+A type of site may raise a lasting service in its own region (`services` in `balance.sites`):
+a clinic health, a school education. What it adds, in thousandths, is added to where spending
+alone would hold the region's level (`serviceParts` in `prosperity.ts`, from `serviceOf` in
+`sites.ts`, which gives a decaying site its part), and the level closes on that as it always
+has (`resolveServices`), so nothing new is kept in the state and the turn, the preview and the
+risks ahead count it alike. `serviceLevels` gives the interface each region's level, where it
+settles and what holds it there, from the same parts, under the budget in force or another it
+is given. Each type is unlocked by a technology of its own, so its sites are locked sites, and
+its sentence is written by `effectOf` from `SERVICE_SITE_SENTENCE`. A new lasting service goes
+in `LASTING_SERVICES`, with its names beside it; a new type of site that raises one says so in
+its balance values and nowhere else.
 
 ## Surveys and deposits
 

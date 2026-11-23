@@ -84,8 +84,11 @@ test('a locked dam names the research it needs, and can be built once it is done
   await expect(card.getByRole('button', { name: 'Start building' })).toHaveCount(0);
   await card.getByRole('button', { name: 'Close' }).click();
 
-  // The projects tab counts it apart from what can be afforded.
-  await expect(await openTab(page, 'Projects')).toContainText('1 locked until research unlocks it');
+  // The projects tab counts it, with the clinics and schools locked as it is, apart from what
+  // can be afforded.
+  await expect(await openTab(page, 'Projects')).toContainText(
+    '5 locked until research unlocks them',
+  );
 
   // The research tab says hydropower unlocks it.
   const hydropower = (await openTab(page, 'Research')).getByRole('group', { name: 'Hydropower' });

@@ -4,7 +4,10 @@ import { formatMoney, formatPercent, formatPoints, formatTonnes, listed } from '
 import { DOLLARS_PER_MONEY, type Money } from './types';
 import {
   CHAIN_ROLE_SENTENCES,
+  LASTING_SERVICE_NAMES,
+  LASTING_SERVICES,
   POWER_ROLE_SENTENCES,
+  SERVICE_SITE_SENTENCE,
   SITE_CHAIN_ROLES,
   SITE_EFFECT_DEFINITIONS,
   SITE_EFFECTS,
@@ -13,6 +16,7 @@ import {
   SITE_TYPES,
   TECHNOLOGIES,
   TECHNOLOGY_DEFINITIONS,
+  type LastingService,
   type SiteEffect,
   type SiteType,
   type Technology,
@@ -160,6 +164,16 @@ export function siteEffectsOf(
  */
 export function infrastructureOf(type: SiteType, decaying = false): number {
   const permille = balance.sites[type].infrastructurePermille;
+  return decaying ? weakened(permille) : permille;
+}
+
+/**
+ * What a site of one type in use adds to where its region's level of a lasting service
+ * settles, in thousandths, on top of what spending holds. A decaying site adds only part of it.
+ */
+export function serviceOf(type: SiteType, service: LastingService, decaying = false): number {
+  const { services }: SiteBalance = balance.sites[type];
+  const permille = services?.[service] ?? 0;
   return decaying ? weakened(permille) : permille;
 }
 
@@ -315,5 +329,17 @@ function effectOf(
               ),
             ),
         ]),
+    // What a site does for a lasting service no technology improves, so nothing is compared.
+    ...LASTING_SERVICES.flatMap((service) => {
+      const permille = serviceOf(type, service, decaying);
+      return permille === 0
+        ? []
+        : [
+            SERVICE_SITE_SENTENCE.replaceAll('{service}', LASTING_SERVICE_NAMES[service]).replace(
+              '{points}',
+              formatPoints(permille),
+            ),
+          ];
+    }),
   ].join(' ');
 }

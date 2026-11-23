@@ -3,11 +3,14 @@
 // tests/balance/players.ts.
 import {
   FOOD_STAGES,
+  onTechnology,
   pendingDilemma,
   previewQuarter,
+  technologyTerms,
   type Budget,
   type Decisions,
   type GameState,
+  type Technology,
 } from '../../src/sim';
 
 /**
@@ -44,4 +47,21 @@ export function inFirstTerm(game: GameState): boolean {
 export function answering(game: GameState, decisions: Decisions): Decisions {
   const choice = pendingDilemma(game)?.options.findLast((option) => option.unavailable === null);
   return choice === undefined ? decisions : { ...decisions, dilemmaChoice: choice.id };
+}
+
+/** The same game with the technologies given known, as if researched before it. */
+export function knowing(game: GameState, technologies: readonly Technology[]): GameState {
+  return {
+    ...game,
+    projects: [
+      ...game.projects,
+      ...technologies.map((technology) => ({
+        target: onTechnology(technology),
+        began: game.date,
+        quartersPaid: technologyTerms(technology).researchQuarters,
+        status: 'known' as const,
+        opened: game.date,
+      })),
+    ],
+  };
 }
