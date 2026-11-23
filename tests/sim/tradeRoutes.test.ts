@@ -24,7 +24,7 @@ function withSites(game: GameState, sites: Record<string, ProjectStatus>): GameS
   return {
     ...game,
     projects: Object.entries(sites).map(([siteId, status]) => ({
-      siteId,
+      target: { kind: 'site', siteId },
       began: { year: 1, quarter: 1 },
       quartersPaid: 8,
       status,

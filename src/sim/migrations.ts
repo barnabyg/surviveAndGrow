@@ -21,7 +21,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 9;
+export const SAVE_FORMAT_VERSION = 10;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -39,6 +39,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   6: fromFormat6,
   7: fromFormat7,
   8: fromFormat8,
+  9: fromFormat9,
 };
 
 /**
@@ -99,7 +100,7 @@ function tierOfOldSave(older: Json, regions: readonly unknown[], projects: unkno
     const { value } = prosperityStatus({
       country: loadCountry(carried),
       regions: regions as RegionState[],
-      projects: Array.isArray(projects) ? (projects as Project[]) : [],
+      projects: Array.isArray(projects) ? (projectsWithTargets(projects) as Project[]) : [],
       // Before format 7 there were no world prices: a mine earned what it earns at the usual
       // ore price.
       worldPrices: openingPrices(),
@@ -245,6 +246,33 @@ function fromFormat7(older: Json): Json {
 function fromFormat8(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
   return { ...older, formatVersion: 9, state: { ...state, priceShocks: [], tradeCarried: [] } };
+}
+
+/**
+ * Format 10 gave a project a target, what it is for, where it had been on a site and nothing
+ * else. Every project of a game written in format 9 is on a site, which becomes its target;
+ * it is paid for, paused and in use exactly as it was.
+ */
+function fromFormat9(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return {
+    ...older,
+    formatVersion: 10,
+    state: { ...state, projects: projectsWithTargets(state.projects) },
+  };
+}
+
+/**
+ * The projects of a save written before format 10, each on the site it names, as projects
+ * for that site. Anything that is not a project is left as it is, for checking to refuse.
+ */
+function projectsWithTargets(projects: unknown): unknown {
+  if (!Array.isArray(projects)) return projects;
+  return projects.map((project: unknown) => {
+    if (!isRecord(project)) return project;
+    const { siteId, ...rest } = project;
+    return { target: { kind: 'site', siteId }, ...rest };
+  });
 }
 
 /**

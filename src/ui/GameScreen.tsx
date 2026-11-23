@@ -6,6 +6,7 @@ import {
   previewQuarter,
   regionName,
   risksAhead,
+  siteOf,
   siteSchedule,
   siteStatus,
   withinAusterity,
@@ -174,7 +175,11 @@ export function GameScreen(props: GameScreenProps) {
   // The timeline shows every project, and the site picked out on the map if it is still
   // empty and unplanned, as if building there began now. A closed site can never begin.
   const schedule =
-    preview?.schedule ?? game.projects.map((project) => siteSchedule(game, project.siteId));
+    preview?.schedule ??
+    game.projects.flatMap((project) => {
+      const siteId = siteOf(project);
+      return siteId === null ? [] : [siteSchedule(game, siteId)];
+    });
   const considered =
     playing &&
     selectedSiteId !== null &&

@@ -61,6 +61,26 @@ for collapse (`collapse.ts`), holds the election (`election.ts`), checks for vic
 dilemma, records the vital signs (`history.ts`), and compiles the report (`report.ts`), whose
 entries keep the order written there.
 
+## Projects and their targets
+
+A project names its target, what it is for (`ProjectTarget` in `projects.ts`). Every project is
+on a site for now; research and surveys are to be targets of their own kinds. What a project
+shares is written once and takes no notice of the target: `projectStartFault` bars any new
+project during austerity and when the treasury does not hold the whole cost of everything started
+together, and `resolveProjects` pays the instalments after the budget, the oldest project first,
+pauses a project the treasury cannot pay for, and puts a finished one in use from the next
+quarter. Taking a plan back is the interface's: a plan is not a project until the quarter ends.
+
+Only what depends on the target is written for each kind: its name, region, cost, build time
+and effect (`projectTerms`), what else stops it being started (`targetFault`), and how a save
+holds it (`readTarget` in `save.ts`). A project on no site is resolved like any other: it takes
+its turn for instalments in the order it was started and pauses in the same way, but it has no
+site, so `siteOf` gives null for it. Everything that reads the sites in use (`siteStatus`,
+`sitesInUse`, `siteEffects`, upkeep, chains, power, trade links and the timeline) passes over
+it, it needs no upkeep and nothing decays it, and its report entries name no region. Its
+lasting effect is for its own kind to say. A new kind of target is added to `ProjectTarget` and
+to `PROJECT_TARGET_KINDS` in `vocabulary.ts`, and is a save-format change.
+
 ## Adding a mechanic
 
 A new mechanic usually touches most of these:

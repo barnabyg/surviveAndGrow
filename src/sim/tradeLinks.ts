@@ -1,7 +1,7 @@
 import { sum } from './arithmetic';
 import { chains } from './chains';
 import type { Country } from './country';
-import type { Project } from './projects';
+import { projectOnSite, type Project } from './projects';
 import { capacityOf, oreTonnesOf } from './sites';
 import { formatTonnes } from './text';
 import type { TradeOrder, WorldPrices } from './trade';
@@ -73,7 +73,7 @@ export function tradeLinks(game: Omit<Trading, 'worldPrices'>): TradeLink[] {
     decaying: false,
   }));
   const ports = game.country.sites.flatMap((site): TradeLink[] => {
-    const project = game.projects.find((candidate) => candidate.siteId === site.id);
+    const project = projectOnSite(game.projects, site.id);
     if (SITE_CHAIN_ROLES[site.type] !== 'outlet' || project === undefined || !inUse(project)) {
       return [];
     }

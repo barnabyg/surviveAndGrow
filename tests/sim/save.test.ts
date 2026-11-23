@@ -5,7 +5,6 @@ import {
   createGame,
   loadCountry,
   loadSave,
-  priceStatus,
   SAVE_FORMAT_VERSION,
   SaveError,
   saveGame,
@@ -17,7 +16,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import format9Save from '../saves/format-9.json';
+import format10Save from '../saves/format-10.json';
 import {
   bothCountries,
   tavara,
@@ -113,7 +112,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(9);
+    expect(save.formatVersion).toBe(10);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -343,8 +342,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 10))).toBe(
-      'The saved game was written by a newer release of the game (save format 10; this release reads format 9). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 11))).toBe(
+      'The saved game was written by a newer release of the game (save format 11; this release reads format 10). Open it with that release.',
     );
   });
 
@@ -464,9 +463,15 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
     ],
     [
       'a project on a site the country does not have',
-      ['state', 'projects', 0, 'siteId'],
+      ['state', 'projects', 0, 'target', 'siteId'],
       'moon-base',
-      'state.projects[0].siteId is "moon-base", which is not a site this game has',
+      'state.projects[0].target.siteId is "moon-base", which is not a site this game has',
+    ],
+    [
+      'a project for something the game does not have',
+      ['state', 'projects', 0, 'target', 'kind'],
+      'laboratory',
+      'state.projects[0].target.kind is "laboratory", which is not a kind of project this game has',
     ],
     [
       'a project in a state of building the game does not have',
@@ -705,80 +710,43 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 9', () => {
-  it('still opens on the game it was written from, with two world price shocks announced', () => {
-    const { game, report } = loadSave(format9Save);
+describe('the save kept from save format 10', () => {
+  it('still opens on the game it was written from, a site in use and decaying and another paused', () => {
+    const { game, report } = loadSave(format10Save);
 
-    expect(game.date).toEqual({ year: 1, quarter: 3 });
-    expect(game.priceShocks).toEqual([
-      {
-        type: 'failedHarvestsAbroad',
-        announced: { year: 1, quarter: 2 },
-        begins: { year: 1, quarter: 4 },
-      },
-      { type: 'oreGlut', announced: { year: 1, quarter: 2 }, begins: { year: 1, quarter: 4 } },
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(game.projects.map((project) => [project.target, project.status])).toEqual([
+      [{ kind: 'site', siteId: 'lowmere-store' }, 'decaying'],
+      [{ kind: 'site', siteId: 'lowmere-irrigation' }, 'paused'],
     ]);
-    expect(report?.food.contributions).toContainEqual({ label: 'Grain imported', amount: 20_000 });
+    expect(report?.entries.map((entry) => entry.headline)).toContain('Paused: Lowmere irrigation');
   });
 
-  it('plays on, each shock moving its price as it begins', () => {
-    const { game } = loadSave(format9Save);
+  it('plays on, building where it left off once the treasury can pay', () => {
+    const { game } = loadSave(format10Save);
 
-    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
+    const decisions = answering(
+      game,
+      steward(game, { ...austere, spending: { ...austere.spending, upkeep: 200 } }),
+    );
+    const { state, report } = advanceQuarter(game, decisions);
 
-    expect(priceStatus(state, 'grain').figure?.contributions).toContainEqual({
-      label: 'Failed harvests abroad',
-      amount: 36,
-    });
-    expect(priceStatus(state, 'ore').figure?.contributions).toContainEqual({
-      label: 'Ore glut',
-      amount: -20,
-    });
+    expect(state.projects.map((project) => [project.quartersPaid, project.status])).toEqual([
+      [2, 'operating'],
+      [2, 'building'],
+    ]);
     expect(report.entries.map((entry) => entry.headline)).toContain(
-      'Ore glut pushes the world ore price down',
+      'Building resumes: Lowmere irrigation',
     );
   });
 
-  it('remembers what each trade link carried in the quarter before it was saved', () => {
-    const { game } = loadSave(format9Save);
-
-    // The 20,000 t bought in its second quarter crossed the border at Korr Pass.
-    expect(game.tradeCarried).toEqual([{ routeId: 'korr-pass', ore: 0, grain: 20_000 }]);
-  });
-
-  it('refuses what was carried by a link the country does not have, or one listed twice', () => {
-    const unknown = withValue(format9Save, ['state', 'tradeCarried', 0, 'routeId'], 'nowhere');
-    const doubled = withValue(
-      format9Save,
-      ['state', 'tradeCarried'],
-      [
-        { routeId: 'korr-pass', ore: 0, grain: 1000 },
-        { routeId: 'korr-pass', ore: 0, grain: 1000 },
-      ],
-    );
-    const negative = withValue(format9Save, ['state', 'tradeCarried', 0, 'grain'], -1000);
-
-    expect(() => loadSave(unknown)).toThrow(/state\.tradeCarried\[0\]\.routeId/);
-    expect(() => loadSave(doubled)).toThrow(/state\.tradeCarried lists one trade link twice/);
-    expect(() => loadSave(negative)).toThrow(/state\.tradeCarried\[0\]\.grain/);
-  });
-
-  it('refuses a shock the game does not have, or two of one kind', () => {
-    const unknown = withValue(format9Save, ['state', 'priceShocks', 0, 'type'], 'locusts');
-    const twice = withValue(format9Save, ['state', 'priceShocks', 1, 'type'], 'oreGlut');
-    const doubled = withValue(twice, ['state', 'priceShocks', 0, 'type'], 'oreGlut');
-
-    expect(() => loadSave(unknown)).toThrow(/state\.priceShocks\[0\]\.type/);
-    expect(() => loadSave(doubled)).toThrow(/state\.priceShocks holds two shocks of one kind/);
-  });
-
-  // This holds for as long as format 9 is the current format: saving must write exactly
+  // This holds for as long as format 10 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(9);
-    const { game, report } = loadSave(format9Save);
+    expect(SAVE_FORMAT_VERSION).toBe(10);
+    const { game, report } = loadSave(format10Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format9Save);
+    expect(stored(saveGame(game, report))).toEqual(format10Save);
   });
 });

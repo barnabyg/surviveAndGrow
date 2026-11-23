@@ -25,7 +25,7 @@ import {
 import { foodSituation, forecastFood, reliefFor, resolveFood, withExported } from './food';
 import { vitalSigns } from './history';
 import { quartersToHarvest, resolveMoney, withTraded } from './money';
-import { siteEffects } from './projects';
+import { siteEffects, sitesAmong } from './projects';
 import { prosperityFigure, prosperityStatus, resolveServices } from './prosperity';
 import { pushesInto, rollPriceShocks, turnShocks } from './priceShocks';
 import { compileReport, type ReportEntry } from './report';
@@ -246,7 +246,7 @@ export function resolveQuarter(
       entries: compileReport(entries),
     },
     spendingCut: budget.cut,
-    pausedSites: building.paused,
+    pausedSites: sitesAmong(building.paused),
     upkeepShort: finances.upkeep.short,
     missedPayment: serviced.missed,
     missedOn: serviced.missedOn,
@@ -443,13 +443,13 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     debtBurden: { min: lived.debtBurdenAt(high), max: lived.debtBurdenAt(low) },
     creditRating: credit.credit.rating,
     creditScore: exactly(credit.after.score),
-    pausedSites: building.paused,
+    pausedSites: sitesAmong(building.paused),
     upkeep: {
       needed: finances.upkeep.needed,
       spent: finances.upkeep.spent,
       short: finances.upkeep.short,
     },
-    schedule: scheduleAhead(state, decisions.startProjects ?? [], building.paused),
+    schedule: scheduleAhead(state, decisions.startProjects ?? [], sitesAmong(building.paused)),
     balance: exactly(finances.balance),
     treasury: exactly(finances.treasury),
     spendingCut: finances.cut,

@@ -16,7 +16,11 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 
 - **Site**: a place in the country file where one thing can be built: an irrigation scheme, a road,
   a port, a mine, a power station and so on.
-- **Project**: building on a site, from planning until it is in use.
+- **Project**: anything with a cost, a build time and a lasting effect, from planning until it is
+  in use. Today every project is building on a site.
+- **Target**: what a project is for: so far always a site (`ProjectTarget` in
+  `src/sim/projects.ts`). Every project is paid for, paused and barred in the same way, whatever
+  its target.
 - **Chain**: sites that only earn together. A mine's chain is the mine, a trunk road and a port (or
   shallow port); the chain ships no more than its weakest link.
 - **Alternatives**: sites that play the same part in a chain, of which only one can be built.

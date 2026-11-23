@@ -1,7 +1,7 @@
 import { balance } from './balance';
 import type { Country, Site } from './country';
 import type { ShockWatch } from './priceShocks';
-import { siteStatus, type Project } from './projects';
+import { projectOnSite, siteStatus, type Project } from './projects';
 import { capacityOf, oreTonnesOf } from './sites';
 import { costOf, formatPrice, priceOf, priceStatus, type WorldPrices } from './trade';
 import type { Money } from './types';
@@ -209,7 +209,7 @@ function sitesOf(building: Building, source: Site): Site[] {
 }
 
 function linkOf(building: Building, site: Site): ChainLink {
-  const project = building.projects.find((candidate) => candidate.siteId === site.id);
+  const project = projectOnSite(building.projects, site.id);
   const { state } = siteStatus(building, site.id);
   const capacity = capacityOf(site.type, state === 'decaying');
   return {

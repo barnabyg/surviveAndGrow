@@ -253,6 +253,13 @@ export const PROJECT_STATUSES = ['building', 'paused', 'operating', 'decaying'] 
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 /**
+ * What a project can be for: a site, built on. A kind added here is a project's target of its
+ * own in `projects.ts`, and a save-format change.
+ */
+export const PROJECT_TARGET_KINDS = ['site'] as const;
+export type ProjectTargetKind = (typeof PROJECT_TARGET_KINDS)[number];
+
+/**
  * How a site stands: empty until a project is started on it, and then as the project stands.
  * A site no project has been started on is closed once one has been started on one of its
  * alternatives, and can then never be built.

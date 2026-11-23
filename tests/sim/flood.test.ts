@@ -8,6 +8,7 @@ import {
   type GameState,
   loadCountry,
   risksAhead,
+  siteOf,
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
@@ -104,7 +105,7 @@ describe('a flood in Lowmere Plains, where an irrigation scheme can be built', (
   it('sets the region’s sites in use decaying as it begins', () => {
     const [before, during, after] = [3, 4, 5].map(
       (index) =>
-        played.states[index]?.projects.find((project) => project.siteId === 'lowmere-irrigation')
+        played.states[index]?.projects.find((project) => siteOf(project) === 'lowmere-irrigation')
           ?.status,
     );
 

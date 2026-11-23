@@ -2,7 +2,7 @@ import { balance } from './balance';
 import { dateOfQuarter, isHarvestQuarter, quarterNumber } from './calendar';
 import type { Country } from './country';
 import { debtName, maturityOf, paysAtMaturity, type Borrowing, type Debt } from './debt';
-import type { Project } from './projects';
+import { projectOnSite, siteOf, type Project } from './projects';
 import { siteTerms } from './sites';
 import type { Outcome } from './state';
 import { termBounds, termOf } from './terms';
@@ -117,7 +117,7 @@ export function scheduleAhead(
   starts: readonly string[],
   paused: readonly string[],
 ): SiteSchedule[] {
-  return [...game.projects.map((project) => project.siteId), ...starts].map((siteId) =>
+  return [...game.projects.flatMap((project) => siteOf(project) ?? []), ...starts].map((siteId) =>
     scheduleOf(game, siteId, paused.includes(siteId) ? 1 : 0),
   );
 }
@@ -125,7 +125,7 @@ export function scheduleAhead(
 function scheduleOf(game: Building, siteId: string, delay: number): SiteSchedule {
   const site = game.country.sites.find((candidate) => candidate.id === siteId);
   if (site === undefined) throw new RangeError(`There is no site "${siteId}".`);
-  const project = game.projects.find((candidate) => candidate.siteId === siteId);
+  const project = projectOnSite(game.projects, siteId);
   const now = quarterNumber(game.date);
   const quartersLeft = siteTerms(site.type).buildQuarters - (project?.quartersPaid ?? 0);
   const opens =

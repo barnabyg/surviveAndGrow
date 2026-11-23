@@ -5,6 +5,9 @@ import {
   createGame,
   describeEvent,
   previewQuarter,
+  onSite,
+  projectStartFault,
+  siteOf,
   siteStatus,
   startFault,
   type Budget,
@@ -100,6 +103,24 @@ describe.each(bothCountries)('the sites of %s', (_name, country) => {
       instalment: 0,
       opened: { year: 1, quarter: 3 },
     });
+  });
+
+  it('are projects that name the site they are for', () => {
+    const game = createGame(country(), 3);
+    const store = game.country.sites.find((site) => site.type === 'grainStore');
+    if (!store) throw new Error('The country has no grain store site');
+
+    const { state } = play(game, [{ budget: austere, startProjects: [store.id] }]);
+
+    expect(state.projects).toEqual([
+      {
+        target: { kind: 'site', siteId: store.id },
+        began: { year: 1, quarter: 1 },
+        quartersPaid: 1,
+        status: 'building',
+        opened: null,
+      },
+    ]);
   });
 
   it('leave the weather and the events of the game as they were', () => {
@@ -235,7 +256,7 @@ describe('starting a project in Tavara', () => {
     ]);
 
     expect(payments(reports)).toEqual([[-30], [-30, -40]]);
-    expect(state.projects.map((project) => [project.siteId, project.status])).toEqual([
+    expect(state.projects.map((project) => [siteOf(project), project.status])).toEqual([
       ['lowmere-store', 'operating'],
       ['dustwell-irrigation', 'building'],
     ]);
@@ -243,6 +264,23 @@ describe('starting a project in Tavara', () => {
 });
 
 describe('a project cannot be started', () => {
+  it('for a target any more than for the site it names', () => {
+    const { state } = play(createGame(tavara(), 1), [{ startProjects: ['lowmere-irrigation'] }]);
+    const austere = { ...state, treasury: 10_000, austerity: { quartersLeft: 2 } };
+    const cases = [
+      [state, ['lowmere-irrigation']],
+      [state, ['lowmere-store', 'lowmere-store']],
+      [{ ...state, treasury: 0 }, ['lowmere-store']],
+      [austere, ['lowmere-store']],
+      [state, ['lowmere-store']],
+    ] as const;
+
+    for (const [game, siteIds] of cases) {
+      expect(projectStartFault(game, siteIds.map(onSite))).toBe(startFault(game, siteIds));
+    }
+    expect(projectStartFault(austere, [])).toBeNull();
+  });
+
   it('on a site that is already being built on', () => {
     const { state } = play(createGame(tavara(), 1), [{ startProjects: ['lowmere-irrigation'] }]);
 
@@ -603,13 +641,13 @@ describe('previewing a quarter with projects', () => {
       expect(preview.pausedSites).toEqual(
         result.state.projects
           .filter((project) => project.status === 'paused')
-          .map((project) => project.siteId),
+          .map((project) => siteOf(project)),
       );
       // A quarter the treasury cannot cover cuts upkeep too, and the sites in use decay.
       expect(preview.upkeep.short).toEqual(
         state.projects
           .filter((project) => project.status === 'operating' || project.status === 'decaying')
-          .map((project) => project.siteId)
+          .flatMap((project) => siteOf(project) ?? [])
           .filter((siteId) => siteStatus(result.state, siteId).state === 'decaying'),
       );
       ({ state } = result);

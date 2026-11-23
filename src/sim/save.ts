@@ -14,7 +14,7 @@ import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import { MIGRATIONS, SAVE_FORMAT_VERSION, toCurrentFormat, type SaveMigration } from './migrations';
 import type { PriceShock } from './priceShocks';
-import type { Project } from './projects';
+import { projectTerms, targetKey, type Project, type ProjectTarget } from './projects';
 import type { ReportEntry } from './report';
 import type { RngState } from './rng';
 import {
@@ -30,7 +30,6 @@ import {
   whole,
   type Json,
 } from './saveChecks';
-import { siteTerms } from './sites';
 import type { ElectionResult, GameState, Outcome, RegionState, TurnReport } from './state';
 import { formatQuarters } from './text';
 import type { WorldPrices } from './trade';
@@ -50,6 +49,7 @@ import {
   OUTCOME_STATUSES,
   PRICE_SHOCK_TYPES,
   PROJECT_STATUSES,
+  PROJECT_TARGET_KINDS,
   REPORT_KINDS,
   SERIOUSNESS_LEVELS,
   SITE_CHAIN_ROLES,
@@ -290,16 +290,18 @@ function readRegions(saved: unknown, path: string, regionIds: readonly string[])
 }
 
 /**
- * The projects, each on a site the country has, no two on the same one, and none paid for
- * beyond the quarters its site takes to build.
+ * The projects, each for something the country has, no two for the same thing, and none paid
+ * for beyond the quarters it takes to finish.
  */
 function readProjects(saved: unknown, path: string, country: Country): Project[] {
-  const siteIds = country.sites.map((site) => site.id);
   const projects = list(saved, path, (item, itemPath): Project => {
-    const siteId = oneOf(item.siteId, `${itemPath}.siteId`, siteIds, 'a site');
-    const site = country.sites.find((candidate) => candidate.id === siteId);
+    const target = readTarget(
+      record(item.target, `${itemPath}.target`),
+      `${itemPath}.target`,
+      country,
+    );
     const quartersPaid = whole(item.quartersPaid, `${itemPath}.quartersPaid`, 0);
-    const buildQuarters = site === undefined ? 0 : siteTerms(site.type).buildQuarters;
+    const buildQuarters = projectTerms(country, target)?.buildQuarters ?? 0;
     if (quartersPaid > buildQuarters) {
       fail(
         `${itemPath}.quartersPaid`,
@@ -307,17 +309,23 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
       );
     }
     return {
-      siteId,
+      target,
       began: date(item.began, `${itemPath}.began`),
       quartersPaid,
       status: oneOf(item.status, `${itemPath}.status`, PROJECT_STATUSES, 'a state of building'),
       opened: item.opened === null ? null : date(item.opened, `${itemPath}.opened`),
     };
   });
-  if (new Set(projects.map((project) => project.siteId)).size !== projects.length) {
-    fail(path, 'builds on the same site twice');
-  }
+  const targets = projects.map((project) => targetKey(project.target));
+  if (new Set(targets).size !== projects.length) fail(path, 'builds on the same site twice');
   return projects;
+}
+
+/** What a project is for: a site the country has. */
+function readTarget(saved: Json, path: string, country: Country): ProjectTarget {
+  const kind = oneOf(saved.kind, `${path}.kind`, PROJECT_TARGET_KINDS, 'a kind of project');
+  const siteIds = country.sites.map((site) => site.id);
+  return { kind, siteId: oneOf(saved.siteId, `${path}.siteId`, siteIds, 'a site') };
 }
 
 /**

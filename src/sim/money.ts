@@ -8,10 +8,12 @@ import {
 } from './budget';
 import { serveDebts, takeDebts, type Borrowing } from './debt';
 import {
+  onSite,
   resolveProjects,
   siteEffects,
   type BuildingOutcome,
   type Project,
+  type ProjectTarget,
   type SiteEffects,
 } from './projects';
 import type { Decisions, GameState } from './state';
@@ -58,7 +60,7 @@ export function resolveMoney(
     | 'foodReserve'
   >,
   decisions: Decisions,
-  starts: readonly string[] = decisions.startProjects ?? [],
+  starts: readonly ProjectTarget[] = (decisions.startProjects ?? []).map(onSite),
   borrowing: readonly Borrowing[] = decisions.borrow ?? [],
   trading: readonly TradeOrder[] = decisions.trade ?? [],
 ): QuarterMoney {

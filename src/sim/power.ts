@@ -1,5 +1,5 @@
 import type { Country, Site } from './country';
-import { siteStatus, type Project } from './projects';
+import { projectOnSite, siteStatus, type Project } from './projects';
 import { powerGain } from './sites';
 import type { Money } from './types';
 import { inUse } from './upkeep';
@@ -85,7 +85,7 @@ export function poweredOutput(output: Money, power: RegionPower): Money {
  */
 function linkOf(building: Building, site: Site, seen: ReadonlySet<string>): Link | null {
   const role = SITE_POWER_ROLES[site.type];
-  const project = building.projects.find((candidate) => candidate.siteId === site.id);
+  const project = projectOnSite(building.projects, site.id);
   if (role === null || seen.has(site.id) || project === undefined || !inUse(project)) return null;
   const decaying = project.status === 'decaying';
   if (role === 'station') return { stationId: site.id, weakened: decaying };

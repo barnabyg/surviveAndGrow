@@ -106,7 +106,16 @@ export {
   type OreEarnings,
 } from './chains';
 export { oreTonnesOf } from './sites';
-export { siteStatus, startFault, type Project, type SiteStatus } from './projects';
+export {
+  onSite,
+  projectStartFault,
+  siteOf,
+  siteStatus,
+  startFault,
+  type Project,
+  type ProjectTarget,
+  type SiteStatus,
+} from './projects';
 export { regionPower, type RegionPower } from './power';
 export {
   livingStandards,
@@ -244,6 +253,7 @@ export {
   type Likelihood,
   type PowerRole,
   type ProjectStatus,
+  type ProjectTargetKind,
   type ProsperityPart,
   type ReportKind,
   type RiskKind,
