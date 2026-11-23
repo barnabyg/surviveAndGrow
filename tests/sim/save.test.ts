@@ -811,6 +811,30 @@ describe('a saved survey is refused', () => {
   });
 });
 
+describe('a saved project on a site is refused', () => {
+  it('when the site is locked until a technology not yet known', () => {
+    const { game } = loadSave(format12Save);
+    const [surveyed] = saveGame(game, null).state.projects;
+    const dam = {
+      target: { kind: 'site', siteId: 'korr-falls-dam' },
+      began: { year: 1, quarter: 1 },
+      quartersPaid: 0,
+      status: 'building',
+      opened: null,
+    };
+    // A save whose country has a dam: the current Tavara, which format 8 could not carry.
+    const country = { id: 'tavara', formatVersion: tavaraFile.formatVersion, file: tavaraFile };
+    const withDam = withValue(
+      withValue(format12Save, ['country'], country),
+      ['state', 'projects'],
+      [surveyed, dam],
+    );
+    expect(refusal(withDam)).toBe(
+      'The saved game is damaged and cannot be opened: state.projects builds on korr-falls-dam before hydropower is known.',
+    );
+  });
+});
+
 describe('a saved project for a technology is refused', () => {
   const projects = ['state', 'projects'];
   const research = [...projects, 1];

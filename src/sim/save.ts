@@ -20,6 +20,7 @@ import type { ReportEntry } from './report';
 import { knownTechnologies, technologyOf } from './technology';
 import { isInUseState } from './upkeep';
 import type { RngState } from './rng';
+import { technologiesNeeded } from './sites';
 import {
   damaged,
   date,
@@ -387,6 +388,16 @@ function readProjects(saved: unknown, path: string, country: Country): Project[]
         );
   });
   if (early.length > 0) fail(path, `researches a technology before ${early[0] ?? ''} is known`);
+  const locked = projects.flatMap((project) => {
+    const site = every.sites.find((candidate) => candidate.id === siteOf(project));
+    const needed = site === undefined ? [] : technologiesNeeded(site);
+    const unknown = needed.find((technology) => !known.includes(technology));
+    return site === undefined || unknown === undefined ? [] : [{ site, unknown }];
+  });
+  if (locked[0] !== undefined) {
+    const { site, unknown } = locked[0];
+    fail(path, `builds on ${site.id} before ${unknown} is known`);
+  }
   return projects;
 }
 
