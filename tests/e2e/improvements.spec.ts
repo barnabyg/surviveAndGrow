@@ -83,7 +83,7 @@ test('researching cold storage improves the grain store in use, and its card nam
   await expect(
     (await openTab(page, 'Research')).getByRole('group', { name: 'Grid efficiency' }),
   ).toContainText(
-    'No power station or power line is in use yet, so it improves nothing until one is built.',
+    'No power station, power line or dam is in use yet, so it improves nothing until one is built.',
   );
 
   await coldStorage.getByRole('button', { name: 'Research Cold storage' }).click();

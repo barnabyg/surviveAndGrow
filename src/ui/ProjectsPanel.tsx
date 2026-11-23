@@ -73,6 +73,7 @@ export function ProjectsPanel(props: ProjectsPanelProps) {
   );
   // Austerity forbids starting anything, whatever the treasury holds.
   const barred = buildingBarred(game);
+  const locked = sites.filter(({ status }) => status.state === 'locked').length;
   const affordable = sites.filter(
     ({ site, status, planned }) =>
       status.state === 'empty' && !planned && planFault(game, plan, onSite(site.id)) === null,
@@ -137,8 +138,12 @@ export function ProjectsPanel(props: ProjectsPanelProps) {
             {affordable.length === 0
               ? sites.some(({ status, planned }) => status.state === 'empty' && !planned)
                 ? 'The treasury does not hold the whole cost of any empty site.'
-                : 'Every site is built on or spoken for.'
+                : locked > 0
+                  ? 'Every site open to building is built on or spoken for.'
+                  : 'Every site is built on or spoken for.'
               : `${affordable.length} affordable now`}
+            {locked > 0 &&
+              ` · ${locked} locked until research unlocks ${locked === 1 ? 'it' : 'them'}`}
           </span>
         </div>
       )}

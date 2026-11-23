@@ -136,6 +136,13 @@ export function SiteCard(props: SiteCardProps) {
           built.
         </p>
       )}
+      {status.state === 'locked' && (
+        <p className="warning-note" role="status" aria-label="Locked">
+          Locked: {listed(status.lockedBy.map(technologyName))} must be researched first, in the
+          Research tab. Once {status.lockedBy.length === 1 ? 'it is' : 'they are'} known,{' '}
+          {site.name} can be built, and does what is said above.
+        </p>
+      )}
       {status.closedBy !== null && (
         <p className="warning-note" role="status">
           ✕ Closed: building began on {nameOf(status.closedBy)}, its alternative, so {site.name} can

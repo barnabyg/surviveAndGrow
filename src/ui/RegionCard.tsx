@@ -10,9 +10,13 @@ import {
   formatIndex,
   formatQuarters,
   formatTonnes,
+  listed,
   livingStandards,
+  percentOff,
   surveyStatus,
   SURVEY_STATE_NAMES,
+  technologyName,
+  weatherHold,
   type Contribution,
   type GameState,
   type LivingStandard,
@@ -20,6 +24,7 @@ import {
   type ProjectPlan,
   type SurveyStatus,
   type TurnReport,
+  type WeatherHold,
 } from '../sim';
 import { formatSignedCount } from './format';
 import './map-card.css';
@@ -113,6 +118,7 @@ export function RegionCard(props: RegionCardProps) {
           />
         </div>
       )}
+      <WeatherHoldParts hold={weatherHold(game, regionId)} />
       {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
       {events.map((event) => (
         <p key={event.type} className="warning-note">
@@ -277,6 +283,40 @@ interface PartsProps {
   /** What the parts come to, which may be capped below their sum. */
   readonly total: number;
   readonly format: (amount: number) => string;
+}
+
+/**
+ * How much less the weather, drought and flood move the region's harvest, and each site in use
+ * there and technology known that lessens it, with what it takes off alone; an improved site
+ * says what it would take off without the technologies that improve it. Nothing while none
+ * does.
+ */
+function WeatherHoldParts({ hold }: { readonly hold: WeatherHold }) {
+  if (hold.lines.length === 0) return null;
+  const title = 'How much less the weather moves its harvest';
+  return (
+    <table className="breakdown__table" aria-label={title}>
+      <caption className="map-card__term">{title}</caption>
+      <tbody>
+        {hold.lines.map((line) => (
+          <tr key={line.label}>
+            <th scope="row">{line.label}</th>
+            <td>
+              {percentOff(line.permille)}%
+              {line.improvedBy.length > 0 &&
+                ` (${percentOff(line.unimproved)}% without ${listed(line.improvedBy.map(technologyName))})`}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Together</th>
+          <td>{percentOff(hold.left)}%</td>
+        </tr>
+      </tfoot>
+    </table>
+  );
 }
 
 /** A figure of the region's and what it is made of, line by line. */

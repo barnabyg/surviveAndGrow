@@ -5,6 +5,7 @@ import {
   formatQuarters,
   formatTonnes,
   researchStatuses,
+  SITE_TYPE_NAMES,
   technologyGains,
   technologyName,
   TECHNOLOGY_STATE_NAMES,
@@ -165,6 +166,7 @@ function TechnologyCard({ status, gains, barred, onPlan, onCancel }: TechnologyC
         {formatMoney(status.cost)} · {formatQuarters(status.researchQuarters)} · {status.effect}
       </p>
       <Gains name={name} known={state === 'known'} gains={gains} />
+      <Unlocks name={name} known={state === 'known'} status={status} gains={gains} />
       <dl className="technology__links">
         <div>
           <dt>Needs</dt>
@@ -230,6 +232,39 @@ function TechnologyCard({ status, gains, barred, onPlan, onCancel }: TechnologyC
           )
         ))}
     </div>
+  );
+}
+
+interface UnlocksProps {
+  readonly name: string;
+  readonly known: boolean;
+  readonly status: TechnologyStatus;
+  readonly gains: TechnologyGains;
+}
+
+/**
+ * The sites of this country a technology unlocks, each with its region, or that the country
+ * has none, for a technology that unlocks a type of site. Says nothing for any other.
+ */
+function Unlocks({ name, known, status, gains }: UnlocksProps) {
+  if (status.unlocks.length === 0) return null;
+  const types = status.unlocks.map((type) => SITE_TYPE_NAMES[type].toLowerCase()).join(' or ');
+  if (gains.unlocks.length === 0) {
+    return <p className="project__note">This country has no site for a {types}.</p>;
+  }
+  return (
+    <section className="technology__gains" aria-label={`What ${name} unlocks in this game`}>
+      <div className="projects__terms">
+        {known ? 'In this game it has unlocked' : 'In this game it would unlock'}
+      </div>
+      <ul>
+        {gains.unlocks.map((site) => (
+          <li key={site.siteId}>
+            <span className="project__name">{site.name}</span>, in {site.regionName}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

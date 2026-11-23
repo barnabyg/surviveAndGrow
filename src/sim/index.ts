@@ -106,6 +106,7 @@ export {
   type ChainLink,
   type OreEarnings,
 } from './chains';
+export { percentOff } from './arithmetic';
 export { oreTonnesOf, powerGain, technologiesNeeded } from './sites';
 export { weatherHold, type WeatherHold, type WeatherHoldLine } from './weatherHold';
 export {

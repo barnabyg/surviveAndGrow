@@ -197,7 +197,8 @@ export function GameScreen(props: GameScreenProps) {
     quiet: touring || learning,
   });
   // The timeline shows every project, and the site picked out on the map if it is still
-  // empty and unplanned, as if building there began now. A closed site can never begin.
+  // empty and unplanned, as if building there began now. A closed site can never begin, nor a
+  // locked one until research unlocks it.
   const schedule =
     preview?.schedule ??
     game.projects.flatMap((project) => {
@@ -208,7 +209,7 @@ export function GameScreen(props: GameScreenProps) {
     playing &&
     selectedSiteId !== null &&
     !schedule.some((entry) => entry.siteId === selectedSiteId) &&
-    siteStatus(game, selectedSiteId).state !== 'closed'
+    siteStatus(game, selectedSiteId).state === 'empty'
       ? siteSchedule(game, selectedSiteId)
       : null;
   const selectedEntry =
