@@ -158,9 +158,14 @@ export interface ProjectTerms {
 
 /**
  * A project's terms, or null when there is no such target: a site or region the country
- * lacks. What a survey found is told when it finishes (`surveyFindings`), not here.
+ * lacks. What a survey found is told when it finishes (`surveyFindings`), not here. A site's
+ * effect counts the technologies known given, naming those that improve it.
  */
-export function projectTerms(country: Country, target: ProjectTarget): ProjectTerms | null {
+export function projectTerms(
+  country: Country,
+  target: ProjectTarget,
+  known: readonly Technology[] = [],
+): ProjectTerms | null {
   const words = PROJECT_TARGET_WORDS[target.kind];
   if (target.kind === 'survey') {
     if (!country.regions.some((region) => region.id === target.regionId)) return null;
@@ -183,7 +188,7 @@ export function projectTerms(country: Country, target: ProjectTarget): ProjectTe
   }
   const site = country.sites.find((candidate) => candidate.id === target.siteId);
   if (site === undefined) return null;
-  const { cost, buildQuarters, effect } = siteTerms(site.type, site.capacity);
+  const { cost, buildQuarters, effect } = siteTerms(site.type, site.capacity, known);
   return {
     name: site.name,
     regionId: site.regionId,
@@ -424,9 +429,11 @@ export function resolveProjects(
   const paused: ProjectTarget[] = [];
   const entries: ReportEntry[] = [];
   let left = available;
+  // A site finished reports what it does with the technologies known as the quarter began.
+  const known = knownTechnologies(projects);
 
   const after = [...projects, ...begun].map((project): Project => {
-    const terms = projectTerms(country, project.target);
+    const terms = projectTerms(country, project.target, known);
     if (terms === null || isFinished(project)) return project;
     const due = instalment(terms, project.quartersPaid);
     if (begun.includes(project)) entries.push(startedEntry(terms));

@@ -369,6 +369,28 @@ describe('improved irrigation', () => {
     );
   });
 
+  it('is named in the report of an irrigation scheme finished once it is known', () => {
+    const country = rich(tavaraFile);
+    const { irrigation } = sitesOf(country);
+    const start = knowing(createGame(country, 5), ['droughtResistantSeed', 'improvedIrrigation']);
+    const entries: TurnReport['entries'][number][] = [];
+    let state = advanceQuarter(start, {
+      ...steward(start, solvent(country)),
+      startProjects: [irrigation.id],
+    }).state;
+    while (siteStatus(state, irrigation.id).state !== 'operating') {
+      const { state: next, report } = advanceQuarter(state, steward(state, solvent(country)));
+      entries.push(...report.entries);
+      state = next;
+    }
+    expect(entries.find((entry) => entry.headline === `Finished: ${irrigation.name}`)?.cause).toBe(
+      `It is in use from next quarter. ${siteTerms('irrigation', irrigation.capacity, knownTechnologies(start.projects)).effect}`,
+    );
+    expect(
+      siteTerms('irrigation', irrigation.capacity, knownTechnologies(start.projects)).effect,
+    ).toContain('without Improved irrigation');
+  });
+
   it('narrows the preview’s harvest forecast in the irrigated region', () => {
     const without = knowing(built(rich(tavaraFile)), ['droughtResistantSeed']);
     const withIt = knowing(without, ['improvedIrrigation']);

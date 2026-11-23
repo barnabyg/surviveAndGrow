@@ -218,7 +218,8 @@ main figures from the balance values and fails if this file, the README or
   nothing of itself: it unlocks the dam (see Locked sites and the dam). Its card in the Research
   tab names the sites of this country it unlocks, and their regions.
 - A site's card gives each figure a known technology moves beside what it would be without it, as
-  in "40% (25% without Cold storage)", and so do a port's trade link and its shipping lane. The
+  in "40% (25% without Cold storage)", and so do a port's trade link and its shipping lane, and
+  the report of a site finished while the technology is known. The
   region's output and infrastructure access, the treasury's tax and the food reserve each give
   what a technology adds as a line of its own that names it ("Korrgate mine: Road engineering",
   "Kept from spoiling by Cold storage"). The harvest report names improved irrigation where an
