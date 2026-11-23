@@ -80,18 +80,19 @@ drought or a flood does not starve a region first.
 
 ## A play-through
 
-To play the game as Phase 5 leaves it, from the start on a seed the balance run knows well:
+To play the game as Phase 5 leaves it, from the start on a seed the balance run knows well, run
+this in the repository's folder:
 
 ```powershell
-Set-Location C:\docs\git\surviveAndGrow; npm.cmd run dev -- --open '/?seed=1'
+npm.cmd run dev -- --open '/?seed=1'
 ```
 
 This starts the game at http://localhost:41730/?seed=1 and opens it in your browser. On seed 1
 the scripted chain builder, which never trades, loses its first vote with 49.9%; the timing
 trader, which builds the same sites in the same order and trades grain besides, wins in quarter
 30, in the third year of its second term. The improver, which builds the same sites and
-researches the technologies that improve them, wins that first vote with 51.3% and its second
-with 51.1%, and loses its third. Try to win the way the timing trader does:
+researches the technologies that improve them, wins its first two votes and loses its third.
+Try to win the way the timing trader does:
 
 1. Build as the chain builder does: the Korr Falls power station and its lines first, then
    Saltmouth port, the trunk road and the Korrgate mine, each once the treasury holds its cost.
@@ -110,4 +111,10 @@ Expected: the trade panel shows the price, its trend and forecast, what the link
 is free; a sale's income and an import's cost appear in the treasury's breakdown; the failed
 harvests abroad are listed under the grain price from their announcement to their end. Over
 the 400 games of Phase 5's confirmation run on Tavara, the timing trader wins in quarter 32 in
-the middle of its games, against the chain builder's 38.
+the middle of its games, against the chain builder's 38
+([balance/phase-5.md](balance/phase-5.md)).
+
+Every outcome this section states for seed 1 is checked by a test that plays the same player on
+the same seed: the trades of the first quarters in `tests/sim/playThrough.test.ts`, and how each
+whole game ends in `tests/sim/players.test.ts`. When a change to the game moves one, the test
+fails, and the figure is corrected here.

@@ -15,6 +15,7 @@ import {
 import { DEFAULT_TERMS, playGame, summarise, type GameResult } from '../balance/batch';
 import { SCRIPTED_PLAYERS, withinRules } from '../balance/players';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
+import { PLAY_THROUGH_SEED, playThroughOutcome, playThroughText } from './playThrough';
 import { gameResult } from './results';
 import { ENDINGS, GAME_TIMEOUT, playerNamed } from './scripted';
 
@@ -188,6 +189,12 @@ describe.each(shipped)('a scripted player in %s', (land, country) => {
         // The same game is the one whose research and surveys are checked: it is played once.
         expectResearchAndSurveysInOrder(result, country());
         expectResearchAndSurveysOfItsKind(result, name, `${name} in ${land} on seed ${seed}`);
+        // So is the one the play-through in docs/playing.md says the ending of.
+        const stated =
+          land === 'Tavara' && seed === PLAY_THROUGH_SEED
+            ? playThroughOutcome(name, result, termQuarters)
+            : null;
+        if (stated !== null) expect(playThroughText()).toContain(stated);
       },
       GAME_TIMEOUT,
     );

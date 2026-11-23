@@ -174,8 +174,8 @@ $env:BALANCE_SEEDS = '1001-2200'; $env:BALANCE_PLAYERS = 'all'; npm run balance
   before the components, so their rules come after it.
 - `tests/sim/` tests the game rules through the simulation's public interface, and checks the
   figures the docs restate against `src/sim/balance.ts`. It imports nothing from `src/ui/`.
-- `tests/ui/` tests the interface's own logic without a browser: the first-time tips and the
-  tutorial game's seed.
+- `tests/ui/` tests the interface's own logic without a browser: the infrastructure lens's
+  wording, the first-time tips and the tutorial game's seed.
 - `tests/e2e/` drives the real app in a browser at 2560 x 1440.
 - `tests/countries/` holds a crude second country, used to prove that nothing is tied to the first.
 - `tests/balance/` holds the scripted players and the balance run.
