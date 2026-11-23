@@ -11,6 +11,10 @@ interface TipsInput {
   readonly plannedSiteIds: readonly string[];
   readonly plannedResearch: Technology | null;
   readonly plannedSurveys: readonly string[];
+  /** The decisions tab open. */
+  readonly openTab: string | null;
+  /** The region picked out on the map, if any. */
+  readonly selectedRegionId: string | null;
   /** Whether the tour or a lesson is open, which a tip waits behind. */
   readonly quiet: boolean;
 }
@@ -28,13 +32,10 @@ export interface TipsState {
  * seen is shown; dismissing it marks it seen, in every game and country.
  */
 export function useTips(input: TipsInput): TipsState {
-  const { game, risks, plannedSiteIds, plannedResearch, plannedSurveys, quiet } = input;
+  const { quiet, ...view } = input;
   const [on, setOn] = useState(() => !readTipsOff());
   const [seen, setSeen] = useState(readTipsSeen);
-  const due =
-    on && !quiet
-      ? tipsDue({ game, risks, plannedSiteIds, plannedResearch, plannedSurveys })
-      : new Set();
+  const due = on && !quiet ? tipsDue(view) : new Set();
   const tip = TIPS.find((candidate) => due.has(candidate.when) && !seen.has(candidate.id)) ?? null;
   return {
     tip,

@@ -429,8 +429,9 @@ main figures from the balance values and fails if this file, the README or
 - In any game, a first-time tip explains a mechanic the first time it appears, drawn round the
   part of the screen it concerns like a lesson: a dilemma, a bailout, a drought or flood warned of
   in risks ahead, a strike or protest, a world price shock announced, a planned project whose
-  chain is missing a link, a site decaying, the election four quarters away, and a prosperity
-  tier passed. When several are due, the first in that order shows. Got it dismisses one, and the
+  chain is missing a link, a site decaying, the election four quarters away, a prosperity tier
+  passed, research, once its tab is first opened or research is planned, and surveys, once the
+  card of a region that may hide a deposit is first opened or a survey is planned. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
   waits while the tour or a lesson is open. The tips are written in `src/ui/tips.ts`.

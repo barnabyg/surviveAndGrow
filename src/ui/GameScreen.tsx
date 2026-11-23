@@ -46,6 +46,7 @@ import { Lessons } from './Lessons';
 import { Tour } from './Tour';
 import { useLessons } from './lessonProgress';
 import { TourTarget } from './spotlight';
+import { readDecisionTab, storeDecisionTab } from './storage';
 import { TOUR_STEPS } from './tourSteps';
 import './GameScreen.css';
 
@@ -96,6 +97,8 @@ export function GameScreen(props: GameScreenProps) {
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  // The decisions tab chosen last, which the browser remembers.
+  const [decisionTab, setDecisionTab] = useState(readDecisionTab);
   // The sites the player means to start building on. Building begins when the quarter
   // ends, so until then a plan can be taken back, like the relief target.
   const [plannedSiteIds, setPlannedSiteIds] = useState<readonly string[]>([]);
@@ -194,6 +197,8 @@ export function GameScreen(props: GameScreenProps) {
     plannedSiteIds,
     plannedResearch,
     plannedSurveys,
+    openTab: decisionTab,
+    selectedRegionId,
     quiet: touring || learning,
   });
   // The timeline shows every project, and the site picked out on the map if it is still
@@ -429,6 +434,11 @@ export function GameScreen(props: GameScreenProps) {
                   )}
                 </QuarterSummary>
                 <DecisionTabs
+                  chosen={decisionTab}
+                  onChoose={(id) => {
+                    setDecisionTab(id);
+                    storeDecisionTab(id);
+                  }}
                   tabs={[
                     budgetTab(pending, committed),
                     projectsTab(game, plannedSiteIds),

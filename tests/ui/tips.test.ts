@@ -85,6 +85,27 @@ describe('the first-time tips', () => {
     expect(tipsDue({ game: underway, risks: [], plannedSiteIds: [] })).toContain('survey');
   });
 
+  it('wait for research once the player first opens the research tab', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [], openTab: 'research' })).toContain(
+      'research',
+    );
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [], openTab: 'budget' })).not.toContain(
+      'research',
+    );
+  });
+
+  it('wait for a survey once the player first picks out a region that could be surveyed', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    // The Salt Coast hides a deposit, so its card offers a survey; Arden Vale hides none.
+    expect(
+      tipsDue({ game, risks: [], plannedSiteIds: [], selectedRegionId: 'salt-coast' }),
+    ).toContain('survey');
+    expect(
+      tipsDue({ game, risks: [], plannedSiteIds: [], selectedRegionId: 'arden-vale' }),
+    ).not.toContain('survey');
+  });
+
   it('wait for nothing in a game that has only just begun, risks ahead aside', () => {
     const game = createGame(tavaraAsShipped(), 1);
     expect([...tipsDue({ game, risks: [], plannedSiteIds: [] })]).toEqual([]);
