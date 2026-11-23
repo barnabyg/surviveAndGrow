@@ -13,10 +13,13 @@ import {
   listed,
   livingStandards,
   percentOff,
+  PROSPERITY_PART_NAMES,
+  serviceLevels,
   surveyStatus,
   SURVEY_STATE_NAMES,
   technologyName,
   weatherHold,
+  type Budget,
   type Contribution,
   type GameState,
   type LivingStandard,
@@ -36,6 +39,8 @@ interface RegionCardProps {
   readonly regionId: string;
   /** What the decisions now in force will do this quarter. */
   readonly preview: Preview;
+  /** The budget the quarter will be resolved with, which holds health and education. */
+  readonly budget: Budget;
   /** The region food relief is being sent to, if any. */
   readonly reliefRegionId: string | null;
   readonly onSendRelief: (regionId: string | null) => void;
@@ -49,7 +54,7 @@ interface RegionCardProps {
 /** The card for the region picked out on the map: how it stands, and relief at a click. */
 export function RegionCard(props: RegionCardProps) {
   const { game, report, regionId, preview, reliefRegionId, onSendRelief, onClose } = props;
-  const { plan, onPlanSurvey } = props;
+  const { plan, onPlanSurvey, budget } = props;
   const region = game.country.regions.find((candidate) => candidate.id === regionId);
   const state = game.regions.find((candidate) => candidate.id === regionId);
   if (!region || !state) return null;
@@ -60,6 +65,7 @@ export function RegionCard(props: RegionCardProps) {
   const survey = surveyStatus(game, regionId, plan);
   const unrest = describeUnrest(state.unrest);
   const standard = livingStandards(game).find((entry) => entry.regionId === regionId);
+  const services = serviceLevels(game, budget).filter((entry) => entry.regionId === regionId);
   // What moved the region's people last quarter: its growth, and any deaths in famine.
   const moved = (report?.population?.contributions ?? []).filter(
     (line) => line.regionId === regionId,
@@ -100,6 +106,12 @@ export function RegionCard(props: RegionCardProps) {
           <dt>Approval</dt>
           <dd>{formatPercent(state.approval)}</dd>
         </div>
+        {services.map((entry) => (
+          <div key={entry.service}>
+            <dt>{PROSPERITY_PART_NAMES[entry.service]}</dt>
+            <dd>{formatIndex(entry.level)}</dd>
+          </div>
+        ))}
       </dl>
       {standard !== undefined && <PowerNote game={game} standard={standard} />}
       {standard !== undefined && (
@@ -118,6 +130,18 @@ export function RegionCard(props: RegionCardProps) {
           />
         </div>
       )}
+      {/* Spending holds every region's level alike, so only a site in use here is worth a table. */}
+      {services
+        .filter((entry) => entry.parts.length > 1)
+        .map((entry) => (
+          <Parts
+            key={entry.service}
+            title={`Where its ${PROSPERITY_PART_NAMES[entry.service].toLowerCase()} level settles`}
+            parts={entry.parts}
+            total={entry.settles}
+            format={(permille) => formatIndex(permille)}
+          />
+        ))}
       <WeatherHoldParts hold={weatherHold(game, regionId)} />
       {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
       {events.map((event) => (
