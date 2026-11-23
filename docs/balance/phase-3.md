@@ -564,8 +564,8 @@ report is the same however many play it. The tuning run took about 7 minutes on 
 
 This play-through was written for the finished Phase 3 game and moved here from the README
 once later phases retuned the values. Its seed outcomes held under Phase 3's values; nothing
-reruns them, and the current game may play differently. The README's play-through is the current
-one.
+reruns them, and the current game may play differently. The play-through in
+[docs/playing.md](../playing.md) is the current one.
 
 To play the finished Phase 3 game, with borrowing, from the start on a seed the balance run
 knows well:

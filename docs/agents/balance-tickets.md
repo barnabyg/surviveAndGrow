@@ -13,10 +13,13 @@ and when working one.
 2. **Tuning.** Values only, no change to the simulation's logic. Blocked by 1, and by the owner
    confirming the targets.
 3. **Confirmation and record.** One confirmation run, the write-up in `docs/balance/phase-N.md`,
-   and the status line in `docs/design.md`. Blocked by 2. It also rechecks the README's
-   play-through: replay its seed (`BALANCE_SEEDS` set to that seed, with the players it names)
-   and correct every outcome it states, or replace it with the new phase's play-through and move
-   the old one to its `docs/balance/phase-N.md` as historical.
+   and the status line in `docs/design.md`. Blocked by 2. It also rechecks the play-through in
+   `docs/playing.md`: replay its seed (`BALANCE_SEEDS` set to that seed, with the players it
+   names) and correct every outcome it states, or replace it with the new phase's play-through
+   and move the old one to its `docs/balance/phase-N.md` as historical. The unit tests check
+   the seed figures it states (`tests/sim/playThrough.test.ts`, and `tests/sim/players.test.ts`
+   for how each game ends), so tuning that moves one fails there and names the sentence; a new
+   figure it states gets a check there too.
 
 ## Run sizes
 

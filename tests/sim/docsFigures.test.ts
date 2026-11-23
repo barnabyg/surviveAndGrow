@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { balance, formatCount, formatMoney } from '../../src/sim';
 
 /**
- * The docs restate figures from `src/sim/balance.ts` by hand. Each check below renders one
+ * The docs restate figures from `src/sim/balance/` by hand. Each check below renders one
  * stated figure from the balance values and looks for it, word for word, in the doc that states
  * it, so a change to a value that leaves the doc behind fails here. A check that fails after a
  * deliberate change to the doc's wording is updated with the doc.
@@ -129,7 +129,7 @@ const RULES: readonly string[] = [
   `failed harvests abroad push the grain price up by ${dollarsOf(priceShocks.failedHarvestsAbroad.pushPermillePerQuarter, grain.usualDollarsPerTonne)} a tonne a quarter, and an ore glut pushes the ore price down by ${dollarsOf(priceShocks.oreGlut.pushPermillePerQuarter, ore.usualDollarsPerTonne)} a tonne a quarter`,
 ];
 
-const README: readonly string[] = [
+const PLAYING: readonly string[] = [
   `Below ${percent(strikes.belowPermille)} a region strikes`,
   `an ore glut pushes the ore price down, for ${words(priceShocks.oreGlut.lastsQuarters)} quarters. Each is announced ${words(priceShocks.oreGlut.noticeQuarters)} quarters ahead`,
   `its usual $${String(grain.usualDollarsPerTonne)}`,
@@ -146,7 +146,7 @@ const COUNTRIES: readonly string[] = [
 
 describe.each([
   { doc: 'docs/rules.md', figures: RULES },
-  { doc: 'README.md', figures: README },
+  { doc: 'docs/playing.md', figures: PLAYING },
   { doc: 'docs/countries.md', figures: COUNTRIES },
 ])('$doc states the balance figures', ({ doc, figures }) => {
   const text = docText(doc);

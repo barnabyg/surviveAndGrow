@@ -12,7 +12,7 @@ of what goes into it is hard to reverse.
 A game is the country it is played on, the seed, the state of the random generator and the game
 state. The country is the awkward part. The shipped country will be retuned, a country can also
 come from a file an author serves beside the game (`?country=`), and the engine's own tuning
-values (`balance.ts`) change between releases.
+values (`balance/`) change between releases.
 
 ## Decision
 

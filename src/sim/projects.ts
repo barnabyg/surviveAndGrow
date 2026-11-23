@@ -12,6 +12,7 @@ import {
   siteTerms,
   technologiesNeeded,
 } from './sites';
+import type { Decisions } from './state';
 import {
   knownTechnologies,
   technologyEffectsOf,
@@ -343,6 +344,21 @@ export function projectStartFault(
   if (cost <= treasury) return null;
   const what = terms.length === 1 ? (terms[0]?.name ?? '') : `${terms.length} projects`;
   return `The treasury holds ${formatMoney(treasury)}, which does not cover the ${formatMoney(cost)} needed to start ${what}.`;
+}
+
+/** The projects a quarter's decisions would start: the sites, the research and the surveys. */
+export type ProjectPlan = Pick<Decisions, 'startProjects' | 'startResearch' | 'startSurveys'>;
+
+/**
+ * What is wrong with starting a project on this target this quarter, beside everything
+ * already planned, or null when it can be started: the treasury must cover them all.
+ */
+export function planFault(
+  game: ProjectStarting,
+  plan: ProjectPlan,
+  target: ProjectTarget,
+): string | null {
+  return projectStartFault(game, [...startsOf(plan), target]);
 }
 
 /**

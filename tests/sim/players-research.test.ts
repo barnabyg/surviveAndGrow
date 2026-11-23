@@ -4,7 +4,6 @@ import {
   advanceQuarter,
   createGame,
   depositFind,
-  electionStatus,
   loadCountry,
   onSite,
   siteStatus,
@@ -15,19 +14,13 @@ import {
   type GameState,
   type Technology,
 } from '../../src/sim';
-import { DEFAULT_TERMS, playGame } from '../balance/batch';
-import { DEGENERATE_PLAYERS, SCRIPTED_PLAYERS, type ScriptedPlayer } from '../balance/players';
-import { tavaraAsShipped, testlandAsShipped } from './countries';
+import { tavaraAsShipped } from './countries';
 import { knowing } from './playing';
+import { playerNamed } from './scripted';
 
-/** The scripted player of a name. */
-function playerNamed(name: string): ScriptedPlayer {
-  const player = [...SCRIPTED_PLAYERS, ...DEGENERATE_PLAYERS].find(
-    (candidate) => candidate.name === name,
-  );
-  if (player === undefined) throw new Error(`There is no player "${name}".`);
-  return player;
-}
+// What the players that research and survey decide, quarter by quarter. Their whole games, and
+// what each records of its research and surveys, are played once, in `players.test.ts`, with
+// every other scripted player's.
 
 const chainBuilder = () => playerNamed('Chain builder');
 
@@ -308,52 +301,4 @@ describe('the prospector', () => {
       expect(firstSmall).toBeGreaterThan(route + 1);
     }
   });
-});
-
-/**
- * Whole games of the players that research and survey, on the countries as they ship. The
- * short run in `players.test.ts` plays every scripted player on seeds 1 and 3; this plays
- * these three on another, and checks what each game records of its research and surveys.
- */
-describe.each([
-  ['Tavara', tavaraAsShipped],
-  ['Testland', testlandAsShipped],
-] as const)('a player that researches or surveys in %s', (_name, country) => {
-  const SEED = 2;
-  /** As in `players.test.ts`: a whole game takes a second or two, longer beside other tests. */
-  const GAME_TIMEOUT = 30_000;
-
-  it.each(['Improver', 'Unlocker', 'Prospector'])(
-    '%s plays a whole game to an ending',
-    (name) => {
-      const result = playGame(country(), SEED, playerNamed(name).decide);
-      const { termQuarters } = electionStatus(createGame(country(), SEED));
-      const known = Object.entries(result.technologies) as [Technology, number][];
-
-      expect(['won', 'inOffice', 'lostElection', 'famine']).toContain(result.ending);
-      expect(result.quarters).toBeGreaterThan(0);
-      expect(result.quarters).toBeLessThanOrEqual(DEFAULT_TERMS * termQuarters);
-      // A technology is known only after everything it needs, and no later than the game ends.
-      for (const [technology, quarter] of known) {
-        expect(quarter).toBeLessThanOrEqual(result.quarters);
-        for (const needed of technologyTerms(technology).prerequisites) {
-          expect(result.technologies[needed]).toBeLessThan(quarter);
-        }
-      }
-      // Only a region where ore may lie is surveyed, a deposit is found only by a survey,
-      // and only a found deposit is mined.
-      expect(result.surveys).toBeLessThanOrEqual(country().deposits.length);
-      expect(result.depositsFound).toBeLessThanOrEqual(result.surveys);
-      expect(result.depositsMined).toBeLessThanOrEqual(result.depositsFound);
-      // Each does what it is for: the prospector alone surveys, and it researches nothing.
-      if (name === 'Prospector') {
-        expect(result.surveys).toBeGreaterThan(0);
-        expect(known).toEqual([]);
-      } else {
-        expect(result.surveys).toBe(0);
-        expect(known.length).toBeGreaterThan(0);
-      }
-    },
-    GAME_TIMEOUT,
-  );
 });

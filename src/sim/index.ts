@@ -114,12 +114,14 @@ export {
   onSite,
   onSurvey,
   onTechnology,
+  planFault,
   projectStartFault,
   siteOf,
   siteEffects,
   siteStatus,
   startFault,
   type Project,
+  type ProjectPlan,
   type ProjectTarget,
   type SiteStatus,
 } from './projects';
@@ -143,13 +145,7 @@ export {
   surveyTerms,
   type SurveyTerms,
 } from './deposits';
-export {
-  planFault,
-  surveyStatus,
-  surveyStatuses,
-  type ProjectPlan,
-  type SurveyStatus,
-} from './surveys';
+export { surveyStatus, surveyStatuses, type SurveyStatus } from './surveys';
 export {
   knownTechnologies,
   technologyName,

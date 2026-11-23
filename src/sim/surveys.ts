@@ -3,29 +3,12 @@ import { depositFind, depositIn, surveyOf, surveyTerms, type SurveyTerms } from 
 import {
   instalment,
   onSurvey,
-  projectStartFault,
-  startsOf,
+  planFault,
+  type ProjectPlan,
   type ProjectStarting,
-  type ProjectTarget,
 } from './projects';
-import type { Decisions } from './state';
 import type { GameDate, Money } from './types';
 import type { SurveyState } from './vocabulary';
-
-/** The projects a quarter's decisions would start: the sites, the research and the surveys. */
-export type ProjectPlan = Pick<Decisions, 'startProjects' | 'startResearch' | 'startSurveys'>;
-
-/**
- * What is wrong with starting a project on this target this quarter, beside everything
- * already planned, or null when it can be started: the treasury must cover them all.
- */
-export function planFault(
-  game: ProjectStarting,
-  plan: ProjectPlan,
-  target: ProjectTarget,
-): string | null {
-  return projectStartFault(game, [...startsOf(plan), target]);
-}
 
 /** How a survey of one region stands, what it takes, and what it may find or has found. */
 export interface SurveyStatus extends SurveyTerms {

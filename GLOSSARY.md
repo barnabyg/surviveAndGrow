@@ -24,7 +24,7 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
   its target.
 - **Technology**: one entry of the engine's technology tree, such as drought-resistant seed. It
   has prerequisites, a cost, a research time and a lasting effect once **known**. The list is the
-  engine's (`TECHNOLOGIES` in `src/sim/vocabulary.ts`); a country file cannot add one. Not
+  engine's (`TECHNOLOGIES` in `src/sim/vocabulary/technologies.ts`); a country file cannot add one. Not
   "tech" or "upgrade".
 - **Improvement**: what a technology does for a type of site (`improves` in
   `balance.technologies`): it leaves less of what the site's effect bears on, raises what the site
@@ -59,7 +59,7 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 - **National reserve** (the food reserve): grain held nationally, fed by regions' surpluses and
   sent out as **relief**. Its **safe level** is three months' needs.
 - **Good**: something the world trades in with a world price of its own: grain and ore
-  (`GOODS` in `src/sim/vocabulary.ts`).
+  (`GOODS` in `src/sim/vocabulary/trade.ts`).
 - **World price**: a good's price abroad, which moves every quarter. A **world price shock** pushes
   it for three quarters, announced two quarters ahead.
 - **Trade link**: anything that carries goods across the border: a border crossing named in the
