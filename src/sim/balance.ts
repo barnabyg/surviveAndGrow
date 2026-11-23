@@ -379,11 +379,10 @@ export const balance = {
       effects: { harvestWeather: 600 },
       infrastructurePermille: 100,
     },
-    // The small sites that serve a region's people. A clinic lets its region's health level
-    // settle 15 points higher than health spending alone holds it, and a school its education
-    // level: about what doubling a starting budget's spending on the service does, but for
-    // one region and for good. Cheaper than a grain store's worth of farming sites, and each
-    // adds a little to infrastructure access as any building does.
+    // The sites that serve a region's people. A clinic lets its region's health level settle
+    // 15 points higher than health spending alone holds it, and a school its education level,
+    // for that region only. Each costs less than an irrigation scheme and adds a quarter of
+    // what the smallest farming site does to infrastructure access.
     clinic: {
       cost: 80,
       buildQuarters: 3,

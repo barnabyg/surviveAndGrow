@@ -66,7 +66,7 @@ main figures from the balance values and fails if this file, the README or
   against the target of 42. Each region has a living standard built from food security, income
   per head, health, education and infrastructure access (the sites in use there, and power),
   weighted 15% each for the first four and 40% for infrastructure, so building is the main road
-  to prosperity. A small site in use adds 20 to 30 points of infrastructure access to its region,
+  to prosperity. A small farming site in use adds 20 to 30 points of infrastructure access to its region,
   a large one 10 to 40, a clinic or a school 5, and power 15. Prosperity is the regions' living standards averaged by
   population. The region list in the left column
   shows each region's living standard as a figure and a bar, so inequality shows at a glance.
