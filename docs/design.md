@@ -4,8 +4,8 @@ Status: Phase 1 is built, and Phase 2 (build), Phase 3 (borrow), Phase 4 (feed a
 Phase 5 (research) are built and balanced, with two exceptions. Phase 4's two targets for world
 price shocks were not met by values alone, and the owner accepted them as unmet on 2026-11-21
 (see `docs/balance/phase-4.md`). Phase 5's target that surveying be worth it on average was not
-met by values alone either, and awaits the owner's choice between accepting it as unmet and
-changing the player or the game (see `docs/balance/phase-5.md`). Last updated 2026-11-23.
+met by values alone either, and the owner accepted it as unmet on 2026-11-23 (see
+`docs/balance/phase-5.md`). Last updated 2026-11-23.
 
 This document holds the intent and the phase plan. The rules as built, with their figures, are in
 [rules.md](rules.md), which is the one place they are stated in full.

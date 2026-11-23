@@ -12,7 +12,8 @@ tickets were #104 (players and reporting), #105 (tuning) and #106 (this record),
 These are the targets proposed in issue #104 and confirmed by the owner on 2026-11-23, with one
 dropped: that the unlocker win as often as the chain builder ("I have no concern about some
 approaches being worse than others"). The owner asked that the rest be read with some
-flexibility. They apply to the real country, Tavara, over games of up to four terms.
+flexibility, and on the same day accepted these results as recorded, the unmet target on
+surveying among them. They apply to the real country, Tavara, over games of up to four terms.
 
 | Target | Result on the confirmation run | Met |
 | --- | --- | --- |
@@ -29,8 +30,8 @@ flexibility. They apply to the real country, Tavara, over games of up to four te
 $15.0m. That met the target on research. The target that surveying be worth it on average is
 not met, and values alone do not reach it: as the prospector plays, the money a found deposit
 takes comes before the farming sites that win the game. What would meet it is a change to the
-player or to what a found deposit is worth, which is the owner's to choose: see What the runs
-showed. Testland, the crude second country, has no targets; every one of its 1,100 confirmation
+player or to what a found deposit is worth; the owner chose to accept it as unmet: see What the
+runs showed. Testland, the crude second country, has no targets; every one of its 1,100 confirmation
 games ran to an ending without error, every player's included.
 
 ## How a game is played and scored
@@ -482,8 +483,8 @@ mine is not held to what the port has left. So the two targets on surveying pull
 other as the players and the win stand. Built after the farming sites, a found deposit costs the
 prospector almost nothing (on six seeds tried in #104 its games then matched the chain
 builder's), but the game is won before any found mine opens, so found deposits would go unmined.
-Built before them, as now, they are mined and the prospector loses 24 points. The choice is the
-owner's, and was put on #105:
+Built before them, as now, they are mined and the prospector loses 24 points. The choice was
+the owner's, and was put on #105:
 
 1. Accept the target as unmet: surveying is a gamble that does not raise a builder's chance of
    winning.
@@ -491,6 +492,8 @@ owner's, and was put on #105:
    often as the chain builder, and leave what it found unmined in the games it wins.
 3. Change what a found deposit is worth, so that it can repay itself before the farming sites
    do. That is a change to the logic or to the country file, and a ticket of its own.
+
+The owner chose the first on 2026-11-23: the target is accepted as unmet.
 
 **Nothing earlier moved.** The players that neither research nor survey decide as they did, and
 the four fixed games of `tests/sim/replay.test.ts` play exactly as before. On seeds that played
