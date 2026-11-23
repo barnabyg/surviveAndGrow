@@ -45,7 +45,7 @@ const chainBuilder = () => playerNamed('Chain builder');
 const ENDINGS: readonly GameResult['ending'][] = ['won', 'inOffice', 'lostElection', 'famine'];
 
 describe('the scripted players', () => {
-  it('are the eight the balance is judged by', () => {
+  it('are the eleven the balance is judged by', () => {
     expect(SCRIPTED_PLAYERS.map((player) => player.name)).toEqual([
       'Does nothing',
       'Popularity',
@@ -55,6 +55,9 @@ describe('the scripted players', () => {
       'Reckless borrower',
       'Timing trader',
       'Mine only',
+      'Improver',
+      'Unlocker',
+      'Prospector',
     ]);
   });
 

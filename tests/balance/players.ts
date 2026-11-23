@@ -5,17 +5,25 @@ import {
   budgetLimits,
   buildingBarred,
   debtStatus,
+  depositIn,
   electionStatus,
   FOOD_STAGES,
   foodStatus,
+  onSurvey,
+  onTechnology,
   pendingDilemma,
   ORDER_STEP_TONNES,
+  planFault,
   previewQuarter,
   priceStatus,
+  researchStatuses,
   siteStatus,
   siteTerms,
   startFault,
   SPENDING_AREAS,
+  surveyStatuses,
+  technologiesNeeded,
+  technologyGains,
   loanOffers,
   importTerms,
   exportTerms,
@@ -27,8 +35,11 @@ import {
   type LoanOffer,
   type Money,
   type PendingDilemma,
+  type ProjectPlan,
   type SiteType,
   type SpendingArea,
+  type Technology,
+  type TechnologyStatus,
   type TradeOrder,
   withinAusterity,
 } from '../../src/sim';
@@ -37,16 +48,19 @@ import type { Decide } from './batch';
 /**
  * The decisions brought within what austerity allows. The players plan as if there were none:
  * during it their budget is brought within its limits and they start and borrow nothing,
- * which is what a player who knew no better would be held to.
+ * which is what a player who knew no better would be held to. Research and surveys are
+ * projects too, and are started no more than sites are.
  */
 export function withinRules(game: GameState, decisions: Decisions): Decisions {
-  const { startProjects, borrow, ...rest } = decisions;
-  const building = buildingBarred(game) === null && startProjects !== undefined;
+  const { startProjects, startResearch, startSurveys, borrow, ...rest } = decisions;
+  const building = buildingBarred(game) === null;
   const borrowing = borrowingBarred(game) === null && borrow !== undefined;
   return {
     ...rest,
     budget: withinAusterity(game, decisions.budget),
-    ...(building ? { startProjects } : {}),
+    ...(building && startProjects !== undefined ? { startProjects } : {}),
+    ...(building && startResearch !== undefined ? { startResearch } : {}),
+    ...(building && startSurveys !== undefined ? { startSurveys } : {}),
     ...(borrowing ? { borrow } : {}),
   };
 }
@@ -59,7 +73,8 @@ function previewAllowed(game: GameState, decisions: Decisions) {
 /**
  * The scripted players the balance is judged by. Each is a plain function from the game to
  * the quarter's decisions, and sees only what the simulation's public interface shows a
- * person at the screen: the state, the preview, the sites and the dilemma put to them.
+ * person at the screen: the state, the preview, the sites, the research tree, the surveys and
+ * the dilemma put to them.
  */
 export interface ScriptedPlayer {
   readonly name: string;
@@ -196,7 +211,34 @@ const chainBuilder: Decide = builder([...CHAIN, ...SMALL_SITES]);
 
 /** A sensible player who builds every site of the types given, in that order. */
 function builder(order: readonly SiteType[], lending: Lending = savesUp): Decide {
-  return (game) => steward(game, order, lending);
+  return (game) => steward(game, { sites: ofTypes(order) }, lending);
+}
+
+/**
+ * What a sensible player sets out to build and to find out. Every one of them builds sites;
+ * research and surveys are for the players that study.
+ */
+interface Pursuits {
+  /** The sites it means to build, by id, in the order it builds them. */
+  readonly sites: (game: GameState) => readonly string[];
+  /**
+   * The technologies it wants known, the one it would rather have first. What each needs
+   * before it can be researched is researched on the way, and is not listed.
+   */
+  readonly technologies?: (game: GameState) => readonly Technology[];
+  /** Whether it surveys every region where ore may lie. */
+  readonly surveys?: boolean;
+}
+
+/**
+ * Every site of the types given: type by type in that order, and within a type in the
+ * country file's.
+ */
+function ofTypes(types: readonly SiteType[]): Pursuits['sites'] {
+  return (game) =>
+    types.flatMap((type) =>
+      game.country.sites.filter((site) => site.type === type).map((site) => site.id),
+    );
 }
 
 /**
@@ -309,9 +351,11 @@ const borrowsUnlessGlut: Lending = (game, short) =>
  * balanced budget that puts a little by while something is left to build, relief for the
  * hungry, the farms helped while the reserve is low, and the savings spent on approval as
  * the vote nears. The instalments on what is being built come out of savings. A player that
- * borrows puts money by for each bond's maturity, and does not count it as savings.
+ * borrows puts money by for each bond's maturity, and does not count it as savings. A player
+ * that studies starts its research and surveys ahead of the next site, each as soon as the
+ * money free covers it, and saves for them as it does for a site.
  */
-function steward(game: GameState, order: readonly SiteType[], lending: Lending): Decisions {
+function steward(game: GameState, pursuits: Pursuits, lending: Lending): Decisions {
   const { quartersAway } = electionStatus(game);
   const quartersLeft = quartersAway + 1;
   const campaigning = quartersLeft <= habits.campaignQuarters;
@@ -333,23 +377,244 @@ function steward(game: GameState, order: readonly SiteType[], lending: Lending):
     return { budget, ...choices };
   }
 
-  const next = nextSite(game, order);
-  // What is already promised to the sites being built is not there to spend.
-  const free = savings - remainingCost(game);
+  const next = nextSite(game, pursuits.sites(game));
+  // What is already promised to what is being built, researched or surveyed is not there to spend.
+  const unpromised = savings - remainingCost(game);
+  const study = studies(game, pursuits, unpromised);
+  const free = unpromised - study.cost;
   const startProjects = next !== null && next.cost <= free ? [next.siteId] : [];
   const borrow = next !== null && startProjects.length === 0 ? lending(game, next.cost - free) : [];
+  const nothingLeft = next === null && !study.more;
   // It saves for the next site only when it is not borrowing for it.
-  const saving = next === null || borrow.length > 0 ? 0 : habits.savingPerQuarter;
+  const saving = nothingLeft || borrow.length > 0 ? 0 : habits.savingPerQuarter;
   const floor = saving + putBy.thisQuarter - Math.min(instalmentsDue(game), savings);
   budget = balanced(game, budget, choices, floor);
-  if (next === null) budget = invested(game, budget, choices, floor);
-  if (next !== null && startProjects.length > 0) {
+  if (nothingLeft) budget = invested(game, budget, choices, floor);
+  const starts = { startProjects, ...study.starts };
+  if (startProjects.length > 0 || study.cost > 0) {
     // A player that borrows has the site's cost in hand, and pays its first instalment from it.
-    const first = lending === savesUp ? 0 : siteStatus(game, next.siteId).instalment;
-    budget = balanced(game, budget, { ...choices, startProjects }, floor - first);
+    const first =
+      lending === savesUp || next === null || startProjects.length === 0
+        ? 0
+        : siteStatus(game, next.siteId).instalment;
+    budget = balanced(game, budget, { ...choices, ...starts }, floor - first);
   }
-  return { budget, ...choices, startProjects, ...(borrow.length > 0 ? { borrow } : {}) };
+  return { budget, ...choices, ...starts, ...(borrow.length > 0 ? { borrow } : {}) };
 }
+
+/**
+ * The research and surveys a player that studies starts this quarter: what it starts, what
+ * that costs in all, and whether anything it wants is still to be started.
+ */
+interface Study {
+  readonly starts: Pick<ProjectPlan, 'startResearch' | 'startSurveys'>;
+  readonly cost: Money;
+  readonly more: boolean;
+}
+
+/**
+ * What a player starts this quarter of the research and surveys it pursues, with `free` to
+ * spend: the surveys first, of each region where ore may lie that is not yet surveyed, and
+ * then the next technology on the way to those it wants. Each is started only if the money
+ * free covers its whole cost beside the others, and the game allows it beside them.
+ */
+function studies(game: GameState, pursuits: Pursuits, free: Money): Study {
+  const startSurveys: string[] = [];
+  let cost = 0;
+  let more = false;
+  if (pursuits.surveys === true) {
+    for (const region of surveyStatuses(game, {})) {
+      if (region.state !== 'unsurveyed') continue;
+      more = true;
+      const fault = planFault(game, { startSurveys }, onSurvey(region.regionId));
+      if (region.cost > free - cost || fault !== null) continue;
+      startSurveys.push(region.regionId);
+      cost += region.cost;
+    }
+  }
+  const surveys = startSurveys.length > 0 ? { startSurveys } : {};
+  const research = researchTowards(game, pursuits.technologies?.(game) ?? []);
+  more ||= research.more;
+  const { next } = research;
+  if (next === null || next.cost > free - cost) return { starts: surveys, cost, more };
+  if (planFault(game, surveys, onTechnology(next.technology)) !== null) {
+    return { starts: surveys, cost, more };
+  }
+  return {
+    starts: { ...surveys, startResearch: next.technology },
+    cost: cost + next.cost,
+    more,
+  };
+}
+
+/**
+ * The research the technologies a player wants call for: the technology to start on `next`,
+ * or null when there is none or one is being researched, since one technology is researched
+ * at a time; and whether any is still to be started (`more`). It makes for the wanted
+ * technology that costs least to reach, counting what it needs first and is not yet known,
+ * and among equals for the one listed first; and it starts with whatever that needs first.
+ */
+function researchTowards(
+  game: GameState,
+  wanted: readonly Technology[],
+): { readonly next: TechnologyStatus | null; readonly more: boolean } {
+  if (wanted.length === 0) return { next: null, more: false };
+  const tree = researchStatuses(game, null);
+  /** A technology and all it needs first, less what is known: what is needed first, first. */
+  const wayTo = (technology: Technology): TechnologyStatus[] => {
+    const status = tree.find((each) => each.technology === technology);
+    if (status === undefined || status.state === 'known') return [];
+    return [...new Set([...status.prerequisites.flatMap(wayTo), status])];
+  };
+  const underWay = (each: TechnologyStatus) => ['researching', 'paused'].includes(each.state);
+  const ways = wanted.map(wayTo).filter((way) => way.length > 0);
+  const more = ways.some((way) => way.some((each) => !underWay(each)));
+  if (tree.some(underWay)) return { next: null, more };
+  const costOf = (way: readonly TechnologyStatus[]) =>
+    way.reduce((total, each) => total + each.cost, 0);
+  const nearest = [...ways].sort((a, b) => costOf(a) - costOf(b))[0];
+  return { next: nearest?.find((each) => each.state === 'available') ?? null, more };
+}
+
+/**
+ * The technologies not yet known that would improve a site in use, as the research tab says
+ * of each (`technologyGains`), in the tree's order: what a player wants that researches the
+ * improvements to what it has built.
+ */
+function improvingWhatIsBuilt(game: GameState): Technology[] {
+  return researchStatuses(game, null)
+    .filter((each) => each.state !== 'known')
+    .filter((each) => technologyGains(game, each.technology).sites.length > 0)
+    .map((each) => each.technology);
+}
+
+/**
+ * Plays as the chain builder does and builds the same sites in the same order, and researches
+ * the improvements to what it has built: whenever a site in use stands to gain from a
+ * technology, it makes for that technology, the nearest first, by way of whatever it needs
+ * first. It starts each as soon as the money free covers it, ahead of the next site. Its twin
+ * is the chain builder, which researches nothing: the difference between them is what
+ * improving sites is worth.
+ */
+const improver: Decide = (game) =>
+  steward(
+    game,
+    { sites: ofTypes([...CHAIN, ...SMALL_SITES]), technologies: improvingWhatIsBuilt },
+    savesUp,
+  );
+
+/**
+ * The sites that cannot be started until a technology is known, known yet or not, in the
+ * country file's order: those of a type research unlocks, and those the country file says
+ * need one.
+ */
+function sitesToUnlock(game: GameState): string[] {
+  return game.country.sites
+    .filter((site) => technologiesNeeded(site).length > 0)
+    .map((site) => site.id);
+}
+
+/**
+ * The sites a player leaves alone for the sake of those it means to unlock: an alternative to
+ * one of them not yet begun, since building on it would rule that one out, and whatever
+ * depends on a site left alone, since it would stand idle. Once the unlocked site is begun
+ * its alternative is closed, and what depended on it waits no longer: it will do for them
+ * what the alternative would have.
+ */
+function leftAloneFor(game: GameState, unlocking: readonly string[]): ReadonlySet<string> {
+  const { sites } = game.country;
+  const awaited = sites.filter(
+    (site) =>
+      unlocking.includes(site.id) && ['locked', 'empty'].includes(siteStatus(game, site.id).state),
+  );
+  const left = new Set(
+    sites
+      .filter(
+        (site) =>
+          !unlocking.includes(site.id) &&
+          awaited.some(
+            (other) => other.alternatives.includes(site.id) || site.alternatives.includes(other.id),
+          ),
+      )
+      .map((site) => site.id),
+  );
+  // What depends on a site left alone is left alone too, and so on down the line.
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const site of sites) {
+      if (left.has(site.id) || unlocking.includes(site.id)) continue;
+      if (site.dependsOn.some((id) => left.has(id))) {
+        left.add(site.id);
+        grew = true;
+      }
+    }
+  }
+  return left;
+}
+
+/**
+ * Plays as the chain builder does, but chases the sites research unlocks. From the first
+ * quarter it makes for the technologies the country's locked sites wait on, the nearest
+ * first, by way of whatever each needs first, and starts each as soon as the money free
+ * covers it, ahead of the next site. A site it has unlocked it builds before anything else.
+ * Until then it leaves alone whatever would rule that site out, and what depends on that: in
+ * Tavara the power station, which the dam is an alternative to, and the power lines. The
+ * rest it builds in the chain builder's order. Its twin is the chain builder, which
+ * researches nothing and so never builds a site research unlocks: the difference between
+ * them is what chasing new types of site is worth.
+ */
+const unlocker: Decide = (game) =>
+  steward(
+    game,
+    {
+      sites: (now) => {
+        const unlocking = sitesToUnlock(now);
+        const left = leftAloneFor(now, unlocking);
+        const rest = ofTypes([...CHAIN, ...SMALL_SITES])(now);
+        return [...unlocking, ...rest.filter((id) => !unlocking.includes(id) && !left.has(id))];
+      },
+      technologies: (now) => [
+        ...new Set(sitesToUnlock(now).flatMap((id) => siteStatus(now, id).lockedBy)),
+      ],
+    },
+    savesUp,
+  );
+
+/**
+ * The sites of the deposits the surveys have found, deposit by deposit in the country file's
+ * order of regions: the trunk road first, which the mine depends on, and then the mine.
+ */
+function sitesFound(game: GameState): string[] {
+  return surveyStatuses(game, {}).flatMap((region) => {
+    const deposit = region.found === null ? null : depositIn(game.country, region.regionId);
+    return deposit === null ? [] : [deposit.route.id, deposit.mine.id];
+  });
+}
+
+/**
+ * Plays as the chain builder does, but surveys early and builds what it finds. Before it
+ * builds anything it starts a survey of every region where ore may lie, each as soon as the
+ * money free covers it. The road and the mine of each deposit found it builds once the
+ * chain builder's own large sites are built, the mine's chain among them, whose port the
+ * found mines ship through, and before the small sites. Its twin is the chain builder, which
+ * never surveys and so builds only the mine the country shows: the difference between them is
+ * what surveying is worth.
+ */
+const prospector: Decide = (game) =>
+  steward(
+    game,
+    {
+      sites: (now) => {
+        const found = sitesFound(now);
+        const shown = (types: readonly SiteType[]) =>
+          ofTypes(types)(now).filter((id) => !found.includes(id));
+        return [...shown(CHAIN), ...found, ...shown(SMALL_SITES)];
+      },
+      surveys: true,
+    },
+    savesUp,
+  );
 
 /**
  * What a player that pays each bond off at maturity has put by for it: a like share of the
@@ -448,12 +713,13 @@ function mostOnOffer(game: GameState): Borrowing[] {
   }
 }
 
-/** What the sites being built cost this quarter. */
+/** What the sites being built, and the research and surveys under way, cost this quarter. */
 function instalmentsDue(game: GameState): Money {
-  return game.country.sites.reduce((total, site) => {
+  const sites = game.country.sites.reduce((total, site) => {
     const status = siteStatus(game, site.id);
     return ['building', 'paused'].includes(status.state) ? total + status.instalment : total;
   }, 0);
+  return studiesUnderway(game).reduce((total, study) => total + study.instalment, sites);
 }
 
 type Choices = Omit<Decisions, 'budget'>;
@@ -598,28 +864,57 @@ function steps(budget: Budget): Budget[] {
   return tried;
 }
 
-/** The next site to build: the first still empty of the types given, in that order. */
+/** The next site to build: the first still empty of those given, in that order. */
 function nextSite(
   game: GameState,
-  order: readonly SiteType[],
+  order: readonly string[],
 ): { readonly siteId: string; readonly cost: Money } | null {
-  for (const type of order) {
-    const site = game.country.sites.find(
-      (candidate) => candidate.type === type && siteStatus(game, candidate.id).state === 'empty',
-    );
-    if (site !== undefined) return { siteId: site.id, cost: siteTerms(type).cost };
+  for (const siteId of order) {
+    const status = siteStatus(game, siteId);
+    if (status.state === 'empty') return { siteId, cost: status.cost };
   }
   return null;
 }
 
-/** What the sites being built have still to be paid. */
+/** What the sites being built, and the research and surveys under way, have still to be paid. */
 function remainingCost(game: GameState): Money {
-  return game.country.sites.reduce((total, site) => {
+  const sites = game.country.sites.reduce((total, site) => {
     const status = siteStatus(game, site.id);
     if (!['building', 'paused'].includes(status.state)) return total;
     const paid = Math.floor((status.cost * status.quartersPaid) / status.buildQuarters);
     return total + status.cost - paid;
   }, 0);
+  return studiesUnderway(game).reduce((total, study) => {
+    const paid = Math.floor((study.cost * study.quartersPaid) / study.quarters);
+    return total + study.cost - paid;
+  }, sites);
+}
+
+/** Research or a survey under way, as far as paying for it goes. */
+interface StudyUnderway {
+  readonly cost: Money;
+  /** How many quarters it takes in all, and how many of them are paid for. */
+  readonly quarters: number;
+  readonly quartersPaid: number;
+  /** What its next quarter costs. */
+  readonly instalment: Money;
+}
+
+/** The research and the surveys under way, those paused for want of money among them. */
+function studiesUnderway(game: GameState): StudyUnderway[] {
+  // Most games have none: only a player that studies starts any.
+  const any = game.projects.some(
+    ({ target, status }) => target.kind !== 'site' && ['building', 'paused'].includes(status),
+  );
+  if (!any) return [];
+  return [
+    ...researchStatuses(game, null)
+      .filter((each) => ['researching', 'paused'].includes(each.state))
+      .map((each) => ({ ...each, quarters: each.researchQuarters })),
+    ...surveyStatuses(game, {})
+      .filter((each) => ['surveying', 'paused'].includes(each.state))
+      .map((each) => ({ ...each, quarters: each.surveyQuarters })),
+  ];
 }
 
 /**
@@ -792,6 +1087,24 @@ export const SCRIPTED_PLAYERS: readonly ScriptedPlayer[] = [
     manner:
       'Plays as the chain builder does, but builds the mine with its road and port and no power, and never trades.',
     decide: builder(['port', 'trunkRoad', 'mine', ...SMALL_SITES]),
+  },
+  {
+    name: 'Improver',
+    manner:
+      'Plays as the chain builder does, and researches each technology that improves a site it has in use, by way of whatever that needs first.',
+    decide: improver,
+  },
+  {
+    name: 'Unlocker',
+    manner:
+      'Plays as the chain builder does, but researches towards every site a technology unlocks and builds each once it is unlocked, before anything else, leaving alone whatever would rule one out.',
+    decide: unlocker,
+  },
+  {
+    name: 'Prospector',
+    manner:
+      'Plays as the chain builder does, but first surveys every region where ore may lie, and builds the road and mine of each deposit found once its other large sites are built.',
+    decide: prospector,
   },
 ];
 

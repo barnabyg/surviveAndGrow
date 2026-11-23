@@ -221,12 +221,14 @@ simulation tests. The games are shared out among worker processes at below-norma
 processors by default; 300 seeds of every player take a few minutes. How large a balance ticket's
 runs should be is in [docs/agents/balance-tickets.md](docs/agents/balance-tickets.md).
 
-Eight players are what the balance is judged by: one that does nothing, one that spends
+Eleven players are what the balance is judged by: one that does nothing, one that spends
 everything on popularity, one that plays sensibly but builds no large site, one that builds
 power and the mine's chain and saves up for each site, one that builds the same sites but
 borrows for them within limits of its own, one that borrows recklessly, one that plays as the
-chain builder does and trades grain with timing, and one that relies on the mine alone and never
-trades. They are in `tests/balance/players.ts`, with a handful of one-lever players that probe
+chain builder does and trades grain with timing, one that relies on the mine alone and never
+trades, and three that play as the chain builder does and also research or survey: one that
+researches the improvements to the sites it has built, one that chases the sites research
+unlocks, and one that surveys early and builds what it finds. They are in `tests/balance/players.ts`, with a handful of one-lever players that probe
 for a trick that wins on its own, two that build only part of the chain, one that borrows all it
 can to build everything at once, a trader blind to world price shocks and a borrower wary of ore
 gluts.
@@ -243,7 +245,7 @@ Set these before the command to change the run:
 | --- | --- | --- |
 | `BALANCE_SEEDS` | The seeds to play, as `from-to` | `1-300` |
 | `BALANCE_COUNTRY` | `tavara`, `testland` or `both` | `both` |
-| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the eight |
+| `BALANCE_PLAYERS` | `all` adds the one-lever and partial players; or the players' names, separated by commas | the eleven |
 | `BALANCE_TERMS` | The most terms each game is played for | `4` |
 | `BALANCE_SHOCKS` | `none` plays the same games without world price shocks | `shipped` |
 | `BALANCE_WORKERS` | How many games are played at once, each at below-normal priority | half the processors |
