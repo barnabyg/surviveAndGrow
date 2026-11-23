@@ -232,11 +232,11 @@ main figures from the balance values and fails if this file, the README or
     scheme takes 60% off how far weather, drought and flood move its region's harvest, not 50%.
   - **Cold storage** (needs drought-resistant seed; $8.0m over 3 quarters): a grain store saves 40%
     of what spoils in the national reserve, not 25%.
-  - **Road engineering** (needs improved irrigation; $15.0m over 5 quarters): trunk roads, ports
+  - **Road engineering** (needs improved irrigation; $7.5m over 5 quarters): trunk roads, ports
     and shallow ports carry 25% more. A chain held back by its road or its port ships more (a
     mine shipping through a shallow port, 450,000 tonnes a quarter instead of 360,000), and a port
     carries more grain across the border. A chain its mine holds back gains nothing.
-  - **Grid efficiency** (needs cold storage; $15.0m over 5 quarters): a powered region produces
+  - **Grid efficiency** (needs cold storage; $7.5m over 5 quarters): a powered region produces
     25% more, not 20%, and gains 18.7 points of infrastructure access, not 15, whether its power
     comes from a power station or a dam.
 - **Hydropower** (needs improved irrigation and grid efficiency; $20.0m over 6 quarters) does

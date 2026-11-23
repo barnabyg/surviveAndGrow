@@ -432,9 +432,11 @@ export const balance = {
     },
     // The third tier. Trunk roads and ports carry a quarter more, so a chain held back by its
     // road or its port ships more, and a port carries more grain across the border. A mine
-    // produces no more: a chain its mine holds back gains nothing.
+    // produces no more: a chain its mine holds back gains nothing. It and grid efficiency
+    // cost less than the tiers below them: at twice this, what a builder spent on research
+    // held its mine's chain back longer than the improvements repaid (docs/balance/phase-5.md).
     roadEngineering: {
-      cost: 150,
+      cost: 75,
       researchQuarters: 5,
       effects: {},
       improves: {
@@ -446,7 +448,7 @@ export const balance = {
     // Power from a station, a dam among them, then adds 25% to a region's output, not 20%,
     // and 18.7 points of infrastructure access, not 15.
     gridEfficiency: {
-      cost: 150,
+      cost: 75,
       researchQuarters: 5,
       effects: {},
       improves: { powerStation: { powerPermille: 250 }, dam: { powerPermille: 250 } },
