@@ -15,6 +15,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { startingAt, withChances } from './countries';
+import { budgetFrom } from '../budgets';
 
 /**
  * Each country with no drought and no dilemmas, started at a tax rate that holds approval
@@ -64,18 +65,18 @@ function wealthy(file: unknown, services: number, peopleDividedBy = 10): Country
 
 /** Low tax, and the amount given, in Money units, on each of health and education. */
 function generous(game: GameState, amount: number): Budget {
-  return {
+  return budgetFrom(game.budget, {
     taxRatePercent: 10,
-    spending: { ...game.budget.spending, health: amount, education: amount },
-  };
+    spending: { health: amount, education: amount },
+  });
 }
 
 /** Taxes at 40% and spends nothing on the public, which loses any election. */
 function harsh(game: GameState): Budget {
-  return {
+  return budgetFrom(game.budget, {
     taxRatePercent: 40,
-    spending: { ...game.budget.spending, health: 0, education: 0, security: 0 },
-  };
+    spending: { health: 0, education: 0, security: 0 },
+  });
 }
 
 interface Played {

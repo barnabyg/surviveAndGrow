@@ -31,6 +31,7 @@ import {
 } from './countries';
 import { valueAt, withValue, without, type Path } from './files';
 import { answering, steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /** A save as it comes back out of storage: text, read again. */
 function stored(save: unknown): unknown {
@@ -56,23 +57,10 @@ const countries = [
 ] as const;
 
 /** Every tax the country can bear and nothing spent, so the treasury only grows. */
-const austere: Budget = {
-  taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
-};
+const austere: Budget = budgetOf({ taxRatePercent: 40 });
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left over. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 /**
  * Plays the same game along two lines: one never saved, and one saved, stored and restored
@@ -178,7 +166,7 @@ describe.each(countries)(
           quarter === 0
             ? ruinous
             : quarter === 6
-              ? { ...austere, spending: { ...austere.spending, upkeep: 10 } }
+              ? budgetFrom(austere, { spending: { upkeep: 10 } })
               : austere,
         ...(quarter === 0 ? { startProjects: [store.id] } : {}),
       }));
@@ -213,7 +201,7 @@ describe.each(countries)(
 
       // The store is paid for out of a high tax, and its upkeep is paid every quarter.
       const passed = playThroughSaves(createGame(country, 4), 10, (_game, quarter) => ({
-        budget: { ...austere, spending: { ...austere.spending, upkeep: 10 } },
+        budget: budgetFrom(austere, { spending: { upkeep: 10 } }),
         ...(quarter === 0 ? { startProjects: [store.id] } : {}),
       }));
 
@@ -686,31 +674,19 @@ describe.each(bothCountries)('a save of a game in %s from an older format', (_na
 describe('a save written under other budget limits', () => {
   it('opens on the nearest budget the game now allows', () => {
     const { save } = midGameSave(tavara);
-    const outside = {
+    const outside = budgetOf({
       taxRatePercent: 90,
-      spending: {
-        agriculture: 205,
-        foodRelief: 1000,
-        health: 0,
-        education: 70,
-        security: 13,
-        upkeep: 0,
-      },
-    };
+      spending: { agriculture: 205, foodRelief: 1000, education: 70, security: 13 },
+    });
 
     const restored = loadSave(withValue(save, ['state', 'budget'], outside));
 
-    expect(restored.game.budget).toEqual({
-      taxRatePercent: 40,
-      spending: {
-        agriculture: 200,
-        foodRelief: 200,
-        health: 0,
-        education: 70,
-        security: 10,
-        upkeep: 0,
-      },
-    });
+    expect(restored.game.budget).toEqual(
+      budgetOf({
+        taxRatePercent: 40,
+        spending: { agriculture: 200, foodRelief: 200, education: 70, security: 10 },
+      }),
+    );
   });
 });
 

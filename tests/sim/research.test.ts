@@ -24,21 +24,12 @@ import {
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, withChances } from './countries';
 import { steward } from './playing';
+import { budgetOf } from '../budgets';
 
 const SEED = 'droughtResistantSeed';
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left over. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 interface Played {
   readonly state: GameState;

@@ -21,28 +21,16 @@ import {
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland, withDroughtChance } from './countries';
 import { steward } from './playing';
+import { budgetFrom, budgetOf, lavish } from '../budgets';
 
 /**
  * Every tax the country can bear and nothing spent but the upkeep of what is built, so the
  * treasury only grows and every site in use stays in good repair.
  */
-const austere: Budget = {
-  taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 200 },
-};
+const austere: Budget = budgetOf({ taxRatePercent: 40, spending: { upkeep: 200 } });
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left over. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = lavish;
 
 interface Played {
   readonly state: GameState;
@@ -387,17 +375,10 @@ describe('a project the treasury cannot pay for', () => {
   it('is the one started later, when there is money for only some', () => {
     const game = createGame(tavara(), 1);
     // $42.0m and $31.0m of revenue, less $68.0m of spending, leaves $5.0m for building.
-    const tight: Budget = {
+    const tight: Budget = budgetOf({
       taxRatePercent: 18,
-      spending: {
-        agriculture: 200,
-        foodRelief: 200,
-        health: 200,
-        education: 80,
-        security: 0,
-        upkeep: 0,
-      },
-    };
+      spending: { agriculture: 200, foodRelief: 200, health: 200, education: 80 },
+    });
 
     const { state, reports } = play(game, [
       { budget: tight, startProjects: ['lowmere-irrigation', 'lowmere-store'] },
@@ -412,7 +393,7 @@ describe('a project the treasury cannot pay for', () => {
 
 /** The country's own spending with enough tax to pay for it, and not so much that anyone strikes. */
 function solvent(country: Country): Budget {
-  return { taxRatePercent: 25, spending: country.start.budget.spending };
+  return budgetFrom(country.start.budget, { taxRatePercent: 25 });
 }
 
 interface Years extends Played {

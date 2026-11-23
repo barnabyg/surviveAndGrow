@@ -13,6 +13,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { bothCountries, startingAt, tavara, withDroughtChance } from './countries';
 import { inFirstTerm } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /**
  * Each country with the one region that drought is made to strike in these tests, and how
@@ -53,24 +54,14 @@ const ofKind = (risks: readonly Risk[], kind: Risk['kind']) =>
 
 /** Top tax and nothing for health, education or security: approval settles far below 40%. */
 function harsh(game: GameState): Budget {
-  return {
+  return budgetFrom(game.budget, {
     taxRatePercent: 40,
-    spending: { ...game.budget.spending, health: 0, education: 0, security: 0 },
-  };
+    spending: { health: 0, education: 0, security: 0 },
+  });
 }
 
 /** The lowest tax and the most the game allows on every area: more than any treasury covers. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 describe.each(scenarios)(
   'the risks ahead in $name',
@@ -142,10 +133,10 @@ describe.each(scenarios)(
 
     it('drop the famine once relief that reaches the region is being sent', () => {
       const game = play(createGame(withDroughtChance(file, { [regionId]: 1 }), 3), 4);
-      const budget: Budget = {
+      const budget: Budget = budgetFrom(game.budget, {
         taxRatePercent: 30,
-        spending: { ...game.budget.spending, foodRelief: 70 },
-      };
+        spending: { foodRelief: 70 },
+      });
 
       expect(famineIn(risksAhead(game, { budget }), regionId)).toBeDefined();
       expect(famineIn(risksAhead(game, { budget, reliefRegionId: regionId }), regionId)).toBe(
@@ -365,29 +356,15 @@ describe('the risks ahead in Tavara', () => {
   });
 
   // Revenue is $31.0m. Spending $69.0m out of it and the $42.0m treasury leaves $4.0m.
-  const spree: Budget = {
+  const spree: Budget = budgetOf({
     taxRatePercent: 18,
-    spending: {
-      agriculture: 200,
-      foodRelief: 200,
-      health: 200,
-      education: 60,
-      security: 30,
-      upkeep: 0,
-    },
-  };
+    spending: { agriculture: 200, foodRelief: 200, health: 200, education: 60, security: 30 },
+  });
   // A budget that spends exactly what comes in, so the treasury pays only for projects.
-  const balanced: Budget = {
+  const balanced: Budget = budgetOf({
     taxRatePercent: 18,
-    spending: {
-      agriculture: 110,
-      foodRelief: 70,
-      health: 70,
-      education: 60,
-      security: 0,
-      upkeep: 0,
-    },
-  };
+    spending: { agriculture: 110, foodRelief: 70, health: 70, education: 60 },
+  });
 
   it('warn that building will pause when the treasury cannot cover an instalment', () => {
     const start = createGame(calm(), 3);
@@ -449,7 +426,7 @@ describe('the risks ahead in Tavara', () => {
     const start = createGame(calm(), 3);
     // $2.0m more on security leaves $2.0m, which the first of the survey's two instalments takes.
     const game = advanceQuarter(start, {
-      budget: { ...spree, spending: { ...spree.spending, security: 50 } },
+      budget: budgetFrom(spree, { spending: { security: 50 } }),
       startSurveys: ['salt-coast'],
     }).state;
     expect(game.treasury).toBe(0);
@@ -510,22 +487,12 @@ describe('the risks ahead in Tavara', () => {
     // Revenue and spending are both $31.0m, so the treasury stays at $42.0m. Nothing goes on
     // health or education, so approval sinks towards 41.3%: the vote is lost, but nobody
     // strikes. The farms get all they can use, so every region grows enough.
-    const balanced: Budget = {
+    const balanced: Budget = budgetOf({
       taxRatePercent: 18,
-      spending: {
-        agriculture: 200,
-        foodRelief: 60,
-        health: 0,
-        education: 0,
-        security: 50,
-        upkeep: 0,
-      },
-    };
+      spending: { agriculture: 200, foodRelief: 60, security: 50 },
+    });
     // Losing $13.0m a quarter, $42.0m covers three quarters and not a fourth.
-    const deficit: Budget = {
-      ...balanced,
-      spending: { ...balanced.spending, foodRelief: 190 },
-    };
+    const deficit: Budget = budgetFrom(balanced, { spending: { foodRelief: 190 } });
     const keep = () => ({ budget: balanced });
     const fourLeft = play(createGame(calm(), 3), 16, keep);
     const threeLeft = play(createGame(calm(), 3), 17, keep);
@@ -627,7 +594,7 @@ describe('the risk of losing the vote in Tavara', () => {
     // Health cut from $7.0m to $6.0m in the last quarter takes approval from 53.0% to 52.9%.
     // Only the swing of 3.0 points down then loses: one in 61, under the 2% that would
     // otherwise be too little to list. An outcome that ends the game is never left out.
-    const budget: Budget = { ...game.budget, spending: { ...game.budget.spending, health: 60 } };
+    const budget: Budget = budgetFrom(game.budget, { spending: { health: 60 } });
 
     expect(ofKind(risksAhead(game, { budget }), 'election')).toMatchObject({
       likelihood: 'remote',

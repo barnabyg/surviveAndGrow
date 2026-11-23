@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   createGame,
+  SPENDING_AREAS,
   type Budget,
   type GameState,
   type TurnResult,
@@ -10,6 +11,7 @@ import tavaraFile from '../../src/countries/tavara.json';
 import { bothCountries, tavara, testland } from './countries';
 import { faultsOf, withValue, without } from './files';
 import { steward } from './playing';
+import { budgetFrom, lavish } from '../budgets';
 
 /** Ends a quarter with the given budget. Money is in units of $100,000. */
 function endQuarter(game: GameState, budget: Budget = game.budget): TurnResult {
@@ -19,18 +21,6 @@ function endQuarter(game: GameState, budget: Budget = game.budget): TurnResult {
 function amountOf(result: TurnResult, label: string): number | undefined {
   return result.report.treasury.contributions.find((line) => line.label === label)?.amount;
 }
-
-const everythingAtMost: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
 
 describe('revenue', () => {
   it('is the tax rate applied to the output of each region', () => {
@@ -101,7 +91,7 @@ describe('when the treasury cannot cover the budget', () => {
   it('cuts every area to what can be afforded, and says so', () => {
     const game = createGame(tavara(), 1);
 
-    const result = endQuarter(game, everythingAtMost);
+    const result = endQuarter(game, lavish);
 
     // $42.0m in hand and $8.6m of revenue against $100.0m of spending: 50.6% can be paid.
     for (const area of ['Agriculture', 'Food relief', 'Health', 'Education', 'Security']) {
@@ -122,9 +112,9 @@ describe('when the treasury cannot cover the budget', () => {
   it('leaves the budget the player set in force', () => {
     const game = createGame(tavara(), 1);
 
-    const { state } = endQuarter(game, everythingAtMost);
+    const { state } = endQuarter(game, lavish);
 
-    expect(state.budget).toEqual(everythingAtMost);
+    expect(state.budget).toEqual(lavish);
   });
 
   it('says nothing about cuts when the budget is covered', () => {
@@ -150,7 +140,7 @@ describe.each(bothCountries)('the budget in %s', (_name, country) => {
   it('never lets the treasury fall below zero', () => {
     let game = createGame(country(), 3);
     for (let quarter = 0; quarter < 8; quarter += 1) {
-      game = endQuarter(game, everythingAtMost).state;
+      game = endQuarter(game, lavish).state;
 
       expect(game.treasury).toBeGreaterThanOrEqual(0);
     }
@@ -166,9 +156,9 @@ describe.each(bothCountries)('the budget in %s', (_name, country) => {
 
   it('refuses spending outside the range the game allows', () => {
     const game = createGame(country(), 3);
-    const spending = { ...game.budget.spending, health: 205 };
+    const budget = budgetFrom(game.budget, { spending: { health: 205 } });
 
-    expect(() => endQuarter(game, { ...game.budget, spending })).toThrow(
+    expect(() => endQuarter(game, budget)).toThrow(
       'Health spending must be from $0.0m to $20.0m in steps of $1.0m, but is $20.5m.',
     );
   });
@@ -207,7 +197,7 @@ describe('the starting figures in a country file', () => {
     const faults = faultsOf(withValue(tavaraFile, ['start', 'budget', 'spending', 'palaces'], 3));
 
     expect(faults).toEqual([
-      'start.budget.spending.palaces is not a spending area this game has (agriculture, foodRelief, health, education, security, upkeep).',
+      `start.budget.spending.palaces is not a spending area this game has (${SPENDING_AREAS.join(', ')}).`,
     ]);
   });
 

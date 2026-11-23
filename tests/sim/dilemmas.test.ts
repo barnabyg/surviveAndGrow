@@ -20,6 +20,7 @@ import testlandFile from '../countries/testland.json';
 import { tavaraAsShipped, testlandAsShipped, withChances } from './countries';
 import { faultsOf, withValue, without } from './files';
 import { answering, inFirstTerm } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 type Chances = Parameters<typeof withChances>[1];
 
@@ -38,40 +39,25 @@ const keep = (game: GameState): Budget => game.budget;
  */
 const provident = (game: GameState): Budget => {
   const usual = game.country.start.budget;
-  return {
+  return budgetFrom(usual, {
     taxRatePercent: usual.taxRatePercent + 2,
-    spending: {
-      ...usual.spending,
-      agriculture: Math.min(200, usual.spending.agriculture * 2),
-      foodRelief: 0,
-    },
-  };
+    spending: { agriculture: Math.min(200, usual.spending.agriculture * 2), foodRelief: 0 },
+  });
 };
 
 /** Top tax and nothing for health, education or security: approval settles far below 40%. */
-const harsh = (game: GameState): Budget => ({
-  taxRatePercent: 40,
-  spending: { ...game.country.start.budget.spending, health: 0, education: 0, security: 0 },
-});
+const harsh = (game: GameState): Budget =>
+  budgetFrom(game.country.start.budget, {
+    taxRatePercent: 40,
+    spending: { health: 0, education: 0, security: 0 },
+  });
 
 /** The lowest tax and the most the game allows on every area, which empties any treasury. */
-const ruinous = (): Budget => ({
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-});
+const ruinous = (): Budget => budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 /** The tax as it stands and nothing spent, so that no answer can force a spending cut. */
-const austere = (game: GameState): Budget => ({
-  taxRatePercent: game.budget.taxRatePercent,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
-});
+const austere = (game: GameState): Budget =>
+  budgetOf({ taxRatePercent: game.budget.taxRatePercent });
 
 /**
  * How each dilemma is brought about: the chances written into the country file, and the

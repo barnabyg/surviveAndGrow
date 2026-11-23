@@ -13,6 +13,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { tavara, withDroughtChance } from './countries';
+import { budgetFrom } from '../budgets';
 
 /** Each country as it ships, but with no chance of drought anywhere. */
 const withoutDrought: [name: string, country: () => Country][] = [
@@ -56,20 +57,9 @@ const regionOf = (game: GameState, regionId: string) => {
 const line = (report: TurnReport | undefined, label: string) =>
   report?.approval.contributions.find((entry) => entry.label === label)?.amount;
 
-/** The starting budget with some of it changed. */
-function budgetWith(
-  game: GameState,
-  changes: { taxRatePercent?: number; spending?: Partial<Budget['spending']> },
-): Budget {
-  return {
-    taxRatePercent: changes.taxRatePercent ?? game.budget.taxRatePercent,
-    spending: { ...game.budget.spending, ...changes.spending },
-  };
-}
-
 /** Taxed at the top rate with nothing spent on the public: the surest way to be disliked. */
 function harsh(game: GameState): Budget {
-  return budgetWith(game, {
+  return budgetFrom(game.budget, {
     taxRatePercent: 40,
     spending: { health: 0, education: 0, security: 0 },
   });
@@ -175,8 +165,8 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
 
   it('falls when tax is raised and rises when it is cut', () => {
     const start = createGame(country(), 3);
-    const raised = play(start, 1, budgetWith(start, { taxRatePercent: 30 }));
-    const cut = play(start, 1, budgetWith(start, { taxRatePercent: 8 }));
+    const raised = play(start, 1, budgetFrom(start.budget, { taxRatePercent: 30 }));
+    const cut = play(start, 1, budgetFrom(start.budget, { taxRatePercent: 8 }));
 
     expect(national(raised.state)).toBeLessThan(national(start));
     expect(line(raised.reports[0], 'Tax rate')).toBeLessThan(0);
@@ -190,7 +180,11 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
     ['security', 'Security spending'],
   ] as const)('falls when %s spending is withdrawn, and that alone is the cause', (area, label) => {
     const start = createGame(country(), 3);
-    const { state, reports } = play(start, 1, budgetWith(start, { spending: { [area]: 0 } }));
+    const { state, reports } = play(
+      start,
+      1,
+      budgetFrom(start.budget, { spending: { [area]: 0 } }),
+    );
 
     expect(national(state)).toBeLessThan(national(start));
     expect(line(reports[0], label)).toBe(reports[0]?.approval.change);
@@ -199,7 +193,7 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
 
   it('keeps moving for years after a large change, by a smaller step each quarter', () => {
     const start = createGame(country(), 3);
-    const { reports } = play(start, 16, budgetWith(start, { taxRatePercent: 28 }));
+    const { reports } = play(start, 16, budgetFrom(start.budget, { taxRatePercent: 28 }));
     const changes = reports.map((report) => report.approval.change);
 
     // The first quarters each take a smaller step down, and it is still moving four years on.
@@ -214,7 +208,7 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
   it('settles after a small change', () => {
     const start = createGame(country(), 3);
     // Nothing for relief, which nobody needs here, so the treasury lasts the whole time.
-    const budget = budgetWith(start, {
+    const budget = budgetFrom(start.budget, {
       taxRatePercent: start.budget.taxRatePercent + 1,
       spending: { foodRelief: 0 },
     });
@@ -229,7 +223,7 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
   it('recovers when the cause is removed', () => {
     const start = createGame(country(), 3);
     // Nothing for relief, which nobody needs here, so the treasury lasts the whole time.
-    const usual = budgetWith(start, { spending: { foodRelief: 0 } });
+    const usual = budgetFrom(start.budget, { spending: { foodRelief: 0 } });
     const raised = { ...usual, taxRatePercent: usual.taxRatePercent + 2 };
     const squeezed = play(start, 4, raised);
     const relaxed = play(squeezed.state, 16, usual);
@@ -241,7 +235,7 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
 
   it('reports contributions that add up to the change, every quarter', () => {
     const start = createGame(country(), 3);
-    const budgets = [harsh(start), start.budget, budgetWith(start, { taxRatePercent: 5 })];
+    const budgets = [harsh(start), start.budget, budgetFrom(start.budget, { taxRatePercent: 5 })];
     let state = start;
 
     for (let quarter = 0; quarter < 18; quarter += 1) {
@@ -265,7 +259,7 @@ describe.each(withoutDrought)('approval in %s', (_name, country) => {
 describe('the tax rate in Tavara', () => {
   it('costs 1.2 points of approval for each point of tax above 18%, a tenth of it each quarter', () => {
     const start = createGame(withDroughtChance(tavaraFile, {}), 1);
-    const { states, reports } = play(start, 2, budgetWith(start, { taxRatePercent: 28 }));
+    const { states, reports } = play(start, 2, budgetFrom(start.budget, { taxRatePercent: 28 }));
 
     // Ten points of tax are worth 12.0 points of approval. A tenth of that lands in the first
     // quarter (−1.2) and a tenth of what is left in the second (−1.1, rounded up from 1.08).
@@ -332,7 +326,7 @@ describe.each(withoutDrought)('unrest in %s', (_name, country) => {
     const start = createGame(country(), 5);
     // Eleven quarters of the harsh budget, then nine of the lowest tax: the term has room for both.
     const fallen = play(start, 11, harsh(start));
-    const { states } = play(fallen.state, 9, budgetWith(start, { taxRatePercent: 5 }));
+    const { states } = play(fallen.state, 9, budgetFrom(start.budget, { taxRatePercent: 5 }));
 
     const seen = states.map((state) => state.regions[0]?.unrest);
     expect(seen).toContain('strikes');
@@ -344,7 +338,7 @@ describe.each(withoutDrought)('unrest in %s', (_name, country) => {
   it('reports each start and each end once, in the region it happened in', () => {
     const start = createGame(country(), 5);
     const fallen = play(start, 11, harsh(start));
-    const recovered = play(fallen.state, 9, budgetWith(start, { taxRatePercent: 5 }));
+    const recovered = play(fallen.state, 9, budgetFrom(start.budget, { taxRatePercent: 5 }));
     const entries = [...fallen.reports, ...recovered.reports].flatMap((report) => report.entries);
     const regionId = start.regions[0]?.id;
     const here = entries.filter(
@@ -449,8 +443,8 @@ describe.each(withoutDrought)('previewing approval in %s', (_name, country) => {
     const start = createGame(country(), 9);
     const budgets = [
       harsh(start),
-      budgetWith(start, { taxRatePercent: 25, spending: { health: 200 } }),
-      budgetWith(start, { taxRatePercent: 5 }),
+      budgetFrom(start.budget, { taxRatePercent: 25, spending: { health: 200 } }),
+      budgetFrom(start.budget, { taxRatePercent: 5 }),
     ];
     let game = start;
 
@@ -472,7 +466,7 @@ describe.each(withoutDrought)('previewing approval in %s', (_name, country) => {
     const start = createGame(country(), 9);
     // A small change, so that approval gets there within the term. Nothing for relief,
     // which nobody needs here, so the treasury lasts.
-    const budget = budgetWith(start, {
+    const budget = budgetFrom(start.budget, {
       taxRatePercent: start.budget.taxRatePercent + 2,
       spending: { foodRelief: 0 },
     });

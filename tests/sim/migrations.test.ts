@@ -29,6 +29,7 @@ import format10Save from '../saves/format-10.json';
 import format11Save from '../saves/format-11.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 // The saves kept from every format before the current one, each lifted by the migrations to
 // the current format. The save kept from the current format is checked in save.test.ts.
@@ -235,10 +236,10 @@ describe('the save kept from save format 3', () => {
   it('is won on prosperity two quarters on, if the top tier is held', () => {
     let { game } = loadSave(format3Save);
     const generous = (state: typeof game) => ({
-      budget: {
+      budget: budgetFrom(state.budget, {
         taxRatePercent: 10,
-        spending: { ...state.budget.spending, health: 200, education: 200 },
-      },
+        spending: { health: 200, education: 200 },
+      }),
     });
 
     game = advanceQuarter(game, answering(game, generous(game))).state;
@@ -288,7 +289,7 @@ describe('the save kept from save format 4', () => {
       game,
       answering(game, {
         ...steward(game),
-        budget: { ...game.budget, spending: { ...game.budget.spending, upkeep: 20 } },
+        budget: budgetFrom(game.budget, { spending: { upkeep: 20 } }),
       }),
     );
     game = result.state;
@@ -594,17 +595,7 @@ describe('the save kept from save format 10', () => {
     const decisions = answering(
       game,
       // Every tax the country can bear and nothing spent but upkeep, so the treasury grows.
-      steward(game, {
-        taxRatePercent: 40,
-        spending: {
-          agriculture: 0,
-          foodRelief: 0,
-          health: 0,
-          education: 0,
-          security: 0,
-          upkeep: 200,
-        },
-      }),
+      steward(game, budgetOf({ taxRatePercent: 40, spending: { upkeep: 200 } })),
     );
     const { state, report } = advanceQuarter(game, decisions);
 

@@ -15,19 +15,13 @@ import {
 } from '../../src/sim';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
 import { answering, steward } from './playing';
+import { lavish } from '../budgets';
 
-/** Everything at its most, at the lowest tax: it spends whatever the treasury holds. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+/**
+ * A budget no treasury covers. It names the areas it spends on, so a fixed game is played the
+ * same when the game gains an area.
+ */
+const ruinous: Budget = lavish;
 
 /** How a fixed game is played: whether it borrows and overspends into a bailout first. */
 type Script = 'builds' | 'bailedOut';

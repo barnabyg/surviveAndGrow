@@ -17,6 +17,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { withDroughtChance, withoutPoweredMines } from './countries';
+import { budgetFrom } from '../budgets';
 
 /**
  * A country with a treasury that can pay for a whole chain and a great deal of grain, and no
@@ -39,7 +40,7 @@ const sale = (tonnes: number): TradeOrder => ({ good: 'grain', direction: 'expor
 
 /** The country's own spending with enough tax to pay for it, and upkeep set as given. */
 function solvent(country: Country, upkeep: number): Budget {
-  return { taxRatePercent: 25, spending: { ...country.start.budget.spending, upkeep } };
+  return budgetFrom(country.start.budget, { taxRatePercent: 25, spending: { upkeep } });
 }
 
 /** Plays quarters, each decided by the function given, and keeps every state and report. */

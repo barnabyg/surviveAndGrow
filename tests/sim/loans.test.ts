@@ -15,6 +15,7 @@ import {
 } from '../../src/sim';
 import { bothCountries, testland } from './countries';
 import { answering, inFirstTerm, steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /** A loan of a sum over a term, in Money units ($100,000) and quarters. */
 function loan(amount: number, quarters: number): Borrowing {
@@ -107,13 +108,9 @@ describe.each(bothCountries)('a loan in %s', (_name, country) => {
     // is ever missed. Enough is spent on agriculture that the harvests feed every region.
     let state = repaid.state;
     const reports = [...taken.reports, ...repaid.reports];
-    const fed: Budget = {
-      ...game.budget,
-      spending: {
-        ...game.budget.spending,
-        agriculture: Math.max(30, game.budget.spending.agriculture),
-      },
-    };
+    const fed: Budget = budgetFrom(game.budget, {
+      spending: { agriculture: Math.max(30, game.budget.spending.agriculture) },
+    });
     while (inFirstTerm(state)) {
       const result = advanceQuarter(state, answering(state, steward(state, fed)));
       reports.push(result.report);
@@ -130,17 +127,7 @@ describe.each(bothCountries)('a loan in %s', (_name, country) => {
 
   it('is paid before the budget, so a heavy repayment cuts spending', () => {
     const game = createGame(country(), 7);
-    const lavish: Budget = {
-      taxRatePercent: 5,
-      spending: {
-        agriculture: 200,
-        foodRelief: 200,
-        health: 200,
-        education: 200,
-        security: 200,
-        upkeep: 200,
-      },
-    };
+    const lavish: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
     const { state } = play(game, [{ borrow: [loan(100, 4)] }]);
 
     const result = advanceQuarter(state, { ...steward(state), budget: lavish });
@@ -191,17 +178,7 @@ describe('borrowing', () => {
 
 describe('a missed payment', () => {
   /** Everything at its most, at the lowest tax: it spends whatever the treasury holds. */
-  const ruinous: Budget = {
-    taxRatePercent: 5,
-    spending: {
-      agriculture: 200,
-      foodRelief: 200,
-      health: 200,
-      education: 200,
-      security: 200,
-      upkeep: 200,
-    },
-  };
+  const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
   /** Testland's biggest loan over a year, then a budget that leaves nothing in the treasury. */
   function overstretched(): GameState {
@@ -267,8 +244,9 @@ describe('a missed payment', () => {
     // A loan taken now is first repaid next quarter, when spending $10.0m more on health
     // than the budget the game starts with runs the treasury out.
     const game = createGame(testland(), 1);
-    const spending = { ...game.budget.spending, health: game.budget.spending.health + 100 };
-    const budget = { ...game.budget, spending };
+    const budget = budgetFrom(game.budget, {
+      spending: { health: game.budget.spending.health + 100 },
+    });
     const decisions = { ...steward(game, budget), borrow: [loan(100, 4)] };
 
     const treasury = risksAhead(game, decisions).find((risk) => risk.kind === 'treasury');

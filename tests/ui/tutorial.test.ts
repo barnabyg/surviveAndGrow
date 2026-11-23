@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, type Decisions, type GameState } from '../../src/sim';
 import { TUTORIAL_SEED } from '../../src/ui/tutorialGame';
 import { tavaraAsShipped } from '../sim/countries';
+import { budgetFrom } from '../budgets';
 
 /** How the year goes with the given decisions each quarter, quarter by quarter. */
 function firstYear(decide: (game: GameState) => Decisions): GameState[] {
@@ -24,10 +25,7 @@ const paths: [string, (game: GameState) => Decisions][] = [
   [
     'a player who does what the lessons ask',
     (game) => ({
-      budget: {
-        ...game.budget,
-        spending: { ...game.budget.spending, health: game.budget.spending.health + 10 },
-      },
+      budget: budgetFrom(game.budget, { spending: { health: game.budget.spending.health + 10 } }),
       reliefRegionId: null,
       startProjects: game.date.year === 1 && game.date.quarter === 1 ? ['lowmere-road'] : [],
       dilemmaChoice: answerFirst(game),

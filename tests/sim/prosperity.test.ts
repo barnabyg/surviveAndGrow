@@ -15,12 +15,13 @@ import {
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, withChances } from './countries';
 import { steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 const sum = (amounts: readonly number[]) => amounts.reduce((total, amount) => total + amount, 0);
 
 /** The budget in force with health and education spending set as given. */
 function withServices(game: GameState, health: number, education: number): Budget {
-  return { ...game.budget, spending: { ...game.budget.spending, health, education } };
+  return budgetFrom(game.budget, { spending: { health, education } });
 }
 
 /** Plays quarters with one budget, as a careful player does, keeping every report. */
@@ -126,10 +127,9 @@ describe.each(bothCountries)('prosperity in %s', (_name, country) => {
       reserve: 0,
     });
     const start = createGame(parched, 1);
-    const neglect: Budget = {
-      ...start.budget,
-      spending: { ...start.budget.spending, agriculture: 0, foodRelief: 0 },
-    };
+    const neglect: Budget = budgetFrom(start.budget, {
+      spending: { agriculture: 0, foodRelief: 0 },
+    });
 
     let state = start;
     let lowest = prosperityStatus(start).value;

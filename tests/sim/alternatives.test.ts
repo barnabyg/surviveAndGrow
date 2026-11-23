@@ -15,6 +15,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { withDroughtChance, withoutPoweredMines } from './countries';
 import { steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 /** Plays one quarter for each set of decisions given, in order, sending relief where it is needed. */
 function play(start: GameState, quarters: readonly Partial<Decisions>[]): GameState {
@@ -38,7 +39,7 @@ function rich(file: unknown): Country {
 
 /** The country's own spending with enough tax to pay for it, and enough upkeep for a chain. */
 function solvent(country: Country): Budget {
-  return { taxRatePercent: 25, spending: { ...country.start.budget.spending, upkeep: 40 } };
+  return budgetFrom(country.start.budget, { taxRatePercent: 25, spending: { upkeep: 40 } });
 }
 
 /**

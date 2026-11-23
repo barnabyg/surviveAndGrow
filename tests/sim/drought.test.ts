@@ -15,6 +15,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { withDroughtChance } from './countries';
 import { faultsOf, withValue } from './files';
+import { budgetOf } from '../budgets';
 
 /** Each country with one region that drought strikes every single year. */
 const scenarios = [
@@ -28,10 +29,7 @@ const scenarios = [
  */
 function reliefBudget(game: GameState, foodRelief = 70): Budget {
   const { agriculture } = game.country.start.budget.spending;
-  return {
-    taxRatePercent: 40,
-    spending: { agriculture, foodRelief, health: 0, education: 0, security: 0, upkeep: 0 },
-  };
+  return budgetOf({ taxRatePercent: 40, spending: { agriculture, foodRelief } });
 }
 
 interface Played {

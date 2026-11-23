@@ -27,6 +27,7 @@ import {
   withoutPriceShocks,
 } from './countries';
 import { withValue } from './files';
+import { budgetFrom } from '../budgets';
 
 /** An order for tonnes of grain from abroad. */
 function grain(tonnes: number): TradeOrder {
@@ -222,10 +223,10 @@ describe('an import the treasury can no longer pay for in full as the quarter en
     const country = tavara();
     // The treasury holds the cost as the quarter begins, but a lavish budget spends it first.
     const game = { ...createGame(country, 1), treasury: 100 };
-    const lavish = {
+    const lavish = budgetFrom(game.budget, {
       taxRatePercent: 5,
-      spending: { ...game.budget.spending, health: 200, education: 200, security: 200 },
-    };
+      spending: { health: 200, education: 200, security: 200 },
+    });
     const { state, report } = advanceQuarter(game, { budget: lavish, trade: [grain(40_000)] });
 
     const line = report.food.contributions.find((entry) => entry.label === 'Grain imported');
@@ -267,10 +268,7 @@ describe.each(lean)('a drought in a lean year in $name', (scenario) => {
   const decide =
     (importing: boolean) =>
     (game: GameState): Decisions => ({
-      budget: {
-        ...game.country.start.budget,
-        spending: { ...game.country.start.budget.spending, agriculture: 0, foodRelief },
-      },
+      budget: budgetFrom(game.country.start.budget, { spending: { agriculture: 0, foodRelief } }),
       reliefRegionId: regionId,
       // Grain is bought every quarter from the one in which the failed harvest comes in.
       trade: importing && game.history.length >= 4 ? [grain(tonnes)] : [],

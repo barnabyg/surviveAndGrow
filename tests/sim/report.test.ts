@@ -13,6 +13,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland, withDroughtChance } from './countries';
+import { budgetFrom, budgetOf, lavish } from '../budgets';
 
 const neglect = (game: GameState): Decisions => ({ budget: game.budget, reliefRegionId: null });
 
@@ -40,23 +41,8 @@ function reportsOf(
 const headlines = (report: TurnReport | undefined) =>
   report?.entries.map((entry) => entry.headline);
 
-const everythingAtMost: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
-
 /** Taxed at the top rate and spending next to nothing, so the treasury grows every quarter. */
-const thrifty: Budget = {
-  taxRatePercent: 40,
-  spending: { agriculture: 10, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
-};
+const thrifty: Budget = budgetOf({ taxRatePercent: 40, spending: { agriculture: 10 } });
 
 /** Each country as it ships, but with no chance of drought anywhere. */
 const withoutDrought = [
@@ -86,16 +72,12 @@ describe('the budget outcome in the turn report', () => {
 
   it('counts a single quarter left in the singular', () => {
     const game = createGame(tavara(), 1);
-    const spending = {
-      agriculture: 200,
-      foodRelief: 70,
-      health: 70,
-      education: 100,
-      security: 50,
-      upkeep: 0,
-    };
+    const budget = budgetOf({
+      taxRatePercent: game.budget.taxRatePercent,
+      spending: { agriculture: 200, foodRelief: 70, health: 70, education: 100, security: 50 },
+    });
 
-    const report = reportOn(game, { ...game.budget, spending });
+    const report = reportOn(game, budget);
 
     // $42.0m in hand, revenue $31.0m and spending $49.0m: the $24.0m left covers one more
     // deficit of $18.0m and not a second.
@@ -109,7 +91,7 @@ describe('the budget outcome in the turn report', () => {
   });
 
   it('says when the treasury cannot pay for another quarter like the last', () => {
-    const report = reportOn(createGame(tavara(), 1), everythingAtMost);
+    const report = reportOn(createGame(tavara(), 1), lavish);
 
     // The cut left $0.1m in the treasury against a deficit of $41.9m.
     expect(report.entries).toContainEqual({
@@ -134,16 +116,12 @@ describe('the budget outcome in the turn report', () => {
 
   it('is routine when revenue and spending were the same', () => {
     const game = createGame(testland(), 1);
-    const spending = {
-      agriculture: 20,
-      foodRelief: 0,
-      health: 10,
-      education: 10,
-      security: 10,
-      upkeep: 0,
-    };
+    const budget = budgetOf({
+      taxRatePercent: game.budget.taxRatePercent,
+      spending: { agriculture: 20, health: 10, education: 10, security: 10 },
+    });
 
-    const report = reportOn(game, { ...game.budget, spending });
+    const report = reportOn(game, budget);
 
     expect(report.entries).toContainEqual({
       kind: 'budget',
@@ -183,7 +161,7 @@ describe.each(bothCountries)('every turn report in %s', (_name, country) => {
 
 describe('a forced spending cut', () => {
   it('is reported ahead of the deficit that caused it', () => {
-    const report = reportOn(createGame(withDroughtChance(tavaraFile, {}), 1), everythingAtMost);
+    const report = reportOn(createGame(withDroughtChance(tavaraFile, {}), 1), lavish);
 
     // A deficit that size also cuts the credit rating.
     expect(report.entries.map((entry) => [entry.kind, entry.seriousness])).toEqual([
@@ -221,9 +199,12 @@ describe.each(withoutDrought)(
 
     it('is not called quiet when the budget ran a deficit', () => {
       const game = createGame(country(), 1);
-      const spending = { ...thrifty.spending, health: 200, education: 200 };
+      const budget = budgetFrom(thrifty, {
+        taxRatePercent: 5,
+        spending: { health: 200, education: 200 },
+      });
 
-      const report = reportOn(game, { taxRatePercent: 5, spending });
+      const report = reportOn(game, budget);
 
       expect(headlines(report)).toContain('The treasury is shrinking');
       expect(headlines(report)).not.toContain('A quiet quarter');
@@ -291,10 +272,7 @@ describe.each(withDrought)('a region relieved in $name', ({ file, regionId, regi
     const game = createGame(withDroughtChance(file, { [regionId]: 1 }), 1);
     // Neglected for a year and a quarter, then sent all the relief it needs.
     const relieved = (state: GameState): Decisions => ({
-      budget: {
-        taxRatePercent: 40,
-        spending: { ...thrifty.spending, foodRelief: 200 },
-      },
+      budget: budgetFrom(thrifty, { taxRatePercent: 40, spending: { foodRelief: 200 } }),
       reliefRegionId: state.date.year > 2 || state.date.quarter > 1 ? regionId : null,
     });
 

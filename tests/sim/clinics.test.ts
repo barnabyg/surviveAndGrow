@@ -30,6 +30,7 @@ import testlandFile from '../countries/testland.json';
 import { testlandFormat9File, withChances } from './countries';
 import { faultsOf, withValue } from './files';
 import { knowing, steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 /** A country with a treasury that pays for anything, and no drought, flood or dilemma. */
 function rich(file: unknown): Country {
@@ -66,10 +67,8 @@ function firstOf(country: Country, type: SiteType): Site {
 }
 
 /** A budget that keeps every service as the country starts and pays for all upkeep. */
-const keeping = (country: Country) => ({
-  taxRatePercent: country.start.budget.taxRatePercent,
-  spending: { ...country.start.budget.spending, upkeep: 40 },
-});
+const keeping = (country: Country) =>
+  budgetFrom(country.start.budget, { spending: { upkeep: 40 } });
 
 /** The same game with a site in use from now, in good repair or decaying. */
 function withSite(game: GameState, site: Site, status: 'operating' | 'decaying'): GameState {
@@ -243,7 +242,7 @@ describe.each(SERVICE_SITES)('a $type', ({ type, service, technology }) => {
       expect((standing(decaying)?.settles ?? 0) - (standing(start)?.settles ?? 0)).toBe(half);
 
       // Played with no upkeep, so that it stays decaying, the level settles that much higher.
-      const unkept = { ...keeping(country), spending: { ...keeping(country).spending, upkeep: 0 } };
+      const unkept = budgetFrom(keeping(country), { spending: { upkeep: 0 } });
       const settled = played(decaying, 60, unkept);
       expect(siteStatus(settled, site.id).state).toBe('decaying');
       expect(levelOf(settled, site.regionId, service)).toBe(
@@ -320,7 +319,7 @@ describe.each(SERVICE_SITES)('a $type', ({ type, service, technology }) => {
       const country = rich(file);
       const site = firstOf(country, type);
       const game = withSite(knowing(createGame(country, 5), [technology]), site, 'operating');
-      const unkept = { ...keeping(country), spending: { ...keeping(country).spending, upkeep: 0 } };
+      const unkept = budgetFrom(keeping(country), { spending: { upkeep: 0 } });
       const upkeep = risksAhead(game, { budget: unkept, reliefRegionId: null }).find(
         (risk) => risk.kind === 'upkeep',
       );
@@ -334,13 +333,9 @@ describe.each(scenarios)('in a whole game of $name', ({ file }) => {
     const country = rich(file);
     const clinic = firstOf(country, 'clinic');
     // Health spending raised, so that the level is rising in both games.
-    const budget = {
-      ...keeping(country),
-      spending: {
-        ...keeping(country).spending,
-        health: country.start.budget.spending.health * 2,
-      },
-    };
+    const budget = budgetFrom(keeping(country), {
+      spending: { health: country.start.budget.spending.health * 2 },
+    });
 
     const play = (builds: boolean) => {
       let state = createGame(country, 5);

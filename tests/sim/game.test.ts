@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, seasonOf, type GameState } from '../../src/sim';
 import { bothCountries, tavara, testland } from './countries';
 import { steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 function play(state: GameState, quarters: number): GameState {
   let current = state;
@@ -73,10 +74,10 @@ describe.each(bothCountries)('a careful player in %s', (_name, country) => {
     (seed) => {
       let game = createGame(country(), seed);
       // A solvent budget with money for food relief.
-      const budget = {
+      const budget = budgetFrom(game.budget, {
         taxRatePercent: 30,
-        spending: { ...game.budget.spending, foodRelief: 70, security: 0 },
-      };
+        spending: { foodRelief: 70, security: 0 },
+      });
 
       for (let quarter = 0; quarter < 20 && game.outcome.status === 'playing'; quarter += 1) {
         game = advanceQuarter(game, steward(game, budget)).state;
