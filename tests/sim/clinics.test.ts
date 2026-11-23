@@ -18,8 +18,6 @@ import {
   startFault,
   technologyGains,
   technologyTerms,
-  LASTING_SERVICES,
-  SITE_TYPE_DEFINITIONS,
   TECHNOLOGY_DEFINITIONS,
   type Country,
   type GameState,
@@ -95,10 +93,10 @@ const levelOf = (game: GameState, regionId: string, service: LastingService) =>
   game.regions.find((region) => region.id === regionId)?.[service] ?? 0;
 
 /** The game after a number of quarters played carefully on one budget, starting nothing. */
-function played(start: GameState, quarters: number): GameState {
+function played(start: GameState, quarters: number, budget = keeping(start.country)): GameState {
   let state = start;
   for (let quarter = 0; quarter < quarters; quarter += 1) {
-    state = advanceQuarter(state, steward(state, keeping(state.country))).state;
+    state = advanceQuarter(state, steward(state, budget)).state;
   }
   return state;
 }
@@ -156,10 +154,9 @@ describe('a country file with clinics and schools', () => {
 });
 
 describe.each(SERVICE_SITES)('a $type', ({ type, service, technology }) => {
-  const other = LASTING_SERVICES.find((each) => each !== service) ?? service;
+  const other: LastingService = service === 'health' ? 'education' : 'health';
 
   it('is a small site its own technology unlocks, which needs no other', () => {
-    expect(SITE_TYPE_DEFINITIONS[type].unlockedBy).toBe(technology);
     expect(TECHNOLOGY_DEFINITIONS[technology].prerequisites).toEqual([]);
     expect(technologyTerms(technology).unlocks).toEqual([type]);
 
@@ -244,6 +241,14 @@ describe.each(SERVICE_SITES)('a $type', ({ type, service, technology }) => {
           (each) => each.regionId === site.regionId && each.service === service,
         );
       expect((standing(decaying)?.settles ?? 0) - (standing(start)?.settles ?? 0)).toBe(half);
+
+      // Played with no upkeep, so that it stays decaying, the level settles that much higher.
+      const unkept = { ...keeping(country), spending: { ...keeping(country).spending, upkeep: 0 } };
+      const settled = played(decaying, 60, unkept);
+      expect(siteStatus(settled, site.id).state).toBe('decaying');
+      expect(levelOf(settled, site.regionId, service)).toBe(
+        levelOf(played(start, 60, unkept), site.regionId, service) + half,
+      );
     });
 
     it('is named in the breakdown of where its region’s level settles', () => {
@@ -278,21 +283,37 @@ describe.each(SERVICE_SITES)('a $type', ({ type, service, technology }) => {
       );
     });
 
-    it('is counted by the live preview, as the quarter then turns out', () => {
+    it('is counted by the live preview, as each quarter then turns out', () => {
       const country = rich(file);
       const site = firstOf(country, type);
       const without = knowing(createGame(country, 5), [technology]);
-      const withIt = withSite(without, site, 'operating');
-      const decisions = steward(withIt, keeping(country));
+      const part = service === 'health' ? 'Health' : 'Education';
 
-      const preview = previewQuarter(withIt, decisions);
-      expect(preview.prosperity.min).toBeGreaterThan(
-        previewQuarter(without, steward(without, keeping(country))).prosperity.min,
-      );
-      const { report } = advanceQuarter(withIt, decisions);
-      const prosperity = report.prosperity?.value ?? 0;
-      expect(prosperity).toBeGreaterThanOrEqual(preview.prosperity.min);
-      expect(prosperity).toBeLessThanOrEqual(preview.prosperity.max);
+      /** Four years played, and how far the service's part of prosperity moved in them. */
+      const play = (start: GameState) => {
+        let state = start;
+        let moved = 0;
+        for (let quarter = 0; quarter < 16; quarter += 1) {
+          const decisions = steward(state, keeping(country));
+          const preview = previewQuarter(state, decisions);
+          const turn = advanceQuarter(state, decisions);
+          // No mine earns, so nothing is left to chance: the preview is what the quarter
+          // comes to.
+          expect([preview.prosperity.min, preview.prosperity.max]).toEqual([
+            turn.report.prosperity?.value,
+            turn.report.prosperity?.value,
+          ]);
+          moved +=
+            turn.report.prosperity?.contributions.find((each) => each.label === part)?.amount ?? 0;
+          state = turn.state;
+        }
+        return moved;
+      };
+
+      // What the quarters come to has the service's part of prosperity rising, which the same
+      // quarters without the site do not: it is not the site's infrastructure alone.
+      expect(play(withSite(without, site, 'operating'))).toBeGreaterThan(0);
+      expect(play(without)).toBe(0);
     });
 
     it('is counted by the risks ahead: unpaid upkeep that would set it decaying is warned of', () => {

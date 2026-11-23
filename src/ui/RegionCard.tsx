@@ -10,6 +10,7 @@ import {
   formatIndex,
   formatQuarters,
   formatTonnes,
+  LASTING_SERVICE_NAMES,
   listed,
   livingStandards,
   percentOff,
@@ -136,7 +137,7 @@ export function RegionCard(props: RegionCardProps) {
         .map((entry) => (
           <Parts
             key={entry.service}
-            title={`Where its ${PROSPERITY_PART_NAMES[entry.service].toLowerCase()} level settles`}
+            title={`Where its ${LASTING_SERVICE_NAMES[entry.service]} level settles`}
             parts={entry.parts}
             total={entry.settles}
             format={(permille) => formatIndex(permille)}
