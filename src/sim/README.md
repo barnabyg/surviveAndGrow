@@ -80,7 +80,7 @@ pauses in the same way, but it has no site, so `siteOf` gives null for it. Every
 sites in use (`siteStatus`, `sitesInUse`, `siteEffects`, upkeep, chains, power, trade links and the
 timeline) passes over it, it needs no upkeep and nothing decays it, and its report entries name no
 region. Its lasting effect is for its own kind to say. A new kind of target is added to
-`ProjectTarget` and to `PROJECT_TARGET_KINDS` beside it, and is a save-format change.
+`ProjectTarget` and to `PROJECT_TARGET_KINDS` (`vocabulary/projects.ts`): a save-format change.
 
 ## Technologies and research
 
