@@ -84,6 +84,10 @@ drought or a flood does not starve a region first.
   project with no site, paid in instalments like a site and known for good once finished; one
   technology is researched at a time. Drought-resistant seed makes weather and drought move every
   region's harvest less.
+- **Survey for ore.** A region marked with a magnifying glass may hide a deposit. Its card shows
+  what a survey costs, how likely it is to find one and how large it could be; if it finds one,
+  a new mine and road appear on the map, earning what the survey found once their chain reaches a
+  port. A region is surveyed once, and the same seed always finds the same.
 - **If you build, build early.** The timeline under the map shows how long a site would be in
   use before the vote. What you build has to be kept up, so leave room for upkeep.
 
@@ -125,7 +129,8 @@ The rules as built, one heading per mechanic, are in [docs/rules.md](docs/rules.
 ## Write a country
 
 A country is one data file; the engine contains no country-specific code. The format, and how to
-try a country of your own with `?country=`, are in [docs/countries.md](docs/countries.md).
+try a country of your own with `?country=`, are in [docs/countries.md](docs/countries.md). A
+country can hide deposits of ore for surveys to find.
 
 ## Check it
 

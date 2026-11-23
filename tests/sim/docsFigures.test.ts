@@ -53,7 +53,7 @@ function oreTonnes(capacity: number): string {
   return formatCount((capacity * 100_000) / balance.trade.goods.ore.usualDollarsPerTonne);
 }
 
-const { sites, finance, trade, priceShocks, events, technologies } = balance;
+const { sites, finance, trade, priceShocks, events, technologies, surveys } = balance;
 const seed = technologies.droughtResistantSeed;
 const { tiers } = balance.prosperity;
 const { strikes, protests } = balance.unrest;
@@ -82,6 +82,9 @@ const RULES: readonly string[] = [
   // Research
   `Drought-resistant seed costs ${formatMoney(seed.cost)} over ${String(seed.researchQuarters)} quarters`,
   `weather and drought move every region's harvest ${cut(seed.effects.weatherAndDrought)} less, so a drought takes ${cut(1000 - Math.floor(((1000 - events.drought.effects.harvestPermille) * seed.effects.weatherAndDrought) / 1000))} of a harvest instead of ${cut(events.drought.effects.harvestPermille)}`,
+  // Surveys
+  `what it costs (${formatMoney(surveys.cost)} over ${String(surveys.surveyQuarters)} quarters)`,
+  `not a mine's usual ${oreTonnes(sites.mine.capacity)} tonnes`,
   // Borrowing
   `offers a loan of ${listOr(loans.amounts.map(formatMoney))} over ${listOr(loans.terms.map((term) => String(term.quarters)))} quarters, at ${listOr(loans.terms.map((term) => rate(term.annualRateBasisPoints)))} a year to a nation rated A`,
   // Bailout and austerity
@@ -106,6 +109,7 @@ const COUNTRIES: readonly string[] = [
   `a \`drought\` (${cut(events.drought.effects.harvestPermille)} off its harvest)`,
   `a \`flood\` (${cut(events.flood.effects.harvestPermille)} off its harvest`,
   `in whole thousands from ${formatCount(trade.crossings.leastTonnes)} to ${formatCount(trade.crossings.mostTonnes)}`,
+  `each a whole number of ${formatCount(surveys.tonnesStep)} t from ${formatCount(surveys.tonnesStep)} t to ${formatCount(surveys.mostTonnes)} t`,
   `one on each neighbour carrying ${formatCount(trade.crossings.unlistedTonnes)} tonnes`,
 ];
 

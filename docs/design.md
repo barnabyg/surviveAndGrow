@@ -96,6 +96,12 @@ Prosperity, tiers and people.
   mechanism: research is a project on no site, one technology at a time, known for good once
   finished. It unlocks and improves what already exists; the first technology, drought-resistant
   seed, makes weather and drought move every region's harvest less. Rules: rules.md, Research.
+- **Surveys** (Phase 5, under way): exploration with visible risk. A country file hides deposits
+  in its regions, each with a likelihood and a range of sizes; a survey is a project on a region
+  that shows both before the player commits, and reports nothing or a deposit of a definite size,
+  whose mine and road then join the map to be built like any other. The result comes from the
+  seed and the deposit, not the random generator, so it is fair and the same seed finds the same.
+  Rules: rules.md, Surveys.
 
 ### Still to come
 
@@ -120,8 +126,9 @@ A region map, not a tile grid: six to eight hand-authored regions drawn as styli
 - **Power reaches the country along lines.** A station powers the regions its lines reach, and a
   powered region produces more. A site can need power like any other link of its chain.
 - **Site states are visible:** empty, closed, under construction, operating, decaying.
-- **Sites are revealed over time** (Phase 5). Surveys uncover deposits, and research unlocks new
-  site types.
+- **Sites are revealed over time** (Phase 5). Surveys uncover deposits, whose mine and road then
+  appear on the map; a region not yet surveyed is marked with a magnifying glass. Research is to
+  unlock new site types.
 - **Lenses:** the map switches between country, food, approval, living standards and infrastructure
   views.
 - **The infrastructure lens shows what is built and what is missing,** region by region, with every

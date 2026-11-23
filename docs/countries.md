@@ -110,6 +110,56 @@ abroad 4% a quarter and an ore glut 5%:
 "priceShockLikelihood": { "failedHarvestsAbroad": 0.04, "oreGlut": 0.05 }
 ```
 
+In a file of `"formatVersion": 8`, `deposits` hides deposits of ore for surveys to find. A deposit
+is not on the map, and nothing can be built on it, until the player surveys its region and the
+survey finds it. Each has:
+
+- an `id`, and the `region` it lies in. A region holds at most one deposit, and a region with
+  none cannot be surveyed.
+- `likelihood`: the chance, above 0 and at most 1, that a survey finds it there.
+- `tonnes`: the `min` and `max` ore its mine could produce a quarter, each a whole number of
+  10,000 t from 10,000 t to 1,500,000 t. A deposit found is somewhere in that range, every step
+  as likely as another. The player sees the likelihood and the range before surveying.
+- `mine`: a site of type `mine`, written as in `sites` but without a `region`: it stands in the
+  deposit's region. It must depend on the deposit's route, and may depend on the country's own
+  sites, such as a power line.
+- `route`: a site of type `trunkRoad`, written as in `sites`, which serves the mine. It depends
+  on the country's own sites that lead on to a port.
+
+The deposit's sites share `id`s and names with the country's sites, so neither may repeat one,
+neither may name alternatives, and none of the country's sites may depend on them or name them as
+an alternative: they are hidden until found. Which deposits a game finds, and how large, depends
+on its seed and the deposit's `id`, so the same seed always finds the same. A file of an earlier
+format cannot name deposits, and still loads as it is, with none. Tavara hides one on the Salt
+Coast, likely to be there, of 150,000 t to 350,000 t, and a larger, less likely one in the Dry
+East, whose trunk road runs the width of the country to Saltmouth:
+
+```json
+"deposits": [
+  {
+    "id": "westhaven-ore",
+    "region": "salt-coast",
+    "likelihood": 0.6,
+    "tonnes": { "min": 150000, "max": 350000 },
+    "mine": {
+      "id": "westhaven-mine",
+      "type": "mine",
+      "name": "Westhaven mine",
+      "at": [170, 330],
+      "dependsOn": ["westhaven-trunk-road"]
+    },
+    "route": {
+      "id": "westhaven-trunk-road",
+      "type": "trunkRoad",
+      "name": "Trunk road, Westhaven mine to Saltmouth",
+      "region": "salt-coast",
+      "route": [[172, 318], [150, 280], [142, 236]],
+      "dependsOn": ["saltmouth-port"]
+    }
+  }
+]
+```
+
 `dilemmaLikelihood` says how likely each dilemma is: the chance, from 0 to 1, that it arises as a
 quarter begins, provided the conditions it needs hold. The dilemmas are the game's own:
 `grainOffer` (the reserve is below its safe level), `merchantOffer` (the first quarter of a year,

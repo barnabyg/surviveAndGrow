@@ -178,6 +178,28 @@ main figures from the balance values and fails if this file, the README or
   together. The harvest report names it, and the harvest forecast, a drought's description on the
   map and the risks ahead count it.
 
+## Surveys
+
+- A country may hide deposits of ore, at most one in a region. A region that may hide one is
+  marked on the map with a magnifying glass until it has been surveyed; the legend says so. A
+  region the country hides nothing in cannot be surveyed, and its card says nothing of surveys.
+- A **survey** is a project on no site. Start it from the region's card, which shows first what
+  it costs ($4.0m over 2 quarters), the chance that it finds a deposit and the range of sizes one
+  could be, in tonnes of ore a quarter. The treasury must hold its whole cost beside everything
+  else planned, and austerity must not be in force; the card says why when it cannot be started.
+  It begins when the quarter ends, so until then the plan can be taken back. **A region is
+  surveyed once.**
+- It is paid in instalments with the other projects, after the budget and the oldest first, and
+  pauses like them when the treasury cannot pay. Several regions may be surveyed at once.
+- When it finishes, the report says what it found: nothing, or a deposit of a definite size. The
+  region is surveyed either way. A deposit's mine and the trunk road that serves it appear on the
+  map from the next quarter, and are built like any mine and road. The mine produces the size the
+  survey found, not a mine's usual 600,000 tonnes, and earns at the world ore price through its
+  chain like any other.
+- Whether a deposit is there and how large it is depend on the game's seed and the deposit alone:
+  the same seed always finds the same deposits, and surveying changes neither the weather, the
+  events, the risks ahead nor the preview.
+
 ## Borrowing and the credit rating
 
 - The nation can borrow. The finance panel in the right column offers a loan of $10.0m, $25.0m
