@@ -28,7 +28,7 @@ import testlandFile from '../countries/testland.json';
 import { budgetFrom, budgetOf } from '../budgets';
 import { beforeFactions, bothCountries, withChances, withDroughtChance } from './countries';
 import { faultsOf, withValue, without } from './files';
-import { steward } from './playing';
+import { answering, steward } from './playing';
 
 /** The two country files as written, by the names the scenarios run under. */
 const FILES = { Tavara: tavaraFile, Testland: testlandFile } as const;
@@ -118,9 +118,13 @@ describe.each(bothCountries)('the factions in %s', (name) => {
     );
   });
 
-  it('open near neutral, so the Factions effect on each region’s approval starts small', () => {
+  it('open, as the country ships, where its starting budget settles them and near neutral, so the Factions effect on each region’s approval starts small', () => {
     const start = createGame(loadCountry(fileOf(name)), 7);
 
+    // With its debts, its growth and its chances as shipped, every standing opens settled.
+    for (const each of factionsStatus(start).standings) {
+      expect(each.settles, each.name).toBe(each.standing);
+    }
     for (const region of start.regions) {
       // No more than a point and a half of approval either way, in any region.
       expect(Math.abs(regionFactions(start, region.id).effect)).toBeLessThanOrEqual(15);
@@ -246,6 +250,33 @@ describe.each(bothCountries)('the factions in %s', (name) => {
     expect(approvalIn(favoured, farming)).toBeGreaterThan(approvalIn(kept, farming));
     expect(approvalIn(favoured, trading)).toBeLessThan(approvalIn(kept, trading));
     // Nothing but the factions tells the two games apart in either region.
+    for (const regionId of [farming, trading]) {
+      expect(approvalIn(favoured, regionId) - approvalIn(kept, regionId)).toBe(
+        regionFactions(favoured, regionId).effect - regionFactions(kept, regionId).effect,
+      );
+    }
+  });
+
+  it('set the same budgets on the country as it ships, with its weather, dilemmas, growth and debts: the first quarters tell the same', () => {
+    // Only the first quarters: over a whole term the money decides, not the factions. The
+    // dearer budget empties the treasury sooner, every area is cut, and approval falls
+    // wherever that bites, in a farming region too.
+    const start = createGame(loadCountry(fileOf(name)), 7);
+    const farming = strongholdOf(start, 'farmers');
+    const trading = strongholdOf(start, 'business');
+    const more = MORE_FOR_FARMS[name as keyof typeof MORE_FOR_FARMS];
+    const after = (budget: Budget): GameState => {
+      let game = start;
+      for (let quarter = 0; quarter < 3; quarter += 1) {
+        game = advanceQuarter(game, answering(game, steward(game, budget))).state;
+      }
+      return game;
+    };
+    const kept = after(start.budget);
+    const favoured = after(favouringFarmers(start, more));
+
+    expect(approvalIn(favoured, farming)).toBeGreaterThan(approvalIn(kept, farming));
+    expect(approvalIn(favoured, trading)).toBeLessThan(approvalIn(kept, trading));
     for (const regionId of [farming, trading]) {
       expect(approvalIn(favoured, regionId) - approvalIn(kept, regionId)).toBe(
         regionFactions(favoured, regionId).effect - regionFactions(kept, regionId).effect,
