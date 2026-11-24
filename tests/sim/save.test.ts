@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
+  borderIncidentStatuses,
   createGame,
-  deterrenceStatus,
   loadCountry,
   loadSave,
   SAVE_FORMAT_VERSION,
   SaveError,
   saveGame,
+  tradeCapacity,
   type Budget,
   type Country,
   type Decisions,
@@ -19,7 +20,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import format11Save from '../saves/format-11.json';
 import format12Save from '../saves/format-12.json';
-import format15Save from '../saves/format-15.json';
+import format16Save from '../saves/format-16.json';
 import {
   bothCountries,
   tavara,
@@ -103,7 +104,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(15);
+    expect(save.formatVersion).toBe(16);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -333,8 +334,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 16))).toBe(
-      'The saved game was written by a newer release of the game (save format 16; this release reads format 15). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 17))).toBe(
+      'The saved game was written by a newer release of the game (save format 17; this release reads format 16). Open it with that release.',
     );
   });
 
@@ -689,85 +690,90 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 15', () => {
-  it('still opens on the game it was written from, Voskar hostile and Selama watchful', () => {
-    const { game, report } = loadSave(format15Save);
+describe('the save kept from save format 16', () => {
+  it('still opens on the game it was written from, a border incident with Voskar in force', () => {
+    const { game, report } = loadSave(format16Save);
 
-    expect(game.date).toEqual({ year: 2, quarter: 3 });
+    expect(game.date).toEqual({ year: 3, quarter: 3 });
     expect(game.country.formatVersion).toBe(12);
-    expect(game.tier).toBe('developing');
-    expect(game.budget.spending.defence).toBe(10);
-    expect(game.deterrence).toBe(295);
-    const status = deterrenceStatus(game);
-    expect(status).toMatchObject({ deterrence: 295, settles: 239, spent: 10, expected: 21 });
-    expect(
-      status.neighbours.map((neighbour) => [neighbour.name, neighbour.weighs, neighbour.intention]),
-    ).toEqual([
-      ['Voskar', 330, 'hostile'],
-      ['Selama', 247, 'watchful'],
+    expect(game.borderIncidents).toEqual([
+      {
+        neighbourId: 'voskar',
+        announced: { year: 2, quarter: 4 },
+        begins: { year: 3, quarter: 2 },
+      },
     ]);
-    expect(report?.deterrence).toEqual({
-      value: 295,
-      change: -10,
-      contributions: [{ label: 'Defence spending', amount: -10 }],
-    });
-    expect(
-      report?.entries
-        .filter((entry) => entry.kind === 'neighbour')
-        .map((entry) => [entry.headline, entry.seriousness, entry.neighbourId]),
-    ).toEqual([
-      ['Voskar has turned hostile', 'serious', 'voskar'],
-      ['Selama has turned watchful', 'warning', 'selama'],
+    expect(borderIncidentStatuses(game)).toMatchObject([
+      {
+        name: 'Voskar',
+        inForce: true,
+        quartersLeft: 2,
+        regionIds: ['korr-highlands', 'salt-coast', 'dry-east'],
+      },
     ]);
+    expect(
+      tradeCapacity(game).links.map((link) => [link.name, link.tonnes, link.closed?.quartersLeft]),
+    ).toEqual([
+      ['Korr Pass', 0, 2],
+      ['Selama bridge', 40_000, undefined],
+    ]);
+    // The last report has what its first quarter cost: tax in each region on the border, and
+    // the blow to approval that sent those regions from strikes to protests.
+    expect(
+      report?.treasury.contributions
+        .filter((line) => line.label.startsWith('Lost to the border incident with Voskar'))
+        .map((line) => [line.regionId, line.amount]),
+    ).toEqual([
+      ['korr-highlands', -7],
+      ['salt-coast', -12],
+      ['dry-east', -5],
+    ]);
+    expect(
+      report?.approval.contributions.find((line) => line.label === 'Border incident with Voskar'),
+    ).toEqual({ label: 'Border incident with Voskar', amount: -30 });
+    expect(
+      report?.entries.filter((entry) => entry.kind === 'protest').map((entry) => entry.regionId),
+    ).toEqual(['korr-highlands', 'salt-coast', 'dry-east']);
   });
 
-  it('plays on: deterrence falls further left as it is, and is rebuilt with Defence raised', () => {
-    const { game } = loadSave(format15Save);
-
-    const left = advanceQuarter(game, answering(game, steward(game)));
-    expect(left.state.deterrence).toBe(286);
-    expect(left.report.entries.filter((entry) => entry.kind === 'neighbour')).toEqual([]);
-
-    const raised = budgetFrom(game.budget, { spending: { defence: 60 } });
-    let state = game;
-    const headlines: string[] = [];
-    for (let quarter = 0; quarter < 4; quarter += 1) {
-      const result = advanceQuarter(state, answering(state, steward(state, raised)));
-      state = result.state;
+  it('plays on: the incident runs its two quarters more and ends, and the pass carries again', () => {
+    let { game } = loadSave(format16Save);
+    const headlines: string[][] = [];
+    for (let quarter = 0; quarter < 2; quarter += 1) {
+      const result = advanceQuarter(game, answering(game, steward(game)));
+      game = result.state;
       headlines.push(
-        ...result.report.entries
-          .filter((entry) => entry.kind === 'neighbour')
+        result.report.entries
+          .filter((entry) => entry.kind === 'borderIncident')
           .map((entry) => entry.headline),
       );
     }
-    expect(state.deterrence).toBeGreaterThan(413);
-    expect(headlines).toEqual([
-      'Voskar is watchful again',
-      'Selama is peaceful again',
-      'Voskar is peaceful again',
-    ]);
+    expect(headlines).toEqual([[], ['Border incident with Voskar has ended']]);
+    expect(game.borderIncidents).toEqual([]);
+    expect(tradeCapacity(game).links[0]).toMatchObject({ tonnes: 50_000, closed: null });
   });
 
-  it('is refused when its deterrence or a report’s neighbour is not one the game could hold', () => {
-    expect(refusal(withValue(format15Save, ['state', 'deterrence'], 1001))).toBe(
-      'The saved game is damaged and cannot be opened: state.deterrence is 1001, which is out of range.',
+  it('is refused when an incident is not one the game could hold', () => {
+    const incident = ['state', 'borderIncidents', 0];
+    expect(refusal(withValue(format16Save, [...incident, 'neighbourId'], 'atlantis'))).toBe(
+      'The saved game is damaged and cannot be opened: state.borderIncidents[0].neighbourId is "atlantis", which is not a neighbour this game has.',
     );
-    const index = format15Save.report.entries.findIndex((entry) => entry.kind === 'neighbour');
-    expect(
-      refusal(withValue(format15Save, ['report', 'entries', index, 'neighbourId'], 'atlantis')),
-    ).toBe(
-      `The saved game is damaged and cannot be opened: report.entries[${index}].neighbourId is "atlantis", which is not a neighbour this game has.`,
+    expect(refusal(withValue(format16Save, [...incident, 'begins'], 'soon'))).toMatch(
+      /^The saved game is damaged and cannot be opened: state\.borderIncidents\[0\]\.begins/,
+    );
+    expect(refusal(without(format16Save, ['state', 'borderIncidents']))).toMatch(
+      /^The saved game is damaged and cannot be opened: state\.borderIncidents/,
     );
   });
 
-  // This holds for as long as format 15 is the current format: saving must write exactly
+  // This holds for as long as format 16 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(15);
-    const { game, report } = loadSave(format15Save);
+    expect(SAVE_FORMAT_VERSION).toBe(16);
+    const { game, report } = loadSave(format16Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format15Save);
+    expect(stored(saveGame(game, report))).toEqual(format16Save);
   });
 });
 

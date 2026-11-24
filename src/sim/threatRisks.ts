@@ -1,16 +1,27 @@
 import { armyLoyaltyStatus } from './army';
-import type { Budget } from './budget';
+import {
+  borderIncidentStatuses,
+  couldAnnounce,
+  incidentChance,
+  incidentCost,
+  incidentWouldDo,
+  type IncidentStatus,
+} from './borderIncidents';
+import { revenueOf, type Budget } from './budget';
+import { quarterNumber } from './calendar';
 import { coupStatus } from './coup';
 import { ambitionWeighs, deterrenceStatus, intentionOf } from './deterrence';
 import { oreSlumpRisk } from './financeRisks';
 import { likelihoodOf, typicalOf, weigh, when, type Path, type Scope } from './riskScope';
 import type { Risk } from './risks';
-import { formatMoney, formatPercent, formatQuarters } from './text';
+import type { GameState } from './state';
+import { articleFor, formatMoney, formatPercent, formatQuarters } from './text';
+import type { Money } from './types';
 import { TIER_NAMES } from './vocabulary';
 
 /*
- * The risks of force: a coup, and a neighbour turning hostile. `risksAhead` in `risks.ts`
- * gathers them with the rest, and each is read off the quarters it played.
+ * The risks of force: a coup, a neighbour turning hostile and a border incident. `risksAhead`
+ * in `risks.ts` gathers them with the rest, and each is read off the quarters it played.
  */
 
 /** How many quarters into a path the army takes power, or null if it never does. */
@@ -132,4 +143,121 @@ export function neighbourRisk(scope: Scope, budget: Budget): Risk[] {
       },
     ];
   });
+}
+
+/**
+ * A border incident: one announced, until it begins, with whether it is on course to begin or
+ * to be called off; one in force, while it lasts; and one not yet announced that a neighbour
+ * hostile in time could announce, and that would begin within the horizon. What an incident
+ * does is certain if it comes, so each is listed however unlikely it is, with what it costs.
+ * What it then does to the treasury and to approval is read off the quarters played, which
+ * live through every incident announced. `budget` is the one being decided.
+ */
+export function incidentRisk(scope: Scope, budget: Budget): Risk[] {
+  const { state, watched } = scope;
+  const statuses = borderIncidentStatuses(state);
+  const announced = statuses.map((status): Risk => {
+    const costs = taxCost(state, budget, status.neighbourId);
+    if (status.inForce) {
+      return {
+        kind: 'borderIncident',
+        likelihood: 'almostCertain',
+        headline: status.headline,
+        reason: `${status.description} That costs ${costs}.`,
+        neighbourId: status.neighbourId,
+        withinQuarters: 1,
+      };
+    }
+    // Whether it begins is read off each course: it does where the quarter before leaves it
+    // standing, which it does only if the neighbour is then still hostile.
+    const begins = (path: Path) =>
+      path[status.beginsIn - 1]?.state.borderIncidents.some((incident) =>
+        sameIncident(incident, status),
+      ) === true
+        ? status.beginsIn
+        : null;
+    const finding = weigh(scope, begins);
+    const told = `${status.description.charAt(0).toLowerCase()}${status.description.slice(1)}`;
+    const course =
+      finding === null
+        ? `On your decisions as they are ${status.name} will no longer be hostile by then, and it is on course to be called off.`
+        : `On your decisions as they are ${status.name} is ${finding.sure ? '' : 'likely '}still hostile by then. It would cost ${costs}.`;
+    return {
+      kind: 'borderIncident',
+      likelihood: finding === null ? 'remote' : (likelihoodOf(finding.chance) ?? 'remote'),
+      headline: `${status.headline} ahead`,
+      reason: `Announced: ${told} ${course}`,
+      neighbourId: status.neighbourId,
+      withinQuarters: status.beginsIn + 1,
+    };
+  });
+
+  // One announced as the quarter a quarters ahead ends begins once its notice has run, and
+  // counts while that is inside the horizon.
+  const now = quarterNumber(state.date);
+  const possible = state.country.map.neighbours.flatMap((neighbour): Risk[] => {
+    const notice = incidentCost(state.country, neighbour.id).noticeQuarters;
+    const last = watched - 2 - notice;
+    const hostileIn = (path: Path) => {
+      const quarter = path
+        .slice(0, Math.max(0, last + 1))
+        .findIndex(
+          (resolved, ahead) =>
+            couldAnnounce(state, neighbour.id, now + ahead + 1) &&
+            intentionOf(neighbour, resolved.state.tier, resolved.state.deterrence) === 'hostile',
+        );
+      return quarter === -1 ? null : quarter;
+    };
+    const finding = weigh(scope, hostileIn);
+    if (finding === null) return [];
+    const draws = last - finding.soonest + 1;
+    const chance = (finding.chance / 1000) * (1 - (1 - incidentChance) ** draws);
+    const percent = Math.round(incidentChance * 100);
+    const hostile = intentionOf(neighbour, state.tier, state.deterrence) === 'hostile';
+    const stands = hostile
+      ? `${neighbour.name} is hostile`
+      : `${neighbour.name} is on course to turn hostile`;
+    const soonest = finding.soonest + 1 + notice;
+    return [
+      {
+        kind: 'borderIncident',
+        likelihood: likelihoodOf(Math.round(chance * 1000)) ?? 'remote',
+        headline: `Border incident with ${neighbour.name}`,
+        reason: `${stands}, and each quarter it is so it may announce a border incident, ${articleFor(percent)} ${percent}% chance. One announced ${finding.soonest === 0 ? 'as this quarter ends' : when(finding.soonest)} would begin ${when(soonest)}. ${incidentWouldDo(state.country, neighbour.id)} It would cost about ${taxCost(state, budget, neighbour.id)}.`,
+        neighbourId: neighbour.id,
+        withinQuarters: soonest + 1,
+      },
+    ];
+  });
+  return [...announced, ...possible];
+}
+
+const sameIncident = (
+  incident: { readonly neighbourId: string; readonly begins: GameState['date'] },
+  status: Pick<IncidentStatus, 'neighbourId' | 'begins'>,
+) =>
+  incident.neighbourId === status.neighbourId &&
+  quarterNumber(incident.begins) === quarterNumber(status.begins);
+
+/**
+ * What an incident on a neighbour's border costs in tax each quarter it lasts, as the country
+ * stands and at the budget given: what the regions on the border would pay with it in force
+ * against what they would without.
+ */
+export function incidentTaxCost(state: GameState, budget: Budget, neighbourId: string): Money {
+  const others = state.borderIncidents.filter((incident) => incident.neighbourId !== neighbourId);
+  const without = revenueOf({ ...state, borderIncidents: others }, budget);
+  const withIt = revenueOf(
+    {
+      ...state,
+      borderIncidents: [...others, { neighbourId, announced: state.date, begins: state.date }],
+    },
+    budget,
+  );
+  return without - withIt;
+}
+
+/** The same, as a risk says it: "$1.2m a quarter in tax". */
+function taxCost(state: GameState, budget: Budget, neighbourId: string): string {
+  return `${formatMoney(incidentTaxCost(state, budget, neighbourId))} a quarter in tax`;
 }

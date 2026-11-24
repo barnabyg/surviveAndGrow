@@ -15,6 +15,7 @@ import {
   type ShockWatch,
 } from './priceShocks';
 import { drawAt } from './rng';
+import type { IncidentWatch } from './borderIncidents';
 import { capacityFault } from './tradeLinks';
 import type { RegionState } from './state';
 import { formatMoney, formatQuarters, formatTonnes } from './text';
@@ -256,7 +257,7 @@ export interface ExportTerms {
   readonly unavailable: string | null;
 }
 
-interface Trader {
+interface Trader extends IncidentWatch {
   readonly country: Country;
   /** The sites built and being built: a port in use is a trade link. */
   readonly projects: readonly Project[];

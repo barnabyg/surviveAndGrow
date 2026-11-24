@@ -1,5 +1,6 @@
 import { nationalApproval } from './approval';
 import { nationalLoyalty } from './army';
+import type { BorderIncident } from './borderIncidents';
 import type { Budget } from './budget';
 import type { Country } from './country';
 import { debtBurden, debtOf, type Debt } from './debt';
@@ -52,6 +53,7 @@ export function vitalSigns(position: {
   readonly budget: Budget;
   readonly debts: readonly Debt[];
   readonly worldPrices: WorldPrices;
+  readonly borderIncidents: readonly BorderIncident[];
   /** National prosperity, when it has already been worked out for this position. */
   readonly prosperity?: number;
   /** The debt burden, when it has already been worked out for this position. */

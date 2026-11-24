@@ -260,6 +260,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Neighbour report',
     path: 'M10,2 V5 M10,8 V12 M10,15 V18 M2,10 H7 M13,10 H18 M15,7 L18,10 L15,13',
   },
+  // A border barred: a line across it, and a bar set against the way through.
+  borderIncident: {
+    label: 'Border incident report',
+    path: 'M10,2 V18 M3,10 H8 M12,10 H17 M6,6 L14,14 M14,6 L6,14',
+  },
   // A broken column.
   collapse: {
     label: 'Collapse report',

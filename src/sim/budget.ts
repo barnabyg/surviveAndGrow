@@ -1,5 +1,6 @@
 import { outputPermille } from './approval';
 import { balance } from './balance';
+import { outputHeldIn, type BorderIncident } from './borderIncidents';
 import { clamp, sum } from './arithmetic';
 import { chainEarnings, earningLines } from './chains';
 import { poweredOutput, powerLines, regionPower } from './power';
@@ -9,7 +10,7 @@ import type { ReportEntry } from './report';
 import type { RegionState } from './state';
 import type { WorldPrices } from './trade';
 import { formatMoney, formatQuarters } from './text';
-import type { Contribution, Money } from './types';
+import type { Contribution, GameDate, Money } from './types';
 import { payUpkeep, upkeepNeeded, type UpkeepOutcome } from './upkeep';
 import { SPENDING_AREA_NAMES, SPENDING_AREAS, UNREST_NAMES, type SpendingArea } from './vocabulary';
 
@@ -96,6 +97,10 @@ interface Finances {
   readonly projects: readonly Project[];
   /** The world prices, which set what a mine's chain earns and so pays in tax. */
   readonly worldPrices: WorldPrices;
+  /** The quarter the taxes are raised in. */
+  readonly date: GameDate;
+  /** The border incidents announced: one in force cuts what the regions on its border produce. */
+  readonly borderIncidents: readonly BorderIncident[];
 }
 
 /** What is paid before the budget's own spending: the repayments on debts. */
@@ -118,17 +123,19 @@ export function revenueOf(
 /**
  * Works out one quarter of revenue and spending. The same sums serve the turn and the
  * preview. A region that is striking or protesting as the quarter begins produces less,
- * and the tax that costs is shown as a loss beside what it would have paid. Upkeep asks for
+ * and so does one on the border of a neighbour whose border incident is in force; the tax
+ * each costs is shown as a loss beside what the region would have paid. Upkeep asks for
  * no more than the sites in use need, and is spent only on the sites it keeps up. What is
  * paid first, the repayments on debts, comes out of the treasury and revenue before any of
  * the budget's own spending, and counts as a fixed cost.
  */
 export function resolveBudget(
-  { country, treasury, regions, projects, worldPrices }: Finances,
+  finances: Finances,
   budget: Budget,
   first: PaidFirst = NOTHING_FIRST,
 ): BudgetOutcome {
-  const taxes = collectTaxes({ country, regions, projects, worldPrices }, budget);
+  const { country, treasury, projects } = finances;
+  const taxes = collectTaxes(finances, budget);
   const revenue = sum(taxes.map((tax) => tax.amount));
   const needed = upkeepNeeded({ country, projects });
   const wanted = (area: SpendingArea) =>
@@ -170,9 +177,10 @@ export function resolveBudget(
 
 /** What the tax rate raises in a quarter, line by line, as the quarter begins. */
 function collectTaxes(
-  { country, regions, projects, worldPrices }: Omit<Finances, 'treasury'>,
+  finances: Omit<Finances, 'treasury'>,
   budget: Pick<Budget, 'taxRatePercent'>,
 ): Contribution[] {
+  const { country, regions, projects, worldPrices } = finances;
   const earnings = chainEarnings({ country, projects, worldPrices });
   const powers = regionPower({ country, projects });
   return regions.flatMap((region): Contribution[] => {
@@ -205,13 +213,17 @@ function collectTaxes(
           ]),
     ];
     const kept = outputPermille(region.unrest);
-    const lost = sum(
-      sources.map(
-        ({ output }) =>
-          percentOf(output, budget.taxRatePercent) -
-          percentOf(Math.floor((output * kept) / 1000), budget.taxRatePercent),
-      ),
-    );
+    // What each source produces once unrest has taken its share, and then each border
+    // incident in force on the region's border in turn.
+    const left = (output: Money, permille: number) => Math.floor((output * permille) / 1000);
+    const lost = sum(sources.map(({ output }) => tax(output) - tax(left(output, kept))));
+    let produced = sources.map(({ output }) => left(output, kept));
+    const held = outputHeldIn(finances, region.id).map((incident) => {
+      const after = produced.map((output) => left(output, incident.permille));
+      const cost = sum(produced.map((output, index) => tax(output) - tax(after[index] ?? 0)));
+      produced = after;
+      return { called: incident.called, cost };
+    });
     return [
       ...sources.flatMap(({ label, output, lines }) =>
         (lines ?? [{ label, amount: tax(output) }]).map((line) => ({
@@ -228,6 +240,11 @@ function collectTaxes(
             },
           ]
         : []),
+      ...held.flatMap(({ called, cost }) =>
+        cost > 0
+          ? [{ label: `Lost to ${called} in ${name}`, amount: -cost, regionId: region.id }]
+          : [],
+      ),
     ];
   });
 }

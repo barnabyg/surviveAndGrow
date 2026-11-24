@@ -169,6 +169,16 @@ export function beforeAmbition(file: unknown): unknown {
 }
 
 /**
+ * A copy of a country file whose neighbours have no ambition, so that none ever stirs: for a
+ * test about something else in a country that grows rich enough to be worth taking.
+ */
+export function withoutAmbitions(file: unknown): unknown {
+  const copy = structuredClone(file) as { map: { neighbours: { ambition?: number }[] } };
+  for (const neighbour of copy.map.neighbours) delete neighbour.ambition;
+  return copy;
+}
+
+/**
  * A country as it is, but with no world price shock ever coming: for a test that pins down
  * how prices move from the seed alone.
  */

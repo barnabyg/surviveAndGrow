@@ -1,6 +1,7 @@
 import type { ApprovalEffects, RegionUnrest } from './approval';
 import type { ArmyLoyaltyEffects } from './army';
 import type { Austerity } from './austerity';
+import type { BorderIncident } from './borderIncidents';
 import type { Budget } from './budget';
 import type { Country } from './country';
 import type { Credit } from './credit';
@@ -195,6 +196,11 @@ export interface GameState {
    */
   readonly deterrence: number;
   /**
+   * The border incidents announced and not yet ended: those to come and those in force, one
+   * at most for each neighbour, in the order they were announced (see `borderIncidents.ts`).
+   */
+  readonly borderIncidents: readonly BorderIncident[];
+  /**
    * The austerity a bailout imposed, while it holds, or null. Neither a bailout nor a missed
    * payment during austerity ends the game.
    */
@@ -348,6 +354,12 @@ export interface Chance {
    * kind already announced or in force is not announced again.
    */
   readonly shocksAnnounced: readonly PriceShockType[];
+  /**
+   * The roll for each neighbour's border incident, from 0 up to 1, in the country file's
+   * order. A hostile neighbour with none of its own announced or in force announces one when
+   * its roll falls under the chance in balance data. A neighbour with no roll announces none.
+   */
+  readonly incidentRolls: readonly number[];
   /**
    * The roll for each kind of dilemma, from 0 up to 1, in the vocabulary's order. One
    * arises when its roll falls under its chance. A kind with no roll does not arise.

@@ -119,6 +119,7 @@ describe.each(countries)('trade capacity in $name', ({ country, crossings }) => 
       decaying: false,
       unimproved: 900_000,
       improvedBy: [],
+      closed: null,
     });
 
     // Upkeep cut to nothing: the port goes without, and decays from the next quarter.

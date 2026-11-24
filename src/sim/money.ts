@@ -59,6 +59,7 @@ export function resolveMoney(
     | 'credit'
     | 'worldPrices'
     | 'foodReserve'
+    | 'borderIncidents'
   >,
   decisions: Decisions,
   starts: readonly ProjectTarget[] = startsOf(decisions),

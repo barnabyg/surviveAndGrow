@@ -13,7 +13,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { withChances, withDroughtChance, withoutPoweredMines } from './countries';
+import { withChances, withDroughtChance, withoutAmbitions, withoutPoweredMines } from './countries';
 import { steward } from './playing';
 import { budgetFrom } from '../budgets';
 
@@ -134,9 +134,13 @@ describe.each(files)('failed harvests abroad, over four years in %s', (_name, fi
   });
 });
 
-/** A country rich enough to build its first mine's chain at once, with no drought or dilemma. */
+/**
+ * A country rich enough to build its first mine's chain at once, with no drought or dilemma.
+ * Its neighbours have no ambition: a mine's earnings carry a country up the tiers, where a
+ * neighbour left undeterred turns hostile, and its border incidents are not what this is about.
+ */
 function rich(file: unknown, glut: number): Country {
-  const copy = withoutPoweredMines(file) as { start: { treasury: number } };
+  const copy = withoutPoweredMines(withoutAmbitions(file)) as { start: { treasury: number } };
   copy.start.treasury = 2000;
   const calm = withDroughtChance(copy, {});
   return loadCountry({

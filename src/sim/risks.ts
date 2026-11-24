@@ -30,7 +30,7 @@ import {
 } from './priceShocks';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
-import { coupRisk, neighbourRisk } from './threatRisks';
+import { coupRisk, incidentRisk, neighbourRisk } from './threatRisks';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
 import { belowSafeAfterExport, FULL_SWING_PERMILLE } from './trade';
 import { UPKEEP_ORDER_RULE } from './upkeep';
@@ -68,7 +68,8 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 /**
  * The dangers of the coming quarters: famine in a region, grain sold below the reserve's safe
  * level, strikes, a treasury that runs out, a missed payment on a debt that brings a bailout, a
- * bond's maturity that cannot be met, a neighbour turning hostile, a coup, and a lost election.
+ * bond's maturity that cannot be met, a neighbour turning hostile, a border incident, a coup,
+ * and a lost election.
  * It plays the quarters ahead with the real rules, holding the decisions as they are, once for
  * each course the weather could take and each event that could still begin, and weighs how many
  * of those lead to each danger. The most likely comes first, and a danger too unlikely to matter
@@ -119,6 +120,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
     ...strikeRisk(whole),
     ...tierRisk(whole),
     ...neighbourRisk(whole, decisions.budget),
+    ...incidentRisk(whole, decisions.budget),
     ...coupRisk(whole, decisions.budget),
     ...electionRisk(whole),
   ];
@@ -201,6 +203,9 @@ function play(
         // world ore price every quarter.
         priceShocks: prices(quarter),
         shocksAnnounced: [],
+        // Nor is any border incident supposed announced: one that could be is a risk of its
+        // own. Those already announced begin, are called off and end as the rules have it.
+        incidentRolls: [],
         // No dilemma is supposed to arise: what one does is the player's to choose.
         dilemmaRolls: [],
       },

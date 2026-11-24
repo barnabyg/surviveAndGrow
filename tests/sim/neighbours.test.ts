@@ -21,32 +21,16 @@ import {
   type Intention,
   type TurnReport,
 } from '../../src/sim';
-import testlandFile from '../countries/testland.json';
 import { budgetFrom } from '../budgets';
 import { beforeAmbition, bothCountries, withChances } from './countries';
 import { faultsOf, withValue } from './files';
 import { steward } from './playing';
+import { enriched, established, fileOf, FILES } from './worthTaking';
 
 const { deterrence: pace, worthTakingPermille, intentions: marks } = balance.neighbours;
 
-/** The two country files as written, by the names the scenarios run under. */
-const FILES = { Tavara: tavaraFile, Testland: testlandFile } as const;
-const fileOf = (name: string): unknown => FILES[name as keyof typeof FILES];
-
 /** A country in which nothing is left to chance: no drought, flood, dilemma, shock or growth. */
 const quiet = (name: string): Country => withChances(fileOf(name), {});
-
-/**
- * How many times over each country's regions produce in the game that grows rich: enough that
- * health and education, built up from nothing, carry it from Subsistence through the tiers in
- * a few years.
- */
-const RICHES = { Tavara: 10, Testland: 4 } as const;
-
-interface RichFile {
-  regions: { output: number }[];
-  start: { treasury: number; budget: { spending: { health: number; education: number } } };
-}
 
 /**
  * A country that grows rich: its regions produce many times over, its treasury is full, and
@@ -58,21 +42,6 @@ function rich(name: string): Country {
   copy.start.budget.spending.health = 0;
   copy.start.budget.spending.education = 0;
   return withChances(copy, {});
-}
-
-/**
- * A country already worth taking: as rich, but spending on health and education what it ships
- * with, which starts it in Developing. On the budget it starts with nothing in it moves, so
- * only what is spent on Defence does.
- */
-const established = (name: string): Country => withChances(enriched(fileOf(name), name), {});
-
-/** A copy of a country file whose regions produce many times over, with a full treasury. */
-function enriched(file: unknown, name: string): RichFile {
-  const copy = structuredClone(file) as RichFile;
-  for (const region of copy.regions) region.output *= RICHES[name as keyof typeof RICHES];
-  copy.start.treasury = 20_000;
-  return copy;
 }
 
 /** The budget in force with Defence as given. */

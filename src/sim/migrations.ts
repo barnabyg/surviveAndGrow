@@ -23,7 +23,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 15;
+export const SAVE_FORMAT_VERSION = 16;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -47,6 +47,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   12: fromFormat12,
   13: fromFormat13,
   14: fromFormat14,
+  15: fromFormat15,
 };
 
 /**
@@ -364,6 +365,17 @@ function fromFormat14(older: Json): Json {
     state: { ...state, deterrence: deterrenceSettled(defence, people) },
     report: isRecord(older.report) ? { ...older.report, deterrence: null } : older.report,
   };
+}
+
+/**
+ * Format 16 added border incidents: what a hostile neighbour announces, and the state keeps
+ * until each ends. A game written in format 15 had none, whatever its neighbours intended, so
+ * it is read as having none announced: a neighbour already hostile may announce its first as
+ * the quarter the save is opened in ends, and the player gets the whole notice.
+ */
+function fromFormat15(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return { ...older, formatVersion: 16, state: { ...state, borderIncidents: [] } };
 }
 
 /**

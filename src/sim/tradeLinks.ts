@@ -1,4 +1,5 @@
 import { sum } from './arithmetic';
+import { crossingClosure, type CrossingClosure, type IncidentWatch } from './borderIncidents';
 import { chains } from './chains';
 import type { Country } from './country';
 import { projectOnSite, type Project } from './projects';
@@ -9,7 +10,7 @@ import type { TradeOrder, WorldPrices } from './trade';
 import { inUse } from './upkeep';
 import { SITE_CHAIN_ROLES, type SiteType, type Technology } from './vocabulary';
 
-interface Trading {
+interface Trading extends IncidentWatch {
   readonly country: Country;
   readonly projects: readonly Project[];
   readonly worldPrices: WorldPrices;
@@ -32,6 +33,11 @@ export interface TradeLink {
   readonly unimproved: number;
   /** The technologies known that make it carry more, in the order they became known. */
   readonly improvedBy: readonly Technology[];
+  /**
+   * The border incident that closes it this quarter, so that it carries nothing, and for how
+   * much longer; null while it is open, as a port always is.
+   */
+  readonly closed: CrossingClosure | null;
 }
 
 /**
@@ -67,18 +73,23 @@ export function tradeCapacity(game: Trading, orders: readonly TradeOrder[] = [])
 
 /**
  * The trade links this quarter: the crossings in the country file's order, then the ports in
- * use in the same order, each with what it carries.
+ * use in the same order, each with what it carries. A crossing to a neighbour whose border
+ * incident is in force is closed, and carries nothing.
  */
 export function tradeLinks(game: Omit<Trading, 'worldPrices'>): TradeLink[] {
-  const crossings = game.country.crossings.map((crossing): TradeLink => ({
-    id: crossing.id,
-    name: crossing.name,
-    kind: 'crossing',
-    tonnes: crossing.tonnes,
-    decaying: false,
-    unimproved: crossing.tonnes,
-    improvedBy: [],
-  }));
+  const crossings = game.country.crossings.map((crossing): TradeLink => {
+    const closed = crossingClosure(game, crossing);
+    return {
+      id: crossing.id,
+      name: crossing.name,
+      kind: 'crossing',
+      tonnes: closed === null ? crossing.tonnes : 0,
+      decaying: false,
+      unimproved: crossing.tonnes,
+      improvedBy: [],
+      closed,
+    };
+  });
   const known = knownTechnologies(game.projects);
   const ports = game.country.sites.flatMap((site): TradeLink[] => {
     const project = projectOnSite(game.projects, site.id);
@@ -93,7 +104,16 @@ export function tradeLinks(game: Omit<Trading, 'worldPrices'>): TradeLink[] {
         ? []
         : improvementsOf(site.type, known).map(([technology]) => technology);
     return [
-      { id: site.id, name: site.name, kind: 'port', tonnes, decaying, unimproved, improvedBy },
+      {
+        id: site.id,
+        name: site.name,
+        kind: 'port',
+        tonnes,
+        decaying,
+        unimproved,
+        improvedBy,
+        closed: null,
+      },
     ];
   });
   return [...crossings, ...ports];

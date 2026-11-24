@@ -15,6 +15,7 @@ import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import { MIGRATIONS, SAVE_FORMAT_VERSION, toCurrentFormat, type SaveMigration } from './migrations';
 import type { PriceShock } from './priceShocks';
+import type { BorderIncident } from './borderIncidents';
 import {
   projectTerms,
   siteOf,
@@ -148,6 +149,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       prosperousQuarters: game.prosperousQuarters,
       plottingQuarters: game.plottingQuarters,
       deterrence: game.deterrence,
+      borderIncidents: game.borderIncidents,
       austerity: game.austerity,
       outcome: game.outcome,
     },
@@ -242,6 +244,7 @@ export function loadSave(
     prosperousQuarters: whole(state.prosperousQuarters, 'state.prosperousQuarters', 0),
     plottingQuarters: whole(state.plottingQuarters, 'state.plottingQuarters', 0),
     deterrence: whole(state.deterrence, 'state.deterrence', 0, 1000),
+    borderIncidents: readBorderIncidents(state.borderIncidents, 'state.borderIncidents', country),
     austerity:
       state.austerity === null
         ? null
@@ -522,6 +525,23 @@ function readPriceShocks(saved: unknown, path: string): PriceShock[] {
     fail(path, 'holds two shocks of one kind');
   }
   return shocks;
+}
+
+/**
+ * The border incidents announced and not yet ended: each on the border of one of the
+ * country's neighbours, and no neighbour with two.
+ */
+function readBorderIncidents(saved: unknown, path: string, country: Country): BorderIncident[] {
+  const neighbourIds = country.map.neighbours.map((neighbour) => neighbour.id);
+  const incidents = list(saved, path, (item, itemPath): BorderIncident => ({
+    neighbourId: oneOf(item.neighbourId, `${itemPath}.neighbourId`, neighbourIds, 'a neighbour'),
+    announced: date(item.announced, `${itemPath}.announced`),
+    begins: date(item.begins, `${itemPath}.begins`),
+  }));
+  if (new Set(incidents.map((incident) => incident.neighbourId)).size !== incidents.length) {
+    fail(path, 'holds two incidents on one neighbour’s border');
+  }
+  return incidents;
 }
 
 /**

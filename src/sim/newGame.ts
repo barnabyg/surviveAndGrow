@@ -28,6 +28,7 @@ export function createGame(country: Country, seed: number): GameState {
     foodReserve: country.start.foodReserve,
     worldPrices: openingPrices(),
     priceShocks: [],
+    borderIncidents: [],
     tradeCarried: [],
     regions: country.regions.map((region): RegionState => ({
       id: region.id,

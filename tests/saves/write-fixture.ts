@@ -4,13 +4,14 @@ import { expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
+  borderIncidentStatuses,
   createGame,
-  deterrenceStatus,
   loadCountry,
   pendingDilemma,
   SAVE_FORMAT_VERSION,
   saveGame,
   startFault,
+  tradeCapacity,
   type Decisions,
   type GameState,
   type TurnReport,
@@ -27,12 +28,13 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought and the teachers asking for a rise now
-  // and then. Format 15 added deterrence against the neighbours, and their ambitions with
-  // country file format 12. The game, on seed 2026, halves Defence to $1.0m from its first
-  // quarter, taxes at 30% and each quarter starts the first site it can. It is saved as Year 2 ·
-  // Quarter 3 begins: deterrence has fallen from 39.0% to 29.5%, the country has just reached
-  // Developing, and with that Voskar has turned hostile and Selama watchful, as the last report
-  // says.
+  // and then. Format 16 added border incidents. The game is the one kept from format 15 played
+  // three quarters on: on seed 2026 it halves Defence to $1.0m from its first quarter, taxes at
+  // 30% and each quarter starts the first site it can. Voskar turned hostile as the country
+  // reached Developing, announced an incident as Year 2 · Quarter 4 began, and began it in
+  // Year 3 · Quarter 2. It is saved as Year 3 · Quarter 3 begins: the incident has lived one of
+  // its three quarters, Korr Pass is closed for two more, and the last report has the tax the
+  // regions on Voskar's border lost to it.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
@@ -43,9 +45,8 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     spending: { ...country.start.budget.spending, defence: 10 },
   };
   let game = createGame(country, 2026);
-  expect(game.deterrence).toBe(390);
   let report: TurnReport | null = null;
-  for (let quarter = 0; quarter < 6; quarter += 1) {
+  for (let quarter = 0; quarter < 10; quarter += 1) {
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
     const state: GameState = game;
@@ -61,18 +62,24 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.date).toEqual({ year: 2, quarter: 3 });
-  expect(game.tier).toBe('developing');
-  expect(game.deterrence).toBe(295);
-  expect(
-    deterrenceStatus(game).neighbours.map((neighbour) => [neighbour.name, neighbour.intention]),
-  ).toEqual([
-    ['Voskar', 'hostile'],
-    ['Selama', 'watchful'],
+  expect(game.date).toEqual({ year: 3, quarter: 3 });
+  expect(game.borderIncidents).toEqual([
+    {
+      neighbourId: 'voskar',
+      announced: { year: 2, quarter: 4 },
+      begins: { year: 3, quarter: 2 },
+    },
   ]);
-  expect(report?.entries.map((entry) => entry.headline)).toEqual(
-    expect.arrayContaining(['Voskar has turned hostile', 'Selama has turned watchful']),
-  );
+  expect(borderIncidentStatuses(game)).toMatchObject([{ inForce: true, quartersLeft: 2 }]);
+  expect(tradeCapacity(game).links.find((link) => link.id === 'korr-pass')).toMatchObject({
+    tonnes: 0,
+    closed: { name: 'Voskar', quartersLeft: 2 },
+  });
+  expect(
+    report?.treasury.contributions.filter((line) =>
+      line.label.startsWith('Lost to the border incident with Voskar'),
+    ),
+  ).toHaveLength(3);
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

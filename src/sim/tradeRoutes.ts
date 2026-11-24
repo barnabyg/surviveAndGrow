@@ -1,3 +1,4 @@
+import type { CrossingClosure, IncidentWatch } from './borderIncidents';
 import { borderEdges } from './borders';
 import { chains } from './chains';
 import type { Country, Point } from './country';
@@ -9,7 +10,7 @@ import { improvementsOf } from './sites';
 import { knownTechnologies } from './technology';
 import { MAP_FRAME, SITE_CHAIN_ROLES, type Technology } from './vocabulary';
 
-interface Trading {
+interface Trading extends IncidentWatch {
   readonly country: Country;
   readonly projects: readonly Project[];
   readonly worldPrices: WorldPrices;
@@ -46,16 +47,22 @@ export interface TradeRoute {
   readonly kind: 'crossing' | 'port';
   /**
    * How it stands: open; weak while its port decays and carries half what it would in good
-   * repair; or missing, a port not yet in use, which carries nothing.
+   * repair; closed, a border crossing a border incident lets nothing over; or missing, a port
+   * not yet in use, which carries nothing.
    */
-  readonly state: 'open' | 'weak' | 'missing';
+  readonly state: 'open' | 'weak' | 'closed' | 'missing';
   /**
    * What it carries across the border in a quarter, in tonnes: for a missing link, what it
-   * would carry once in use.
+   * would carry once in use, and for a closed crossing nothing.
    */
   readonly capacity: number;
-  /** What it would carry if no technology improved it, in tonnes: `capacity` while none does. */
+  /**
+   * What it would carry if no technology improved it, in tonnes: `capacity` while none does.
+   * For a closed crossing it is what the crossing carries once it is open again.
+   */
   readonly unimproved: number;
+  /** The border incident that closes it this quarter, and for how much longer, or null. */
+  readonly closed: CrossingClosure | null;
   /** The technologies known that make it carry more, in the order they became known. */
   readonly improvedBy: readonly Technology[];
   /** What it carried in the quarter last played: nothing before the first. */
@@ -125,7 +132,8 @@ export function tradeRoutes(
         id: link.id,
         name: link.name,
         kind: link.kind,
-        state: link.decaying ? 'weak' : 'open',
+        state: link.closed !== null ? 'closed' : link.decaying ? 'weak' : 'open',
+        closed: link.closed,
         capacity: link.tonnes,
         unimproved: link.unimproved,
         improvedBy: link.improvedBy,
@@ -147,6 +155,7 @@ export function tradeRoutes(
         name: site.name,
         kind: 'port',
         state: 'missing',
+        closed: null,
         capacity: portTonnesOf(site.type, false, known),
         unimproved: portTonnesOf(site.type),
         improvedBy: improvementsOf(site.type, known).map(([technology]) => technology),

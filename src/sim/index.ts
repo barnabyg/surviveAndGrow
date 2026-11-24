@@ -174,7 +174,15 @@ export { settlementLook, settlementLooks, type SettlementLook } from './settleme
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
 export { termRecords, type TermRecord } from './terms';
 export { victoryStatus, type DebtTest, type VictoryStatus } from './victory';
-export { neighbourBorder, type BorderEdge } from './borders';
+export { borderRegions, neighbourBorder, type BorderEdge } from './borders';
+export {
+  borderIncidentStatuses,
+  borderIncidentTerms,
+  type BorderIncident,
+  type CrossingClosure,
+  type IncidentCost,
+  type IncidentStatus,
+} from './borderIncidents';
 export { coupAfterPlottingQuarters, coupStatus, type Coup, type CoupStatus } from './coup';
 export {
   deterrenceStatus,
@@ -184,6 +192,7 @@ export {
   type NeighbourStanding,
 } from './deterrence';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
+export { incidentTaxCost } from './threatRisks';
 export { SAVE_FORMAT_VERSION, type SaveMigration } from './migrations';
 export { loadSave, saveGame, type RestoredGame, type SavedGame } from './save';
 export { SaveError } from './saveChecks';

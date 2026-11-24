@@ -4,6 +4,7 @@ import {
   approvalStatus,
   armyLoyaltyStatus,
   austerityStatus,
+  borderIncidentStatuses,
   capacityOfTonnes,
   coupStatus,
   debtStatus,
@@ -20,6 +21,7 @@ import {
   startFault,
   surveyedRegions,
   termRecords,
+  tradeCapacity,
   victoryStatus,
   type TurnReport,
 } from '../../src/sim';
@@ -37,6 +39,7 @@ import format11Save from '../saves/format-11.json';
 import format12Save from '../saves/format-12.json';
 import format13Save from '../saves/format-13.json';
 import format14Save from '../saves/format-14.json';
+import format15Save from '../saves/format-15.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './playing';
 import { budgetFrom, budgetOf } from '../budgets';
@@ -807,6 +810,98 @@ describe('the save kept from save format 14', () => {
     expect(next.state.deterrence).toBeGreaterThan(0);
     expect(next.report.deterrence?.change).toBe(next.state.deterrence);
     expect(next.report.entries.filter((entry) => entry.kind === 'neighbour')).toEqual([]);
+  });
+});
+
+describe('the save kept from save format 15', () => {
+  it('still opens on the game it was written from, Voskar hostile and Selama watchful', () => {
+    const { game, report } = loadSave(format15Save);
+
+    expect(game.date).toEqual({ year: 2, quarter: 3 });
+    expect(game.country.formatVersion).toBe(12);
+    expect(game.tier).toBe('developing');
+    expect(game.budget.spending.defence).toBe(10);
+    expect(game.deterrence).toBe(295);
+    const status = deterrenceStatus(game);
+    expect(status).toMatchObject({ deterrence: 295, settles: 239, spent: 10, expected: 21 });
+    expect(
+      status.neighbours.map((neighbour) => [neighbour.name, neighbour.weighs, neighbour.intention]),
+    ).toEqual([
+      ['Voskar', 330, 'hostile'],
+      ['Selama', 247, 'watchful'],
+    ]);
+    expect(report?.deterrence).toEqual({
+      value: 295,
+      change: -10,
+      contributions: [{ label: 'Defence spending', amount: -10 }],
+    });
+    expect(
+      report?.entries
+        .filter((entry) => entry.kind === 'neighbour')
+        .map((entry) => [entry.headline, entry.seriousness, entry.neighbourId]),
+    ).toEqual([
+      ['Voskar has turned hostile', 'serious', 'voskar'],
+      ['Selama has turned watchful', 'warning', 'selama'],
+    ]);
+  });
+
+  it('plays on: deterrence falls further left as it is, and is rebuilt with Defence raised', () => {
+    const { game } = loadSave(format15Save);
+
+    const left = advanceQuarter(game, answering(game, steward(game)));
+    expect(left.state.deterrence).toBe(286);
+    expect(left.report.entries.filter((entry) => entry.kind === 'neighbour')).toEqual([]);
+
+    const raised = budgetFrom(game.budget, { spending: { defence: 60 } });
+    let state = game;
+    const headlines: string[] = [];
+    for (let quarter = 0; quarter < 4; quarter += 1) {
+      const result = advanceQuarter(state, answering(state, steward(state, raised)));
+      state = result.state;
+      headlines.push(
+        ...result.report.entries
+          .filter((entry) => entry.kind === 'neighbour')
+          .map((entry) => entry.headline),
+      );
+    }
+    expect(state.deterrence).toBeGreaterThan(413);
+    expect(headlines).toEqual([
+      'Voskar is watchful again',
+      'Selama is peaceful again',
+      'Voskar is peaceful again',
+    ]);
+  });
+
+  it('is refused when its deterrence or a report’s neighbour is not one the game could hold', () => {
+    expect(() => loadSave(withValue(format15Save, ['state', 'deterrence'], 1001))).toThrow(
+      /state\.deterrence is 1001, which is out of range/,
+    );
+    const index = format15Save.report.entries.findIndex((entry) => entry.kind === 'neighbour');
+    expect(() =>
+      loadSave(withValue(format15Save, ['report', 'entries', index, 'neighbourId'], 'atlantis')),
+    ).toThrow(/neighbourId is "atlantis", which is not a neighbour this game has/);
+  });
+
+  it('is lifted to format 16 with no border incident announced, and its hostile neighbour may announce its first with the whole notice', () => {
+    const { game } = loadSave(format15Save);
+    expect(game.borderIncidents).toEqual([]);
+    expect(borderIncidentStatuses(game)).toEqual([]);
+    expect(tradeCapacity(game).links.map((link) => link.closed)).toEqual([null, null]);
+
+    // Voskar is hostile, and on this seed announces one as the quarter the save opens in
+    // ends: it begins two quarters after that, as any other does.
+    const next = advanceQuarter(game, answering(game, steward(game)));
+    expect(next.state.borderIncidents).toEqual([
+      {
+        neighbourId: 'voskar',
+        announced: { year: 2, quarter: 4 },
+        begins: { year: 3, quarter: 2 },
+      },
+    ]);
+    expect(next.report.entries.map((entry) => entry.headline)).toContain(
+      'Border incident with Voskar ahead',
+    );
+    expect(tradeCapacity(next.state).links.map((link) => link.closed)).toEqual([null, null]);
   });
 });
 

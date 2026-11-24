@@ -2,7 +2,8 @@ import type { Tier } from '../vocabulary';
 
 /**
  * `balance.neighbours`: how Defence spending builds deterrence, how much a neighbour's ambition
- * weighs as the country prospers, and where its intention changes.
+ * weighs as the country prospers, where its intention changes, and what a border incident with
+ * a hostile neighbour does.
  */
 export const neighboursBalance = {
   neighbours: {
@@ -42,5 +43,25 @@ export const neighboursBalance = {
     intentions: { watchfulBelowPermilleOfWeight: 1250, hostileBelowPermilleOfWeight: 1000 },
     /** The most ambition a country file may give a neighbour, as a whole percentage. */
     mostAmbitionPercent: 100,
+    /**
+     * A border incident: what a hostile neighbour does when deterrence fails. As each quarter
+     * ends, a neighbour that is hostile, with no incident of its own announced or in force,
+     * announces one if its draw, from the seed and the quarter alone, falls under
+     * `chancePermillePerQuarter`. It begins `noticeQuarters` after it is announced, unless the
+     * neighbour is no longer hostile by then, and lasts `lastsQuarters`. While it lasts the
+     * neighbour's border crossings carry nothing and each region on its border produces only
+     * `outputPermille` thousandths of its output, as a region in unrest produces less; and as
+     * it begins those regions' approval takes a blow of `approvalPermille`, which fades like
+     * any passing event. The notice is at least a quarter, so that an incident never begins in
+     * the quarter it is announced, and shorter than the risks' horizon, so an incident that
+     * could still be announced is looked for there as a risk of its own.
+     */
+    incident: {
+      chancePermillePerQuarter: 200,
+      noticeQuarters: 2,
+      lastsQuarters: 3,
+      outputPermille: 800,
+      approvalPermille: -80,
+    },
   },
 } as const;

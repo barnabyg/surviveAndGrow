@@ -50,3 +50,22 @@ export function neighbourBorder(country: Country, neighbourId: string): readonly
   const neighbour = country.map.neighbours.find((candidate) => candidate.id === neighbourId);
   return neighbour === undefined ? [] : borderEdges(country, neighbour.shape);
 }
+
+/** The regions that border each neighbour, by country: a country is never changed in place. */
+const bordering = new WeakMap<Country, Map<string, readonly string[]>>();
+
+/**
+ * The regions that border one of the country's neighbours, by the neighbour's id, in the
+ * country file's order: each region with an edge that faces it. It is worked out from the map
+ * once for a country, since a quarter's taxes ask it of every region.
+ */
+export function borderRegions(country: Country, neighbourId: string): readonly string[] {
+  const known = bordering.get(country) ?? new Map<string, readonly string[]>();
+  bordering.set(country, known);
+  const found = known.get(neighbourId);
+  if (found !== undefined) return found;
+  const facing = new Set(neighbourBorder(country, neighbourId).map((edge) => edge.regionId));
+  const regionIds = country.regions.flatMap((region) => (facing.has(region.id) ? [region.id] : []));
+  known.set(neighbourId, regionIds);
+  return regionIds;
+}
