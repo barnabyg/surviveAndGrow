@@ -100,6 +100,20 @@ country, with 400,000, on $1.0m, the least the slider allows above nothing:
 }
 ```
 
+In a file of `"formatVersion": 12`, each of `map.neighbours` may give an `ambition`: how much
+the neighbour wants of the country, a whole percentage from 0 to 100. What it weighs against
+the country's deterrence grows with the prosperity tier (nothing at Subsistence, the whole of
+it at Prosperous), and the neighbour turns watchful and then hostile as deterrence falls
+short of it, so an ambition near what the starting Defence deters threatens early and a low
+one late or never. A neighbour that leaves it out has none and stays peaceful for good. A file
+of an earlier format cannot give one, and still loads as it is, with peaceful neighbours.
+Tavara gives Voskar 60 and Selama 45; the test country gives its one neighbour 85, since its
+few people make its starting Defence deter far more per head:
+
+```json
+{ "id": "voskar", "name": "Voskar", "shape": [[0, 0], [1080, 0], [1080, 280]], "label": [760, 44], "ambition": 60 }
+```
+
 In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
 year, from 0 to 10. A region that leaves it out grows at the game's own rate.
 

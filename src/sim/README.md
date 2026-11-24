@@ -44,12 +44,14 @@ the world ore price. It lives the quarter through `liveQuarter`, which the previ
    (`bailout.ts`).
 7. Army loyalty (`army.ts`), in each region, from what was spent on Defence and the unrest the
    quarter's approval leaves there.
-8. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the debt
+8. Deterrence (`deterrence.ts`), from what was spent on Defence, with each neighbour's intention
+   read afresh in the tier the quarter leaves in force.
+9. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the debt
    burden the quarter leaves and its deficit. What was borrowed this quarter was taken at the rating
    in force as it began. A missed payment puts it at the lowest step.
-9. Austerity (`bailout.ts`): a bailout imposes it and brings the budget in force within it, a missed
-   payment during it extends it, and otherwise a quarter of it is spent. What it allows is in
-   `austerity.ts`, which `checkDecisions` and the menus of loans and projects consult.
+10. Austerity (`bailout.ts`): a bailout imposes it and brings the budget in force within it, a
+    missed payment during it extends it, and otherwise a quarter of it is spent. What it allows is
+    in `austerity.ts`, which `checkDecisions` and the menus of loans and projects consult.
 
 `resolveQuarter` moves the world prices on (`trade.ts`), pushed by any world price shock in force
 (`priceShocks.ts`), before it lives the quarter. Then it moves the calendar (`calendar.ts`,
@@ -189,6 +191,21 @@ what the report says while the count runs and when it ends, `coupEntry` the coup
 `coupStatus` gives the interface the count for the top bar. The look-ahead reads a coup off the
 quarters it plays, like any other danger (`coupRisk` in `threatRisks.ts`). The count is in the save
 from format 14; an earlier save is read as having counted nothing.
+
+## Neighbours and deterrence
+
+A country file gives each neighbour an ambition (`Neighbour` in `countryTypes.ts`, read by
+`readAmbition` in `country.ts`, from format 12). The state keeps one figure, `deterrence`, and
+nothing of the neighbours: `deterrence.ts` moves it each quarter towards where the Defence spent
+settles it (`resolveDeterrence`, `deterrenceSettled`) and reads an intention wherever one is
+wanted (`intentionOf`, `intentionIn`) from the ambition, the tier in force
+(`balance.neighbours.worthTakingPermille`) and deterrence, by the marks in
+`balance.neighbours.intentions`. So the turn, the preview (`deterrence`, `deterrenceHeading`,
+`neighbours`), the risks ahead (`neighbourRisk` in `threatRisks.ts`) and the interface
+(`deterrenceStatus`) cannot come to differ. A report entry or a risk about a neighbour carries
+its `neighbourId`, as one about a region carries its `regionId`. The country's border with a
+neighbour, edge by edge with the region each edge belongs to, is worked out from the map in
+`borders.ts` (`neighbourBorder`), which also places a crossing (`tradeRoutes.ts`).
 
 ## Adding a mechanic
 

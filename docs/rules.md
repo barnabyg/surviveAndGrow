@@ -102,6 +102,53 @@ main figures from the balance values and fails if this file, [playing.md](playin
   save from before it, are read as spending the least the slider allows that holds the army
   loyal in a calm region, with a loyal army.
 
+## Neighbours and deterrence
+
+- Each neighbour has an ambition, given by the country file. There is no combat of any kind:
+  what a neighbour intends is read from its ambition against the country's deterrence.
+- Deterrence is one national figure that Defence spending builds. Where the spending settles
+  it is judged per head against what the army expects: nothing spent settles it at nothing,
+  150% of what the army expects settles it at half, and each dollar more buys less than the
+  last, so no spending reaches the whole. Deterrence moves 15% of the way each quarter
+  towards where what was spent on Defence would settle it, more slowly than army loyalty: it is
+  slow to build and slow to lose, so it has to be bought ahead. A treasury that cannot cover
+  the budget cuts Defence with the rest, and deterrence answers to what was really spent.
+- A state worth taking: what a neighbour's ambition weighs against deterrence grows with the
+  prosperity tier in force. It weighs nothing at Subsistence, 55% of the ambition at
+  Developing, 80% at Industrialising and the whole of it at Prosperous. Early in a game the
+  neighbours are no threat, whatever is spent on Defence; the pressure arrives as the country
+  prospers.
+- Each neighbour's intention is peaceful, watchful or hostile. It is hostile while deterrence
+  is below what its ambition weighs, watchful while deterrence is below 125% of that, and
+  otherwise peaceful. It is read afresh as each quarter ends, from the tier the quarter leaves
+  in force and deterrence as it then stands; nothing but deterrence is kept. A neighbour whose
+  ambition weighs nothing is peaceful whatever deterrence is.
+- A hostile neighbour is shown, reported and warned of, and does nothing more.
+- Each neighbour is drawn on the map under every lens: its name with a tag beneath or above
+  it that gives what it intends as a mark and a word (a ring for peaceful, an eye for
+  watchful, a spearhead for hostile), and its border with the country drawn by the same
+  intention, dashed while it is watchful and solid and toothed while it is hostile. Picking a
+  neighbour, by its name, its tag or its land, opens its card: its intention, deterrence
+  against the marks below which it is watchful and hostile, what its ambition weighs in each
+  tier, what moved it last quarter, and where the Defence budget in force would settle
+  deterrence and leave the neighbour.
+- The budget panel's outlook has a Neighbours fold: deterrence next quarter and where it is
+  heading, and each neighbour's intention next quarter and where it is heading, before and
+  after a change to the Defence slider. A neighbour that the budget on the sliders leaves
+  hostile, or heading for it, is warned of above the fold. The forecast reads the tier the
+  quarter leaves with world prices where they are.
+- The turn report says when a neighbour's intention changes, for the worse or the better, and
+  why: a tier passed, which makes the country more worth taking, or deterrence fallen or
+  rebuilt, with what is spent on Defence and where that settles deterrence. The report picks
+  the neighbour out on the map. A first-time tip explains neighbours and deterrence once a
+  neighbour is anything but peaceful.
+- A country file may give each neighbour an ambition, a whole percentage from 0 to 100. Tavara
+  gives Voskar 60% and Selama 45%. A neighbour given none, and every neighbour of a country
+  file written before ambitions, stays peaceful for good.
+- A game starts with deterrence where its starting Defence settles it: 39.0% in Tavara, on
+  $2.0m a quarter. A save from before deterrence is read as having what its Defence budget in
+  force would settle; its country file gives no neighbour an ambition, so none ever stirs.
+
 ## Prosperity, tiers and people
 
 - Prosperity, the game's objective, is the fourth figure in the top bar, on a scale of 0 to 100
@@ -442,12 +489,13 @@ main figures from the balance values and fails if this file, [playing.md](playin
 - The left column lists the risks ahead: famine in a region, a flood that could begin, a world
   price shock announced or that could be, grain sold below the reserve's safe level, strikes, a treasury that runs out, a bailout from a missed
   payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, a
-  coup, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with
+  neighbour turning hostile, a coup, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with
   your committed decisions held as they are, once for each course the weather could take and each
   drought or flood that could still begin, and lists each danger with how likely it is, as a five-step meter and in words, and a line saying why, cut short until the risk is picked out (its whole text is in a tooltip). The four most likely are shown and the rest fold behind **Show more**. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
   further. A danger too unlikely to matter is left out, unless it would end the game, and a risk
-  to one region picks that region out on the map. Neither famine, a coup nor a lost election can end the
+  to one region picks that region out on the map, and one from a neighbour picks out the
+  neighbour. Neither famine, a coup nor a lost election can end the
   game without having been listed first. A flood is listed while it could begin within the four
   quarters, however unlikely, with the share of the harvest it would take and the sites it would
   damage, so none comes without warning. A world price shock is listed as almost certain once it
@@ -464,6 +512,12 @@ main figures from the balance values and fails if this file, [playing.md](playin
   expects. Raising Defence in the budget takes it off the list as soon as the quarters ahead no
   longer end in one. While a mine earns, a coup that only a slump in the world ore price would
   bring, through a treasury that cuts Defence with the rest of the budget, is listed as unlikely.
+- A neighbour turning hostile is listed, with how likely it is, for each neighbour not yet
+  hostile that would be within the four quarters on your decisions as they are: because
+  deterrence is on course to fall below what its ambition weighs, or because the country is on
+  course to pass a tier in which it weighs more than deterrence. Its line says which, when, and
+  what is spent on Defence against where that settles deterrence. No neighbour turns hostile
+  without having been listed the quarter before.
 - The treasury runs out when it cannot cover the budget, and every area is cut, or when it
   cannot cover an instalment on a project, which pauses. The warning says which gives way first
   and when: the budget, or the oldest project left unpaid, named for what it is, whether

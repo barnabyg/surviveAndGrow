@@ -29,8 +29,9 @@ What each part of the screen shows and does, as built. The rules the game plays 
   in risks ahead, a strike or protest, a world price shock announced, a planned project whose
   chain is missing a link, a site decaying, the election four quarters away, a prosperity tier
   passed, research, once its tab is first opened or research is planned, surveys, once the
-  card of a region that may hide a deposit is first opened or a survey is planned, and Defence
-  and the army, once the army anywhere is less than loyal or the budget in force would leave it so. When several are due, the first in that order shows. Got it dismisses one, and the
+  card of a region that may hide a deposit is first opened or a survey is planned, Defence
+  and the army, once the army anywhere is less than loyal or the budget in force would leave it so,
+  and neighbours and deterrence, once a neighbour is anything but peaceful. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
   waits while the tour or a lesson is open. A tip about a decision panel behind another tab is
@@ -77,8 +78,24 @@ What each part of the screen shows and does, as built. The rules the game plays 
   links too: every port not yet in use has a dotted shipping lane tagged "✕ Missing trade link",
   and a decaying port's lane is tagged "▲ Weak trade link". Each lens has a scale beside the
   buttons, its steps differ in lightness, and every region also carries its value as text. The
-  lens stays as you chose it from quarter to quarter, and sites, routes, trade routes, events and
-  relief are drawn under all of them.
+  lens stays as you chose it from quarter to quarter, and sites, routes, trade routes,
+  neighbours, events and relief are drawn under all of them.
+- Each neighbour is drawn on the map with what it intends: a tag by its name carries a mark and
+  a word (a ring and "Peaceful", an eye and "Watchful", a spearhead and "Hostile"), on the side
+  of the name away from the border, and the border it shares with the country is dashed while
+  it is watchful and solid, with teeth pointing into the country, while it is hostile. The
+  legend under the map explains the three. Select a neighbour, by its name, its tag or its
+  land, to open its card: its intention, deterrence, the marks below which it is watchful and
+  hostile, its ambition and what that weighs against deterrence in each prosperity tier with
+  the tier in force marked, what moved it last quarter, and where the Defence budget in force
+  settles deterrence and would leave the neighbour, as a warning when that is worse than now.
+  A report or a risk about a neighbour picks it out on the map, as one about a region picks out
+  the region.
+- The budget panel's outlook has a Neighbours fold, in a country whose neighbours have
+  ambitions: deterrence next quarter and where it is heading, and each neighbour's intention
+  next quarter and where it is heading, each before and after the change on the sliders. The
+  fold says "changed" when the change would move deterrence, and a neighbour the sliders would
+  leave hostile, or heading for it, is warned of above the fold whether it is open or not.
 - The trade routes are drawn on the map from the country file: a bar where each border crossing
   meets its neighbour, and a shipping lane from each port in use to the edge of the map. Each
   route is as wide as what it can carry, with a pale core as wide as what it carried last

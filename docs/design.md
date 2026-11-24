@@ -126,10 +126,18 @@ Prosperity, tiers and people.
   quarters left, the report says so each quarter, and the risks ahead list it before any quarter
   in which it could come. Rules: rules.md, Elections, winning and the end of a game.
 
+- **Neighbours and deterrence** (Phase 6): each neighbour has an ambition, from the country
+  file, and Defence spending builds deterrence against it, one national figure that moves
+  slowly and so has to be bought ahead. A state worth taking: what an ambition weighs grows
+  with the prosperity tier, so the neighbours are no threat early and the pressure arrives as
+  the country prospers. Each neighbour is peaceful, watchful or hostile by how deterrence
+  stands against what its ambition weighs, shown on its border, reported when it changes and
+  warned of ahead. There is no combat. Rules: rules.md, Neighbours and deterrence.
+
 ### Still to come
 
-- **Neighbours and factions** (Phase 6): Defence spending also buys deterrence against
-  neighbours with ambitions, and approval is broken down by faction.
+- **Border incidents and factions** (Phase 6): what a hostile neighbour does when deterrence
+  fails, and approval broken down by faction.
 
 ## 5. The map
 

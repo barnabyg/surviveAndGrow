@@ -8,8 +8,9 @@ import {
   formatMoney,
   formatPercent,
   previewQuarter,
+  type Country,
 } from '../../src/sim';
-import { tavaraAsShipped } from './countries';
+import { tavaraAsShipped, testlandAsShipped } from './countries';
 
 /**
  * The docs restate figures from `src/sim/balance/` by hand. Each check below renders one
@@ -90,6 +91,24 @@ const { strikes, protests } = balance.unrest;
 const { grain, ore } = trade.goods;
 const loans = finance.loans;
 const { loyalty } = balance.army;
+const { neighbours } = balance;
+const worth = neighbours.worthTakingPermille;
+/** A share of an ambition in thousandths, as the rules give it: none, part or all of it. */
+function shareOf(permille: number): string {
+  if (permille === 0) return 'nothing';
+  return permille === 1000 ? 'the whole of it' : percent(permille);
+}
+/** The mark a neighbour is hostile below, as a share in thousandths of what its ambition weighs. */
+function markOf(permille: number): string {
+  return permille === 1000
+    ? 'what its ambition weighs'
+    : `${percent(permille)} of what its ambition weighs`;
+}
+/** A neighbour's ambition as a country file writes it, a whole percentage. */
+const ambitionOf = (country: Country, neighbourId: string): string =>
+  String(
+    (country.map.neighbours.find((neighbour) => neighbour.id === neighbourId)?.ambition ?? 0) / 10,
+  );
 /** Tavara as it ships, as a game opens on it. */
 const tavaraOpening = createGame(tavaraAsShipped(), 1);
 const tavaraArmy = armyLoyaltyStatus(tavaraOpening);
@@ -149,6 +168,13 @@ const RULES: readonly string[] = [
   `Loyalty moves ${fraction(loyalty.adjustPermillePerQuarter)} of the way each quarter`,
   `loyal, restless below ${percent(loyalty.stages.restlessBelowPermille)} and plotting below ${percent(loyalty.stages.plottingBelowPermille)}`,
   `Tavara starts on ${formatMoney(tavaraArmy.spent)} a quarter, which holds its army loyal at ${formatPercent(tavaraArmy.loyalty)}`,
+  // Neighbours and deterrence
+  `nothing spent settles it at nothing, ${percent(neighbours.deterrence.halfAtPermilleOfExpected)} of what the army expects settles it at half`,
+  `Deterrence moves ${percent(neighbours.deterrence.adjustPermillePerQuarter)} of the way each quarter`,
+  `It weighs ${shareOf(worth.subsistence)} at Subsistence, ${shareOf(worth.developing)} of the ambition at Developing, ${shareOf(worth.industrialising)} at Industrialising and ${shareOf(worth.prosperous)} at Prosperous`,
+  `It is hostile while deterrence is below ${markOf(neighbours.intentions.hostileBelowPermilleOfWeight)}, watchful while deterrence is below ${percent(neighbours.intentions.watchfulBelowPermilleOfWeight)} of that`,
+  `a whole percentage from 0 to ${String(neighbours.mostAmbitionPercent)}. Tavara gives Voskar ${ambitionOf(tavaraOpening.country, 'voskar')}% and Selama ${ambitionOf(tavaraOpening.country, 'selama')}%`,
+  `A game starts with deterrence where its starting Defence settles it: ${formatPercent(tavaraOpening.deterrence)} in Tavara, on ${formatMoney(tavaraArmy.spent)} a quarter`,
   // Bailout and austerity
   `approval takes a ${String(-finance.bailout.approvalPermille / 10)}-point blow`,
   `Austerity then holds for ${String(finance.austerity.quarters)} quarters: the tax rate cannot go below ${String(finance.austerity.taxFloorPercent)}%`,
@@ -169,6 +195,8 @@ const PLAYING: readonly string[] = [
 ];
 
 const COUNTRIES: readonly string[] = [
+  `a whole percentage from 0 to ${String(neighbours.mostAmbitionPercent)}`,
+  `Tavara gives Voskar ${ambitionOf(tavaraOpening.country, 'voskar')} and Selama ${ambitionOf(tavaraOpening.country, 'selama')}; the test country gives its one neighbour ${ambitionOf(testlandAsShipped(), 'elsewhere')}`,
   `The army expects ${formatMoney(loyalty.defence.expectedPerMillionPeople)} a quarter for each million people`,
   `Tavara, with 5.2 million people, starts on ${formatMoney(tavaraArmy.spent)} a quarter`,
   `(the world grain price pushed up by ${dollarsOf(priceShocks.failedHarvestsAbroad.pushPermillePerQuarter, grain.usualDollarsPerTonne)} a tonne a quarter) and \`oreGlut\` (the world ore price pushed down by ${dollarsOf(priceShocks.oreGlut.pushPermillePerQuarter, ore.usualDollarsPerTonne)} a tonne a quarter)`,

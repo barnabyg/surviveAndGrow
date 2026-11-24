@@ -86,6 +86,15 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 - **Coup**: the army taking power, which loses the game. It comes when national army loyalty has
   ended a set number of quarters running at plotting; the running count is the **countdown**
   the top bar shows. Not "putsch" or "mutiny", and not a chance event: nothing is rolled.
+- **Neighbour**: a country on the border, drawn on the map from the country file. Each has an
+  **ambition**: how much it wants of the country, which weighs more against deterrence the
+  higher the prosperity tier. Not "enemy": a neighbour never fights.
+- **Deterrence**: one national figure, built over quarters by Defence spending, that a
+  neighbour's ambition is weighed against. Not "military strength" or "defence" (Defence is
+  the spending area).
+- **Intention**: what a neighbour intends: **peaceful**, **watchful** or **hostile**
+  (`INTENTIONS` in `src/sim/vocabulary/neighbours.ts`), read from its ambition at the tier in
+  force against deterrence. Not "stance", "attitude" or "threat level".
 - **Prosperity**: the national living standard, on one scale. Its **tiers** are Subsistence,
   Developing, Industrialising and Prosperous; holding Prosperous for four quarters wins the game.
 - **Dilemma**: a choice the game puts to the player, with two or three options that each state

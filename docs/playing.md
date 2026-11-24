@@ -47,6 +47,14 @@ drought or a flood does not starve a region first.
   takes power, and the game is lost: the top bar counts the quarters left, the risks ahead list
   the coup before it can come, and Defence restored in time calls it off. An empty treasury
   cuts Defence with everything else, so insolvency can starve the army without your choosing to.
+- **Deter the neighbours before you prosper.** Each neighbour has an ambition, which weighs
+  nothing while the country is at Subsistence and more with every prosperity tier it passes.
+  Defence spending also builds deterrence, one figure for the whole country, and it moves
+  slowly, so raise Defence before the tier that needs it. A neighbour is peaceful, watchful or
+  hostile by how deterrence stands against what its ambition weighs: its name on the map
+  carries the word and a mark, its card says what it would take to change it, the budget's
+  outlook says what a change to Defence would do, and the risks ahead warn before one turns
+  hostile.
 - **Buy grain when the harvest fails.** The trade panel in the right column orders grain for the
   national reserve at the world price, which moves every quarter. Money can stand in for a bad
   season, and austerity does not stop it.
