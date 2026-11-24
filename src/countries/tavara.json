@@ -1,5 +1,5 @@
 {
-  "formatVersion": 12,
+  "formatVersion": 13,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -191,6 +191,11 @@
       "population": 500000,
       "output": 16,
       "farmland": 180,
+      "factions": {
+        "farmers": 40,
+        "workers": 45,
+        "business": 15
+      },
       "eventLikelihood": {
         "drought": 0.15
       }
@@ -228,6 +233,11 @@
       "population": 800000,
       "output": 28,
       "farmland": 200,
+      "factions": {
+        "farmers": 15,
+        "workers": 35,
+        "business": 50
+      },
       "eventLikelihood": {
         "drought": 0.07
       }
@@ -257,6 +267,11 @@
       "population": 1400000,
       "output": 38,
       "farmland": 320,
+      "factions": {
+        "farmers": 70,
+        "workers": 20,
+        "business": 10
+      },
       "eventLikelihood": {
         "drought": 0,
         "flood": 0.1
@@ -287,6 +302,11 @@
       "population": 600000,
       "output": 12,
       "farmland": 260,
+      "factions": {
+        "farmers": 75,
+        "workers": 20,
+        "business": 5
+      },
       "eventLikelihood": {
         "drought": 0.35
       }
@@ -322,6 +342,11 @@
       "population": 1000000,
       "output": 26,
       "farmland": 200,
+      "factions": {
+        "farmers": 60,
+        "workers": 25,
+        "business": 15
+      },
       "eventLikelihood": {
         "drought": 0,
         "flood": 0.2
@@ -345,6 +370,11 @@
       "population": 900000,
       "output": 52,
       "farmland": 130,
+      "factions": {
+        "farmers": 15,
+        "workers": 50,
+        "business": 35
+      },
       "eventLikelihood": {
         "drought": 0.1
       }

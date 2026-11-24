@@ -115,17 +115,27 @@ function fingerprint(
  * incidents announced. With that alone left out of the fingerprint, every game hashed as
  * before: none of the four meets an incident. Three never have a hostile neighbour. Tavara's
  * building game ends six quarters with Voskar hostile, and in none of them does its draw fall
- * under the chance, so it too plays exactly as it did.
+ * under the chance, so it too plays exactly as it did. They were pinned again when the game
+ * gained the factions: the state gained their standings, each region's approval its Factions
+ * effect, the record of each quarter and the report the standings, and the preview its forecast
+ * of them. Played on countries whose people follow no faction, and with all of those left out
+ * of the fingerprint, every game hashed as before. As pinned, each country's regions have the
+ * faction mixes it ships with, and the factions move approval, so these games play differently:
+ * each taxes at 30%, which workers and business resent. Tavara's building game still loses its
+ * first vote, with one site fewer kept up. Its bailed-out game, already in protest under
+ * austerity's cap on Defence, now falls to a coup in its fourth year, before the vote it used to
+ * lose. Testland's building game, which used to win its first vote narrowly, loses it with
+ * 48.8%. Testland's bailed-out game plays on as before.
  */
 const outcomes = [
   {
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'builds',
-    hash: '23e993b69dd9840f5145307eb685ce2c0ed3e87515eb574ed7fbdd6859f063c5',
+    hash: '8f517ae565d02e69f7f706e855f4a0e7076993fec8dd8a1dff63ec3eac759a93',
     summary: {
       date: { year: 6, quarter: 1 },
-      treasury: 4,
+      treasury: 6,
       outcome: 'lost',
       sites: [
         'lowmere-road operating 3',
@@ -134,10 +144,10 @@ const outcomes = [
         'dustwell-irrigation operating 3',
         'southbank-store operating 2',
         'coast-road operating 3',
-        'highland-road operating 3',
+        'highland-road decaying 3',
         'arden-power-line decaying 2',
-        'lowmere-power-line decaying 2',
-        'korrgate-power-line paused 1',
+        'lowmere-power-line paused 1',
+        'korrgate-power-line paused 0',
         'korr-falls-dam locked 0',
         'dustwell-clinic locked 0',
         'westhaven-clinic locked 0',
@@ -151,9 +161,9 @@ const outcomes = [
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'bailedOut',
-    hash: 'f780de2b5c1f5923b9cbcd617fe6ebcbd6b9073c6d37b26d29fc3b881ca8ac61',
+    hash: '3e8461ac87006a0c62a9a88fce0990fb765e396267b14e6645bd4aac98b10fcf',
     summary: {
-      date: { year: 6, quarter: 1 },
+      date: { year: 4, quarter: 3 },
       treasury: 6,
       outcome: 'lost',
       sites: [
@@ -173,16 +183,15 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'builds',
-    hash: 'bf6e51c80a3756cd68636e3e17913d162aa999e13ff0c55bfc25f018408c8ead',
+    hash: 'e214a72e046a1339ddb6cc7c2abcdebfdbd70aee05c4eae75b3286a3bc3f33cf',
     summary: {
-      date: { year: 7, quarter: 1 },
-      treasury: 2,
-      outcome: 'playing',
+      date: { year: 6, quarter: 1 },
+      treasury: 43,
+      outcome: 'lost',
       sites: [
-        'alpha-store decaying 2',
-        'sand-road paused 0',
-        'north-power-line decaying 2',
-        'sand-power-line decaying 2',
+        'alpha-store operating 2',
+        'north-power-line operating 2',
+        'sand-power-line operating 2',
         'sand-dam locked 0',
         'sand-dam-line locked 0',
         'beta-clinic locked 0',
@@ -195,10 +204,10 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'bailedOut',
-    hash: 'e9efe17871e2b28ce2ceb9bb06823754bf1e31fdbea8ee131c4743b9944897fc',
+    hash: '018f16fb5a437369b4329551e870791466976bf561f7d349770ed5d7ef2cd9e4',
     summary: {
       date: { year: 7, quarter: 1 },
-      treasury: 4,
+      treasury: 5,
       outcome: 'playing',
       sites: [
         'alpha-store decaying 2',

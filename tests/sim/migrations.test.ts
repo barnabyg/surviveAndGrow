@@ -10,12 +10,14 @@ import {
   debtStatus,
   deterrenceStatus,
   electionStatus,
+  factionStandings,
   knownTechnologies,
   loadCountry,
   loadSave,
   pendingDilemma,
   previewQuarter,
   priceStatus,
+  regionFactions,
   siteOf,
   siteStatus,
   startFault,
@@ -40,7 +42,8 @@ import format12Save from '../saves/format-12.json';
 import format13Save from '../saves/format-13.json';
 import format14Save from '../saves/format-14.json';
 import format15Save from '../saves/format-15.json';
-import { withValue } from './files';
+import format16Save from '../saves/format-16.json';
+import { withValue, without } from './files';
 import { answering, inFirstTerm, steward } from './playing';
 import { budgetFrom, budgetOf } from '../budgets';
 
@@ -902,6 +905,133 @@ describe('the save kept from save format 15', () => {
       'Border incident with Voskar ahead',
     );
     expect(tradeCapacity(next.state).links.map((link) => link.closed)).toEqual([null, null]);
+  });
+});
+
+describe('the save kept from save format 16', () => {
+  it('still opens on the game it was written from, a border incident with Voskar in force', () => {
+    const { game, report } = loadSave(format16Save);
+
+    expect(game.date).toEqual({ year: 3, quarter: 3 });
+    expect(game.country.formatVersion).toBe(12);
+    expect(game.borderIncidents).toEqual([
+      {
+        neighbourId: 'voskar',
+        announced: { year: 2, quarter: 4 },
+        begins: { year: 3, quarter: 2 },
+      },
+    ]);
+    expect(borderIncidentStatuses(game)).toMatchObject([
+      {
+        name: 'Voskar',
+        inForce: true,
+        quartersLeft: 2,
+        regionIds: ['korr-highlands', 'salt-coast', 'dry-east'],
+      },
+    ]);
+    expect(
+      tradeCapacity(game).links.map((link) => [link.name, link.tonnes, link.closed?.quartersLeft]),
+    ).toEqual([
+      ['Korr Pass', 0, 2],
+      ['Selama bridge', 40_000, undefined],
+    ]);
+    // The last report has what its first quarter cost: tax in each region on the border, and
+    // the blow to approval that sent those regions from strikes to protests.
+    expect(
+      report?.treasury.contributions
+        .filter((line) => line.label.startsWith('Lost to the border incident with Voskar'))
+        .map((line) => [line.regionId, line.amount]),
+    ).toEqual([
+      ['korr-highlands', -7],
+      ['salt-coast', -12],
+      ['dry-east', -5],
+    ]);
+    expect(
+      report?.approval.contributions.find((line) => line.label === 'Border incident with Voskar'),
+    ).toEqual({ label: 'Border incident with Voskar', amount: -30 });
+    expect(
+      report?.entries.filter((entry) => entry.kind === 'protest').map((entry) => entry.regionId),
+    ).toEqual(['korr-highlands', 'salt-coast', 'dry-east']);
+  });
+
+  it('plays on: the incident runs its two quarters more and ends, and the pass carries again', () => {
+    let { game } = loadSave(format16Save);
+    const headlines: string[][] = [];
+    for (let quarter = 0; quarter < 2; quarter += 1) {
+      const result = advanceQuarter(game, answering(game, steward(game)));
+      game = result.state;
+      headlines.push(
+        result.report.entries
+          .filter((entry) => entry.kind === 'borderIncident')
+          .map((entry) => entry.headline),
+      );
+    }
+    expect(headlines).toEqual([[], ['Border incident with Voskar has ended']]);
+    expect(game.borderIncidents).toEqual([]);
+    expect(tradeCapacity(game).links[0]).toMatchObject({ tonnes: 50_000, closed: null });
+  });
+
+  it('is refused when an incident is not one the game could hold', () => {
+    const incident = ['state', 'borderIncidents', 0];
+    expect(() =>
+      loadSave(withValue(format16Save, [...incident, 'neighbourId'], 'atlantis')),
+    ).toThrow(
+      'The saved game is damaged and cannot be opened: state.borderIncidents[0].neighbourId is "atlantis", which is not a neighbour this game has.',
+    );
+    expect(() => loadSave(withValue(format16Save, [...incident, 'begins'], 'soon'))).toThrow(
+      /^The saved game is damaged and cannot be opened: state\.borderIncidents\[0\]\.begins/,
+    );
+    expect(() => loadSave(without(format16Save, ['state', 'borderIncidents']))).toThrow(
+      /^The saved game is damaged and cannot be opened: state\.borderIncidents/,
+    );
+  });
+
+  it('is lifted to format 17 with every faction at neutral, so approval is where it was and the standings then find their own level', () => {
+    const { game, report } = loadSave(format16Save);
+
+    // Its country file is of format 12, which gives no region a faction mix: an even mix.
+    expect(game.country.formatVersion).toBe(12);
+    for (const region of game.regions) {
+      expect(regionFactions(game, region.id)).toEqual({
+        regionId: region.id,
+        shares: { farmers: 333, workers: 333, business: 333 },
+        effect: 0,
+        parts: { farmers: 0, workers: 0, business: 0 },
+      });
+    }
+    expect(
+      factionStandings(game)
+        .standings.filter((each) => each.faction !== 'army')
+        .map((each) => [each.standing, each.word]),
+    ).toEqual([
+      [500, 'Content'],
+      [500, 'Content'],
+      [500, 'Content'],
+    ]);
+    // Approval is what the save held, to the thousandth.
+    expect(game.regions.map((region) => region.approval)).toEqual(
+      format16Save.state.regions.map((region) => region.approval),
+    );
+    expect(report?.standings).toBeNull();
+    expect(game.history.every((record) => record.standings === null)).toBe(true);
+
+    // The next quarter moves each standing part of the way to where the budget settles it,
+    // records it, and reports it.
+    const next = advanceQuarter(game, answering(game, steward(game)));
+    const settles = factionStandings(game).standings.map((each) => each.settles);
+    const moved = factionStandings(next.state).standings.map((each) => each.standing);
+    for (const index of [0, 1, 2]) {
+      expect(Math.sign((moved[index] ?? 0) - 500)).toBe(Math.sign((settles[index] ?? 0) - 500));
+      expect(Math.abs((moved[index] ?? 0) - 500)).toBeLessThan(
+        Math.abs((settles[index] ?? 0) - 500),
+      );
+    }
+    expect(next.state.history.at(-1)?.standings).toEqual({
+      farmers: moved[0],
+      workers: moved[1],
+      business: moved[2],
+    });
+    expect(next.report.standings?.farmers.value).toBe(moved[0]);
   });
 });
 

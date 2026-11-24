@@ -3,10 +3,11 @@ import { loadCountry, type Country } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 
 /**
- * The real country that ships with the game, with its dilemmas left out and its people not
- * growing in number. A dilemma stops the game until it is answered, so a test meets one only
- * when it sets one up; and growth moves every figure worked out per head, so a test meets it
- * only when it is about it.
+ * The real country that ships with the game, with its dilemmas left out, its people not
+ * growing in number and following no faction. A dilemma stops the game until it is answered,
+ * so a test meets one only when it sets one up; growth moves every figure worked out per
+ * head, and the factions move approval region by region, so a test meets either only when it
+ * is about it.
  */
 export const tavara = (): Country => loadCountry(withoutDilemmas(tavaraFile));
 
@@ -157,9 +158,28 @@ export function beforeDefence(file: unknown): unknown {
   return copy;
 }
 
+/**
+ * Testland's file as format 12 could write it: no region has a faction mix, since giving one
+ * needs format 13.
+ */
+export function testlandFormat12File(): unknown {
+  return beforeFactions(testlandFile);
+}
+
+/** A copy of a country file as format 12 could write it: no region has a faction mix. */
+export function beforeFactions(file: unknown): unknown {
+  const copy = structuredClone(file) as {
+    formatVersion: number;
+    regions: { factions?: unknown }[];
+  };
+  for (const region of copy.regions) delete region.factions;
+  copy.formatVersion = 12;
+  return copy;
+}
+
 /** A copy of a country file as format 11 could write it: no neighbour has an ambition. */
 export function beforeAmbition(file: unknown): unknown {
-  const copy = structuredClone(file) as {
+  const copy = beforeFactions(file) as {
     formatVersion: number;
     map: { neighbours: { ambition?: number }[] };
   };
@@ -222,12 +242,28 @@ interface Chances {
 }
 
 /**
- * A copy of a country file in which no dilemma ever arises and no region grows. Saying so
- * needs format 2 of the country file, which reads a format 1 file's contents unchanged.
+ * A copy of a country file in which no dilemma ever arises, no region grows and no region's
+ * people follow a faction. Saying that no region grows needs format 2 of the country file,
+ * which reads a format 1 file's contents unchanged.
  */
 function withoutDilemmas(file: unknown): unknown {
-  const copy = withoutGrowth(file) as Chances;
+  const copy = withoutFactions(withoutGrowth(file)) as Chances;
   delete copy.dilemmaLikelihood;
+  return copy;
+}
+
+/**
+ * A copy of a country file whose people follow no faction, so that the factions move no
+ * region's approval: for a test about something else, whose figures are worked out without
+ * them. A file of a format before 13 cannot say so, and is left as it is.
+ */
+export function withoutFactions(file: unknown): unknown {
+  const copy = structuredClone(file) as {
+    formatVersion: number;
+    regions: { factions?: Record<string, number> }[];
+  };
+  if (copy.formatVersion < 13) return copy;
+  for (const region of copy.regions) region.factions = { farmers: 0, workers: 0, business: 0 };
   return copy;
 }
 
@@ -262,7 +298,8 @@ export function withDroughtChance(
  * A country file with chance pinned down: the chance each quarter of each dilemma named,
  * and none of any other; the yearly chance of drought and of flood in each region named,
  * and none elsewhere; and, if given, the food reserve the country starts with. It starts
- * owing nothing, so that what debt does to the treasury and the rating stays out of the way.
+ * owing nothing, so that what debt does to the treasury and the rating stays out of the way,
+ * and its people follow no faction unless it is asked to keep its faction mixes.
  */
 export function withChances(
   file: unknown,
@@ -273,6 +310,8 @@ export function withChances(
     readonly reserve?: number;
     /** Whether the regions' people grow in number, as they do when shipped. */
     readonly growing?: boolean;
+    /** Whether the regions keep their faction mixes, as they do when shipped. */
+    readonly factions?: boolean;
     /**
      * The chance each quarter of each world price shock named being announced, and none of
      * any other. Left out, no shock ever comes.
@@ -280,8 +319,11 @@ export function withChances(
     readonly shocks?: Record<string, number>;
   },
 ): Country {
+  const mixed = chances.factions === true ? file : withoutFactions(file);
   const copy = (
-    chances.growing === true ? withoutStartingDebt(file) : withoutGrowth(withoutStartingDebt(file))
+    chances.growing === true
+      ? withoutStartingDebt(mixed)
+      : withoutGrowth(withoutStartingDebt(mixed))
   ) as Chances;
   for (const region of copy.regions) {
     region.eventLikelihood = {

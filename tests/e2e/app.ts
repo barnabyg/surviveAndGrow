@@ -4,7 +4,12 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 interface CountryFile extends Record<string, unknown> {
   formatVersion: number;
-  regions: { id: string; eventLikelihood?: Record<string, number>; populationGrowth?: number }[];
+  regions: {
+    id: string;
+    eventLikelihood?: Record<string, number>;
+    populationGrowth?: number;
+    factions?: Record<string, number>;
+  }[];
   dilemmaLikelihood?: Record<string, number>;
 }
 
@@ -25,17 +30,31 @@ function holdingPopulation(country: CountryFile, growing = false): CountryFile {
 }
 
 /**
- * The crude second country as its author wrote it, except that no dilemma arises in it and
- * its people do not grow. A dilemma stops the game until it is answered, so a test meets one
- * only when it asks for it.
+ * A country file whose people follow no faction, unless the test asks for its faction mixes.
+ * The factions move approval region by region, so a test meets them only when it is about
+ * them.
  */
-export function testlandFile(): Record<string, unknown> {
-  return { ...holdingPopulation(read('..', 'countries', 'testland.json')), dilemmaLikelihood: {} };
+function followingNoFaction(country: CountryFile, mixed = false): CountryFile {
+  if (mixed) return country;
+  for (const region of country.regions) region.factions = { farmers: 0, workers: 0, business: 0 };
+  return country;
 }
 
 /**
- * Tavara as it ships, with its people not growing and chance pinned down where the test
- * says: drought, and flood, strike the named regions every year and no other region ever,
+ * The crude second country as its author wrote it, except that no dilemma arises in it, its
+ * people do not grow and they follow no faction. A dilemma stops the game until it is
+ * answered, so a test meets one only when it asks for it.
+ */
+export function testlandFile(): Record<string, unknown> {
+  return {
+    ...followingNoFaction(holdingPopulation(read('..', 'countries', 'testland.json'))),
+    dilemmaLikelihood: {},
+  };
+}
+
+/**
+ * Tavara as it ships, with its people not growing and following no faction, unless the test
+ * asks for either, and chance pinned down where the test says: drought, and flood, strike the named regions every year and no other region ever,
  * and each dilemma named arises with the chance given, each quarter that it can, and no other
  * dilemma ever. Events left unsaid stay as the country file has them; once either is named,
  * the other strikes nowhere unless it is named too. Each world price shock named is announced
@@ -48,10 +67,12 @@ export function tavaraWith(chances: {
   readonly shocks?: Record<string, number>;
   /** Whether its people grow in number, as they do in the country that ships. */
   readonly growing?: boolean;
+  /** Whether its regions keep their faction mixes, as they do in the country that ships. */
+  readonly factions?: boolean;
 }): CountryFile {
-  const country = holdingPopulation(
-    read('..', '..', 'src', 'countries', 'tavara.json'),
-    chances.growing,
+  const country = followingNoFaction(
+    holdingPopulation(read('..', '..', 'src', 'countries', 'tavara.json'), chances.growing),
+    chances.factions,
   );
   const { drought, flood } = chances;
   if (drought !== undefined || flood !== undefined) {

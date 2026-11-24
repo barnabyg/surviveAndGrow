@@ -6,6 +6,7 @@
 
 import type { Budget } from './budget';
 import type { StartingLoan } from './debt';
+import type { FactionMix } from './factions';
 import type { Money, Range } from './types';
 import type {
   DecorationKind,
@@ -43,6 +44,11 @@ export interface Region {
   readonly growthPerTenThousandPerQuarter: number;
   /** The chance, from 0 to 1, that each kind of event strikes the region in a year. */
   readonly eventLikelihood: Readonly<Record<EventType, number>>;
+  /**
+   * The region's faction mix: the share of its people who are farmers, workers and business
+   * (see `factions.ts`). A file that gives none is read as an even mix.
+   */
+  readonly factionMix: FactionMix;
 }
 
 export interface Settlement {

@@ -101,6 +101,8 @@ describe('approval when a game starts in Tavara', () => {
       { label: 'Health spending', amount: 7 },
       { label: 'Education spending', amount: -2 },
       { label: 'Security spending', amount: -2 },
+      // The test country's people follow no faction, so the factions add nothing.
+      expect.objectContaining({ label: 'Factions', amount: 0 }),
     ]);
   });
 });
@@ -270,6 +272,7 @@ describe('the tax rate in Tavara', () => {
       { label: 'Health spending', amount: 0 },
       { label: 'Education spending', amount: 0 },
       { label: 'Security spending', amount: 0 },
+      expect.objectContaining({ label: 'Factions', amount: 0 }),
     ]);
   });
 });

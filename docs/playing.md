@@ -109,10 +109,10 @@ npm.cmd run dev -- --open '/?seed=1'
 ```
 
 This starts the game at http://localhost:41730/?seed=1 and opens it in your browser. On seed 1
-the scripted chain builder, which never trades, loses its first vote with 48.8%; the timing
+the scripted chain builder, which never trades, loses its first vote with 49.3%; the timing
 trader, which builds the same sites in the same order and trades grain besides, wins in quarter
 30, in the third year of its second term. The improver, which builds the same sites and
-researches the technologies that improve them, wins its first vote and loses its second.
+researches the technologies that improve them, wins its first two votes and loses its third.
 Try to win the way the timing trader does:
 
 1. Build as the chain builder does: the Korr Falls power station and its lines first, then

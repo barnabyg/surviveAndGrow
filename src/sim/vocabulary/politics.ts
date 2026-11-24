@@ -2,7 +2,8 @@
 
 /**
  * What moves approval. Food is each region's own; the tax rate and the spending areas that
- * serve the public bear on every region alike; events are one-off pushes that fade.
+ * serve the public bear on every region alike; the factions bear on each region by its
+ * faction mix; events are one-off pushes that fade.
  */
 export const APPROVAL_DRIVERS = [
   'food',
@@ -10,6 +11,7 @@ export const APPROVAL_DRIVERS = [
   'health',
   'education',
   'security',
+  'factions',
   'events',
 ] as const;
 export type ApprovalDriver = (typeof APPROVAL_DRIVERS)[number];
@@ -20,6 +22,7 @@ export const APPROVAL_DRIVER_NAMES: Readonly<Record<ApprovalDriver, string>> = {
   health: 'Health spending',
   education: 'Education spending',
   security: 'Security spending',
+  factions: 'Factions',
   events: 'Events',
 };
 

@@ -13,6 +13,8 @@ import { deficitOf, reassessCredit, recordAfter } from './credit';
 import { checkDecisions } from './decisions';
 import { resolveDeterrence } from './deterrence';
 import { answerDilemma, ariseDilemma, rollDilemmas, withAnswer } from './dilemmas';
+import { levelsOf, movedMost, resolveFactions } from './factions';
+import { factionInputs, factionOutlooks, homesOf } from './factionStatus';
 import { forecastVoteShare, holdElection, isElectionQuarter, rollSwing } from './election';
 import {
   beginEntry,
@@ -236,6 +238,7 @@ export function resolveQuarter(
           regions,
           worldPrices,
           borderIncidents: incidents.incidents,
+          factions: lived.factions.standings,
           prosperity: prosperity.value,
           debtBurden: lived.debtBurden,
         }),
@@ -246,6 +249,7 @@ export function resolveQuarter(
       prosperousQuarters,
       plottingQuarters,
       deterrence: deterred.deterrence.value,
+      factions: lived.factions.standings,
       austerity: bailout.austerity,
       outcome,
     },
@@ -264,6 +268,7 @@ export function resolveQuarter(
       approval: approval.approval,
       armyLoyalty: army.loyalty,
       deterrence: deterred.deterrence,
+      standings: lived.factions.figures,
       debt: {
         value: debtOf(taken.debts),
         change: debtOf(taken.debts) - debtOf(given.debts),
@@ -348,10 +353,31 @@ function liveQuarter(
     was: expectationsIn(state.tier, state.startingTier),
     now: expectationsIn(tier, state.startingTier),
   };
+  // The factions answer to what the quarter raised and spent and to the country as it began.
+  // Their standings move first, so that approval is judged with them as the quarter leaves them.
+  const factions = resolveFactions(
+    state.factions,
+    factionInputs(
+      state,
+      {
+        taxRatePercent: decisions.budget.taxRatePercent,
+        spent: finances.spent,
+        revenue: finances.revenue,
+      },
+      sites,
+    ),
+    homesOf(state.country, state.regions),
+  );
   // Strikes in force as the quarter began have already cut its revenue. The approval the
   // quarter leaves behind decides who strikes in the next.
   const approval = resolveApproval(state.country, state.regions, served, {
     ...approvalInputs(decisions, finances, answer),
+    factions: {
+      was: levelsOf(state.factions),
+      now: levelsOf(factions.standings),
+      settles: factions.settles,
+      movedBy: movedMost(factions.figures),
+    },
     // A bailout's blow lands at once, beside any the answer to a dilemma dealt, and so does
     // that of a border incident in the quarter it begins, in the regions on its border.
     pushes: [...answer.pushes, ...bailoutPushes(serviced, state), ...incidentPushes(state)],
@@ -416,6 +442,7 @@ function liveQuarter(
     agricultureSpent,
     sites,
     food,
+    factions,
     approval,
     army,
     deterred,
@@ -533,6 +560,7 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     deterrence: exactly(lived.deterred.deterrence.value),
     deterrenceHeading: exactly(lived.deterred.heading),
     neighbours: lived.deterred.neighbours,
+    standings: factionOutlooks(lived.factions.standings, lived.factions.settles),
     prosperity: { min: lived.prosperityAt(low), max: lived.prosperityAt(high) },
     unrest: approvalStatus({ regions: lived.regions }).unrest,
     voteShare: forecastVoteShare(approval.approval.value),

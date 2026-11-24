@@ -11,6 +11,7 @@ import type { Credit } from './credit';
 import type { Debt } from './debt';
 import { depositIn, withFinds } from './deposits';
 import type { ActiveEvent } from './events';
+import type { FactionLevels, FactionStandings } from './factions';
 import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import { MIGRATIONS, SAVE_FORMAT_VERSION, toCurrentFormat, type SaveMigration } from './migrations';
@@ -48,6 +49,7 @@ import type { RouteCarriage } from './tradeRoutes';
 import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVERS,
+  CIVIL_FACTIONS,
   CREDIT_RATINGS,
   DEBT_KINDS,
   DEBT_SCHEDULES,
@@ -55,6 +57,7 @@ import {
   DILEMMA_TYPES,
   ENDING_CAUSES,
   EVENT_TYPES,
+  FACTION_LEVERS,
   FOOD_STAGES,
   GOODS,
   LOYALTY_DRIVERS,
@@ -72,6 +75,7 @@ import {
   TIERS,
   UNREST_LEVELS,
   type ApprovalDriver,
+  type CivilFaction,
   type LoyaltyDriver,
   type SpendingArea,
 } from './vocabulary';
@@ -149,6 +153,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       prosperousQuarters: game.prosperousQuarters,
       plottingQuarters: game.plottingQuarters,
       deterrence: game.deterrence,
+      factions: game.factions,
       borderIncidents: game.borderIncidents,
       austerity: game.austerity,
       outcome: game.outcome,
@@ -244,6 +249,7 @@ export function loadSave(
     prosperousQuarters: whole(state.prosperousQuarters, 'state.prosperousQuarters', 0),
     plottingQuarters: whole(state.plottingQuarters, 'state.plottingQuarters', 0),
     deterrence: whole(state.deterrence, 'state.deterrence', 0, 1000),
+    factions: readFactions(record(state.factions, 'state.factions'), 'state.factions'),
     borderIncidents: readBorderIncidents(state.borderIncidents, 'state.borderIncidents', country),
     austerity:
       state.austerity === null
@@ -571,6 +577,39 @@ function readTradeCarried(saved: unknown, path: string, country: Country): Route
   return carried;
 }
 
+/**
+ * The standing of each civil faction with what each lever adds to it. Every lever the engine
+ * knows is held for every faction, whichever of them the faction answers to in this release.
+ */
+function readFactions(saved: Json, path: string): FactionStandings {
+  return Object.fromEntries(
+    CIVIL_FACTIONS.map((faction) => {
+      const at = `${path}.${faction}`;
+      const held = record(saved[faction], at);
+      const effects = record(held.effects, `${at}.effects`);
+      return [
+        faction,
+        {
+          standing: whole(held.standing, `${at}.standing`, 0, 1000),
+          effects: Object.fromEntries(
+            FACTION_LEVERS.map((lever) => [lever, whole(effects[lever], `${at}.effects.${lever}`)]),
+          ),
+        },
+      ];
+    }),
+  ) as FactionStandings;
+}
+
+/** One figure for each civil faction, in thousandths. */
+function readLevels(saved: Json, path: string): FactionLevels {
+  return Object.fromEntries(
+    CIVIL_FACTIONS.map((faction) => [
+      faction,
+      whole(saved[faction], `${path}.${faction}`, 0, 1000),
+    ]),
+  ) as FactionLevels;
+}
+
 function readHistory(saved: unknown, path: string): VitalSigns[] {
   const history = list(saved, path, (item, itemPath): VitalSigns => ({
     date: date(item.date, `${itemPath}.date`),
@@ -584,6 +623,10 @@ function readHistory(saved: unknown, path: string): VitalSigns[] {
       item.armyLoyalty === null
         ? null
         : whole(item.armyLoyalty, `${itemPath}.armyLoyalty`, 0, 1000),
+    standings:
+      item.standings === null
+        ? null
+        : readLevels(record(item.standings, `${itemPath}.standings`), `${itemPath}.standings`),
     debt: whole(item.debt, `${itemPath}.debt`, 0),
     debtBurden: whole(item.debtBurden, `${itemPath}.debtBurden`, 0),
   }));
@@ -703,21 +746,29 @@ function readReport(
   /** The region something belongs to, kept only where the save names one. */
   const place = (item: Json, path: string) =>
     item.regionId === undefined ? {} : { regionId: region(item.regionId, `${path}.regionId`) };
+  const contribution = (line: Json, linePath: string): Contribution => ({
+    label: text(line.label, `${linePath}.label`),
+    amount: whole(line.amount, `${linePath}.amount`),
+    ...place(line, linePath),
+    // A line may be split into parts, and may carry a few words on what lies behind it.
+    ...(line.parts === undefined
+      ? {}
+      : { parts: list(line.parts, `${linePath}.parts`, contribution) }),
+    ...(line.note === undefined ? {} : { note: text(line.note, `${linePath}.note`) }),
+  });
   const figure = (value: unknown, path: string): Figure => {
     const written = record(value, path);
     return {
       value: whole(written.value, `${path}.value`),
       change: whole(written.change, `${path}.change`),
-      contributions: list(
-        written.contributions,
-        `${path}.contributions`,
-        (line, linePath): Contribution => ({
-          label: text(line.label, `${linePath}.label`),
-          amount: whole(line.amount, `${linePath}.amount`),
-          ...place(line, linePath),
-        }),
-      ),
+      contributions: list(written.contributions, `${path}.contributions`, contribution),
     };
+  };
+  const standings = (value: unknown, path: string) => {
+    const written = record(value, path);
+    return Object.fromEntries(
+      CIVIL_FACTIONS.map((faction) => [faction, figure(written[faction], `${path}.${faction}`)]),
+    ) as Record<CivilFaction, Figure>;
   };
   const harvest = (value: unknown, path: string): Harvest => {
     const written = record(value, path);
@@ -748,6 +799,7 @@ function readReport(
     armyLoyalty:
       saved.armyLoyalty === null ? null : figure(saved.armyLoyalty, 'report.armyLoyalty'),
     deterrence: saved.deterrence === null ? null : figure(saved.deterrence, 'report.deterrence'),
+    standings: saved.standings === null ? null : standings(saved.standings, 'report.standings'),
     debt: saved.debt === null ? null : figure(saved.debt, 'report.debt'),
     credit: saved.credit === null ? null : figure(saved.credit, 'report.credit'),
     prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),

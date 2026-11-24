@@ -3,6 +3,16 @@ import { balance } from './balance';
 import type { BudgetOutcome } from './budget';
 import { regionName, type Country } from './country';
 import type { DilemmaOutcome } from './dilemmas';
+import {
+  factionsEffect,
+  levelsOf,
+  mapFactions,
+  mixOf,
+  moodAt,
+  type FactionLevels,
+  type FactionMix,
+  type FactionStandings,
+} from './factions';
 import type { ReportEntry } from './report';
 import type { Decisions, RegionState } from './state';
 import { formatPercent } from './text';
@@ -11,8 +21,12 @@ import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVER_NAMES,
   APPROVAL_DRIVERS,
+  CIVIL_FACTIONS,
+  FACTION_MOOD_NAMES,
+  FACTION_NAMES,
   UNREST_NAMES,
   type ApprovalDriver,
+  type CivilFaction,
   type FoodStage,
   type SpendingArea,
   type Tier,
@@ -50,6 +64,23 @@ export interface ApprovalInputs {
    * (`was`) and lower it once it ends (`now`), in thousandths. Left out, there are none.
    */
   readonly expectations?: { readonly was: number; readonly now: number };
+  /**
+   * How the factions bear on the quarter. The Factions effect in a region is the standings
+   * as the quarter ends weighted by its mix: it moves as they do, and no more slowly. Left
+   * out, it stays as it is.
+   */
+  readonly factions?: FactionsNow;
+}
+
+/** The factions' standings over a quarter, as approval reads them. */
+export interface FactionsNow {
+  /** Each standing as the quarter began, and as it ends. */
+  readonly was: FactionLevels;
+  readonly now: FactionLevels;
+  /** Where the quarter's measures would settle each. */
+  readonly settles: FactionLevels;
+  /** What moved each most in the quarter, in a few words, or null if nothing did. */
+  readonly movedBy?: Readonly<Record<CivilFaction, string | null>>;
 }
 
 /** Approval answers to the tax rate decided and to what was actually spent. */
@@ -88,7 +119,10 @@ export interface ApprovalStatus {
   readonly strikesBelow: number;
   /** A region protests while its approval is below this. */
   readonly protestsBelow: number;
-  /** The baseline and what each driver now adds to or takes from it, adding up to approval. */
+  /**
+   * The baseline and what each driver now adds to or takes from it, adding up to approval.
+   * The Factions line is split by faction when the factions' standings are given.
+   */
   readonly causes: readonly Contribution[];
   /** The regions now striking or protesting, in the country file's order. */
   readonly unrest: readonly RegionUnrest[];
@@ -102,13 +136,23 @@ const LIMIT_LABEL = 'Approval at its limit';
 
 /**
  * Approval and unrest as a region starts the game: settled where the starting budget puts
- * it, so that nothing moves until the player or the weather changes something.
+ * it, so that nothing moves until the player or the weather changes something. Given the
+ * region's faction mix and the standings the game opens with, it counts what the factions do
+ * there; without them it leaves the factions out.
  */
 export function startingApproval(
   country: Country,
+  factions?: { readonly mix: FactionMix; readonly levels: FactionLevels },
 ): Pick<RegionState, 'approval' | 'approvalEffects' | 'unrest'> {
   const people = sum(country.regions.map((region) => region.population));
-  const approvalEffects = settledEffects('adequate', toInputs(country.start.budget), people);
+  const approvalEffects = settledEffects(
+    {
+      foodStage: 'adequate',
+      factions: factions === undefined ? 0 : factionsEffect(factions.mix, factions.levels).total,
+    },
+    toInputs(country.start.budget),
+    people,
+  );
   const approval = approvalFrom(approvalEffects, 0);
   return { approval, approvalEffects, unrest: unrestAt(approval) };
 }
@@ -132,17 +176,45 @@ export function resolveApproval(
   const pushes = inputs.pushes ?? [];
   const expectations = inputs.expectations ?? { was: 0, now: 0 };
   const raised = expectations.now - expectations.was;
-  const moves = after.map((region) => {
-    const settled = settledEffects(region.foodStage, inputs, people);
+  const { factions } = inputs;
+  const moves = after.map((region, index) => {
+    const mix = mixOf(country, region.id, index);
+    // What the factions do here as the quarter began and as it ends, and where they are heading.
+    const followed =
+      factions === undefined
+        ? null
+        : {
+            was: factionsEffect(mix, factions.was).parts,
+            now: factionsEffect(mix, factions.now),
+            settles: factionsEffect(mix, factions.settles).total,
+          };
+    const settled = settledEffects(
+      {
+        foodStage: region.foodStage,
+        factions: followed?.settles ?? region.approvalEffects.factions,
+      },
+      inputs,
+      people,
+    );
     const landing = pushes.filter(
       (push) => push.regionId === undefined || push.regionId === region.id,
     );
-    // What each driver's effect moves by this quarter, pushes aside.
+    // What each driver's effect moves by this quarter, pushes aside. The factions' standings
+    // have already moved their share of the way, so their effect here follows them at once.
     const drift = mapDrivers((driver) =>
-      stepTowards(
-        region.approvalEffects[driver],
-        settled[driver],
-        balance.approval.adjustPermillePerQuarter,
+      driver === 'factions'
+        ? (followed?.now.total ?? region.approvalEffects.factions) - region.approvalEffects.factions
+        : stepTowards(
+            region.approvalEffects[driver],
+            settled[driver],
+            balance.approval.adjustPermillePerQuarter,
+          ),
+    );
+    // Each faction's part of that movement, adding up to it.
+    const byFaction = splitAmong(
+      drift.factions,
+      mapFactions((faction) =>
+        followed === null ? 0 : followed.now.parts[faction] - followed.was[faction],
       ),
     );
     const approvalEffects = mapDrivers(
@@ -157,6 +229,7 @@ export function resolveApproval(
       region: { ...region, approval, approvalEffects, unrest },
       was: region,
       drift,
+      byFaction,
       landing,
       // What the limits took back from the sum of the movements.
       limited:
@@ -177,11 +250,21 @@ export function resolveApproval(
   const weighted = (amount: (move: (typeof moves)[number]) => number) =>
     sum(moves.map((move) => move.region.population * amount(move)));
   const labels = [...new Set(pushes.map((push) => push.label))];
-  const lines = [
+  const lines: Line[] = [
     ...APPROVAL_DRIVERS.map((driver) => ({
       label: driver === 'events' ? 'Earlier events fading' : APPROVAL_DRIVER_NAMES[driver],
       numerator: weighted((move) => move.drift[driver]),
       always: driver !== 'events',
+      ...(driver === 'factions' && factions !== undefined
+        ? {
+            parts: CIVIL_FACTIONS.map((faction) => ({
+              label: FACTION_NAMES[faction],
+              numerator: weighted((move) => move.byFaction[faction]),
+              // What moved the faction most, left out where its part comes to nothing.
+              note: factions.movedBy?.[faction] ?? null,
+            })),
+          }
+        : {}),
     })),
     ...labels.map((label) => ({
       label,
@@ -218,10 +301,7 @@ export function resolveApproval(
     approval: {
       value,
       change,
-      contributions: lines.flatMap((entry, index): Contribution[] => {
-        const amount = amounts[index] ?? 0;
-        return entry.always || amount !== 0 ? [{ label: entry.label, amount }] : [];
-      }),
+      contributions: contributionsOf(lines, amounts, people),
     },
     heading: Math.floor(sum(moves.map((move) => move.region.population * move.settlesAt)) / people),
     entries: moves.flatMap((move) => unrestEntries(country, move.was, move.region)),
@@ -242,8 +322,14 @@ export function approvalStatus(situation: {
    */
   readonly tier?: Tier;
   readonly startingTier?: Tier;
+  /**
+   * The country and the factions' standings, which split the Factions line by faction. Left
+   * out, the line stands whole.
+   */
+  readonly country?: Country;
+  readonly factions?: FactionStandings;
 }): ApprovalStatus {
-  const { regions, tier, startingTier } = situation;
+  const { regions, tier, startingTier, country, factions } = situation;
   const expectations =
     tier === undefined || startingTier === undefined ? 0 : expectationsIn(tier, startingTier);
   const people = populationOf(regions);
@@ -251,11 +337,36 @@ export function approvalStatus(situation: {
   const { baselinePermille } = balance.approval;
   const weighted = (amount: (region: RegionState) => number) =>
     sum(regions.map((region) => region.population * amount(region)));
-  const lines = [
+  // What each faction adds to the Factions effect in each region, adding up to it there.
+  const byFaction =
+    country === undefined || factions === undefined
+      ? null
+      : regions.map((region, index) =>
+          splitAmong(
+            region.approvalEffects.factions,
+            factionsEffect(mixOf(country, region.id, index), levelsOf(factions)).parts,
+          ),
+        );
+  const lines: Line[] = [
     ...APPROVAL_DRIVERS.map((driver) => ({
       label: APPROVAL_DRIVER_NAMES[driver],
       numerator: weighted((region) => region.approvalEffects[driver]),
       always: driver !== 'events',
+      ...(driver === 'factions' && byFaction !== null && factions !== undefined
+        ? {
+            parts: CIVIL_FACTIONS.map((faction) => ({
+              label: FACTION_NAMES[faction],
+              numerator: sum(
+                regions.map(
+                  (region, index) => region.population * (byFaction[index]?.[faction] ?? 0),
+                ),
+              ),
+              // How the faction stands is worth saying whatever it comes to here.
+              note: `${FACTION_MOOD_NAMES[moodAt(factions[faction].standing)]}, at ${formatPercent(factions[faction].standing)}`,
+              noteAlways: true,
+            })),
+          }
+        : {}),
     })),
     {
       label: LIMIT_LABEL,
@@ -286,10 +397,7 @@ export function approvalStatus(situation: {
       ...(expectations === 0 || people === 0
         ? []
         : [{ label: 'Expectations', amount: -expectations }]),
-      ...lines.flatMap((entry, index): Contribution[] => {
-        const amount = amounts[index] ?? 0;
-        return entry.always || amount !== 0 ? [{ label: entry.label, amount }] : [];
-      }),
+      ...contributionsOf(lines, amounts, Math.max(1, people)),
     ],
     unrest: regions.flatMap((region): RegionUnrest[] =>
       region.unrest === 'calm' ? [] : [{ regionId: region.id, unrest: region.unrest }],
@@ -324,9 +432,74 @@ function mapDrivers(effect: (driver: ApprovalDriver) => number): ApprovalEffects
   >;
 }
 
+/** One line of a breakdown before its share of the whole is worked out. */
+interface Line {
+  readonly label: string;
+  /** The line's amount in every region, weighted by the people who live there. */
+  readonly numerator: number;
+  /** Whether the line is shown even when it comes to nothing. */
+  readonly always: boolean;
+  /** What the line is split into, on the same footing, adding up to it. */
+  readonly parts?: readonly {
+    readonly label: string;
+    readonly numerator: number;
+    /** A few words on what lies behind the part, or null for none. */
+    readonly note: string | null;
+    /** Whether the note is given even when the part comes to nothing. */
+    readonly noteAlways?: boolean;
+  }[];
+}
+
+/** The lines as the player reads them, each split into its parts where it has any. */
+function contributionsOf(
+  lines: readonly Line[],
+  amounts: readonly number[],
+  people: number,
+): Contribution[] {
+  return lines.flatMap((entry, index): Contribution[] => {
+    const amount = amounts[index] ?? 0;
+    if (!entry.always && amount === 0) return [];
+    if (entry.parts === undefined) return [{ label: entry.label, amount }];
+    const shares = apportion(
+      entry.parts.map((part) => part.numerator),
+      people,
+      amount,
+    );
+    return [
+      {
+        label: entry.label,
+        amount,
+        parts: entry.parts.map((part, at) => ({
+          label: part.label,
+          amount: shares[at] ?? 0,
+          ...(part.note === null || (part.noteAlways !== true && (shares[at] ?? 0) === 0)
+            ? {}
+            : { note: part.note }),
+        })),
+      },
+    ];
+  });
+}
+
+/**
+ * A whole shared among the factions as nearly as their parts allow: the parts as they are
+ * when they add up to it, and otherwise in proportion to them.
+ */
+function splitAmong(whole: number, parts: FactionLevels): FactionLevels {
+  const total = sum(CIVIL_FACTIONS.map((faction) => parts[faction]));
+  if (total === whole) return parts;
+  if (total === 0) return mapFactions((_, index) => (index === 0 ? whole : 0));
+  const shares = apportion(
+    CIVIL_FACTIONS.map((faction) => parts[faction] * whole),
+    total,
+    whole,
+  );
+  return mapFactions((_, index) => shares[index] ?? 0);
+}
+
 /** Where each driver would settle its effect on a region if nothing changed again. */
 function settledEffects(
-  foodStage: FoodStage,
+  region: { readonly foodStage: FoodStage; readonly factions: number },
   inputs: ApprovalInputs,
   people: number,
 ): ApprovalEffects {
@@ -334,7 +507,10 @@ function settledEffects(
   return mapDrivers((driver) => {
     switch (driver) {
       case 'food':
-        return food[foodStage];
+        return food[region.foodStage];
+      case 'factions':
+        // Where the factions' standings are heading, weighted by the region's mix.
+        return region.factions;
       case 'tax':
         return (tax.neutralPercent - inputs.taxRatePercent) * tax.permillePerPoint;
       case 'events':

@@ -26,6 +26,15 @@ function play(start: GameState, quarters: number) {
   return { state, reports };
 }
 
+/**
+ * Where Tavara's starting budget settles the factions. Agriculture takes $11.0m of the $38.0m
+ * spent, 289 thousandths against the 240 farmers take as their due: 49/240 of their 300
+ * (+61). Health and education take $13.0m, 342 against 370: 28/370 of the workers' 300 (−22).
+ * The budget raises $31.0m, so it runs 225 thousandths short, against the 400 at which a
+ * deficit costs business its whole 150 (−84), and owing nothing is worth its whole 100.
+ */
+const STARTING_STANDINGS = { farmers: 561, workers: 478, business: 516 };
+
 describe('the history of the vital signs in Tavara', () => {
   it('opens with the position the game starts from', () => {
     const game = createGame(tavara(), 1);
@@ -40,6 +49,7 @@ describe('the history of the vital signs in Tavara', () => {
         approval: 518,
         prosperity: 210,
         armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
@@ -50,7 +60,8 @@ describe('the history of the vital signs in Tavara', () => {
     const { state } = play(createGame(tavara(), 1), 3);
 
     // The budget runs $7.0m short each quarter, and 8% of the reserve spoils each quarter:
-    // 14,560 t of 182,000 t, then 13,395 t, then 12,323 t. Nothing moves approval or the army.
+    // 14,560 t of 182,000 t, then 13,395 t, then 12,323 t. Nothing moves approval, the army or
+    // the factions.
     expect(state.history).toEqual([
       {
         date: { year: 1, quarter: 1 },
@@ -60,6 +71,7 @@ describe('the history of the vital signs in Tavara', () => {
         approval: 518,
         prosperity: 210,
         armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
@@ -71,6 +83,7 @@ describe('the history of the vital signs in Tavara', () => {
         approval: 518,
         prosperity: 210,
         armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
@@ -82,6 +95,7 @@ describe('the history of the vital signs in Tavara', () => {
         approval: 518,
         prosperity: 210,
         armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
@@ -93,6 +107,7 @@ describe('the history of the vital signs in Tavara', () => {
         approval: 518,
         prosperity: 210,
         armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
@@ -128,6 +143,11 @@ describe.each(bothCountries)('the history of the vital signs in %s', (_name, cou
         approval: report.approval.value,
         prosperity: report.prosperity?.value,
         armyLoyalty: report.armyLoyalty?.value,
+        standings: {
+          farmers: report.standings?.farmers.value,
+          workers: report.standings?.workers.value,
+          business: report.standings?.business.value,
+        },
         debt: report.debt?.value,
         debtBurden: debtStatus(state).burden,
       });

@@ -8,6 +8,7 @@ import { balance } from './balance';
 import { loadCountry } from './country';
 import { ratingOfScore } from './credit';
 import { deterrenceSettled } from './deterrence';
+import { neutralStandings } from './factions';
 import type { Project } from './projects';
 import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { damaged, isRecord, SaveError, type Json } from './saveChecks';
@@ -23,7 +24,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 16;
+export const SAVE_FORMAT_VERSION = 17;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -48,6 +49,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   13: fromFormat13,
   14: fromFormat14,
   15: fromFormat15,
+  16: fromFormat16,
 };
 
 /**
@@ -376,6 +378,37 @@ function fromFormat14(older: Json): Json {
 function fromFormat15(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
   return { ...older, formatVersion: 16, state: { ...state, borderIncidents: [] } };
+}
+
+/**
+ * Format 17 added the factions. An earlier save had none, so farmers, workers and business
+ * each stand at neutral with nothing pushing them, and every region's approval gains a
+ * Factions effect of nothing: approval is where it was, and the standings then move a share
+ * of the way each quarter towards where the budget in force settles them. The quarters
+ * already recorded, and the last report, kept no standings, so they say so.
+ */
+function fromFormat16(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
+  return {
+    ...older,
+    formatVersion: 17,
+    state: {
+      ...state,
+      factions: neutralStandings(),
+      regions: regions.map((region) =>
+        isRecord(region) && isRecord(region.approvalEffects)
+          ? { ...region, approvalEffects: { ...region.approvalEffects, factions: 0 } }
+          : region,
+      ),
+      history: Array.isArray(state.history)
+        ? (state.history as unknown[]).map((record) =>
+            isRecord(record) ? { ...record, standings: null } : record,
+          )
+        : state.history,
+    },
+    report: isRecord(older.report) ? { ...older.report, standings: null } : older.report,
+  };
 }
 
 /**

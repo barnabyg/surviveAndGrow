@@ -9,6 +9,8 @@ import type { Borrowing, Debt } from './debt';
 import type { NeighbourOutlook } from './deterrence';
 import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
 import type { ActiveEvent, EventStrike } from './events';
+import type { FactionStandings } from './factions';
+import type { FactionOutlook } from './factionStatus';
 import type { Harvest } from './food';
 import type { PriceShock } from './priceShocks';
 import type { Project } from './projects';
@@ -20,6 +22,7 @@ import type { TradeOrder, WorldPrices } from './trade';
 import type { RouteCarriage } from './tradeRoutes';
 import type { Figure, GameDate, Money, Range } from './types';
 import type {
+  CivilFaction,
   CreditRating,
   FoodStage,
   PriceShockType,
@@ -196,6 +199,12 @@ export interface GameState {
    */
   readonly deterrence: number;
   /**
+   * How farmers, workers and business each stand with the government, and what each lever
+   * now adds to or takes from that (see `factions.ts`). The army's standing is its loyalty,
+   * which the regions hold.
+   */
+  readonly factions: FactionStandings;
+  /**
    * The border incidents announced and not yet ended: those to come and those in force, one
    * at most for each neighbour, in the order they were announced (see `borderIncidents.ts`).
    */
@@ -281,6 +290,12 @@ export interface TurnReport {
    * from a save written before format 15, when no neighbour had an ambition, has none.
    */
   readonly deterrence: Figure | null;
+  /**
+   * The standing of farmers, workers and business after the quarter, in thousandths, each
+   * with what its levers did to it. A report carried over from a save written before format
+   * 17, when there were no factions, has none.
+   */
+  readonly standings: Readonly<Record<CivilFaction, Figure>> | null;
   /**
    * National prosperity after the quarter, in thousandths, with what each of its parts did
    * to it. A report carried over from a save written before prosperity existed has none.
@@ -495,6 +510,12 @@ export interface Preview {
    * price carries the country past is the one thing they cannot see.
    */
   readonly neighbours: readonly NeighbourOutlook[];
+  /**
+   * Where farmers, workers and business will each stand once the quarter is over, and where
+   * the quarter's budget is heading each, in the factions' order. The army's standing is army
+   * loyalty, above.
+   */
+  readonly standings: readonly FactionOutlook[];
   /**
    * National prosperity once the quarter is over, in thousandths. Only the world ore price,
    * which world markets move as the quarter ends, is left to chance: with no mine's chain

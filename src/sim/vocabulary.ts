@@ -7,6 +7,7 @@ export * from './vocabulary/army';
 export * from './vocabulary/budget';
 export * from './vocabulary/dilemmas';
 export * from './vocabulary/events';
+export * from './vocabulary/factions';
 export * from './vocabulary/finance';
 export * from './vocabulary/food';
 export * from './vocabulary/map';

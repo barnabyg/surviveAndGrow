@@ -22,7 +22,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import { budgetFrom } from '../budgets';
-import { beforeAmbition, bothCountries, withChances } from './countries';
+import { beforeAmbition, beforeFactions, bothCountries, withChances } from './countries';
 import { faultsOf, withValue } from './files';
 import { steward } from './playing';
 import { enriched, established, fileOf, FILES } from './worthTaking';
@@ -353,7 +353,7 @@ describe('a neighbour’s ambition in a country file', () => {
   const ambition = ['map', 'neighbours', 0, 'ambition'] as const;
 
   it('is a whole percentage from 0 to 100, held in thousandths', () => {
-    expect(COUNTRY_FORMAT_VERSION).toBe(12);
+    expect(COUNTRY_FORMAT_VERSION).toBe(13);
     const { mostAmbitionPercent } = balance.neighbours;
     expect(mostAmbitionPercent).toBe(100);
     const country = loadCountry(withValue(tavaraFile, ambition, 35));
@@ -380,7 +380,7 @@ describe('a neighbour’s ambition in a country file', () => {
   it.each(Object.entries(FILES))(
     'cannot be given by a file of an older format, whose neighbours stay peaceful for good: %s',
     (name, file) => {
-      expect(faultsOf({ ...file, formatVersion: 11 })).toEqual(
+      expect(faultsOf({ ...(beforeFactions(file) as typeof file), formatVersion: 11 })).toEqual(
         file.map.neighbours.map(
           (_, index) => `map.neighbours[${index}].ambition needs country file format 12 or later.`,
         ),

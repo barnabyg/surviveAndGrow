@@ -26,7 +26,7 @@ const ARISES: readonly [TipCondition, player: string, seed: number, quarter: num
   ['missing-link', 'Sensible borrower', 1, 1],
   ['decay', 'Sensible', 2, 5],
   ['unrest', 'Does nothing', 4, 7],
-  ['army-loyalty', 'Does nothing', 2, 12],
+  ['army-loyalty', 'Sensible', 3, 14],
   ['tier-passed', 'Sensible', 1, 7],
   ['neighbours', 'Sensible', 1, 7],
   ['border-incident', 'Borrow and build at once', 1, 7],

@@ -15,10 +15,16 @@ import type { EventType, SiteType, Technology } from './vocabulary';
  * added hidden deposits that a survey may find, which format 7 cannot, format 9 added sites
  * locked until a technology is known, among them dams, which format 8 cannot, format 10
  * added clinics and schools, which format 9 cannot, format 11 added Defence to the starting
- * budget, which format 10 cannot name, and format 12 added a neighbour's ambition, which format
- * 11 cannot.
+ * budget, which format 10 cannot name, format 12 added a neighbour's ambition, which format 11
+ * cannot, and format 13 added a region's faction mix, which format 12 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 12;
+export const COUNTRY_FORMAT_VERSION = 13;
+
+/**
+ * The country file format that first lets a file give a region its faction mix. The regions of
+ * an older file follow no faction more than another.
+ */
+export const FACTION_MIX_FORMAT = 13;
 
 /**
  * The country file format that first lets a file give a neighbour an ambition. The neighbours

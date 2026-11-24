@@ -3,6 +3,7 @@ import { budgetBalance } from './balance/budget';
 import { calendarBalance } from './balance/calendar';
 import { dilemmasBalance } from './balance/dilemmas';
 import { eventsBalance } from './balance/events';
+import { factionsBalance } from './balance/factions';
 import { financeBalance } from './balance/finance';
 import { foodBalance } from './balance/food';
 import { neighboursBalance } from './balance/neighbours';
@@ -18,6 +19,7 @@ import { tradeBalance } from './balance/trade';
 import { upkeepBalance } from './balance/upkeep';
 import { victoryBalance } from './balance/victory';
 
+export type { LeverBalance } from './balance/factions';
 export type { CreditStepBalance } from './balance/finance';
 export type { SiteBalance } from './balance/sites';
 export type { SiteImprovement, TechnologyBalance } from './balance/technologies';
@@ -41,6 +43,8 @@ export const balance = {
   ...armyBalance,
   // neighbours, deterrence
   ...neighboursBalance,
+  // factions
+  ...factionsBalance,
   // risks
   ...risksBalance,
   // sites

@@ -4,16 +4,13 @@ import { expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
-  borderIncidentStatuses,
   createGame,
+  factionStandings,
   loadCountry,
   pendingDilemma,
   SAVE_FORMAT_VERSION,
   saveGame,
-  startFault,
-  tradeCapacity,
   type Decisions,
-  type GameState,
   type TurnReport,
 } from '../../src/sim';
 
@@ -28,58 +25,50 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought and the teachers asking for a rise now
-  // and then. Format 16 added border incidents. The game is the one kept from format 15 played
-  // three quarters on: on seed 2026 it halves Defence to $1.0m from its first quarter, taxes at
-  // 30% and each quarter starts the first site it can. Voskar turned hostile as the country
-  // reached Developing, announced an incident as Year 2 · Quarter 4 began, and began it in
-  // Year 3 · Quarter 2. It is saved as Year 3 · Quarter 3 begins: the incident has lived one of
-  // its three quarters, Korr Pass is closed for two more, and the last report has the tax the
-  // regions on Voskar's border lost to it.
+  // and then. Format 17 added the factions: each region has a faction mix (country file format
+  // 13), farmers, workers and business each have a standing, and every region's approval
+  // carries a Factions effect. On seed 2026 the game spends $5.0m more on agriculture from its
+  // first quarter and keeps the rest of the budget it starts with, for three quarters. It is
+  // saved as Year 1 · Quarter 4 begins: the farmers have risen from 56.1% to 61.3% and are
+  // pleased, the workers and business have each lost ground, and the last report has the
+  // Factions line of approval split by faction.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
   });
   const budget = {
-    taxRatePercent: 30,
-    spending: { ...country.start.budget.spending, defence: 10 },
+    taxRatePercent: country.start.budget.taxRatePercent,
+    spending: {
+      ...country.start.budget.spending,
+      agriculture: country.start.budget.spending.agriculture + 50,
+    },
   };
   let game = createGame(country, 2026);
   let report: TurnReport | null = null;
-  for (let quarter = 0; quarter < 10; quarter += 1) {
+  for (let quarter = 0; quarter < 3; quarter += 1) {
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
-    const state: GameState = game;
-    const first = country.sites.find((site) => startFault(state, [site.id]) === null);
-    const decisions: Decisions = {
-      budget,
-      dilemmaChoice,
-      startProjects: first === undefined ? [] : [first.id],
-    };
+    const decisions: Decisions = { budget, dilemmaChoice };
     const result = advanceQuarter(game, decisions);
     game = result.state;
     report = result.report;
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.date).toEqual({ year: 3, quarter: 3 });
-  expect(game.borderIncidents).toEqual([
-    {
-      neighbourId: 'voskar',
-      announced: { year: 2, quarter: 4 },
-      begins: { year: 3, quarter: 2 },
-    },
+  expect(game.date).toEqual({ year: 1, quarter: 4 });
+  expect(game.history.map((record) => record.standings?.farmers)).toEqual([561, 582, 599, 613]);
+  expect(factionStandings(game).standings.map((each) => each.word)).toEqual([
+    'Pleased',
+    'Content',
+    'Content',
+    'Loyal',
   ]);
-  expect(borderIncidentStatuses(game)).toMatchObject([{ inForce: true, quartersLeft: 2 }]);
-  expect(tradeCapacity(game).links.find((link) => link.id === 'korr-pass')).toMatchObject({
-    tonnes: 0,
-    closed: { name: 'Voskar', quartersLeft: 2 },
-  });
   expect(
-    report?.treasury.contributions.filter((line) =>
-      line.label.startsWith('Lost to the border incident with Voskar'),
-    ),
-  ).toHaveLength(3);
+    report?.approval.contributions
+      .find((line) => line.label === 'Factions')
+      ?.parts?.map((part) => part.label),
+  ).toEqual(['Farmers', 'Workers', 'Business']);
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

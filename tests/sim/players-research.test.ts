@@ -16,7 +16,7 @@ import {
 } from '../../src/sim';
 import { tavaraAsShipped } from './countries';
 import { knowing } from './playing';
-import { playerNamed } from './scripted';
+import { GAME_TIMEOUT, playerNamed } from './scripted';
 
 // What the players that research and survey decide, quarter by quarter. Their whole games, and
 // what each records of its research and surveys, are played once, in `players.test.ts`, with
@@ -274,31 +274,36 @@ describe('the prospector', () => {
     }
   });
 
-  it('builds the road and the mine of a deposit found after the chain’s own', () => {
-    const country = tavaraAsShipped();
-    const seed = Array.from({ length: 50 }, (_, index) => index + 1).find((each) =>
-      country.deposits.some((deposit) => depositFind(each, deposit) !== null),
-    );
-    if (seed === undefined) throw new Error('No seed finds a deposit.');
-    const found = country.deposits.filter((deposit) => depositFind(seed, deposit) !== null);
-    let game = rich(fresh(seed));
-    const started: string[] = [];
-    for (let quarter = 0; quarter < 16; quarter += 1) {
-      const decisions = prospector().decide(game);
-      started.push(...(decisions.startProjects ?? []));
-      game = rich(advanceQuarter(game, decisions).state);
-    }
-    const types = started.map((id) => typeOf(game, id));
-    const ownMine = types.indexOf('mine');
-    const firstSmall = types.indexOf('irrigation');
+  it(
+    'builds the road and the mine of a deposit found after the chain’s own',
+    () => {
+      const country = tavaraAsShipped();
+      const seed = Array.from({ length: 50 }, (_, index) => index + 1).find((each) =>
+        country.deposits.some((deposit) => depositFind(each, deposit) !== null),
+      );
+      if (seed === undefined) throw new Error('No seed finds a deposit.');
+      const found = country.deposits.filter((deposit) => depositFind(seed, deposit) !== null);
+      let game = rich(fresh(seed));
+      const started: string[] = [];
+      for (let quarter = 0; quarter < 16; quarter += 1) {
+        const decisions = prospector().decide(game);
+        started.push(...(decisions.startProjects ?? []));
+        game = rich(advanceQuarter(game, decisions).state);
+      }
+      const types = started.map((id) => typeOf(game, id));
+      const ownMine = types.indexOf('mine');
+      const firstSmall = types.indexOf('irrigation');
 
-    expect(ownMine).toBeGreaterThan(-1);
-    expect(firstSmall).toBeGreaterThan(-1);
-    for (const deposit of found) {
-      const route = started.indexOf(deposit.route.id);
-      expect(route).toBeGreaterThan(ownMine);
-      expect(started.indexOf(deposit.mine.id)).toBe(route + 1);
-      expect(firstSmall).toBeGreaterThan(route + 1);
-    }
-  });
+      expect(ownMine).toBeGreaterThan(-1);
+      expect(firstSmall).toBeGreaterThan(-1);
+      for (const deposit of found) {
+        const route = started.indexOf(deposit.route.id);
+        expect(route).toBeGreaterThan(ownMine);
+        expect(started.indexOf(deposit.mine.id)).toBe(route + 1);
+        expect(firstSmall).toBeGreaterThan(route + 1);
+      }
+      // Sixteen quarters of a scripted player, which takes longer while the suite runs alongside.
+    },
+    GAME_TIMEOUT,
+  );
 });

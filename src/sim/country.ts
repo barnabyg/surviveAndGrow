@@ -12,6 +12,7 @@ import {
   AMBITION_FORMAT,
   COUNTRY_FORMAT_VERSION,
   EVENT_FORMATS,
+  FACTION_MIX_FORMAT,
   OLDEST_COUNTRY_FORMAT_VERSION,
   PRICE_SHOCK_FORMAT,
 } from './countryFormats';
@@ -26,6 +27,7 @@ import {
 } from './countryReader';
 import { readSite } from './countrySites';
 import { readStart } from './countryStart';
+import { EVEN_MIX, mixOfPercent, type FactionMix } from './factions';
 import type {
   Country,
   Crossing,
@@ -39,6 +41,7 @@ import type {
 import { checkAlternatives, checkDependencies, checkDeposits } from './siteChecks';
 import { formatTonnes } from './text';
 import {
+  CIVIL_FACTIONS,
   DECORATION_KINDS,
   DILEMMA_TYPES,
   EVENT_TYPES,
@@ -46,6 +49,7 @@ import {
   LABEL_SIDES,
   SETTLEMENT_SIZES,
   TERRAINS,
+  type CivilFaction,
   type EventType,
   type PriceShockType,
 } from './vocabulary';
@@ -101,6 +105,45 @@ function readGrowth(reader: Reader, region: Json, path: string, formatVersion: n
   }
   // A year is four quarters; the rate is held in ten-thousandths a quarter.
   return Math.round((percent * 100) / 4);
+}
+
+/**
+ * A region's faction mix, which a file of format 13 or later may give as `factions`: the whole
+ * percentage of its people who are farmers, workers and business, adding up to no more than
+ * 100. Whoever is left over follows no faction. A region given none, and every region of an
+ * older file, is read as an even mix: a third of its people in each.
+ */
+function readFactionMix(
+  reader: Reader,
+  region: Json,
+  path: string,
+  formatVersion: number,
+): FactionMix {
+  if (region.factions === undefined) return EVEN_MIX;
+  const at = join(path, 'factions');
+  if (formatVersion < FACTION_MIX_FORMAT) {
+    reader.fault(at, `needs country file format ${FACTION_MIX_FORMAT} or later`);
+    return EVEN_MIX;
+  }
+  const written = reader.object(region, 'factions', path);
+  if (!isRecord(region.factions)) return EVEN_MIX;
+  for (const key of Object.keys(written)) {
+    if (!CIVIL_FACTIONS.some((faction) => faction === key)) {
+      reader.fault(
+        join(at, key),
+        `is not a faction with a share of a region’s people, which are: ${CIVIL_FACTIONS.join(', ')}`,
+      );
+    }
+  }
+  const percent = Object.fromEntries(
+    CIVIL_FACTIONS.map((faction) => [faction, reader.wholeNumber(written, faction, at, 0, 100)]),
+  ) as Record<CivilFaction, number>;
+  const whole = sum(CIVIL_FACTIONS.map((faction) => percent[faction]));
+  if (whole > 100) {
+    reader.fault(at, `adds up to ${whole}, but a region’s people come to no more than 100`);
+    return EVEN_MIX;
+  }
+  return mixOfPercent(percent);
 }
 
 /**
@@ -278,6 +321,7 @@ export function loadCountry(file: unknown): Country {
     farmland: reader.wholeNumber(item, 'farmland', path, 0),
     growthPerTenThousandPerQuarter: readGrowth(reader, item, path, formatVersion),
     eventLikelihood: readEventLikelihood(reader, item, path, formatVersion),
+    factionMix: readFactionMix(reader, item, path, formatVersion),
   }));
   if (Array.isArray(file.regions) && regions.length === 0) {
     reader.fault('regions', 'must list at least one region');
