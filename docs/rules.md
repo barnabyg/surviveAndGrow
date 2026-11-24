@@ -164,7 +164,9 @@ main figures from the balance values and fails if this file, [playing.md](playin
   the army in each region where that and the region's unrest settle it. Tavara starts on $2.0m a
   quarter, which holds its army loyal at 58.4%. A country file written before Defence, and a
   save from before it, are read as spending the least the slider allows that holds the army
-  loyal in a calm region, with a loyal army.
+  loyal in a calm region, with a loyal army. A save from before it that is under austerity
+  opens with a loyal army too, but with Defence brought within austerity's cap like the rest of
+  its budget, and on that the army slips over the quarters that follow.
 
 ## Neighbours and deterrence
 
