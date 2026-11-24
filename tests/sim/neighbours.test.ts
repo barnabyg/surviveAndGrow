@@ -28,6 +28,7 @@ import {
   beforeFactions,
   bothCountries,
   tavaraAsShipped,
+  testlandAsShipped,
   withChances,
 } from './countries';
 import { faultsOf, withValue } from './files';
@@ -358,6 +359,94 @@ describe.each(bothCountries)('neighbours of %s', (name, country) => {
     expect(restored.report?.entries).toEqual(report?.entries);
   });
 });
+
+/**
+ * The countries as they ship, each played by a scripted player that carries it past a tier
+ * within its game, once with Defence low and once with it high. Tavara's neighbours stir at
+ * the Defence it ships with, so its low game is as shipped and its high one raises Defence
+ * from the first quarter. Testland ships spending six times what its army expects, which
+ * deters Elsewhere at every tier a scripted player reaches, so its low game cuts Defence to
+ * nothing and its high one keeps what it ships with.
+ */
+const shippedGames = [
+  {
+    name: 'Tavara',
+    country: tavaraAsShipped,
+    player: 'Timing trader',
+    seed: 1,
+    quarters: 30,
+    low: null,
+    high: 50,
+  },
+  {
+    name: 'Testland',
+    country: testlandAsShipped,
+    player: 'Sensible',
+    seed: 1,
+    quarters: 8,
+    low: 0,
+    high: null,
+  },
+] as const;
+
+describe.each(shippedGames)(
+  'the neighbours of $name as it ships, in a game of $player',
+  ({ country, player, seed, quarters, low, high }) => {
+    /** The player's game with Defence held at a figure, or left as the player has it. */
+    function played(defence: number | null): GameState[] {
+      const { decide } = playerNamed(player);
+      const states = [createGame(country(), seed)];
+      for (let quarter = 0; quarter < quarters; quarter += 1) {
+        const game = states.at(-1);
+        if (game?.outcome.status !== 'playing') break;
+        const decided = decide(game);
+        const budget =
+          defence === null ? decided.budget : budgetFrom(decided.budget, { spending: { defence } });
+        states.push(advanceQuarter(game, { ...decided, budget }).state);
+      }
+      return states;
+    }
+
+    it(
+      'are peaceful at Subsistence, turn hostile past a tier with Defence low, and stay short of it in the same game with Defence high',
+      () => {
+        const lowGame = played(low);
+        // At Subsistence the country has nothing worth taking, whatever is spent on Defence.
+        const poor = lowGame.filter((state) => state.tier === 'subsistence');
+        expect(poor.length).toBeGreaterThan(0);
+        for (const state of poor) expect(worstIn(state)).toBe('peaceful');
+
+        // Past a tier, a neighbour turns hostile.
+        const turnedAt = lowGame.findIndex((state) => worstIn(state) === 'hostile');
+        expect(turnedAt).toBeGreaterThan(0);
+        const turned = lowGame[turnedAt];
+        if (turned === undefined) throw new Error('No neighbour turned hostile');
+        const hostile = deterrenceStatus(turned).neighbours.find(
+          (neighbour) => neighbour.intention === 'hostile',
+        );
+        expect(turned.tier).not.toBe('subsistence');
+        expect(hostile).toBeDefined();
+
+        // The same game with Defence high passes the same tiers by then, and that neighbour
+        // has stayed short of hostile all the way.
+        const highGame = played(high);
+        const there = highGame[turnedAt];
+        expect(there).toBeDefined();
+        expect(TIERS.indexOf(there?.tier ?? 'subsistence')).toBeGreaterThanOrEqual(
+          TIERS.indexOf(turned.tier),
+        );
+        expect(there?.deterrence).toBeGreaterThan(turned.deterrence);
+        for (const state of highGame.slice(0, turnedAt + 1)) {
+          const intends = deterrenceStatus(state).neighbours.find(
+            (neighbour) => neighbour.neighbourId === hostile?.neighbourId,
+          )?.intention;
+          expect(intends).not.toBe('hostile');
+        }
+      },
+      GAME_TIMEOUT,
+    );
+  },
+);
 
 describe('a tier that only the world ore price carries the country past', () => {
   // Tavara as it ships, played by the chain builder: late in the game its mines earn and its

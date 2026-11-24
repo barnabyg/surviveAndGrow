@@ -1,5 +1,8 @@
 // Countries rich enough to be worth taking, for the tests about neighbours and their border
-// incidents: a country as it ships is at Subsistence for years, where no neighbour stirs.
+// incidents. A country as it ships passes a tier only after years of a player's building, and
+// its neighbours stir only then (`neighbours.test.ts` plays that on both as shipped). These
+// are worth taking from the start, so a test meets its neighbours within a few quarters and
+// can leave everything else still.
 import tavaraFile from '../../src/countries/tavara.json';
 import { loadCountry, type Country } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
