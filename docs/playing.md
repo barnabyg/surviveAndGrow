@@ -88,18 +88,18 @@ npm.cmd run dev -- --open '/?seed=1'
 ```
 
 This starts the game at http://localhost:41730/?seed=1 and opens it in your browser. On seed 1
-the scripted chain builder, which never trades, loses its first vote with 49.9%; the timing
+the scripted chain builder, which never trades, loses its first vote with 48.8%; the timing
 trader, which builds the same sites in the same order and trades grain besides, wins in quarter
 30, in the third year of its second term. The improver, which builds the same sites and
-researches the technologies that improve them, wins its first two votes and loses its third.
+researches the technologies that improve them, wins its first vote and loses its second.
 Try to win the way the timing trader does:
 
 1. Build as the chain builder does: the Korr Falls power station and its lines first, then
    Saltmouth port, the trunk road and the Korrgate mine, each once the treasury holds its cost.
 2. In the third quarter of the first year failed harvests abroad are announced: the report says
    so, and the grain price in the trade panel lists the shock and its forecast rises. The
-   reserve is below its safe level, so buy grain before the price rises, about 34,000 t, and
-   18,000 t more the quarter after.
+   reserve is below its safe level, so buy grain before the price rises, about 33,000 t, and
+   17,000 t more the quarter after.
 3. Once the first harvest is in, sell the surplus while grain is dear: 90,000 t a quarter, all
    the border crossings carry, at more than $320 a tonne while the shock lasts. Keep the
    reserve about a quarter above its safe level, and sell only while the price is at or above

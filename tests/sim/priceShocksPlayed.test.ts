@@ -172,11 +172,12 @@ function minesEarning(file: unknown): GameState {
  * when its ore sells for less.
  */
 const mining = [
-  { name: 'Tavara', file: tavaraFile, services: 140 },
-  { name: 'Testland', file: testlandFile, services: 40 },
+  { name: 'Tavara', file: tavaraFile, health: 130, education: 130 },
+  { name: 'Testland', file: testlandFile, health: 40, education: 30 },
 ] as const;
 
-describe.each(mining)('an ore glut in $name, with the mine earning', ({ file, services }) => {
+describe.each(mining)('an ore glut in $name, with the mine earning', (scenario) => {
+  const { file, health, education } = scenario;
   const earning = minesEarning(file);
   // Testland's mine soon wins it the game, so here it has only begun to hold prosperity.
   const from = (glut: number): GameState => ({
@@ -187,10 +188,16 @@ describe.each(mining)('an ore glut in $name, with the mine earning', ({ file, se
   });
   const budget: Budget = budgetFrom(earning.budget, {
     taxRatePercent: 25,
-    spending: { upkeep: 40, health: services, education: services },
+    spending: { upkeep: 40, health, education },
   });
+  // The spree: $80.0m a quarter over these four areas and Defence together.
   const lavish: Budget = budgetFrom(budget, {
-    spending: { agriculture: 200, health: 200, education: 200, security: 200 },
+    spending: {
+      agriculture: 200,
+      health: 200,
+      education: 200,
+      security: 200 - budget.spending.defence,
+    },
   });
 
   /** Keeps the budget, within any austerity a bailout brings. */

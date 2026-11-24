@@ -1,4 +1,4 @@
-import { apportion, clamp, percentOff, sum } from './arithmetic';
+import { apportion, clamp, percentOff, stepTowards, sum } from './arithmetic';
 import { balance } from './balance';
 import type { BudgetOutcome } from './budget';
 import { regionName, type Country } from './country';
@@ -139,7 +139,11 @@ export function resolveApproval(
     );
     // What each driver's effect moves by this quarter, pushes aside.
     const drift = mapDrivers((driver) =>
-      stepTowards(region.approvalEffects[driver], settled[driver]),
+      stepTowards(
+        region.approvalEffects[driver],
+        settled[driver],
+        balance.approval.adjustPermillePerQuarter,
+      ),
     );
     const approvalEffects = mapDrivers(
       (driver) =>
@@ -353,17 +357,6 @@ function serviceEffect(service: Service, spent: Money, people: number): number {
   if (expected === 0) return 0;
   const effect = Math.floor((weightPermille * (spent * 1_000_000 - expected)) / expected);
   return clamp(effect, -weightPermille, weightPermille);
-}
-
-/**
- * How far an effect moves in a quarter towards where it would settle: a share of the gap,
- * rounded away from nothing so that it arrives in the end and does not stall just short.
- */
-function stepTowards(current: number, settled: number): number {
-  const gap = settled - current;
-  if (gap === 0) return 0;
-  const step = Math.ceil((Math.abs(gap) * balance.approval.adjustPermillePerQuarter) / 1000);
-  return gap > 0 ? step : -step;
 }
 
 function approvalFrom(effects: ApprovalEffects, expectations: number): number {

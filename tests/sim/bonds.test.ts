@@ -401,7 +401,7 @@ describe('the risks ahead', () => {
 
   it('count the maturity quarter’s interest in what falls due', () => {
     // On its course the treasury holds about $100.5m by then: the sum, but not its interest.
-    const game = owingBond(10, 1615);
+    const game = owingBond(10, 1815);
 
     const [risk] = maturityRisks(game);
 

@@ -19,18 +19,23 @@ import {
 } from './countries';
 import { faultsOf, withValue } from './files';
 import { steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 const sum = (amounts: readonly number[]) => amounts.reduce((total, amount) => total + amount, 0);
 const peopleOf = (game: GameState) => sum(game.regions.map((region) => region.population));
 /** What a population eats in a quarter, in tonnes, at 50 kg a head. */
 const need = (people: number) => Math.floor((people * 50) / 1000);
 
-/** Plays quarters as a careful player does, keeping every report. */
+/**
+ * Plays quarters as a careful player does, keeping every report: on the country's own spending,
+ * taxed enough to pay for it, so that no forced cut starves the farms and thins the people.
+ */
 function play(start: GameState, quarters: number) {
   let state = start;
   const reports: TurnReport[] = [];
+  const solvent = budgetFrom(start.budget, { taxRatePercent: 25 });
   for (let quarter = 0; quarter < quarters && state.outcome.status === 'playing'; quarter += 1) {
-    const result = advanceQuarter(state, steward(state));
+    const result = advanceQuarter(state, steward(state, solvent));
     state = result.state;
     reports.push(result.report);
   }

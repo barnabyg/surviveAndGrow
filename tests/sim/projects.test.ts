@@ -163,8 +163,8 @@ describe('starting a project in Tavara', () => {
 
     const { state, reports } = play(game, [{ startProjects: ['lowmere-irrigation'] }]);
 
-    // Revenue $31.0m, spending $36.0m and a $4.0m instalment: $42.0m falls to $33.0m.
-    expect(state.treasury).toBe(330);
+    // Revenue $31.0m, spending $38.0m and a $4.0m instalment: $42.0m falls to $31.0m.
+    expect(state.treasury).toBe(310);
     expect(reports[0]?.treasury.contributions).toContainEqual({
       label: 'Building Lowmere irrigation',
       amount: -40,
@@ -205,7 +205,7 @@ describe('starting a project in Tavara', () => {
         seriousness: 'warning',
         headline: 'The treasury is shrinking',
         cause:
-          'Spending of $40.0m outran revenue of $31.0m. At this deficit the treasury lasts 3 more quarters.',
+          'Spending of $42.0m outran revenue of $31.0m. At this deficit the treasury lasts 2 more quarters.',
       },
     ]);
   });
@@ -377,7 +377,7 @@ describe('a project the treasury cannot pay for', () => {
     // $42.0m and $31.0m of revenue, less $68.0m of spending, leaves $5.0m for building.
     const tight: Budget = budgetOf({
       taxRatePercent: 18,
-      spending: { agriculture: 200, foodRelief: 200, health: 200, education: 80 },
+      spending: { agriculture: 200, foodRelief: 200, health: 200, education: 80, defence: 0 },
     });
 
     const { state, reports } = play(game, [
@@ -519,7 +519,7 @@ describe.each(bothFiles)('a finished site in %s', (_name, file) => {
       let state = createGame(calm(), seed);
       let waiting = [...build];
       let previews: Preview[] = [];
-      for (let quarter = 0; quarter < 12; quarter += 1) {
+      for (let quarter = 0; quarter < 16; quarter += 1) {
         const starts = waiting.filter((siteId) => startFault(state, [siteId]) === null).slice(0, 1);
         waiting = waiting.filter((siteId) => !starts.includes(siteId));
         const decisions = { budget: solvent(state.country), startProjects: starts };
@@ -593,9 +593,9 @@ describe('previewing a quarter with projects', () => {
     });
 
     expect(preview.projectSpending).toEqual({ min: 40, max: 40 });
-    expect(preview.spending).toEqual({ min: 400, max: 400 });
-    expect(preview.balance).toEqual({ min: -90, max: -90 });
-    expect(preview.treasury).toEqual({ min: 330, max: 330 });
+    expect(preview.spending).toEqual({ min: 420, max: 420 });
+    expect(preview.balance).toEqual({ min: -110, max: -110 });
+    expect(preview.treasury).toEqual({ min: 310, max: 310 });
     expect(preview.pausedSites).toEqual([]);
   });
 

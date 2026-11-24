@@ -140,6 +140,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Protest report',
     path: 'M4,18 V11 M4,11 L2,6 M10,18 V9 M10,9 L10,3 M16,18 V11 M16,11 L18,6 M7,18 V14 M13,18 V14',
   },
+  // A soldier's shield with a chevron of rank on it.
+  armyLoyalty: {
+    label: 'Army report',
+    path: 'M10,2 L17,5 V10 Q17,15 10,18 Q3,15 3,10 V5 Z M6.5,8 L10,11 L13.5,8 M6.5,11.5 L10,14.5 L13.5,11.5',
+  },
   // A frame going up, with an arrow rising from it.
   projectStarted: {
     label: 'Building report',

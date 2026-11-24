@@ -36,6 +36,14 @@ export {
   type ApprovalStatus,
   type RegionUnrest,
 } from './approval';
+export {
+  armyLoyaltyStatus,
+  armyStageAt,
+  nationalLoyalty,
+  type ArmyLoyaltyEffects,
+  type ArmyLoyaltyStatus,
+  type RegionArmyLoyalty,
+} from './army';
 export { type Budget } from './budget';
 export { missedPaymentMeans } from './bailout';
 export {
@@ -249,6 +257,8 @@ export {
   type Range,
 } from './types';
 export {
+  ARMY_STAGE_NAMES,
+  ARMY_STAGES,
   CHAIN_ROLES,
   CREDIT_RATING_NAMES,
   CREDIT_RATINGS,
@@ -264,6 +274,8 @@ export {
   LASTING_SERVICE_NAMES,
   LIKELIHOOD_NAMES,
   LIKELIHOODS,
+  LOYALTY_DRIVER_NAMES,
+  LOYALTY_DRIVERS,
   MAP_FRAME,
   PROSPERITY_PART_NAMES,
   PROSPERITY_PARTS,
@@ -287,6 +299,7 @@ export {
   UNREST_NAMES,
   WEATHER_HELD_BY,
   type ApprovalDriver,
+  type ArmyStage,
   type ChainRole,
   type CreditRating,
   type DebtKind,
@@ -299,6 +312,7 @@ export {
   type LabelSide,
   type LastingService,
   type Likelihood,
+  type LoyaltyDriver,
   type PowerRole,
   type ProjectStatus,
   type ProjectTargetKind,

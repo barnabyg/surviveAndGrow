@@ -1,5 +1,5 @@
 {
-  "formatVersion": 10,
+  "formatVersion": 11,
   "id": "tavara",
   "name": "Republic of Tavara",
   "map": {
@@ -675,7 +675,8 @@
         "foodRelief": 7,
         "health": 7,
         "education": 6,
-        "security": 5
+        "security": 5,
+        "defence": 2
       }
     },
     "foodReserve": 182000

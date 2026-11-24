@@ -12,7 +12,7 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { testlandFormat4File, withChances } from './countries';
+import { beforeDefence, testlandFormat4File, withChances } from './countries';
 import { faultsOf, withValue, without } from './files';
 import { steward } from './playing';
 
@@ -201,10 +201,10 @@ describe('flood likelihoods in a country file', () => {
   });
 
   it('need country file format 6', () => {
-    // Tavara as format 6 wrote it, before it could name world price shocks, dams, clinics or
-    // schools.
+    // Tavara as format 6 wrote it, before it could name world price shocks, dams, clinics,
+    // schools or Defence.
     const format6 = withValue(
-      without(without(tavaraFile, ['deposits']), ['priceShockLikelihood']),
+      without(without(beforeDefence(tavaraFile), ['deposits']), ['priceShockLikelihood']),
       ['sites'],
       tavaraFile.sites.filter((site) => !['dam', 'clinic', 'school'].includes(site.type)),
     );

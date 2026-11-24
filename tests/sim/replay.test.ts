@@ -96,17 +96,21 @@ function fingerprint(
  * what locks it, and each country a dam none of these games can research. With those left out
  * of the fingerprint, every game hashed as before. They were pinned once more when each country
  * gained clinics and schools, locked in these games as the dam is: with those sites left out of
- * the fingerprint, every game again hashed as before.
+ * the fingerprint, every game again hashed as before. They were pinned again when the game
+ * gained Defence and the army's loyalty. Played with nothing spent on Defence, and with the
+ * army and Defence left out of the fingerprint and of the bailout's list of capped areas, every
+ * game hashed as before. As pinned, each game spends on Defence what its country starts by
+ * spending, which leaves it less to build with: the summaries below show what that cost it.
  */
 const outcomes = [
   {
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'builds',
-    hash: '1e286020e64c33a777d9b256642b4a97d2fd4bdf52a1b624601ba25863d8ae33',
+    hash: 'bc84eb5fe57e06682f7b49e164420ea43c9d13c96a3857813679673e3c0d35f9',
     summary: {
       date: { year: 6, quarter: 1 },
-      treasury: 2,
+      treasury: 4,
       outcome: 'lost',
       sites: [
         'lowmere-road operating 3',
@@ -116,10 +120,9 @@ const outcomes = [
         'southbank-store operating 2',
         'coast-road operating 3',
         'highland-road operating 3',
-        'saltmouth-port closed 0',
-        'saltmouth-quay paused 3',
-        'arden-power-line operating 2',
-        'lowmere-power-line operating 2',
+        'arden-power-line decaying 2',
+        'lowmere-power-line decaying 2',
+        'korrgate-power-line paused 1',
         'korr-falls-dam locked 0',
         'dustwell-clinic locked 0',
         'westhaven-clinic locked 0',
@@ -133,14 +136,14 @@ const outcomes = [
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'bailedOut',
-    hash: '0f6763d6c12642a5ceb212663ff7d88a78057dac8745b23ac5c49e9ffb7d8aba',
+    hash: '428f74ae9b4b5186b19bf27223e250ebe1b67056596e41af97aab8a63e293460',
     summary: {
       date: { year: 6, quarter: 1 },
-      treasury: 2,
+      treasury: 6,
       outcome: 'lost',
       sites: [
         'lowmere-road operating 3',
-        'lowmere-irrigation operating 3',
+        'lowmere-irrigation decaying 3',
         'lowmere-store paused 0',
         'korr-falls-dam locked 0',
         'dustwell-clinic locked 0',
@@ -155,14 +158,14 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'builds',
-    hash: 'd2060dbc8060a16104baa934b7b31684fb11de87b4768cab908d0d7d015e5e4e',
+    hash: '04ca76003d19531150b410bbbc0918ea0c2b0b0f06c1717a549ceeac4b1506c0',
     summary: {
       date: { year: 7, quarter: 1 },
-      treasury: 1,
+      treasury: 2,
       outcome: 'playing',
       sites: [
         'alpha-store decaying 2',
-        'sand-road decaying 3',
+        'sand-road paused 0',
         'north-power-line decaying 2',
         'sand-power-line decaying 2',
         'sand-dam locked 0',
@@ -177,15 +180,13 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'bailedOut',
-    hash: '3de46725c5848c8a73e4eb6e4b885aac896745222c79191e07177213858c515b',
+    hash: 'bce6451d0e24b4daddf6ba31f525753973efcad9d2579200bbb8f292a5e18bfe',
     summary: {
       date: { year: 7, quarter: 1 },
-      treasury: 3,
+      treasury: 4,
       outcome: 'playing',
       sites: [
-        'north-irrigation paused 1',
         'alpha-store decaying 2',
-        'sand-road paused 0',
         'north-power-line decaying 2',
         'sand-power-line decaying 2',
         'sand-dam locked 0',

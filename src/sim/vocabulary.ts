@@ -3,6 +3,7 @@
  * The lists live in `vocabulary/`, one mechanic's names to a file, and are read through this one.
  */
 
+export * from './vocabulary/army';
 export * from './vocabulary/budget';
 export * from './vocabulary/dilemmas';
 export * from './vocabulary/events';

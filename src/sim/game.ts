@@ -1,4 +1,5 @@
 import { approvalInputs, approvalStatus, resolveApproval } from './approval';
+import { resolveLoyalty } from './army';
 import { sum } from './arithmetic';
 import { bailoutPushes, budgetAfter, resolveBailout } from './bailout';
 import { balance } from './balance';
@@ -100,7 +101,7 @@ export function resolveQuarter(
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
   const { serviced, taken, traded, credit, bailout } = lived;
-  const { prosperity, tier } = lived;
+  const { prosperity, tier, army, regions } = lived;
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
   // A harvest ends the events that were waiting on it; then the new quarter may bring more.
@@ -114,11 +115,11 @@ export function resolveQuarter(
     { country: state.country, projects: upkept.projects },
     siteDamageOf(state.country, begun),
   );
-  const collapse = collapseOf(state.country, approval.regions);
+  const collapse = collapseOf(state.country, regions);
   // The vote is held as each term's last quarter ends, unless the state has already fallen.
   const election =
     collapse === null && isElectionQuarter(state.date)
-      ? holdElection(approval.regions, chance.swing, state.date)
+      ? holdElection(regions, chance.swing, state.date)
       : null;
   // The game is won on prosperity held long enough, by a government still in office.
   const defeat = election?.defeat ?? null;
@@ -140,7 +141,7 @@ export function resolveQuarter(
             date,
             treasury: finances.treasury,
             foodReserve: food.foodReserve,
-            regions: approval.regions,
+            regions,
             events,
             dilemmasAnswered,
             worldPrices,
@@ -161,6 +162,7 @@ export function resolveQuarter(
     ...(budget.cut ? [cutEntry(budget)] : []),
     ...food.entries,
     ...approval.entries,
+    ...army.entries,
     ...building.entries,
     ...upkept.entries,
     ...taken.entries,
@@ -188,7 +190,7 @@ export function resolveQuarter(
       foodReserve: food.foodReserve,
       // The growing year ends with the harvest.
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
-      regions: approval.regions,
+      regions,
       events,
       projects: damaged.projects,
       debts: taken.debts,
@@ -207,7 +209,7 @@ export function resolveQuarter(
           date,
           treasury: finances.treasury,
           foodReserve: food.foodReserve,
-          regions: approval.regions,
+          regions,
           worldPrices,
           prosperity: prosperity.value,
           debtBurden: lived.debtBurden,
@@ -233,6 +235,7 @@ export function resolveQuarter(
         contributions: [...answer.food, ...food.contributions],
       },
       approval: approval.approval,
+      armyLoyalty: army.loyalty,
       debt: {
         value: debtOf(taken.debts),
         change: debtOf(taken.debts) - debtOf(given.debts),
@@ -325,11 +328,20 @@ function liveQuarter(
     pushes: [...answer.pushes, ...bailoutPushes(serviced, state)],
     expectations,
   });
+  // The army answers to what was spent on Defence and to the unrest the quarter leaves, so a
+  // region whose approval has just broken into protest pulls its army's loyalty down at once.
+  const army = resolveLoyalty(
+    state.country,
+    state.regions,
+    approval.regions,
+    finances.spent.defence,
+  );
+  const { regions } = army;
   // The debt burden the quarter leaves: its debt against the revenue the regions and sites it
   // leaves would raise. The rating, the win, the record and the preview all judge this one.
   const owing = (worldPrices: WorldPrices) => ({
     country: state.country,
-    regions: approval.regions,
+    regions,
     projects: upkept.projects,
     budget: decisions.budget,
     debts: taken.debts,
@@ -361,6 +373,9 @@ function liveQuarter(
     sites,
     food,
     approval,
+    army,
+    /** The regions as the quarter leaves them: fed, served, judged and with their armies. */
+    regions,
     prosperity,
     tier,
     credit,
@@ -464,8 +479,10 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     relief: thisQuarter.relief,
     approval: exactly(approval.approval.value),
     approvalHeading: exactly(approval.heading),
+    armyLoyalty: exactly(lived.army.loyalty.value),
+    armyLoyaltyHeading: exactly(lived.army.heading),
     prosperity: { min: lived.prosperityAt(low), max: lived.prosperityAt(high) },
-    unrest: approvalStatus({ regions: approval.regions }).unrest,
+    unrest: approvalStatus({ regions: lived.regions }).unrest,
     voteShare: forecastVoteShare(approval.approval.value),
   };
 }

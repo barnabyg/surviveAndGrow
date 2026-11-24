@@ -1,5 +1,5 @@
 {
-  "formatVersion": 10,
+  "formatVersion": 11,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -267,7 +267,8 @@
         "foodRelief": 0,
         "health": 1,
         "education": 1,
-        "security": 1
+        "security": 1,
+        "defence": 1
       }
     },
     "foodReserve": 30000,

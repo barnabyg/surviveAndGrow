@@ -2,15 +2,13 @@ import { describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
-  capacityOfTonnes,
+  armyLoyaltyStatus,
   createGame,
   loadCountry,
   loadSave,
   SAVE_FORMAT_VERSION,
   SaveError,
   saveGame,
-  startFault,
-  surveyedRegions,
   type Budget,
   type Country,
   type Decisions,
@@ -21,6 +19,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import format11Save from '../saves/format-11.json';
 import format12Save from '../saves/format-12.json';
+import format13Save from '../saves/format-13.json';
 import {
   bothCountries,
   tavara,
@@ -104,7 +103,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(12);
+    expect(save.formatVersion).toBe(13);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -266,7 +265,7 @@ describe('a game on a country that starts in debt', () => {
 
     const resumed = loadSave(save);
     expect(resumed).toEqual({ game: state, report });
-    expect(resumed.game.country.formatVersion).toBe(10);
+    expect(resumed.game.country.formatVersion).toBe(11);
     expect(resumed.game.country.start.loans).toEqual(start.country.start.loans);
     expect(resumed.game.debts.map((debt) => debt.number)).toEqual([1, 2]);
     expect(advanceQuarter(resumed.game, steward(resumed.game))).toEqual(
@@ -334,8 +333,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 13))).toBe(
-      'The saved game was written by a newer release of the game (save format 13; this release reads format 12). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 14))).toBe(
+      'The saved game was written by a newer release of the game (save format 14; this release reads format 13). Open it with that release.',
     );
   });
 
@@ -350,8 +349,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when the country it carries will not load', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 11))).toBe(
-      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 11, but this game reads versions 1 to 10.',
+    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 12))).toBe(
+      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 12, but this game reads versions 1 to 11.',
     );
     expect(refusal(without(save, ['country', 'file']))).toMatch(/country cannot be loaded/);
     expect(refusal(without(save, ['country']))).toBe(
@@ -690,53 +689,49 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 12', () => {
-  it('still opens on the game it was written from, a deposit found and a survey under way', () => {
-    const { game, report } = loadSave(format12Save);
+describe('the save kept from save format 13', () => {
+  it('still opens on the game it was written from, Defence cut and the army restless', () => {
+    const { game, report } = loadSave(format13Save);
 
     expect(game.date).toEqual({ year: 1, quarter: 3 });
-    expect(
-      game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
-    ).toEqual([
-      [{ kind: 'survey', regionId: 'salt-coast' }, 'surveyed', 2],
-      [{ kind: 'survey', regionId: 'dry-east' }, 'building', 1],
-    ]);
-    expect(surveyedRegions(game.projects)).toEqual(['salt-coast']);
-    expect(game.country.sites.slice(-2).map((site) => [site.id, site.capacity])).toEqual([
-      ['westhaven-mine', capacityOfTonnes(290_000)],
-      ['westhaven-trunk-road', undefined],
-    ]);
-    expect(report?.entries.map((entry) => entry.headline)).toEqual(
-      expect.arrayContaining(['Survey finished: Salt Coast', 'Survey begins: The Dry East']),
-    );
+    expect(game.budget.spending.defence).toBe(0);
+    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([584, 507, 445]);
+    const army = armyLoyaltyStatus(game);
+    expect(army).toMatchObject({ loyalty: 445, stage: 'restless', settlesStage: 'plotting' });
+    expect(army.regions.map((region) => region.stage)).toEqual(game.regions.map(() => 'restless'));
+    expect(report?.armyLoyalty).toEqual({
+      value: 445,
+      change: -62,
+      contributions: [
+        { label: 'Defence spending', amount: -62 },
+        { label: 'Unrest', amount: 0 },
+      ],
+    });
+    expect(report?.entries.map((entry) => entry.headline)).toContain('The army is restless');
   });
 
-  it('plays on, the Dry East surveyed, with the Westhaven mine there to be built', () => {
-    const { game } = loadSave(format12Save);
+  it('plays on: loyalty falls further left undefended, and recovers with Defence restored', () => {
+    const { game } = loadSave(format13Save);
 
-    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
+    const left = advanceQuarter(game, answering(game, steward(game)));
+    expect(armyLoyaltyStatus(left.state).loyalty).toBeLessThan(445);
 
-    expect(report.entries).toContainEqual(
-      expect.objectContaining({
-        headline: 'Survey finished: The Dry East',
-        cause:
-          'The surveyors have reported. They found a deposit of ore whose mine could yield 800,000 t a quarter. Dustwell mine and Trunk road, Dustwell mine to Saltmouth can be built from next quarter.',
-      }),
-    );
-    expect(surveyedRegions(state.projects)).toEqual(['salt-coast', 'dry-east']);
-    expect(
-      startFault({ ...state, treasury: 2000 }, ['westhaven-mine', 'dustwell-mine']),
-    ).toBeNull();
+    const restored = budgetFrom(game.budget, {
+      spending: { defence: game.country.start.budget.spending.defence },
+    });
+    const kept = advanceQuarter(game, answering(game, steward(game, restored)));
+    expect(armyLoyaltyStatus(kept.state)).toMatchObject({ loyalty: 473, stage: 'loyal' });
+    expect(kept.report.entries.map((entry) => entry.headline)).toContain('The army is loyal again');
   });
 
-  // This holds for as long as format 12 is the current format: saving must write exactly
+  // This holds for as long as format 13 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(12);
-    const { game, report } = loadSave(format12Save);
+    expect(SAVE_FORMAT_VERSION).toBe(13);
+    const { game, report } = loadSave(format13Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format12Save);
+    expect(stored(saveGame(game, report))).toEqual(format13Save);
   });
 });
 

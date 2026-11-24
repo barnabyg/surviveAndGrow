@@ -52,15 +52,19 @@ describe('the treasury', () => {
 
     const { state, report } = endQuarter(game);
 
-    // Revenue $31.0m, spending $36.0m: the treasury falls from $42.0m to $37.0m.
-    expect(state.treasury).toBe(370);
-    expect(report.treasury).toMatchObject({ value: 370, change: -50 });
+    // Revenue $31.0m, spending $38.0m: the treasury falls from $42.0m to $35.0m.
+    expect(state.treasury).toBe(350);
+    expect(report.treasury).toMatchObject({ value: 350, change: -70 });
   });
 
   it('rises by the surplus when revenue is more than spending', () => {
     const game = createGame(testland(), 1);
 
-    const { state, report } = endQuarter(game);
+    // Testland's starting budget spends all it raises, so this one leaves agriculture out.
+    const { state, report } = endQuarter(
+      game,
+      budgetFrom(game.budget, { spending: { agriculture: 0 } }),
+    );
 
     // Revenue $5.0m, spending $4.0m: the treasury rises from $10.0m to $11.0m.
     expect(state.treasury).toBe(110);

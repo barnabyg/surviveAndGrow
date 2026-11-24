@@ -249,6 +249,7 @@ const lean = [
     file: tavaraFile,
     regionId: 'arden-vale',
     seed: 1,
+    taxRatePercent: 20,
     foodRelief: 100,
     tonnes: 20_000,
   },
@@ -257,18 +258,23 @@ const lean = [
     file: testlandFile,
     regionId: 'northfield',
     seed: 2,
+    taxRatePercent: 24,
     foodRelief: 20,
     tonnes: 3000,
   },
 ] as const;
 
 describe.each(lean)('a drought in a lean year in $name', (scenario) => {
-  const { file, regionId, seed, foodRelief, tonnes } = scenario;
+  // Each is taxed a little above its starting rate, which pays for the grain it buys.
+  const { file, regionId, seed, taxRatePercent, foodRelief, tonnes } = scenario;
   const country = () => withDroughtChance(file, { [regionId]: 1 }, 0);
   const decide =
     (importing: boolean) =>
     (game: GameState): Decisions => ({
-      budget: budgetFrom(game.country.start.budget, { spending: { agriculture: 0, foodRelief } }),
+      budget: budgetFrom(game.country.start.budget, {
+        taxRatePercent,
+        spending: { agriculture: 0, foodRelief },
+      }),
       reliefRegionId: regionId,
       // Grain is bought every quarter from the one in which the failed harvest comes in.
       trade: importing && game.history.length >= 4 ? [grain(tonnes)] : [],

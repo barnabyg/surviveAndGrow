@@ -256,7 +256,7 @@ describe('a slump in the world ore price inside its forecast, in Tavara', () => 
     // Health and education raised until the budget only just balances on the mine's tax.
     const budget: Budget = budgetFrom(solvent(country), {
       taxRatePercent: 25,
-      spending: { health: 200, education: 110 },
+      spending: { health: 200, education: 90 },
     });
     const poor: GameState = { ...game, treasury: 20 };
 
@@ -283,7 +283,7 @@ describe('a slump in the world ore price inside its forecast, in Tavara', () => 
     // treasury that covers the seed’s $2.0m instalments while the ore price holds.
     const budget: Budget = budgetFrom(solvent(country), {
       taxRatePercent: 25,
-      spending: { health: 200, education: 110 },
+      spending: { health: 200, education: 90 },
     });
     const poor: GameState = { ...game, treasury: 140 };
     const treasuryRisk = (decisions: Decisions) =>

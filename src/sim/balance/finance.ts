@@ -126,6 +126,7 @@ export const financeBalance = {
         health: 800,
         education: 800,
         security: 800,
+        defence: 800,
       } satisfies Partial<Record<SpendingArea, number>> as Partial<Record<SpendingArea, number>>,
     },
     /**

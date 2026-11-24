@@ -12,6 +12,7 @@ export const REPORT_KINDS = [
   'event',
   'strike',
   'protest',
+  'armyLoyalty',
   'projectStarted',
   'projectPaused',
   'projectCompleted',

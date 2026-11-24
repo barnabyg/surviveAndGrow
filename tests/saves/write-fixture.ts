@@ -4,6 +4,7 @@ import { expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
+  armyLoyaltyStatus,
   createGame,
   loadCountry,
   pendingDilemma,
@@ -24,20 +25,21 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought and the teachers asking for a rise now
-  // and then. Format 12 let a project survey a region. The game, on seed 3, starts a survey of
-  // the Salt Coast in its first quarter and one of the Dry East in its second, on the budget it
-  // starts with. It is saved as Year 1 · Quarter 3 begins: the Salt Coast surveyed, its
-  // Westhaven deposit found and on the map, and the Dry East one of its two quarters surveyed.
+  // and then. Format 13 added Defence, a spending area, and the army's loyalty in each region.
+  // The game, on seed 2026, cuts Defence to nothing from its first quarter and keeps the rest
+  // of the budget it starts with. It is saved as Year 1 · Quarter 3 begins: national army
+  // loyalty down from 58.4% to 44.5%, the army restless, and the last report saying so.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
   });
-  const quarters: Partial<Decisions>[] = [
-    { startSurveys: ['salt-coast'] },
-    { startSurveys: ['dry-east'] },
-  ];
-  let game = createGame(country, 3);
+  const undefended = {
+    ...country.start.budget,
+    spending: { ...country.start.budget.spending, defence: 0 },
+  };
+  const quarters: Partial<Decisions>[] = [{ budget: undefended }, { budget: undefended }];
+  let game = createGame(country, 2026);
   let report: TurnReport | null = null;
   for (const decisions of quarters) {
     // Each dilemma is answered with its last option, which costs neither money nor food.
@@ -49,13 +51,10 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
   expect(game.date).toEqual({ year: 1, quarter: 3 });
-  expect(
-    game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
-  ).toEqual([
-    [{ kind: 'survey', regionId: 'salt-coast' }, 'surveyed', 2],
-    [{ kind: 'survey', regionId: 'dry-east' }, 'building', 1],
-  ]);
-  expect(game.country.sites.map((site) => site.id)).toContain('westhaven-mine');
+  expect(game.budget.spending.defence).toBe(0);
+  expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([584, 507, 445]);
+  expect(armyLoyaltyStatus(game).stage).toBe('restless');
+  expect(report?.entries.map((entry) => entry.headline)).toContain('The army is restless');
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

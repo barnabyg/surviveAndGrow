@@ -60,13 +60,13 @@ describe('the budget outcome in the turn report', () => {
   it('says how long the treasury lasts when the quarter ran a deficit', () => {
     const report = reportOn(createGame(tavara(), 1));
 
-    // Revenue $31.0m against spending $36.0m leaves $37.0m, which covers 7 more such quarters.
+    // Revenue $31.0m against spending $38.0m leaves $35.0m, which covers 5 more such quarters.
     expect(report.entries).toContainEqual({
       kind: 'budget',
       seriousness: 'warning',
       headline: 'The treasury is shrinking',
       cause:
-        'Spending of $36.0m outran revenue of $31.0m. At this deficit the treasury lasts 7 more quarters.',
+        'Spending of $38.0m outran revenue of $31.0m. At this deficit the treasury lasts 5 more quarters.',
     });
   });
 
@@ -74,7 +74,14 @@ describe('the budget outcome in the turn report', () => {
     const game = createGame(tavara(), 1);
     const budget = budgetOf({
       taxRatePercent: game.budget.taxRatePercent,
-      spending: { agriculture: 200, foodRelief: 70, health: 70, education: 100, security: 50 },
+      spending: {
+        agriculture: 200,
+        foodRelief: 70,
+        health: 70,
+        education: 100,
+        security: 50,
+        defence: 0,
+      },
     });
 
     const report = reportOn(game, budget);
@@ -104,7 +111,9 @@ describe('the budget outcome in the turn report', () => {
   });
 
   it('is routine when the quarter ran a surplus', () => {
-    const report = reportOn(createGame(testland(), 1));
+    // Testland's starting budget spends all it raises, so this one leaves agriculture out.
+    const game = createGame(testland(), 1);
+    const report = reportOn(game, budgetFrom(game.budget, { spending: { agriculture: 0 } }));
 
     expect(report.entries).toContainEqual({
       kind: 'budget',
@@ -118,7 +127,7 @@ describe('the budget outcome in the turn report', () => {
     const game = createGame(testland(), 1);
     const budget = budgetOf({
       taxRatePercent: game.budget.taxRatePercent,
-      spending: { agriculture: 20, health: 10, education: 10, security: 10 },
+      spending: { agriculture: 20, health: 10, education: 10, security: 10, defence: 0 },
     });
 
     const report = reportOn(game, budget);

@@ -1,4 +1,5 @@
 import { startingApproval } from './approval';
+import { startingLoyalty } from './army';
 import type { Country } from './country';
 import { openingCredit } from './credit';
 import { startingDebts } from './debt';
@@ -37,6 +38,7 @@ export function createGame(country: Country, seed: number): GameState {
       famineQuarters: 0,
       ...approval,
       ...services,
+      ...startingLoyalty(country, approval.unrest),
     })),
   } as const;
   const signs = vitalSigns(opening);

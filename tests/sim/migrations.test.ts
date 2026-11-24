@@ -2,16 +2,21 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   approvalStatus,
+  armyLoyaltyStatus,
   austerityStatus,
+  capacityOfTonnes,
   debtStatus,
   electionStatus,
   knownTechnologies,
   loadCountry,
   loadSave,
   pendingDilemma,
+  previewQuarter,
   priceStatus,
   siteOf,
   siteStatus,
+  startFault,
+  surveyedRegions,
   termRecords,
   victoryStatus,
   type TurnReport,
@@ -27,6 +32,7 @@ import format8Save from '../saves/format-8.json';
 import format9Save from '../saves/format-9.json';
 import format10Save from '../saves/format-10.json';
 import format11Save from '../saves/format-11.json';
+import format12Save from '../saves/format-12.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './playing';
 import { budgetFrom, budgetOf } from '../budgets';
@@ -613,6 +619,69 @@ describe('the save kept from save format 10', () => {
 
     expect(game.projects.every((project) => project.target.kind === 'site')).toBe(true);
     expect(game.projects.map((project) => project.status)).toEqual(['decaying', 'paused']);
+  });
+});
+
+describe('the save kept from save format 12', () => {
+  it('still opens on the game it was written from, a deposit found and a survey under way', () => {
+    const { game, report } = loadSave(format12Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 3 });
+    expect(
+      game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+    ).toEqual([
+      [{ kind: 'survey', regionId: 'salt-coast' }, 'surveyed', 2],
+      [{ kind: 'survey', regionId: 'dry-east' }, 'building', 1],
+    ]);
+    expect(surveyedRegions(game.projects)).toEqual(['salt-coast']);
+    expect(game.country.sites.slice(-2).map((site) => [site.id, site.capacity])).toEqual([
+      ['westhaven-mine', capacityOfTonnes(290_000)],
+      ['westhaven-trunk-road', undefined],
+    ]);
+    expect(report?.entries.map((entry) => entry.headline)).toEqual(
+      expect.arrayContaining(['Survey finished: Salt Coast', 'Survey begins: The Dry East']),
+    );
+  });
+
+  it('plays on, the Dry East surveyed, with the Westhaven mine there to be built', () => {
+    const { game } = loadSave(format12Save);
+
+    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
+
+    expect(report.entries).toContainEqual(
+      expect.objectContaining({
+        headline: 'Survey finished: The Dry East',
+        cause:
+          'The surveyors have reported. They found a deposit of ore whose mine could yield 800,000 t a quarter. Dustwell mine and Trunk road, Dustwell mine to Saltmouth can be built from next quarter.',
+      }),
+    );
+    expect(surveyedRegions(state.projects)).toEqual(['salt-coast', 'dry-east']);
+    expect(
+      startFault({ ...state, treasury: 2000 }, ['westhaven-mine', 'dustwell-mine']),
+    ).toBeNull();
+  });
+
+  it('is lifted to format 13 spending what holds the army loyal, with a loyal army', () => {
+    const { game, report } = loadSave(format12Save);
+
+    // $2.0m a quarter is the least that holds the army of Tavara's 5.2 million people loyal.
+    expect(game.budget.spending.defence).toBe(20);
+    const army = armyLoyaltyStatus(game);
+    expect(army.stage).toBe('loyal');
+    expect(army.settlesStage).toBe('loyal');
+    expect(army.regions.map((region) => region.stage)).toEqual(game.regions.map(() => 'loyal'));
+    // It is settled there: on the same budget only the people's growing number, which the
+    // army's expectations follow, moves it, and by no more than a thousandth a quarter.
+    const ahead = previewQuarter(game, answering(game, steward(game))).armyLoyalty.max;
+    expect(army.loyalty - ahead).toBeGreaterThanOrEqual(0);
+    expect(army.loyalty - ahead).toBeLessThanOrEqual(1);
+    // The quarters it recorded, and its last report, kept no army.
+    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual(game.history.map(() => null));
+    expect(report?.armyLoyalty).toBeNull();
+    // The next quarter's record and report do.
+    const next = advanceQuarter(game, answering(game, steward(game)));
+    expect(next.state.history.at(-1)?.armyLoyalty).toBe(ahead);
+    expect(next.report.armyLoyalty?.value).toBe(ahead);
   });
 });
 

@@ -124,10 +124,29 @@ export function testlandFormat8File(): unknown {
  * either needs format 10.
  */
 export function testlandFormat9File(): unknown {
-  const file = structuredClone(testlandFile) as Chances & { sites: { type: string }[] };
+  const file = testlandFormat10File() as Chances & { sites: { type: string }[] };
   file.sites = file.sites.filter((site) => site.type !== 'clinic' && site.type !== 'school');
   file.formatVersion = 9;
   return file;
+}
+
+/**
+ * Testland's file as format 10 could write it: its starting budget says nothing of Defence,
+ * since naming it needs format 11.
+ */
+export function testlandFormat10File(): unknown {
+  return beforeDefence(testlandFile);
+}
+
+/** A copy of a country file as format 10 could write it: with no Defence in its budget. */
+export function beforeDefence(file: unknown): unknown {
+  const copy = structuredClone(file) as {
+    formatVersion: number;
+    start: { budget: { spending: { defence?: number } } };
+  };
+  delete copy.start.budget.spending.defence;
+  copy.formatVersion = 10;
+  return copy;
 }
 
 /**

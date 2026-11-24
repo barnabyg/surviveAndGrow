@@ -73,9 +73,10 @@ test('the risks answer to the budget once it is committed', async ({ page }) => 
 });
 
 /**
- * Tavara with no drought or flood, a treasury of the given size in millions, and $1.0m on
- * security, which leaves its budget losing $1.0m a quarter: little enough that the treasury
- * covers the budget for a year and an instalment of $2.0m a quarter is what it runs short of.
+ * Tavara with no drought or flood, a treasury of the given size in millions, $1.0m on security
+ * and $5.0m on food relief, which leaves its budget losing $1.0m a quarter: little enough that
+ * the treasury covers the budget for a year and an instalment of $2.0m a quarter is what it
+ * runs short of.
  */
 function tavaraHolding(treasury: number) {
   const country = tavaraWith({ drought: [], flood: [] }) as ReturnType<typeof tavaraWith> & {
@@ -83,6 +84,7 @@ function tavaraHolding(treasury: number) {
   };
   country.start.treasury = treasury;
   country.start.budget.spending.security = 1;
+  country.start.budget.spending.foodRelief = 5;
   return country;
 }
 

@@ -11,6 +11,7 @@ export const SPENDING_AREAS = [
   'health',
   'education',
   'security',
+  'defence',
   'upkeep',
 ] as const;
 export type SpendingArea = (typeof SPENDING_AREAS)[number];
@@ -21,5 +22,6 @@ export const SPENDING_AREA_NAMES: Readonly<Record<SpendingArea, string>> = {
   health: 'Health',
   education: 'Education',
   security: 'Security',
+  defence: 'Defence',
   upkeep: 'Upkeep',
 };

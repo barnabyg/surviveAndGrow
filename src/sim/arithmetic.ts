@@ -43,3 +43,15 @@ export function apportion(
   }
   return parts;
 }
+
+/**
+ * How far a figure moves in a quarter towards where it would settle: a share of the gap, in
+ * thousandths, rounded away from nothing so that it arrives in the end and does not stall
+ * just short.
+ */
+export function stepTowards(current: number, settled: number, sharePermille: number): number {
+  const gap = settled - current;
+  if (gap === 0) return 0;
+  const step = Math.ceil((Math.abs(gap) * sharePermille) / 1000);
+  return gap > 0 ? step : -step;
+}

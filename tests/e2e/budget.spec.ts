@@ -20,8 +20,8 @@ test('the budget shows a slider for tax and each spending area, with the totals'
     'No site is in use yet, so upkeep costs nothing',
   );
   await expect(totals(page).getByRole('group', { name: 'Revenue' })).toContainText('$31.0m');
-  await expect(totals(page).getByRole('group', { name: 'Spending' })).toContainText('$36.0m');
-  await expect(totals(page).getByRole('group', { name: 'Balance' })).toContainText('−$5.0m');
+  await expect(totals(page).getByRole('group', { name: 'Spending' })).toContainText('$38.0m');
+  await expect(totals(page).getByRole('group', { name: 'Balance' })).toContainText('−$7.0m');
 });
 
 test('changing a slider, committing and ending the quarter moves the treasury by the balance', async ({
@@ -35,7 +35,7 @@ test('changing a slider, committing and ending the quarter moves the treasury by
   await expect(budget.getByRole('tab', { name: 'Budget' })).toHaveAccessibleDescription(
     '1 uncommitted',
   );
-  await expect(totals(page).getByRole('group', { name: 'Balance' })).toContainText('−$7.0m');
+  await expect(totals(page).getByRole('group', { name: 'Balance' })).toContainText('−$9.0m');
 
   await budget.getByRole('button', { name: 'Commit budget' }).click();
 
@@ -46,9 +46,9 @@ test('changing a slider, committing and ending the quarter moves the treasury by
 
   await endQuarters(page, 1);
 
-  // $42.0m less the $7.0m the panel stated.
-  await expect(treasury(page)).toContainText('$35.0m');
-  await expect(treasury(page)).toContainText('▼ $7.0m this quarter');
+  // $42.0m less the $9.0m the panel stated.
+  await expect(treasury(page)).toContainText('$33.0m');
+  await expect(treasury(page)).toContainText('▼ $9.0m this quarter');
 });
 
 test('reset discards changes that have not been committed', async ({ page }) => {
@@ -88,7 +88,7 @@ test('ending the quarter with uncommitted changes warns first', async ({ page })
   await endQuarters(page, 1);
   await warning.getByRole('button', { name: 'End quarter anyway' }).click();
   await expect(page.getByRole('banner').getByText('Year 1 · Quarter 2')).toBeVisible();
-  await expect(treasury(page)).toContainText('$37.0m');
+  await expect(treasury(page)).toContainText('$35.0m');
 });
 
 test('opening the treasury figure lists what moved it', async ({ page }) => {
@@ -106,7 +106,8 @@ test('opening the treasury figure lists what moved it', async ({ page }) => {
   );
   await expect(breakdown.getByRole('row', { name: 'Agriculture' })).toContainText('−$11.0m');
   await expect(breakdown.getByRole('row', { name: 'Security' })).toContainText('−$5.0m');
-  await expect(breakdown.getByRole('row', { name: 'Change this quarter' })).toContainText('−$5.0m');
+  await expect(breakdown.getByRole('row', { name: 'Defence' })).toContainText('−$2.0m');
+  await expect(breakdown.getByRole('row', { name: 'Change this quarter' })).toContainText('−$7.0m');
 });
 
 test('the turn report says when spending had to be cut', async ({ page }) => {
@@ -122,6 +123,6 @@ test('the turn report says when spending had to be cut', async ({ page }) => {
 
   const situation = page.getByRole('complementary', { name: 'Situation' });
   await expect(situation.getByText('Spending was cut')).toBeVisible();
-  await expect(situation.getByText(/could not cover the \$100\.0m budget/)).toBeVisible();
-  await expect(treasury(page)).toContainText('$0.1m');
+  await expect(situation.getByText(/could not cover the \$102\.0m budget/)).toBeVisible();
+  await expect(treasury(page)).toContainText('$0.2m');
 });

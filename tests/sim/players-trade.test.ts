@@ -112,7 +112,8 @@ describe('the borrower wary of gluts', () => {
 
 describe('the player who relies on the mine', () => {
   it('builds the mine’s chain and no power, and never trades', () => {
-    let game: GameState = createGame(tavaraAsShipped(), 1);
+    // Seed 4, on which the treasury reaches the mine's cost before the first vote is lost.
+    let game: GameState = createGame(tavaraAsShipped(), 4);
     const started: string[] = [];
     for (let quarter = 0; quarter < 40 && game.outcome.status === 'playing'; quarter += 1) {
       const decisions = playerNamed('Mine only').decide(game);

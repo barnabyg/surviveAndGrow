@@ -56,6 +56,7 @@ import {
   EVENT_TYPES,
   FOOD_STAGES,
   GOODS,
+  LOYALTY_DRIVERS,
   OUTCOME_STATUSES,
   PRICE_SHOCK_TYPES,
   PROJECT_STATUSES,
@@ -70,6 +71,7 @@ import {
   TIERS,
   UNREST_LEVELS,
   type ApprovalDriver,
+  type LoyaltyDriver,
   type SpendingArea,
 } from './vocabulary';
 
@@ -289,6 +291,7 @@ function readBudget(saved: Json, path: string): Budget {
 function readRegions(saved: unknown, path: string, regionIds: readonly string[]): RegionState[] {
   const regions = list(saved, path, (item, itemPath): RegionState => {
     const effects = record(item.approvalEffects, `${itemPath}.approvalEffects`);
+    const loyaltyEffects = record(item.armyLoyaltyEffects, `${itemPath}.armyLoyaltyEffects`);
     return {
       id: text(item.id, `${itemPath}.id`),
       population: whole(item.population, `${itemPath}.population`, 0),
@@ -307,6 +310,13 @@ function readRegions(saved: unknown, path: string, regionIds: readonly string[])
       unrest: oneOf(item.unrest, `${itemPath}.unrest`, UNREST_LEVELS, 'a state of unrest'),
       health: whole(item.health, `${itemPath}.health`, 0, 1000),
       education: whole(item.education, `${itemPath}.education`, 0, 1000),
+      armyLoyalty: whole(item.armyLoyalty, `${itemPath}.armyLoyalty`, 0, 1000),
+      armyLoyaltyEffects: Object.fromEntries(
+        LOYALTY_DRIVERS.map((driver) => [
+          driver,
+          whole(loyaltyEffects[driver], `${itemPath}.armyLoyaltyEffects.${driver}`),
+        ]),
+      ) as Record<LoyaltyDriver, number>,
     };
   });
   const ids = regions.map((region) => region.id);
@@ -537,6 +547,10 @@ function readHistory(saved: unknown, path: string): VitalSigns[] {
     approval: whole(item.approval, `${itemPath}.approval`, 0, 1000),
     prosperity:
       item.prosperity === null ? null : whole(item.prosperity, `${itemPath}.prosperity`, 0, 1000),
+    armyLoyalty:
+      item.armyLoyalty === null
+        ? null
+        : whole(item.armyLoyalty, `${itemPath}.armyLoyalty`, 0, 1000),
     debt: whole(item.debt, `${itemPath}.debt`, 0),
     debtBurden: whole(item.debtBurden, `${itemPath}.debtBurden`, 0),
   }));
@@ -685,6 +699,8 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
     treasury: figure(saved.treasury, 'report.treasury'),
     food: figure(saved.food, 'report.food'),
     approval: figure(saved.approval, 'report.approval'),
+    armyLoyalty:
+      saved.armyLoyalty === null ? null : figure(saved.armyLoyalty, 'report.armyLoyalty'),
     debt: saved.debt === null ? null : figure(saved.debt, 'report.debt'),
     credit: saved.credit === null ? null : figure(saved.credit, 'report.credit'),
     prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),

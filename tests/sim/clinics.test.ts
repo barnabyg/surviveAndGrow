@@ -106,10 +106,11 @@ const scenarios = [
 ] as const;
 
 describe('a country file with clinics and schools', () => {
-  it('ships Tavara and Testland at format 10, each with clinics and schools placed its own way', () => {
+  it('ships Tavara and Testland, from format 10, each with clinics and schools placed its own way', () => {
     const tavara = loadCountry(tavaraFile);
     const testland = loadCountry(testlandFile);
-    expect([tavara.formatVersion, testland.formatVersion]).toEqual([10, 10]);
+    expect(tavara.formatVersion).toBeGreaterThanOrEqual(10);
+    expect(testland.formatVersion).toBeGreaterThanOrEqual(10);
 
     const regionsOf = (country: Country, type: SiteType) =>
       sitesOf(country, type).map((site) => site.regionId);

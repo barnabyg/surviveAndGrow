@@ -3,6 +3,7 @@
  * save format means raising `SAVE_FORMAT_VERSION` here and adding the migration from the
  * version before it to `MIGRATIONS`; `loadSave` passes an old save through them in turn.
  */
+import { defenceToHoldLoyal, settledLoyalty } from './army';
 import { balance } from './balance';
 import { loadCountry } from './country';
 import { ratingOfScore } from './credit';
@@ -21,7 +22,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 12;
+export const SAVE_FORMAT_VERSION = 13;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -42,6 +43,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   9: fromFormat9,
   10: fromFormat10,
   11: fromFormat11,
+  12: fromFormat12,
 };
 
 /**
@@ -280,6 +282,47 @@ function fromFormat10(older: Json): Json {
  */
 function fromFormat11(older: Json): Json {
   return { ...older, formatVersion: 12 };
+}
+
+/**
+ * Format 13 added Defence, a spending area, and the army's loyalty, kept for each region. A
+ * game written in format 12 spent nothing on an army it did not have: it is read as spending
+ * the least that holds the army loyal for the people it now has, with the army in every
+ * region settled loyal on that. The quarters already recorded, and the last report, kept no
+ * army, so they say so. A budget whose spending cannot be read is left for checking to refuse.
+ */
+function fromFormat12(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
+  const people = regions.reduce<number>(
+    (total, region) =>
+      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
+    0,
+  );
+  const defence = defenceToHoldLoyal(people);
+  const budget = isRecord(state.budget) ? state.budget : null;
+  const spending = budget !== null && isRecord(budget.spending) ? budget.spending : null;
+  const loyal = settledLoyalty('calm', defence, people);
+  return {
+    ...older,
+    formatVersion: 13,
+    state: {
+      ...state,
+      budget:
+        budget === null || spending === null
+          ? state.budget
+          : { ...budget, spending: { ...spending, defence } },
+      regions: Array.isArray(state.regions)
+        ? regions.map((region) => (isRecord(region) ? { ...region, ...loyal } : region))
+        : state.regions,
+      history: Array.isArray(state.history)
+        ? (state.history as unknown[]).map((signs) =>
+            isRecord(signs) ? { ...signs, armyLoyalty: null } : signs,
+          )
+        : state.history,
+    },
+    report: isRecord(older.report) ? { ...older.report, armyLoyalty: null } : older.report,
+  };
 }
 
 /**

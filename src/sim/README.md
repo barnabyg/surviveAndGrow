@@ -42,10 +42,12 @@ the world ore price. It lives the quarter through `liveQuarter`, which the previ
    and the debt burden the quarter leaves are judged at the world prices once they have moved.
 6. Approval (`approval.ts`), which decides who strikes next quarter. A bailout's blow lands here
    (`bailout.ts`).
-7. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the debt
+7. Army loyalty (`army.ts`), in each region, from what was spent on Defence and the unrest the
+   quarter's approval leaves there.
+8. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the debt
    burden the quarter leaves and its deficit. What was borrowed this quarter was taken at the rating
    in force as it began. A missed payment puts it at the lowest step.
-8. Austerity (`bailout.ts`): a bailout imposes it and brings the budget in force within it, a missed
+9. Austerity (`bailout.ts`): a bailout imposes it and brings the budget in force within it, a missed
    payment during it extends it, and otherwise a quarter of it is spent. What it allows is in
    `austerity.ts`, which `checkDecisions` and the menus of loans and projects consult.
 
@@ -156,6 +158,25 @@ deposits' sites to the country from the surveys finished and the seed, as a quar
 and as a save is loaded (`save.ts`), and a found mine carries the size found as its own `capacity`,
 which `siteCapacity` (`sites.ts`) gives the chain in place of the type's. `surveys.ts` gives the
 interface each region as it stands for a survey (`surveyStatuses`).
+
+## Defence and army loyalty
+
+Defence is a spending area like any other (`SPENDING_AREAS`); what it buys is in `army.ts`. Each
+region keeps the loyalty of the army there (`armyLoyalty` in `RegionState`) as approval is kept: a
+baseline plus what each driver adds (`armyLoyaltyEffects`, by `LOYALTY_DRIVERS` in
+`vocabulary/army.ts`), each closing a share of the gap each quarter to where it would settle
+(`resolveLoyalty`). Defence spending is judged per head against what the army expects, the same in
+every region; unrest is the region's own, read as the quarter's approval leaves it, so hunger that
+tips a region into protest tells on its army in the same quarter. The national figure is the
+regions' average by population (`nationalLoyalty`), and a loyalty is read as a stage, loyal,
+restless or plotting, by the marks in `balance.army` (`armyStageAt`). The stage is never kept: it is
+read from the loyalty wherever it is wanted. `armyLoyaltyStatus` gives the interface the figure,
+its stage, what it is made of and where a budget would settle it, nationally and by region; the
+preview gives next quarter's figure and where it is heading; the report carries the figure with
+what moved it and an entry for each change of stage (`stageEntries`); and the vital signs record
+it each quarter (`history.ts`). A country file older than format 11, and a save older than format
+13, say nothing of Defence: both are read as spending the least that holds the army loyal
+(`defenceToHoldLoyal`).
 
 ## Adding a mechanic
 

@@ -334,15 +334,15 @@ describe('the risks ahead in Tavara', () => {
   });
 
   it('warn of an empty treasury once the deficit will empty it inside four quarters', () => {
-    // The starting budget loses $5.0m a quarter from $42.0m.
+    // The starting budget loses $7.0m a quarter from $42.0m.
     const start = createGame(calm(), 3);
-    const early = play(start, 4);
-    const later = play(start, 5);
+    const early = play(start, 2);
+    const later = play(start, 3);
 
-    // $22.0m covers four more quarters; $17.0m is $2.0m short of covering the fourth.
-    expect(early.treasury).toBe(220);
+    // $28.0m covers four more quarters; $21.0m covers three and nothing of the fourth.
+    expect(early.treasury).toBe(280);
     expect(ofKind(risksAhead(early, idle(early)), 'treasury')).toBe(undefined);
-    expect(later.treasury).toBe(170);
+    expect(later.treasury).toBe(210);
     expect(risksAhead(later, idle(later))).toEqual([
       {
         kind: 'treasury',
@@ -358,12 +358,12 @@ describe('the risks ahead in Tavara', () => {
   // Revenue is $31.0m. Spending $69.0m out of it and the $42.0m treasury leaves $4.0m.
   const spree: Budget = budgetOf({
     taxRatePercent: 18,
-    spending: { agriculture: 200, foodRelief: 200, health: 200, education: 60, security: 30 },
+    spending: { agriculture: 200, foodRelief: 200, health: 200, education: 60, security: 10 },
   });
   // A budget that spends exactly what comes in, so the treasury pays only for projects.
   const balanced: Budget = budgetOf({
     taxRatePercent: 18,
-    spending: { agriculture: 110, foodRelief: 70, health: 70, education: 60 },
+    spending: { agriculture: 110, foodRelief: 70, health: 70, education: 40 },
   });
 
   it('warn that building will pause when the treasury cannot cover an instalment', () => {
@@ -426,7 +426,7 @@ describe('the risks ahead in Tavara', () => {
     const start = createGame(calm(), 3);
     // $2.0m more on security leaves $2.0m, which the first of the survey's two instalments takes.
     const game = advanceQuarter(start, {
-      budget: budgetFrom(spree, { spending: { security: 50 } }),
+      budget: budgetFrom(spree, { spending: { security: 30 } }),
       startSurveys: ['salt-coast'],
     }).state;
     expect(game.treasury).toBe(0);
@@ -442,10 +442,10 @@ describe('the risks ahead in Tavara', () => {
   });
 
   it('count a survey planned this quarter once, not as started again each quarter after', () => {
-    // The starting budget loses $5.0m a quarter, so $27.0m covers four more quarters of it
+    // The starting budget loses $7.0m a quarter, so $35.0m covers four more quarters of it
     // and the survey's $4.0m, but not a survey begun afresh in each of them.
-    const game = play(createGame(calm(), 3), 3);
-    expect(game.treasury).toBe(270);
+    const game = play(createGame(calm(), 3), 1);
+    expect(game.treasury).toBe(350);
     const planned: Decisions = { ...idle(game), startSurveys: ['salt-coast'] };
 
     expect(ofKind(risksAhead(game, planned), 'treasury')).toBe(undefined);
@@ -466,9 +466,9 @@ describe('the risks ahead in Tavara', () => {
     ['research', { startResearch: 'droughtResistantSeed' }],
     ['a survey', { startSurveys: ['salt-coast'] }],
   ])('warn when the instalments on %s would leave the treasury short of the budget', (_, plan) => {
-    // The starting budget loses $5.0m a quarter, and $22.0m covers four more quarters of it.
-    const game = play(createGame(calm(), 3), 4);
-    expect(game.treasury).toBe(220);
+    // The starting budget loses $7.0m a quarter, and $28.0m covers four more quarters of it.
+    const game = play(createGame(calm(), 3), 2);
+    expect(game.treasury).toBe(280);
     expect(ofKind(risksAhead(game, idle(game)), 'treasury')).toBe(undefined);
 
     // $2.0m a quarter in instalments, on the seed for four quarters or the survey for two,
@@ -489,10 +489,10 @@ describe('the risks ahead in Tavara', () => {
     // strikes. The farms get all they can use, so every region grows enough.
     const balanced: Budget = budgetOf({
       taxRatePercent: 18,
-      spending: { agriculture: 200, foodRelief: 60, security: 50 },
+      spending: { agriculture: 200, foodRelief: 40, security: 50 },
     });
     // Losing $13.0m a quarter, $42.0m covers three quarters and not a fourth.
-    const deficit: Budget = budgetFrom(balanced, { spending: { foodRelief: 190 } });
+    const deficit: Budget = budgetFrom(balanced, { spending: { foodRelief: 170 } });
     const keep = () => ({ budget: balanced });
     const fourLeft = play(createGame(calm(), 3), 16, keep);
     const threeLeft = play(createGame(calm(), 3), 17, keep);

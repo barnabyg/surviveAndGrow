@@ -1,4 +1,5 @@
 import type { ApprovalEffects, RegionUnrest } from './approval';
+import type { ArmyLoyaltyEffects } from './army';
 import type { Austerity } from './austerity';
 import type { Budget } from './budget';
 import type { Country } from './country';
@@ -61,6 +62,13 @@ export interface RegionState {
   readonly health: number;
   /** The level of education in the region, in thousandths, built and worn like health. */
   readonly education: number;
+  /**
+   * How loyal the army in the region is, in thousandths. It is the baseline plus the effects
+   * below, held between nothing and the whole, and is read in stages (see `army.ts`).
+   */
+  readonly armyLoyalty: number;
+  /** What each driver now adds to or takes from the region's army loyalty, in thousandths. */
+  readonly armyLoyaltyEffects: ArmyLoyaltyEffects;
 }
 
 /** How a finished game ended, in words the player can be shown whatever the cause. */
@@ -235,6 +243,11 @@ export interface TurnReport {
    * National approval after the quarter, in thousandths, with everything that moved it.
    */
   readonly approval: Figure;
+  /**
+   * National army loyalty after the quarter, in thousandths, with everything that moved it. A
+   * report carried over from a save written before format 13, when no army was kept, has none.
+   */
+  readonly armyLoyalty: Figure | null;
   /**
    * National prosperity after the quarter, in thousandths, with what each of its parts did
    * to it. A report carried over from a save written before prosperity existed has none.
@@ -421,6 +434,14 @@ export interface Preview {
    * several quarters, so this is further off than the figure above.
    */
   readonly approvalHeading: Range;
+  /** National army loyalty once the quarter is over, in thousandths. */
+  readonly armyLoyalty: Range;
+  /**
+   * Where national army loyalty settles, in thousandths, if Defence spending and each region's
+   * unrest stay as they will be when the quarter ends. Loyalty moves there over several
+   * quarters, as approval does.
+   */
+  readonly armyLoyaltyHeading: Range;
   /**
    * National prosperity once the quarter is over, in thousandths. Only the world ore price,
    * which world markets move as the quarter ends, is left to chance: with no mine's chain

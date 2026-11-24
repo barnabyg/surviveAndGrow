@@ -57,7 +57,7 @@ const ruinous = (): Budget => budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 /** The tax as it stands and nothing spent, so that no answer can force a spending cut. */
 const austere = (game: GameState): Budget =>
-  budgetOf({ taxRatePercent: game.budget.taxRatePercent });
+  budgetOf({ taxRatePercent: game.budget.taxRatePercent, elsewhere: 0 });
 
 /**
  * How each dilemma is brought about: the chances written into the country file, and the
@@ -428,8 +428,8 @@ describe('the dilemmas in Tavara', () => {
       risksAhead(game, decisions).find((risk) => risk.kind === 'treasury');
 
     expect(treasury({ budget })?.withinQuarters).toBe(1);
-    // The grant's $15.6m covers the $5.0m deficit for three quarters and not a fourth.
-    expect(treasury({ budget, dilemmaChoice: 'accept' })?.withinQuarters).toBe(4);
+    // The grant's $15.6m covers the $7.0m deficit for two quarters and not a third.
+    expect(treasury({ budget, dilemmaChoice: 'accept' })?.withinQuarters).toBe(3);
   });
 });
 

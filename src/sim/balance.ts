@@ -1,3 +1,4 @@
+import { armyBalance } from './balance/army';
 import { budgetBalance } from './balance/budget';
 import { calendarBalance } from './balance/calendar';
 import { dilemmasBalance } from './balance/dilemmas';
@@ -35,6 +36,8 @@ export const balance = {
   ...foodBalance,
   // approval, unrest, election
   ...politicsBalance,
+  // army loyalty
+  ...armyBalance,
   // risks
   ...risksBalance,
   // sites

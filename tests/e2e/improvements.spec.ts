@@ -31,8 +31,14 @@ async function prepare(page: Page, save: unknown): Promise<void> {
  */
 function storeBuiltSeedKnown(file: unknown): { game: GameState; report: TurnReport } {
   const start = createGame(loadCountry(file), 1);
+  // $2.0m less on food relief, which no one here needs, so that the treasury sees the
+  // research through.
+  const budget = {
+    ...start.budget,
+    spending: { ...start.budget.spending, foodRelief: start.budget.spending.foodRelief - 20 },
+  };
   let { state: game, report }: { state: GameState; report: TurnReport } = advanceQuarter(start, {
-    budget: start.budget,
+    budget,
     startProjects: ['lowmere-store'],
   });
   while (siteStatus(game, 'lowmere-store').state !== 'operating') {

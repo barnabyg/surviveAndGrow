@@ -38,12 +38,12 @@ test('a project started from a site’s card is paid for, built and then operate
   ).toContainText('Planned');
   await openTab(page, 'Budget');
   await expect(decisions(page).getByRole('group', { name: 'Fixed costs' })).toContainText('$3.0m');
-  await expect(spending(page)).toContainText('$39.0m');
+  await expect(spending(page)).toContainText('$41.0m');
 
   await endQuarters(page, 1);
 
-  // $42.0m and $31.0m of revenue, less $36.0m of spending and the $3.0m instalment.
-  await expect(treasury(page)).toContainText('$34.0m');
+  // $42.0m and $31.0m of revenue, less $38.0m of spending and the $3.0m instalment.
+  await expect(treasury(page)).toContainText('$32.0m');
   await expect(reports(page).getByText('Building begins: Lowmere grain store')).toBeVisible();
   await expect(site).toHaveAccessibleName(
     'Lowmere grain store, grain store, under construction, 1 of 2 quarters built',
@@ -100,7 +100,7 @@ test('a project planned from the catalogue can be taken back before the quarter 
   await expect((await affordable(page)).getByText('Lowmere irrigation')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await openTab(page, 'Budget');
-  await expect(spending(page)).toContainText('$40.0m');
+  await expect(spending(page)).toContainText('$42.0m');
 
   const card = page.getByRole('region', { name: 'Lowmere irrigation' });
   await card.getByRole('button', { name: 'Cancel building' }).click();
@@ -108,7 +108,7 @@ test('a project planned from the catalogue can be taken back before the quarter 
   await expect(site).toHaveAccessibleName(
     'Lowmere irrigation, irrigation scheme, empty site, $12.0m',
   );
-  await expect(spending(page)).toContainText('$36.0m');
+  await expect(spending(page)).toContainText('$38.0m');
   await expect(decisions(page).getByRole('group', { name: 'Fixed costs' })).toHaveCount(0);
   await expect((await affordable(page)).getByText('Lowmere irrigation')).toBeVisible();
 });

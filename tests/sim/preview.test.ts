@@ -25,11 +25,11 @@ describe('previewing a quarter in Tavara', () => {
 
     const preview = previewQuarter(game, { budget: game.budget });
 
-    // Revenue $31.0m, spending $36.0m: the treasury will fall from $42.0m to $37.0m.
+    // Revenue $31.0m, spending $38.0m: the treasury will fall from $42.0m to $35.0m.
     expect(preview.revenue).toEqual({ min: 310, max: 310 });
-    expect(preview.spending).toEqual({ min: 360, max: 360 });
-    expect(preview.balance).toEqual({ min: -50, max: -50 });
-    expect(preview.treasury).toEqual({ min: 370, max: 370 });
+    expect(preview.spending).toEqual({ min: 380, max: 380 });
+    expect(preview.balance).toEqual({ min: -70, max: -70 });
+    expect(preview.treasury).toEqual({ min: 350, max: 350 });
     expect(preview.spendingCut).toBe(false);
   });
 
@@ -39,8 +39,8 @@ describe('previewing a quarter in Tavara', () => {
 
     const preview = previewQuarter(game, { budget });
 
-    expect(preview.balance).toEqual({ min: -70, max: -70 });
-    expect(preview.treasury).toEqual({ min: 350, max: 350 });
+    expect(preview.balance).toEqual({ min: -90, max: -90 });
+    expect(preview.treasury).toEqual({ min: 330, max: 330 });
   });
 
   it('warns that spending would be cut when the treasury cannot cover it', () => {
