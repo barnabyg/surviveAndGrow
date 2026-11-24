@@ -1,6 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { balance, formatCount, formatMoney } from '../../src/sim';
+import {
+  armyLoyaltyStatus,
+  balance,
+  createGame,
+  formatCount,
+  formatMoney,
+  formatPercent,
+  previewQuarter,
+} from '../../src/sim';
+import { tavaraAsShipped } from './countries';
 
 /**
  * The docs restate figures from `src/sim/balance/` by hand. Each check below renders one
@@ -21,6 +30,15 @@ function words(count: number): string {
   const word = WORDS[count];
   if (word === undefined) throw new Error(`No word for ${String(count)}`);
   return word;
+}
+
+const FRACTIONS: Readonly<Record<number, string>> = { 4: 'quarter', 5: 'fifth', 10: 'tenth' };
+
+/** A share in thousandths as the docs give a fraction: 200 is `a fifth`. */
+function fraction(permille: number): string {
+  const word = FRACTIONS[1000 / permille];
+  if (word === undefined) throw new Error(`No word for ${String(permille)} thousandths`);
+  return `a ${word}`;
 }
 
 /** Thousandths as a percentage: 400 is `40%`. */
@@ -71,6 +89,10 @@ const { tiers } = balance.prosperity;
 const { strikes, protests } = balance.unrest;
 const { grain, ore } = trade.goods;
 const loans = finance.loans;
+const { loyalty } = balance.army;
+/** Tavara as it ships, as a game opens on it. */
+const tavaraOpening = createGame(tavaraAsShipped(), 1);
+const tavaraArmy = armyLoyaltyStatus(tavaraOpening);
 
 const RULES: readonly string[] = [
   // Food
@@ -118,6 +140,13 @@ const RULES: readonly string[] = [
   `not a mine's usual ${oreTonnes(sites.mine.capacity)} tonnes`,
   // Borrowing
   `offers a loan of ${listOr(loans.amounts.map(formatMoney))} over ${listOr(loans.terms.map((term) => String(term.quarters)))} quarters, at ${listOr(loans.terms.map((term) => rate(term.annualRateBasisPoints)))} a year to a nation rated A`,
+  // Defence and army loyalty
+  `A region's loyalty stands at ${percent(loyalty.baselinePermille)} when Defence is spent as the army expects, ${formatMoney(loyalty.defence.expectedPerMillionPeople)} a quarter for each million people`,
+  `Spending nothing settles it ${String(loyalty.defence.weightPermille / 10)} points lower, double what the army expects or more settles it ${String(loyalty.defence.weightPermille / 10)} points higher`,
+  `Strikes in a region settle the loyalty of the army there ${String(-loyalty.unrest.strikes / 10)} points lower, and protests ${String(-loyalty.unrest.protests / 10)} points lower`,
+  `Loyalty moves ${fraction(loyalty.adjustPermillePerQuarter)} of the way each quarter`,
+  `loyal, restless below ${percent(loyalty.stages.restlessBelowPermille)} and plotting below ${percent(loyalty.stages.plottingBelowPermille)}`,
+  `Tavara starts on ${formatMoney(tavaraArmy.spent)} a quarter, which holds its army loyal at ${formatPercent(tavaraArmy.loyalty)}`,
   // Bailout and austerity
   `approval takes a ${String(-finance.bailout.approvalPermille / 10)}-point blow`,
   `Austerity then holds for ${String(finance.austerity.quarters)} quarters: the tax rate cannot go below ${String(finance.austerity.taxFloorPercent)}%`,
@@ -130,12 +159,15 @@ const RULES: readonly string[] = [
 ];
 
 const PLAYING: readonly string[] = [
+  `a budget that loses ${formatMoney(-previewQuarter(tavaraOpening, { budget: tavaraOpening.budget }).balance.min)} a quarter`,
   `Below ${percent(strikes.belowPermille)} a region strikes`,
   `an ore glut pushes the ore price down, for ${words(priceShocks.oreGlut.lastsQuarters)} quarters. Each is announced ${words(priceShocks.oreGlut.noticeQuarters)} quarters ahead`,
   `its usual $${String(grain.usualDollarsPerTonne)}`,
 ];
 
 const COUNTRIES: readonly string[] = [
+  `The army expects ${formatMoney(loyalty.defence.expectedPerMillionPeople)} a quarter for each million people`,
+  `Tavara, with 5.2 million people, starts on ${formatMoney(tavaraArmy.spent)} a quarter`,
   `(the world grain price pushed up by ${dollarsOf(priceShocks.failedHarvestsAbroad.pushPermillePerQuarter, grain.usualDollarsPerTonne)} a tonne a quarter) and \`oreGlut\` (the world ore price pushed down by ${dollarsOf(priceShocks.oreGlut.pushPermillePerQuarter, ore.usualDollarsPerTonne)} a tonne a quarter)`,
   `a \`drought\` (${cut(events.drought.effects.harvestPermille)} off its harvest)`,
   `a \`flood\` (${cut(events.flood.effects.harvestPermille)} off its harvest`,

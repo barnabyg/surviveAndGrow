@@ -28,23 +28,31 @@ What each part of the screen shows and does, as built. The rules the game plays 
   part of the screen it concerns like a lesson: a dilemma, a bailout, a drought or flood warned of
   in risks ahead, a strike or protest, a world price shock announced, a planned project whose
   chain is missing a link, a site decaying, the election four quarters away, a prosperity tier
-  passed, research, once its tab is first opened or research is planned, and surveys, once the
-  card of a region that may hide a deposit is first opened or a survey is planned. When several are due, the first in that order shows. Got it dismisses one, and the
+  passed, research, once its tab is first opened or research is planned, surveys, once the
+  card of a region that may hide a deposit is first opened or a survey is planned, and Defence
+  and the army, once the army anywhere is less than loyal or the budget in force would leave it so. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
   waits while the tour or a lesson is open. A tip about a decision panel behind another tab is
   drawn round the tab that opens it. The tips are written in `src/ui/tips.ts`.
 - Each figure in the top bar shows its change this quarter and any warning, such as the food
   reserve below its safe level. Its standing note (the debt burden, the loan rates, the safe
-  level, the strike threshold, the prosperity tier) is in its tooltip and at the head of its
-  breakdown.
-- Click the treasury, the debt, the credit rating, the food reserve, approval or prosperity in the
-  top bar to see what moved it. Approval, prosperity and the credit rating also list what they
-  are made of.
-- A short trend line beside the treasury, the debt, the food reserve, approval and prosperity shows the last
-  eight quarters, with the food reserve's safe level, the strike threshold and the prosperity
-  target drawn as dashed lines. The
+  level, the strike threshold, the marks of the army's stages, the prosperity tier) is in its
+  tooltip and at the head of its breakdown. Army loyalty names its stage beneath the figure,
+  whatever it is: in a word while the army is loyal, and as a warning, with a sign and the mark
+  it has fallen below, while it is restless or plotting.
+- Click the treasury, the debt, the credit rating, the food reserve, approval, army loyalty or
+  prosperity in the top bar to see what moved it. Approval, army loyalty, prosperity and the
+  credit rating also list what they are made of, and army loyalty how the army stands in each
+  region.
+- A short trend line beside the treasury, the debt, the food reserve, approval, army loyalty and
+  prosperity shows the last eight quarters, with the food reserve's safe level, the strike
+  threshold, the mark below which the army is restless and the prosperity target drawn as
+  dashed lines. The
   left column has a larger approval chart with the strike threshold and the 50% line marked.
+- The region list in the left column gives each region's food situation, its living standard as
+  a figure and a bar, and its army's stage in words with its loyalty, marked with a sign where
+  the army is not loyal. A region's card gives its army's loyalty and stage among its figures.
 - After each quarter the left column reports what happened and why, the most serious first: the
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
   is a button: select it to pick that region out on the map and open its card. A quarter in which

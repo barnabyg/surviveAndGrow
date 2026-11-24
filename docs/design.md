@@ -74,7 +74,7 @@ Prosperity, tiers and people.
 ## 4. Systems
 
 - **Economy and budget.** A tax rate and a small set of spending areas (agriculture, food relief,
-  health, education, security, upkeep). Revenue comes from tax on output. Underfunded upkeep makes
+  health, education, security, defence from Phase 6, upkeep). Revenue comes from tax on output. Underfunded upkeep makes
   infrastructure decay, newest sites first, so standing still loses. Rules: rules.md, The
   quarter and the budget, and Building.
 - **Food.** Each region's harvest is moved by weather and drought and feeds a national reserve, with
@@ -112,10 +112,18 @@ Prosperity, tiers and people.
   seed and the deposit, not the random generator, so it is fair and the same seed finds the same.
   Rules: rules.md, Surveys; balance: `docs/balance/phase-5.md`.
 
+- **Defence and army loyalty** (Phase 6): the military is kept abstract, and there is no tactical
+  combat. Defence is a spending area that buys the army's loyalty, kept for each region and
+  nationally: it answers to defence spending per head against what the army expects and to the
+  region's own unrest, moves gradually as approval does, and is read as loyal, restless or
+  plotting. That gives the cascade the phase is built on: famine, then protests, then falling
+  loyalty. Rules: rules.md, Defence and army loyalty.
+
 ### Still to come
 
-- **Military** (Phase 6): kept abstract. Defence spending buys deterrence against neighbours and
-  loyalty from the army. There is no tactical combat.
+- **Coup, neighbours and factions** (Phase 6): an army left plotting brings a coup, the third
+  way to lose. Defence spending also buys deterrence against neighbours with ambitions, and
+  approval is broken down by faction.
 
 ## 5. The map
 

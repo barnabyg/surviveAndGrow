@@ -60,6 +60,37 @@ main figures from the balance values and fails if this file, [playing.md](playin
 - A region whose approval falls below 40% goes on strike and produces 30% less, which costs the
   treasury tax. Below 30% it protests and produces 60% less. Both end when approval recovers.
 
+## Defence and army loyalty
+
+- Defence is a spending area of its own, beside Security: Security answers to approval, as it
+  always has, and Defence to the army. It has a slider in the budget like the others.
+- Each region has an army loyalty, and the national figure is the regions' average by
+  population. A region's loyalty stands at 60% when Defence is spent as the army expects, $0.4m
+  a quarter for each million people, and the region is calm. Spending nothing settles it 40
+  points lower, double what the army expects or more settles it 40 points higher, and in between
+  in proportion. Strikes in a region settle the loyalty of the army there 10 points lower, and
+  protests 25 points lower. Loyalty moves a fifth of the way each quarter towards where those
+  would settle it, so a cut to Defence is felt over quarters and not at once. A region's unrest
+  is read as the quarter leaves it, which gives the cascade: hunger, then protests, then an army
+  less loyal there.
+- Loyalty is read in three stages: loyal, restless below 45% and plotting below 30%. The stages
+  are shown and reported; they end nothing.
+- National army loyalty is a vital sign in the top bar, with its stage named beneath it, a trend
+  line with the restless mark drawn on it, what moved it last quarter, what it is made of and
+  each region's own. A region's card and the region list show its army's loyalty and stage, and
+  the card warns while its army is anything but loyal or is heading that way. The budget panel
+  shows what a change would do to loyalty next quarter and where it is heading, each with its
+  stage. The turn report says when the nation's stage or a region's changes, for the worse or
+  the better, and why; a region that moves with the nation is named in the nation's report, and
+  any other has a report of its own tied to its place. A first-time tip explains Defence and the
+  army once the army anywhere is less than loyal, or the budget in force would leave it so.
+- Austerity caps Defence as it caps Security (see Bailout and austerity).
+- A country file says what the country starts by spending on Defence, and a game starts with
+  the army in each region where that and the region's unrest settle it. Tavara starts on $2.0m a
+  quarter, which holds its army loyal at 58.4%. A country file written before Defence, and a
+  save from before it, are read as spending the least the slider allows that holds the army
+  loyal in a calm region, with a loyal army.
+
 ## Prosperity, tiers and people
 
 - Prosperity, the game's objective, is the fourth figure in the top bar, on a scale of 0 to 100
@@ -329,8 +360,8 @@ main figures from the balance values and fails if this file, [playing.md](playin
   year, repaid over 16 quarters from the next; anything to be borrowed that quarter is not lent.
   The credit rating falls to B, and approval takes a 12-point blow in every region that fades
   like any passing event. Austerity then holds for 8 quarters: the tax rate cannot go below 25%,
-  spending on agriculture is capped at what the game began with and on health, education and
-  security at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or
+  spending on agriculture is capped at what the game began with and on health, education,
+  security and defence at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or
   project can be started; projects under way carry on, and food relief and upkeep are not
   capped. The bailout brings the budget in force within those limits. The budget's sliders stop
   at the floor and the caps and say so, the finance and projects panels and a site's card say

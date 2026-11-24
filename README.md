@@ -44,7 +44,8 @@ is in [docs/screen.md](docs/screen.md), and the rules as built, one heading per 
 
 A country is one data file; the engine contains no country-specific code. The format, and how to
 try a country of your own with `?country=`, are in [docs/countries.md](docs/countries.md). A
-country can hide deposits of ore for surveys to find, and lock a site until a technology is known.
+country can hide deposits of ore for surveys to find, lock a site until a technology is known,
+and say what it starts by spending on Defence, which holds its army loyal or does not.
 
 ## Check it
 

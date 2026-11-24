@@ -29,7 +29,7 @@ the saved game or to start a new one:
 
 The first term is 20 quarters, ending in an election. Win it and you govern on into another term;
 the game itself is won on prosperity, held in the top tier.
-It is meant to be hard. You take office with approval near 52%, a budget that loses $5.0m a
+It is meant to be hard. You take office with approval near 52%, a budget that loses $7.0m a
 quarter, and a food reserve below its safe level. Left alone, the country votes you out, if a
 drought or a flood does not starve a region first.
 
@@ -39,6 +39,11 @@ drought or a flood does not starve a region first.
 - **Earn the vote over the whole term.** Approval moves slowly towards where your tax and
   spending would settle it, and the election forecast in the right column says where you stand.
   Below 40% a region strikes, which costs far more revenue than the tax that provoked it.
+- **Keep the army loyal.** Defence in the budget is judged against what the army expects for
+  the country's people. Cut it and army loyalty falls a part of the way each quarter, from loyal
+  to restless and then to plotting; strikes in a region pull the army there down, and protests
+  further. The top bar shows national loyalty and its stage, the budget panel what a change
+  would do to it, and each region's card its own.
 - **Buy grain when the harvest fails.** The trade panel in the right column orders grain for the
   national reserve at the world price, which moves every quarter. Money can stand in for a bad
   season, and austerity does not stop it.

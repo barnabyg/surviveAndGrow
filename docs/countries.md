@@ -73,6 +73,33 @@ The starting budget in `start.budget` may leave out `upkeep`: the game then star
 upkeep to keep in good repair every one of the file's sites that can stand together, choosing the
 costlier of alternatives, rounded up to the next $1.0m.
 
+In a file of `"formatVersion": 11`, `start.budget.spending` must say what the country starts by
+spending on `defence`, in millions a quarter like the other areas. The army expects $0.4m a
+quarter for each million people, and the game starts with the army in each region where that
+spending settles it, so a figure near what the army expects opens the game with a loyal army
+and one far below it with an army already slipping. A file of an earlier format cannot name
+`defence`, and still loads as it is: it is read as spending the least the slider allows that
+holds the army loyal. Tavara, with 5.2 million people, starts on $2.0m a quarter; the test
+country, with 400,000, on $1.0m, the least the slider allows above nothing:
+
+```json
+"start": {
+  "treasury": 42,
+  "budget": {
+    "taxRate": 18,
+    "spending": {
+      "agriculture": 11,
+      "foodRelief": 7,
+      "health": 7,
+      "education": 6,
+      "security": 5,
+      "defence": 2
+    }
+  },
+  "foodReserve": 182000
+}
+```
+
 In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
 year, from 0 to 10. A region that leaves it out grows at the game's own rate.
 

@@ -78,6 +78,11 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 ## Standing
 
 - **Approval**: the public's support, by region and nationally. The vote share at an election.
+- **Defence**: the spending area that buys the army's loyalty. Not "security", which is a
+  spending area of its own that answers to approval, and not "the military".
+- **Army loyalty**: how loyal the army is, by region and nationally, moved by Defence spending
+  per head and by each region's own unrest. Its **stages** are **loyal**, **restless** and
+  **plotting** (`ARMY_STAGES` in `src/sim/vocabulary/army.ts`).
 - **Prosperity**: the national living standard, on one scale. Its **tiers** are Subsistence,
   Developing, Industrialising and Prosperous; holding Prosperous for four quarters wins the game.
 - **Dilemma**: a choice the game puts to the player, with two or three options that each state
