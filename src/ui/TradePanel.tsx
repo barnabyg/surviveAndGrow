@@ -18,9 +18,9 @@ import {
   type GameState,
   type Preview,
   type TradeOrder,
+  quartersLeftWords,
 } from '../sim';
 import { DecisionPanel, type DecisionTab } from './DecisionPanel';
-import { quartersLeftWords } from './IncidentMark';
 import { More } from './More';
 import { WorldPriceSign } from './WorldPriceSign';
 import './TradePanel.css';

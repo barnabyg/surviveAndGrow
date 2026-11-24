@@ -2,6 +2,14 @@ export function sum(amounts: readonly number[]): number {
   return amounts.reduce((total, amount) => total + amount, 0);
 }
 
+/** The people of regions together, as a country file or a game holds them. */
+export function populationOf(regions: readonly { readonly population: number }[]): number {
+  return sum(regions.map((region) => region.population));
+}
+
+/** The limits of a figure kept in thousandths of a whole: approval, loyalty, a standing. */
+export const PERMILLE_LIMITS = { min: 0, max: 1000 } as const;
+
 /**
  * What a multiplier written in thousandths takes off, as a whole percentage: 750 takes
  * off 25.

@@ -1,5 +1,11 @@
-import { formatTonnes, MAP_FRAME, type Neighbour, type Point, type TradeRoute } from '../sim';
-import { quartersLeftWords } from './IncidentMark';
+import {
+  formatTonnes,
+  MAP_FRAME,
+  quartersLeftWords,
+  type Neighbour,
+  type Point,
+  type TradeRoute,
+} from '../sim';
 import type { MapPalette } from './mapPalette';
 
 /** The most a route can carry, in tonnes, at which its line is drawn at its widest. */

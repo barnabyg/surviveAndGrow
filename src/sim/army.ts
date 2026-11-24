@@ -1,4 +1,5 @@
-import { apportion, clamp, stepTowards, sum } from './arithmetic';
+import { apportion, clamp, PERMILLE_LIMITS, populationOf, stepTowards, sum } from './arithmetic';
+import { contributionsOf } from './approval';
 import { balance } from './balance';
 import type { Budget } from './budget';
 import { regionName, type Country } from './country';
@@ -72,7 +73,7 @@ export interface ArmyLoyaltyOutcome {
   readonly entries: readonly ReportEntry[];
 }
 
-const LIMITS = { min: 0, max: 1000 } as const;
+const LIMITS = PERMILLE_LIMITS;
 const LIMIT_LABEL = 'Army loyalty at its limit';
 
 /** The stage a loyalty is read as, by the marks in balance data. */
@@ -87,9 +88,9 @@ export function nationalLoyalty(regions: readonly RegionState[]): number {
   return averaged(regions, (region) => region.armyLoyalty);
 }
 
-/** What the army expects to be spent on Defence a quarter, for a number of people, unrounded. */
-function expectedFor(people: number): number {
-  return (balance.army.loyalty.defence.expectedPerMillionPeople * people) / 1_000_000;
+/** What the army expects to be spent on Defence a quarter, for a number of people. */
+export function armyExpects(people: number): Money {
+  return Math.round((balance.army.loyalty.defence.expectedPerMillionPeople * people) / 1_000_000);
 }
 
 /**
@@ -119,7 +120,7 @@ export function startingLoyalty(country: Country, unrest: Unrest): RegionLoyalty
   return settledLoyalty(
     unrest,
     country.start.budget.spending.defence,
-    sum(country.regions.map((region) => region.population)),
+    populationOf(country.regions),
   );
 }
 
@@ -204,10 +205,7 @@ export function resolveLoyalty(
     loyalty: {
       value,
       change: value - was,
-      contributions: lines.flatMap((entry, index): Contribution[] => {
-        const amount = amounts[index] ?? 0;
-        return entry.always || amount !== 0 ? [{ label: entry.label, amount }] : [];
-      }),
+      contributions: contributionsOf(lines, amounts, people),
     },
     heading,
     entries: stageEntries(country, before, regions, { spent, people }),
@@ -239,7 +237,7 @@ export function armyLoyaltyStatus(
     settles,
     settlesStage: armyStageAt(settles),
     spent,
-    expected: Math.round(expectedFor(people)),
+    expected: armyExpects(people),
     causes: causesOf(regions, loyalty),
     regions: regions.map((region) => {
       const regionSettles = loyaltyFrom(settledEffects(region.unrest, spent, people));
@@ -284,10 +282,7 @@ function causesOf(regions: readonly RegionState[], loyalty: number): Contributio
   );
   return [
     { label: 'Baseline', amount: baselinePermille },
-    ...lines.flatMap((entry, index): Contribution[] => {
-      const amount = amounts[index] ?? 0;
-      return entry.always || amount !== 0 ? [{ label: entry.label, amount }] : [];
-    }),
+    ...contributionsOf(lines, amounts, people),
   ];
 }
 
@@ -325,10 +320,6 @@ function loyaltyFrom(effects: ArmyLoyaltyEffects): number {
     LIMITS.min,
     LIMITS.max,
   );
-}
-
-function populationOf(regions: readonly RegionState[]): number {
-  return sum(regions.map((region) => region.population));
 }
 
 function weightedLoyalty(regions: readonly RegionState[]): number {
@@ -372,7 +363,7 @@ function stageEntries(
     const to = armyStageAt(region.armyLoyalty);
     return from === to ? [] : [{ region, from, to }];
   });
-  const expected = Math.round(expectedFor(defence.people));
+  const expected = armyExpects(defence.people);
   const spending = `Defence spending is ${formatMoney(defence.spent)} a quarter, and the army expects ${formatMoney(expected)}.`;
   const unrestIn = (regions: readonly RegionState[]) => {
     const unsettled = regions.filter((region) => region.unrest !== 'calm');

@@ -39,9 +39,9 @@ import {
   type SurveyStatus,
   type TurnReport,
   type WeatherHold,
+  quartersLeftWords,
 } from '../sim';
 import { formatDate, formatSignedCount } from './format';
-import { quartersLeftWords } from './IncidentMark';
 import './map-card.css';
 
 interface RegionCardProps {

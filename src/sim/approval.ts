@@ -1,4 +1,12 @@
-import { apportion, clamp, percentOff, stepTowards, sum } from './arithmetic';
+import {
+  apportion,
+  clamp,
+  percentOff,
+  PERMILLE_LIMITS,
+  populationOf,
+  stepTowards,
+  sum,
+} from './arithmetic';
 import { balance } from './balance';
 import type { BudgetOutcome } from './budget';
 import { regionName, type Country } from './country';
@@ -131,7 +139,7 @@ export interface ApprovalStatus {
 /** The drivers whose effect is a matter of public spending per head. */
 type Service = keyof typeof balance.approval.services;
 
-const LIMITS = { min: 0, max: 1000 } as const;
+const LIMITS = PERMILLE_LIMITS;
 const LIMIT_LABEL = 'Approval at its limit';
 
 /**
@@ -433,7 +441,7 @@ function mapDrivers(effect: (driver: ApprovalDriver) => number): ApprovalEffects
 }
 
 /** One line of a breakdown before its share of the whole is worked out. */
-interface Line {
+export interface Line {
   readonly label: string;
   /** The line's amount in every region, weighted by the people who live there. */
   readonly numerator: number;
@@ -451,7 +459,7 @@ interface Line {
 }
 
 /** The lines as the player reads them, each split into its parts where it has any. */
-function contributionsOf(
+export function contributionsOf(
   lines: readonly Line[],
   amounts: readonly number[],
   people: number,
@@ -549,10 +557,6 @@ function unrestAt(approval: number): Unrest {
   const { strikes, protests } = balance.unrest;
   if (approval < protests.belowPermille) return 'protests';
   return approval < strikes.belowPermille ? 'strikes' : 'calm';
-}
-
-function populationOf(regions: readonly RegionState[]): number {
-  return sum(regions.map((region) => region.population));
 }
 
 function weightedApproval(regions: readonly RegionState[]): number {

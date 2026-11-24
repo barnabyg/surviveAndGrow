@@ -3,7 +3,7 @@ import { dateOfQuarter, quarterNumber } from './calendar';
 import type { Country } from './country';
 import type { ReportEntry } from './report';
 import { drawAt } from './rng';
-import { capitalised, formatQuarters } from './text';
+import { capitalised, formatDate, formatQuarters } from './text';
 import type { GameDate } from './types';
 import { GOOD_NAMES, GOODS, PRICE_SHOCK_TYPES, type Good, type PriceShockType } from './vocabulary';
 
@@ -162,11 +162,6 @@ function priceName(good: Good): string {
 function pushWords(type: PriceShockType): string {
   const push = pushOf(type);
   return `pushed ${way(push)} by $${Math.abs(push)} a tonne each quarter for ${formatQuarters(definitions[type].lastsQuarters)}`;
-}
-
-/** A date as the player reads it: "Year 1 · Quarter 4". */
-function formatDate(date: GameDate): string {
-  return `Year ${date.year} · Quarter ${date.quarter}`;
 }
 
 /** What a shock will do, in a line, from when it begins. */

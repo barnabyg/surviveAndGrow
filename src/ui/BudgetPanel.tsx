@@ -22,6 +22,7 @@ import {
   moodAt,
   previewQuarter,
   ratingRank,
+  neighbourName,
   regionName,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
@@ -377,7 +378,7 @@ export function BudgetPanel(props: BudgetPanelProps) {
               .filter((neighbour) => neighbour.heading === 'hostile')
               .map((neighbour) => (
                 <p key={neighbour.neighbourId} className="warning-note">
-                  ▲ {neighbourName(game, neighbour.neighbourId)}{' '}
+                  ▲ {neighbourName(game.country, neighbour.neighbourId)}{' '}
                   {neighbour.intention === 'hostile'
                     ? 'is hostile when the quarter ends: deterrence is too low.'
                     : 'is heading for hostile: Defence would settle deterrence too low.'}
@@ -406,7 +407,7 @@ export function BudgetPanel(props: BudgetPanelProps) {
               />
               {after.neighbours.map((neighbour, index) => {
                 const was = before.neighbours[index] ?? neighbour;
-                const name = neighbourName(game, neighbour.neighbourId);
+                const name = neighbourName(game.country, neighbour.neighbourId);
                 return (
                   <Fragment key={neighbour.neighbourId}>
                     <Projection
@@ -472,14 +473,6 @@ export function BudgetPanel(props: BudgetPanelProps) {
         </More>
       </section>
     </DecisionPanel>
-  );
-}
-
-/** A neighbour's name, by its id. */
-function neighbourName(game: GameState, neighbourId: string): string {
-  return (
-    game.country.map.neighbours.find((neighbour) => neighbour.id === neighbourId)?.name ??
-    neighbourId
   );
 }
 

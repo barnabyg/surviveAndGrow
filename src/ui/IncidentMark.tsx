@@ -33,14 +33,6 @@ export function IncidentMark(props: {
   );
 }
 
-/**
- * How long a closed crossing or a region's lost output has to run, counting the quarter being
- * decided: "this quarter and 2 more", or "for this last quarter".
- */
-export function quartersLeftWords(quartersLeft: number): string {
-  return quartersLeft <= 1 ? 'for this last quarter' : `this quarter and ${quartersLeft - 1} more`;
-}
-
 /** Where an incident stands, in a few words: "Border incident in 2 quarters". */
 export function incidentWords(
   incident: Pick<IncidentStatus, 'inForce' | 'beginsIn' | 'quartersLeft'>,

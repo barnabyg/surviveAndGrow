@@ -3,10 +3,17 @@ import { percentOff } from './arithmetic';
 import { balance } from './balance';
 import { borderRegions } from './borders';
 import { dateOfQuarter, quarterNumber } from './calendar';
-import { regionName, type Country, type Crossing } from './country';
+import { neighbourName, regionName, type Country, type Crossing } from './country';
 import type { ReportEntry } from './report';
 import { drawAt } from './rng';
-import { capitalised, formatPoints, formatQuarters, formatTonnes, listed } from './text';
+import {
+  capitalised,
+  formatDate,
+  formatPoints,
+  formatQuarters,
+  formatTonnes,
+  listed,
+} from './text';
 import type { GameDate } from './types';
 import { BORDER_INCIDENT_NAME } from './vocabulary';
 
@@ -66,13 +73,6 @@ function inForceIn(incident: BorderIncident, date: GameDate): boolean {
   return quarterNumber(incident.begins) <= quarter && quarter < endOf(incident);
 }
 
-/** A neighbour's name, by its id. */
-function nameOf(country: Country, neighbourId: string): string {
-  return (
-    country.map.neighbours.find((candidate) => candidate.id === neighbourId)?.name ?? neighbourId
-  );
-}
-
 /** The border crossings that lead to a neighbour, in the country file's order. */
 function crossingsTo(country: Country, neighbourId: string): Crossing[] {
   return country.crossings.filter((crossing) => crossing.neighbourId === neighbourId);
@@ -111,7 +111,7 @@ export function crossingClosure(
   if (incident === undefined) return null;
   return {
     neighbourId: incident.neighbourId,
-    name: nameOf(watch.country, incident.neighbourId),
+    name: neighbourName(watch.country, incident.neighbourId),
     quartersLeft: endOf(incident) - quarterNumber(watch.date),
   };
 }
@@ -232,17 +232,20 @@ function called(country: Country, neighbourId: string): string {
 
 /** An incident as a headline or a breakdown names it, without its capital: "border incident with Voskar". */
 function headlineOf(country: Country, neighbourId: string): string {
-  return `${BORDER_INCIDENT_NAME.toLowerCase()} with ${nameOf(country, neighbourId)}`;
+  return `${BORDER_INCIDENT_NAME.toLowerCase()} with ${neighbourName(country, neighbourId)}`;
+}
+
+/**
+ * How long a closed crossing or a region's lost output has to run, counting the quarter being
+ * decided: "this quarter and 2 more", or "for this last quarter".
+ */
+export function quartersLeftWords(quartersLeft: number): string {
+  return quartersLeft <= 1 ? 'for this last quarter' : `this quarter and ${quartersLeft - 1} more`;
 }
 
 /** An incident with a neighbour as a headline names it: "Border incident with Voskar". */
 export function incidentHeadline(country: Country, neighbourId: string): string {
   return capitalised(headlineOf(country, neighbourId));
-}
-
-/** A date as the player reads it: "Year 1 · Quarter 4". */
-function formatDate(date: GameDate): string {
-  return `Year ${date.year} · Quarter ${date.quarter}`;
 }
 
 /** How much less a region on the border produces, as a whole percentage. */
@@ -334,7 +337,7 @@ export function incidentWouldDo(country: Country, neighbourId: string): string {
 }
 
 function comingEntry(country: Country, incident: BorderIncident): ReportEntry {
-  const name = nameOf(country, incident.neighbourId);
+  const name = neighbourName(country, incident.neighbourId);
   return {
     kind: 'borderIncident',
     seriousness: 'warning',
@@ -346,7 +349,7 @@ function comingEntry(country: Country, incident: BorderIncident): ReportEntry {
 
 function begunEntry(country: Country, incident: BorderIncident): ReportEntry {
   const { neighbourId } = incident;
-  const name = nameOf(country, neighbourId);
+  const name = neighbourName(country, neighbourId);
   return {
     kind: 'borderIncident',
     seriousness: 'serious',
@@ -357,7 +360,7 @@ function begunEntry(country: Country, incident: BorderIncident): ReportEntry {
 }
 
 function calledOffEntry(country: Country, incident: BorderIncident): ReportEntry {
-  const name = nameOf(country, incident.neighbourId);
+  const name = neighbourName(country, incident.neighbourId);
   return {
     kind: 'borderIncident',
     seriousness: 'notable',
@@ -369,7 +372,7 @@ function calledOffEntry(country: Country, incident: BorderIncident): ReportEntry
 
 function endedEntry(country: Country, incident: BorderIncident): ReportEntry {
   const { crossings, regionIds } = incidentCost(country, incident.neighbourId);
-  const name = nameOf(country, incident.neighbourId);
+  const name = neighbourName(country, incident.neighbourId);
   const names = regionIds.map((regionId) => regionName(country, regionId));
   const open =
     crossings.length === 0
@@ -418,15 +421,15 @@ export function borderIncidentStatuses(watch: IncidentWatch): IncidentStatus[] {
     return {
       ...incidentCost(country, incident.neighbourId),
       neighbourId: incident.neighbourId,
-      name: nameOf(country, incident.neighbourId),
+      name: neighbourName(country, incident.neighbourId),
       headline: capitalised(headlineOf(country, incident.neighbourId)),
       inForce,
       beginsIn: Math.max(0, quarterNumber(incident.begins) - now),
       quartersLeft,
       begins: incident.begins,
       description: inForce
-        ? `${capitalised(does(country, incident.neighbourId, 'now'))}, ${quartersLeft === 1 ? 'for this last quarter' : `this quarter and ${quartersLeft - 1} more`}.`
-        : `${incidentForecast(country, incident)} It is called off if ${nameOf(country, incident.neighbourId)} is no longer hostile as that quarter begins.`,
+        ? `${capitalised(does(country, incident.neighbourId, 'now'))}, ${quartersLeftWords(quartersLeft)}.`
+        : `${incidentForecast(country, incident)} It is called off if ${neighbourName(country, incident.neighbourId)} is no longer hostile as that quarter begins.`,
     };
   });
 }

@@ -1,4 +1,4 @@
-import { clamp, stepTowards, sum } from './arithmetic';
+import { clamp, PERMILLE_LIMITS, stepTowards, sum } from './arithmetic';
 import { balance } from './balance';
 import type { LeverBalance } from './balance/factions';
 import type { Country } from './countryTypes';
@@ -112,7 +112,7 @@ export interface FactionsOutcome {
  */
 export const factionsNoticeablePermille = balance.factions.noticeablePermille;
 
-const LIMITS = { min: 0, max: 1000 } as const;
+const LIMITS = PERMILLE_LIMITS;
 const LIMIT_LABEL = 'Standing at its limit';
 
 /**

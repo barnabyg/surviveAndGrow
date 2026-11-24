@@ -65,11 +65,7 @@ function fromFormat1(older: Json): Json {
   const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
   const budget = isRecord(state.budget) ? state.budget : {};
   const spending = isRecord(budget.spending) ? budget.spending : {};
-  const people = regions.reduce<number>(
-    (total, region) =>
-      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
-    0,
-  );
+  const people = peopleIn(regions);
   const level = (service: LastingService) => {
     const spent = spending[service];
     return typeof spent === 'number' ? settledServiceLevel(service, spent, people) : 0;
@@ -300,11 +296,7 @@ function fromFormat11(older: Json): Json {
 function fromFormat12(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
   const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
-  const people = regions.reduce<number>(
-    (total, region) =>
-      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
-    0,
-  );
+  const people = peopleIn(regions);
   const defence = defenceToHoldLoyal(people);
   const budget = isRecord(state.budget) ? state.budget : null;
   const spending = budget !== null && isRecord(budget.spending) ? budget.spending : null;
@@ -353,11 +345,7 @@ function fromFormat13(older: Json): Json {
 function fromFormat14(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
   const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
-  const people = regions.reduce<number>(
-    (total, region) =>
-      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
-    0,
-  );
+  const people = peopleIn(regions);
   const budget = isRecord(state.budget) ? state.budget : null;
   const spending = budget !== null && isRecord(budget.spending) ? budget.spending : null;
   const defence = typeof spending?.defence === 'number' ? spending.defence : 0;
@@ -411,6 +399,15 @@ function fromFormat16(older: Json): Json {
     },
     report: isRecord(older.report) ? { ...older.report, standings: null } : older.report,
   };
+}
+
+/** The people of a save's regions together, counting none for a region that cannot be read. */
+function peopleIn(regions: readonly unknown[]): number {
+  return regions.reduce<number>(
+    (total, region) =>
+      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
+    0,
+  );
 }
 
 /**

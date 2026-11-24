@@ -15,6 +15,7 @@ export {
   COUNTRY_FORMAT_VERSION,
   CountryFileError,
   loadCountry,
+  neighbourName,
   regionName,
   type Country,
   type Crossing,
@@ -178,6 +179,7 @@ export { borderRegions, neighbourBorder, type BorderEdge } from './borders';
 export {
   borderIncidentStatuses,
   borderIncidentTerms,
+  quartersLeftWords,
   type BorderIncident,
   type CrossingClosure,
   type IncidentCost,

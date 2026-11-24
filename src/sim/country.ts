@@ -55,7 +55,7 @@ import {
 } from './vocabulary';
 
 export { COUNTRY_FORMAT_VERSION } from './countryFormats';
-export { regionName } from './countryTypes';
+export { neighbourName, neighbourOf, regionName } from './countryTypes';
 export type {
   Country,
   Crossing,

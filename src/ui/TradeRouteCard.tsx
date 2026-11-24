@@ -5,8 +5,8 @@ import {
   tradeRoutes,
   type GameState,
   type TradeOrder,
+  quartersLeftWords,
 } from '../sim';
-import { quartersLeftWords } from './IncidentMark';
 import { routeTitle } from './TradeRouteMark';
 import './map-card.css';
 

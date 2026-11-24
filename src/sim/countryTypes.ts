@@ -218,3 +218,13 @@ export interface Country {
 export function regionName(country: Country, regionId: string): string {
   return country.regions.find((region) => region.id === regionId)?.name ?? regionId;
 }
+
+/** One of the country's neighbours, by its id, or undefined for one it has not. */
+export function neighbourOf(country: Country, neighbourId: string): Neighbour | undefined {
+  return country.map.neighbours.find((neighbour) => neighbour.id === neighbourId);
+}
+
+/** The name of a neighbour, as reports and the interface write it. */
+export function neighbourName(country: Country, neighbourId: string): string {
+  return neighbourOf(country, neighbourId)?.name ?? neighbourId;
+}

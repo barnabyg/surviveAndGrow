@@ -1,4 +1,4 @@
-import type { Country, Point } from './country';
+import { neighbourOf, type Country, type Point } from './country';
 import { contains } from './geometry';
 
 /*
@@ -47,7 +47,7 @@ export function borderEdges(country: Country, shape: readonly Point[]): BorderEd
  * or one that touches no region, has none.
  */
 export function neighbourBorder(country: Country, neighbourId: string): readonly BorderEdge[] {
-  const neighbour = country.map.neighbours.find((candidate) => candidate.id === neighbourId);
+  const neighbour = neighbourOf(country, neighbourId);
   return neighbour === undefined ? [] : borderEdges(country, neighbour.shape);
 }
 

@@ -1,4 +1,4 @@
-import { sum } from './arithmetic';
+import { populationOf, sum } from './arithmetic';
 import { defenceToHoldLoyal } from './army';
 import { balance } from './balance';
 import { DEFENCE_FORMAT } from './countryFormats';
@@ -52,7 +52,7 @@ function readBudget(
             `needs country file format ${DEFENCE_FORMAT} or later`,
           );
         }
-        return [area, defenceToHoldLoyal(sum(regions.map((region) => region.population)))];
+        return [area, defenceToHoldLoyal(populationOf(regions))];
       }
       const before = reader.faults.length;
       const amount = reader.money(written, area, spendingPath);

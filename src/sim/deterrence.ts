@@ -1,7 +1,8 @@
-import { stepTowards, sum } from './arithmetic';
+import { populationOf, stepTowards } from './arithmetic';
+import { armyExpects } from './army';
 import { balance } from './balance';
 import type { Budget } from './budget';
-import type { Country, Neighbour } from './country';
+import { neighbourOf, type Country, type Neighbour } from './country';
 import type { ReportEntry } from './report';
 import type { RegionState } from './state';
 import { formatMoney, formatPercent } from './text';
@@ -104,10 +105,7 @@ export function deterrenceSettled(spent: Money, people: number): number {
 
 /** Deterrence as a game starts: settled where the starting budget holds it. */
 export function startingDeterrence(country: Country): number {
-  return deterrenceSettled(
-    country.start.budget.spending.defence,
-    sum(country.regions.map((region) => region.population)),
-  );
+  return deterrenceSettled(country.start.budget.spending.defence, populationOf(country.regions));
 }
 
 /** What a neighbour's ambition weighs against deterrence in a tier, in thousandths. */
@@ -134,7 +132,7 @@ export function intentionOf(neighbour: Neighbour, tier: Tier, deterrence: number
 
 /** What one neighbour, by its id, intends as a game stands. One the country has not is peaceful. */
 export function intentionIn(game: Deterred, neighbourId: string): Intention {
-  const neighbour = game.country.map.neighbours.find((candidate) => candidate.id === neighbourId);
+  const neighbour = neighbourOf(game.country, neighbourId);
   return neighbour === undefined ? 'peaceful' : intentionOf(neighbour, game.tier, game.deterrence);
 }
 
@@ -154,7 +152,7 @@ export function deterrenceStatus(
     deterrence: game.deterrence,
     settles,
     spent,
-    expected: expectedFor(people),
+    expected: armyExpects(people),
     tier: game.tier,
     worthTaking: balance.neighbours.worthTakingPermille[game.tier],
     neighbours: game.country.map.neighbours.map((neighbour) => {
@@ -198,7 +196,7 @@ export function resolveDeterrence(
     balance.neighbours.deterrence.adjustPermillePerQuarter,
   );
   const value = before.deterrence + change;
-  const defence = `Defence spending is ${formatMoney(spent)} a quarter, against the ${formatMoney(expectedFor(people))} the army expects, which settles deterrence at ${formatPercent(heading)}.`;
+  const defence = `Defence spending is ${formatMoney(spent)} a quarter, against the ${formatMoney(armyExpects(people))} the army expects, which settles deterrence at ${formatPercent(heading)}.`;
   const turned = before.country.map.neighbours.map((neighbour) => ({
     neighbour,
     was: intentionOf(neighbour, before.tier, before.deterrence),
@@ -273,13 +271,4 @@ function turnEntry(
     cause: `${byTier}${stands}, ${against[now]}. ${defence}`,
     neighbourId: neighbour.id,
   };
-}
-
-/** What the army expects to be spent on Defence a quarter, for a number of people. */
-function expectedFor(people: number): Money {
-  return Math.round((balance.army.loyalty.defence.expectedPerMillionPeople * people) / 1_000_000);
-}
-
-function populationOf(regions: readonly RegionState[]): number {
-  return sum(regions.map((region) => region.population));
 }
