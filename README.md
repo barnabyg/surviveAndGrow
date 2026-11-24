@@ -2,6 +2,8 @@
 
 A turn-based economics and politics survival game that runs in the browser. You lead a small
 developing country: raise its living standards, and stay in office long enough to see it done.
+The game is won on prosperity held, and lost at the vote, to famine, or to a coup by an army
+left to plot.
 
 The design is in [docs/design.md](docs/design.md), and the rules as built in
 [docs/rules.md](docs/rules.md).
@@ -111,8 +113,8 @@ npm run balance
 
 This plays scripted players through whole games with no screen, on the countries as they ship,
 for up to four terms each, and reports how often each wins on prosperity, how often it is still in
-office when its terms are up, and what the others lose to: the vote, by term, or famine, by
-region. It also gives the terms served, the quarter of each win, and the prosperity and tier each
+office when its terms are up, and what the others lose to: the vote, by term, famine, by
+region, or a coup. It also gives the terms served, the quarter of each win, and the prosperity and tier each
 game reached, and what each player borrowed: how many games a bailout struck, how often the debt
 test held back a win and whether it was won later, and the debt burden; and what each traded:
 the grain bought and sold abroad, what it brought in and cost, and the world price shocks,

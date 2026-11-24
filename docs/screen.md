@@ -39,8 +39,9 @@ What each part of the screen shows and does, as built. The rules the game plays 
   reserve below its safe level. Its standing note (the debt burden, the loan rates, the safe
   level, the strike threshold, the marks of the army's stages, the prosperity tier) is in its
   tooltip and at the head of its breakdown. Army loyalty names its stage beneath the figure,
-  whatever it is: in a word while the army is loyal, and as a warning, with a sign and the mark
-  it has fallen below, while it is restless or plotting.
+  whatever it is: in a word while the army is loyal, as a warning, with a sign and the mark it
+  has fallen below, while it is restless, and while it is plotting with the quarters left to a
+  coup, counted down each quarter. Its breakdown says where the count towards a coup stands.
 - Click the treasury, the debt, the credit rating, the food reserve, approval, army loyalty or
   prosperity in the top bar to see what moved it. Approval, army loyalty, prosperity and the
   credit rating also list what they are made of, and army loyalty how the army stands in each

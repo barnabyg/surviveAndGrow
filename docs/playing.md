@@ -43,7 +43,10 @@ drought or a flood does not starve a region first.
   the country's people. Cut it and army loyalty falls a part of the way each quarter, from loyal
   to restless and then to plotting; strikes in a region pull the army there down, and protests
   further. The top bar shows national loyalty and its stage, the budget panel what a change
-  would do to it, and each region's card its own.
+  would do to it, and each region's card its own. An army that plots for four quarters running
+  takes power, and the game is lost: the top bar counts the quarters left, the risks ahead list
+  the coup before it can come, and Defence restored in time calls it off. An empty treasury
+  cuts Defence with everything else, so insolvency can starve the army without your choosing to.
 - **Buy grain when the harvest fails.** The trade panel in the right column orders grain for the
   national reserve at the world price, which moves every quarter. Money can stand in for a bad
   season, and austerity does not stop it.

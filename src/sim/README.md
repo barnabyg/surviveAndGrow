@@ -55,9 +55,10 @@ the world ore price. It lives the quarter through `liveQuarter`, which the previ
 (`priceShocks.ts`), before it lives the quarter. Then it moves the calendar (`calendar.ts`,
 `terms.ts`), ends and begins events (`events.ts`), ends the shocks whose time is up and starts the
 notice of those announced (`priceShocks.ts`), sets decaying the sites in use where an event that
-damages them has begun (`upkeep.ts`), checks for collapse (`collapse.ts`), holds the election
-(`election.ts`), checks for victory (`victory.ts`), may put a new dilemma, records the vital signs
-(`history.ts`), and compiles the report (`report.ts`), whose entries keep that order.
+damages them has begun (`upkeep.ts`), checks for collapse (`collapse.ts`) and then for a coup
+(`coup.ts`), holds the election (`election.ts`) unless the state has fallen to either, checks for
+victory (`victory.ts`), may put a new dilemma, records the vital signs (`history.ts`), and compiles
+the report (`report.ts`), whose entries keep that order.
 
 ## Projects and their targets
 
@@ -178,6 +179,17 @@ it each quarter (`history.ts`). A country file older than format 11, and a save 
 13, say nothing of Defence: both are read as spending the least that holds the army loyal
 (`defenceToHoldLoyal`).
 
+## The coup
+
+`coup.ts` holds the third way to lose. The state counts the quarters running that national army
+loyalty has ended at plotting (`plottingQuarters`, moved on by `plottingAfter`), and `coupOf` ends
+the game when the count reaches `balance.army.coup.afterPlottingQuarters`. Nothing is rolled.
+`resolveQuarter` checks it after collapse and before the vote and the win. `countEntries` writes
+what the report says while the count runs and when it ends, `coupEntry` the coup itself, and
+`coupStatus` gives the interface the count for the top bar. The look-ahead reads a coup off the
+quarters it plays, like any other danger (`coupRisk` in `threatRisks.ts`). The count is in the save
+from format 14; an earlier save is read as having counted nothing.
+
 ## Adding a mechanic
 
 A new mechanic usually touches most of these:
@@ -205,7 +217,9 @@ A new mechanic usually touches most of these:
 - `report.ts` and the entries it compiles: what the turn report says about it.
 - `risks.ts`: the warning ahead, if it can hurt the player. Every loss must be foreseeable. A danger
   of money (the treasury, a missed payment, a bond's maturity, the credit rating) goes in
-  `financeRisks.ts`. Both read the quarters played and weigh each danger with `riskScope.ts`.
+  `financeRisks.ts`, and a danger of force (a coup) in `threatRisks.ts`. All read the quarters
+  played and weigh each danger with `riskScope.ts`. A loss it can bring is added to the
+  forewarning sweeps (`tests/sim/forewarning.ts`), which check that none comes unlisted.
 - `approval.ts` or `prosperity.ts`, if it moves either.
 - `countryTypes.ts`: what a country file may say about it. `country.ts` (`loadCountry`) reads and
   checks it, with sites in `countrySites.ts` and deposits in `countryDeposits.ts`, through

@@ -103,6 +103,8 @@ const RULES: readonly string[] = [
   `A term is ${String(balance.election.termQuarters)} quarters`,
   `With ${percent(balance.election.winSharePermille)} or more you are re-elected`,
   `for ${words(balance.victory.quartersToHold)} quarters running, with the debt burden no more than ${percent(balance.victory.debtBurdenLimitPermille)} of a year's revenue`,
+  `You lose the game to a coup when national army loyalty has ended ${words(balance.army.coup.afterPlottingQuarters)} quarters running at plotting, below ${percent(loyalty.stages.plottingBelowPermille)}`,
+  `A quarter that ends with loyalty back at ${percent(loyalty.stages.plottingBelowPermille)} or above ends the count`,
   // Unrest
   `falls below ${percent(strikes.belowPermille)} goes on strike and produces ${cut(strikes.outputPermille)} less`,
   `Below ${percent(protests.belowPermille)} it protests and produces ${cut(protests.outputPermille)} less`,
@@ -161,6 +163,7 @@ const RULES: readonly string[] = [
 const PLAYING: readonly string[] = [
   `a budget that loses ${formatMoney(-previewQuarter(tavaraOpening, { budget: tavaraOpening.budget }).balance.min)} a quarter`,
   `Below ${percent(strikes.belowPermille)} a region strikes`,
+  `An army that plots for ${words(balance.army.coup.afterPlottingQuarters)} quarters running takes power`,
   `an ore glut pushes the ore price down, for ${words(priceShocks.oreGlut.lastsQuarters)} quarters. Each is announced ${words(priceShocks.oreGlut.noticeQuarters)} quarters ahead`,
   `its usual $${String(grain.usualDollarsPerTonne)}`,
 ];

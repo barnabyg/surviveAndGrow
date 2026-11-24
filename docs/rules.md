@@ -44,10 +44,20 @@ main figures from the balance values and fails if this file, [playing.md](playin
   how many of the four you have held and whether the debt test is passed, and its breakdown shows
   how far the debt burden is from the limit and says when the debt test is all that stands between
   you and the win.
+- You lose the game to a coup when national army loyalty has ended four quarters running at
+  plotting, below 30% (see Defence and army loyalty): the army takes power. A quarter that ends
+  with loyalty back at 30% or above ends the count, and it starts afresh if the army plots again.
+  Nothing is rolled, so the same seed and decisions always bring the same coup. It is checked
+  with famine's collapse as a quarter ends, before the election and the win, so a quarter that
+  would have won the vote or the game still falls to it, and no vote is held. While the army
+  plots, the top bar counts the quarters left to a coup beneath army loyalty, and the figure's
+  breakdown says where the count stands. The turn report says in each quarter that ends with the
+  army plotting how many are left, from the first; that the coup is off, in the quarter loyalty
+  recovers; and, critically, that the army has taken power.
 - However the game ends, a summary gives the outcome and its cause, how long you were in office
-  over how many terms, the treasury, debt, debt burden, food reserve, approval and prosperity over
-  the whole game, and each term in turn with prosperity at its start and end. From it you can
-  replay the same game or start a new one.
+  over how many terms, the treasury, debt, debt burden, food reserve, approval, army loyalty and
+  prosperity over the whole game, and each term in turn with prosperity at its start and end. From
+  it you can replay the same game or start a new one.
 
 ## Approval and unrest
 
@@ -74,7 +84,8 @@ main figures from the balance values and fails if this file, [playing.md](playin
   is read as the quarter leaves it, which gives the cascade: hunger, then protests, then an army
   less loyal there.
 - Loyalty is read in three stages: loyal, restless below 45% and plotting below 30%. The stages
-  are shown and reported; they end nothing.
+  are shown and reported. A restless army ends nothing; an army left plotting takes power (see
+  Elections, winning and the end of a game).
 - National army loyalty is a vital sign in the top bar, with its stage named beneath it, a trend
   line with the restless mark drawn on it, what moved it last quarter, what it is made of and
   each region's own. A region's card and the region list show its army's loyalty and stage, and
@@ -430,13 +441,13 @@ main figures from the balance values and fails if this file, [playing.md](playin
 
 - The left column lists the risks ahead: famine in a region, a flood that could begin, a world
   price shock announced or that could be, grain sold below the reserve's safe level, strikes, a treasury that runs out, a bailout from a missed
-  payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and,
-  in the term's last four quarters, losing the vote. The game plays the next four quarters with
+  payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, a
+  coup, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with
   your committed decisions held as they are, once for each course the weather could take and each
   drought or flood that could still begin, and lists each danger with how likely it is, as a five-step meter and in words, and a line saying why, cut short until the risk is picked out (its whole text is in a tooltip). The four most likely are shown and the rest fold behind **Show more**. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
   further. A danger too unlikely to matter is left out, unless it would end the game, and a risk
-  to one region picks that region out on the map. Neither famine nor a lost election can end the
+  to one region picks that region out on the map. Neither famine, a coup nor a lost election can end the
   game without having been listed first. A flood is listed while it could begin within the four
   quarters, however unlikely, with the share of the harvest it would take and the sites it would
   damage, so none comes without warning. A world price shock is listed as almost certain once it
@@ -445,6 +456,14 @@ main figures from the balance values and fails if this file, [playing.md](playin
   what it would do. The quarters ahead are played with the shocks announced pushing the prices,
   so the dangers one brings, such as a treasury a glut would empty, are weighed from the quarter
   it is announced.
+- A coup is listed in every quarter from which the army could take power within the four
+  quarters, on your decisions as they are: while the count runs, and before it starts when
+  loyalty is on course to fall below 30% and stay there. It ends the game, so it is listed
+  however small the chance. Its line says where national army loyalty stands, how long the army
+  has plotted, when it would take power, and what is spent on Defence against what the army
+  expects. Raising Defence in the budget takes it off the list as soon as the quarters ahead no
+  longer end in one. While a mine earns, a coup that only a slump in the world ore price would
+  bring, through a treasury that cuts Defence with the rest of the budget, is listed as unlikely.
 - The treasury runs out when it cannot cover the budget, and every area is cut, or when it
   cannot cover an instalment on a project, which pauses. The warning says which gives way first
   and when: the budget, or the oldest project left unpaid, named for what it is, whether

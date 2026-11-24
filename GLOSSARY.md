@@ -83,6 +83,9 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 - **Army loyalty**: how loyal the army is, by region and nationally, moved by Defence spending
   per head and by each region's own unrest. Its **stages** are **loyal**, **restless** and
   **plotting** (`ARMY_STAGES` in `src/sim/vocabulary/army.ts`).
+- **Coup**: the army taking power, which loses the game. It comes when national army loyalty has
+  ended a set number of quarters running at plotting; the running count is the **countdown**
+  the top bar shows. Not "putsch" or "mutiny", and not a chance event: nothing is rolled.
 - **Prosperity**: the national living standard, on one scale. Its **tiers** are Subsistence,
   Developing, Industrialising and Prosperous; holding Prosperous for four quarters wins the game.
 - **Dilemma**: a choice the game puts to the player, with two or three options that each state

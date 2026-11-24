@@ -58,7 +58,8 @@ Every system must feed this tension. A feature that does not is cut.
   hold; it only withholds the win until the debt test passes.
 - **Terms:** an election every 20 quarters. Winning it begins a new term, with no limit on how many;
   it does not by itself win the game.
-- **Lose:** election defeat or state collapse from famine, and from Phase 6 a coup.
+- **Lose:** election defeat, state collapse from famine, or a coup: the army taking power once
+  it has plotted for a set number of quarters running.
 - **Insolvency is not an instant loss.** It triggers a bailout with forced austerity, which then
   threatens approval.
 - **Cascades are the threat.** Drought leads to shortage, then falling approval, strikes, lost
@@ -118,12 +119,17 @@ Prosperity, tiers and people.
   region's own unrest, moves gradually as approval does, and is read as loyal, restless or
   plotting. That gives the cascade the phase is built on: famine, then protests, then falling
   loyalty. Rules: rules.md, Defence and army loyalty.
+- **Coup** (Phase 6): the third way to lose, decided by a countdown the player can watch, as
+  famine's collapse is. The army takes power when national army loyalty has stood at plotting
+  for a set number of quarters running; a quarter above plotting starts the count afresh.
+  Nothing is rolled, and it is checked before the election and the win. The top bar counts the
+  quarters left, the report says so each quarter, and the risks ahead list it before any quarter
+  in which it could come. Rules: rules.md, Elections, winning and the end of a game.
 
 ### Still to come
 
-- **Coup, neighbours and factions** (Phase 6): an army left plotting brings a coup, the third
-  way to lose. Defence spending also buys deterrence against neighbours with ambitions, and
-  approval is broken down by faction.
+- **Neighbours and factions** (Phase 6): Defence spending also buys deterrence against
+  neighbours with ambitions, and approval is broken down by faction.
 
 ## 5. The map
 
