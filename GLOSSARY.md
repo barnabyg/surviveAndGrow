@@ -78,6 +78,18 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 ## Standing
 
 - **Approval**: the public's support, by region and nationally. The vote share at an election.
+- **Faction**: one of the game's four groups whose favour the government holds or loses:
+  **farmers**, **workers**, **business** and the **army** (`FACTIONS` in
+  `src/sim/vocabulary/factions.ts`). The first three live among each region's people; the army
+  does not. Not "party", "class" or "interest group".
+- **Standing**: how a faction stands with the government: one national figure for each of
+  farmers, workers and business, moved by that faction's own **levers** and read in a **mood**
+  (**pleased**, **content**, **uneasy**, **angry**). The army's standing is national army
+  loyalty. Not "approval", which is the public's and is kept by region, and not "popularity"
+  or "support".
+- **Faction mix**: the share of a region's people who are farmers, workers and business, from
+  the country file. It weighs the three standings into the region's approval, as its
+  **Factions** effect.
 - **Defence**: the spending area that buys the army's loyalty. Not "security", which is a
   spending area of its own that answers to approval, and not "the military".
 - **Army loyalty**: how loyal the army is, by region and nationally, moved by Defence spending

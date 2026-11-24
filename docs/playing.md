@@ -39,6 +39,14 @@ drought or a flood does not starve a region first.
 - **Earn the vote over the whole term.** Approval moves slowly towards where your tax and
   spending would settle it, and the election forecast in the right column says where you stand.
   Below 40% a region strikes, which costs far more revenue than the tax that provoked it.
+- **Mind the factions.** Farmers, workers and business each have a standing with you, shown in
+  the left column with the army's, and each region follows them by its mix of the three: a
+  farming region the farmers, a port city business and workers. Farmers judge agriculture's
+  share of what you spend, and workers the share that goes to health and education, so a share
+  won for one is taken from the other; business minds the tax rate, how far the budget runs
+  short, the debt and the large sites in use. No budget pleases them all. The budget's outlook
+  says what a change would do to each standing, and a region's card what the factions do to its
+  approval, which is worth a look before a vote that turns on one region.
 - **Keep the army loyal.** Defence in the budget is judged against what the army expects for
   the country's people. Cut it and army loyalty falls a part of the way each quarter, from loyal
   to restless and then to plotting; strikes in a region pull the army there down, and protests

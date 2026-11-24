@@ -49,7 +49,9 @@ the world ore price. It lives the quarter through `liveQuarter`, which the previ
    clinics and schools in use as the quarter began.
 5. Prosperity (`prosperity.ts`) and the tier it reaches (`tiers.ts`), which sets expectations. It
    and the debt burden the quarter leaves are judged at the world prices once they have moved.
-6. Approval (`approval.ts`), which decides who strikes next quarter. A bailout's blow lands here
+6. The factions' standings (`resolveFactions` in `factions.ts`), from what the quarter raised
+   and spent and the country as it began, and then approval (`approval.ts`), which reads them
+   as the quarter leaves them and decides who strikes next quarter. A bailout's blow lands here
    (`bailout.ts`), and so does that of a border incident in the quarter it begins, in the regions
    on its border (`incidentPushes`).
 7. Army loyalty (`army.ts`), in each region, from what was spent on Defence and the unrest the
@@ -253,6 +255,34 @@ standing as it would begin) and one a hostile neighbour could still announce in 
 what it costs in tax (`incidentTaxCost`). `borderIncidentStatuses` gives the interface each
 incident as it stands, and `borderIncidentTerms` what any incident is, for its tip.
 
+## Factions
+
+The factions are the engine's, like its site types (`FACTIONS` in `vocabulary/factions.ts`).
+Farmers, workers and business, the civil factions, each have one national standing in the state
+(`GameState.factions`), held as the effect of each lever on it, as a region's approval is held
+by its drivers. `factions.ts` holds the rules: what each lever measures (`measureOf`), how a
+measure settles a standing between a lever's marks (`leverEffect`), the quarter's step
+(`resolveFactions`), and what the standings do to a region's approval by its faction mix
+(`factionsEffect`). Which levers a faction answers to, their weights and marks, the pace, the
+moods' marks and the scale of the effect are `balance.factions`: a new lever is added to
+`FACTION_LEVERS` and to `measureOf`, and given to a faction there. A save holds every lever's
+effect for every faction, so retuning which a faction answers to is not a save-format change.
+
+`factionStatus.ts` gathers what a quarter is judged by (`factionInputs`: the turn and the preview
+give what was really raised and spent) and gives the interface each standing with its word, what
+it is made of and where a budget would settle it (`factionStandings`), a region's mix and the
+effect there (`regionFactions`), and the preview's forecast (`factionOutlooks`). The army is the
+fourth faction only there: its standing is `armyLoyaltyStatus`.
+
+Factions is one of approval's drivers (`APPROVAL_DRIVERS`), but it does not close a share of a gap
+as the others do: the standings have already moved their share, so a region's Factions effect is
+set from them as the quarter ends, and `resolveApproval` splits its line by faction
+(`Contribution.parts`). A region's mix is `Region.factionMix`, read by `readFactionMix` in
+`country.ts` from format 13 (`FACTION_MIX_FORMAT`), in parts of `MIX_WHOLE` so that a whole
+percentage and an even third are both exact. A game opens with the standings settled
+(`startingStandings`), read before the factions bear on approval, since what the tax raises
+turns on who is striking.
+
 ## Adding a mechanic
 
 A new mechanic usually touches most of these:
@@ -302,6 +332,8 @@ A new mechanic usually touches most of these:
   Tavara and the second country, `tests/countries/testland.json`, which gains the mechanic too), and
   a browser test in `tests/e2e/` on a country prepared in `tests/e2e/app.ts`. A test builds its
   budget with `budgetOf` or `budgetFrom` (`tests/budgets.ts`), which fill in the spending areas it
-  does not name.
+  does not name. The countries those helpers give have people of no faction, unless a test asks
+  for their faction mixes (`factions: true`), so that the factions move a figure only in the
+  tests about them.
 - `docs/rules.md` gains a bullet for it, under its own heading if it is a new mechanic, and
   `tests/sim/docsFigures.test.ts` a check for every figure a doc restates.

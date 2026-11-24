@@ -4,11 +4,15 @@ import {
   armyLoyaltyStatus,
   balance,
   createGame,
+  factionStandings,
   formatCount,
   formatMoney,
   formatPercent,
+  formatPoints,
   previewQuarter,
+  regionFactions,
   type Country,
+  type GameState,
 } from '../../src/sim';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
 
@@ -112,6 +116,18 @@ const ambitionOf = (country: Country, neighbourId: string): string =>
 /** Tavara as it ships, as a game opens on it. */
 const tavaraOpening = createGame(tavaraAsShipped(), 1);
 const tavaraArmy = armyLoyaltyStatus(tavaraOpening);
+const { factions } = balance;
+const { farmers, workers, business } = factions.levers;
+/** What a lever is worth, in points of standing: 300 thousandths is `30`. */
+const worthOf = (lever: { weightPermille: number }): string => String(lever.weightPermille / 10);
+/** A civil faction's standing as a game opens, as the rules give it: `56.1%`. */
+const openingAt = (game: GameState, index: number): string =>
+  formatPercent(factionStandings(game).standings[index]?.standing ?? 0);
+/** The most the factions move any region's approval as a game opens, either way. */
+const mostSwayed = (game: GameState): string =>
+  formatPoints(
+    Math.max(...game.regions.map((region) => Math.abs(regionFactions(game, region.id).effect))),
+  );
 
 const RULES: readonly string[] = [
   // Food
@@ -161,6 +177,23 @@ const RULES: readonly string[] = [
   `not a mine's usual ${oreTonnes(sites.mine.capacity)} tonnes`,
   // Borrowing
   `offers a loan of ${listOr(loans.amounts.map(formatMoney))} over ${listOr(loans.terms.map((term) => String(term.quarters)))} quarters, at ${listOr(loans.terms.map((term) => rate(term.annualRateBasisPoints)))} a year to a nation rated A`,
+  // Factions
+  `which rests at ${percent(factions.neutralPermille)} when nothing moves it`,
+  `agriculture's share of what the budget spends, worth ${worthOf(farmers.agricultureShare)} points either way: a share of ${percent(farmers.agricultureShare.neutral)} leaves them where they are, ${percent(farmers.agricultureShare.best)} or more settles them the whole of it higher`,
+  `drought and flood where farmers live, worth ${worthOf(farmers.harvest)} points: a harvest left whole changes nothing, and one cut by ${cut(farmers.harvest.worst)} or more settles them the whole of it lower`,
+  `health and education's share of what the budget spends, worth ${worthOf(workers.servicesShare)} points either way: ${percent(workers.servicesShare.neutral)} leaves them where they are and ${percent(workers.servicesShare.best)} or more is their best`,
+  `to the tax rate, worth ${worthOf(workers.tax)} points either way: ${String(workers.tax.neutral)}% leaves them where they are, ${String(workers.tax.best)}% or less is their best and ${String(workers.tax.worst)}% or more their worst`,
+  `Business answers to the tax rate, worth ${worthOf(business.tax)} points either way on the same marks`,
+  `budget's balance, worth ${worthOf(business.budgetBalance)} points: a budget that pays its way changes nothing, and one that spends ${percent(-business.budgetBalance.worst)} more than the tax raises, or worse, settles it the whole of it lower`,
+  `burden, worth ${worthOf(business.debtBurden)} points either way: ${percent(business.debtBurden.neutral)} of a year's revenue leaves it where it is, none is its best and ${percent(business.debtBurden.worst)} or more its worst`,
+  `the large sites in use, worth ${worthOf(business.works)} points: none changes nothing, and ${String(business.works.best)} or more settle it the whole of it higher`,
+  `A standing moves ${fraction(factions.adjustPermillePerQuarter)} of the way each quarter towards where its levers settle it`,
+  `pleased from ${percent(factions.moods.pleasedFromPermille)}, content below that, uneasy below ${percent(factions.moods.uneasyBelowPermille)} and angry below ${percent(factions.moods.angryBelowPermille)}`,
+  `Farmers are at their best with ${percent(farmers.agricultureShare.best)} of what is spent and workers with ${percent(workers.servicesShare.best)}, which is more than there is to share`,
+  `Factions: ${String(factions.approvalScalePermille / 1000)} of a point of approval for each point a faction stands above or below ${percent(factions.neutralPermille)}`,
+  `In Tavara the farmers open at ${openingAt(tavaraOpening, 0)}, the workers at ${openingAt(tavaraOpening, 1)} and business at ${openingAt(tavaraOpening, 2)}, which moves no region's approval by more than ${mostSwayed(tavaraOpening)}; in the test country no more than ${mostSwayed(createGame(testlandAsShipped(), 1))}`,
+  `A first-time tip explains factions once they move any region's approval by ${formatPoints(factions.noticeablePermille)} or more`,
+  `opens with every standing at ${percent(factions.neutralPermille)} and nothing pushing it`,
   // Defence and army loyalty
   `A region's loyalty stands at ${percent(loyalty.baselinePermille)} when Defence is spent as the army expects, ${formatMoney(loyalty.defence.expectedPerMillionPeople)} a quarter for each million people`,
   `Spending nothing settles it ${String(loyalty.defence.weightPermille / 10)} points lower, double what the army expects or more settles it ${String(loyalty.defence.weightPermille / 10)} points higher`,
@@ -201,6 +234,8 @@ const PLAYING: readonly string[] = [
 ];
 
 const COUNTRIES: readonly string[] = [
+  `Tavara's Lowmere Plains are ${percent(regionFactions(tavaraOpening, 'lowmere-plains').shares.farmers)} farmers`,
+  `{ "farmers": ${String(regionFactions(tavaraOpening, 'salt-coast').shares.farmers / 10)}, "workers": ${String(regionFactions(tavaraOpening, 'salt-coast').shares.workers / 10)}, "business": ${String(regionFactions(tavaraOpening, 'salt-coast').shares.business / 10)} }`,
   `a whole percentage from 0 to ${String(neighbours.mostAmbitionPercent)}`,
   `Tavara gives Voskar ${ambitionOf(tavaraOpening.country, 'voskar')} and Selama ${ambitionOf(tavaraOpening.country, 'selama')}; the test country gives its one neighbour ${ambitionOf(testlandAsShipped(), 'elsewhere')}`,
   `The army expects ${formatMoney(loyalty.defence.expectedPerMillionPeople)} a quarter for each million people`,

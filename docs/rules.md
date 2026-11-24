@@ -63,12 +63,75 @@ main figures from the balance values and fails if this file, [playing.md](playin
 
 - Approval is the third vital sign. Each region has its own, and the national figure is their
   average by population. It answers to the region's food situation, the tax rate, and health,
-  education and security spending per head, and it moves a tenth of the way each quarter towards
-  where those would settle it, so the public remembers: a last-minute giveaway moves the vote
+  education and security spending per head, and to the factions by the region's mix of them
+  (see Factions). It moves a tenth of the way each quarter towards where those would settle it, so the public remembers: a last-minute giveaway moves the vote
   little, and a hard year is not forgotten by polling day. The budget panel shows what a change would do to approval next
   quarter and where it is heading.
 - A region whose approval falls below 40% goes on strike and produces 30% less, which costs the
   treasury tax. Below 30% it protests and produces 60% less. Both end when approval recovers.
+
+## Factions
+
+- The factions are the game's own: farmers, workers, business and the army. A country file
+  cannot add one. Farmers, workers and business each have one national standing with the
+  government, from 0% to 100%, which rests at 50% when nothing moves it. The army has no share
+  of a region's people and moves no approval: its standing is national army loyalty, shown
+  beside the others.
+- Each standing answers to a few levers of its own. Each lever settles the standing up or down
+  by no more than what it is worth, in proportion between its marks:
+  - Farmers answer to agriculture's share of what the budget spends, worth 30 points either
+    way: a share of 24% leaves them where they are, 48% or more settles them the whole of it
+    higher, and none the whole of it lower. They also answer to drought and flood where farmers
+    live, worth 20 points: a harvest left whole changes nothing, and one cut by 50% or more
+    settles them the whole of it lower.
+  - Workers answer to health and education's share of what the budget spends, worth 30 points
+    either way: 37% leaves them where they are and 74% or more is their best. They also answer
+    to the tax rate, worth 15 points either way: 18% leaves them where they are, 8% or less is
+    their best and 28% or more their worst.
+  - Business answers to the tax rate, worth 20 points either way on the same marks; to the
+    budget's balance, worth 15 points: a budget that pays its way changes nothing, and one that
+    spends 40% more than the tax raises, or worse, settles it the whole of it lower; to the debt
+    burden, worth 10 points either way: 50% of a year's revenue leaves it where it is, none is
+    its best and 150% or more its worst; and to the large sites in use, worth 15 points: none
+    changes nothing, and 4 or more settle it the whole of it higher. A large site is one that
+    plays a part in a chain or makes power.
+- The shares are of what is actually spent on the spending areas in the quarter, after any
+  forced cut, with upkeep counted only as far as the sites in use need it. The budget's balance
+  is the tax raised less that spending: it leaves out the instalments on projects and the
+  repayments on debts. The debt burden, the large sites in use and the drought and flood in
+  force are read as the quarter begins.
+- A standing moves a fifth of the way each quarter towards where its levers settle it, lever
+  by lever, as approval does, so a budget is felt over quarters. It is read in a word: pleased
+  from 60%, content below that, uneasy below 40% and angry below 25%.
+- No budget settles farmers, workers and business all at their best. Farmers are at their best
+  with 48% of what is spent and workers with 74%, which is more than there is to share. Business
+  answers to money instead: every dollar spent to please the others deepens the deficit, or
+  raises the tax, that it resents.
+- Each region has a faction mix: the share of its people who are farmers, workers and
+  business, from the country file. The standings bear on the region's approval as one more
+  effect, Factions: 0.3 of a point of approval for each point a faction stands above or below
+  50%, in proportion to its share of the region's people, each faction's part rounded towards
+  nothing. A farming region follows the farmers;
+  a port city follows business and workers. The effect follows the standings at once, since
+  they have already moved their fifth, and the rest of approval is as it was. People of no
+  faction, where a region's shares come to less than all of it, are moved by none.
+- A game opens with the standings where its starting budget settles them, so nothing moves
+  until something changes. In Tavara the farmers open at 56.1%, the workers at 47.8% and
+  business at 51.6%, which moves no region's approval by more than 1.2 points; in the test
+  country no more than 1.0 point.
+- Approval's breakdowns have a Factions line, split by faction: what moved approval names what
+  moved each faction most, where its part comes to anything, and what approval is made of gives
+  each faction's standing and word.
+  The left column shows the four standings, each with its word and a trend line, the army's
+  being its loyalty and stage; a standing opens to what it is made of and where the budget in
+  force is heading it. A region's card gives its mix and what the factions do to its approval.
+  The budget panel's outlook has a Factions fold: each standing next quarter and where it is
+  heading, with its word. A first-time tip explains factions once they move any region's
+  approval by 2.0 points or more.
+- A country file of an older format gives no mix, and each of its regions is read as an even
+  mix: a third of its people in each faction. A save from before the factions opens with every
+  standing at 50% and nothing pushing it, so approval is where it was, and the standings then
+  move their fifth each quarter towards where the budget in force settles them.
 
 ## Defence and army loyalty
 

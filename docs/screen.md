@@ -31,8 +31,9 @@ What each part of the screen shows and does, as built. The rules the game plays 
   passed, research, once its tab is first opened or research is planned, surveys, once the
   card of a region that may hide a deposit is first opened or a survey is planned, Defence
   and the army, once the army anywhere is less than loyal or the budget in force would leave it so,
-  neighbours and deterrence, once a neighbour is anything but peaceful, and border incidents,
-  once one is announced. When several are due, the first in that order shows. Got it dismisses one, and the
+  neighbours and deterrence, once a neighbour is anything but peaceful, border incidents,
+  once one is announced, and the factions, once they move a region's approval by two points or
+  more. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
   waits while the tour or a lesson is open. A tip about a decision panel behind another tab is
@@ -47,7 +48,10 @@ What each part of the screen shows and does, as built. The rules the game plays 
 - Click the treasury, the debt, the credit rating, the food reserve, approval, army loyalty or
   prosperity in the top bar to see what moved it. Approval, army loyalty, prosperity and the
   credit rating also list what they are made of, and army loyalty how the army stands in each
-  region.
+  region. In both of approval's lists the Factions line is split beneath it into farmers,
+  workers and business, set in: what moved approval names what moved each faction most, where
+  its part comes to anything, and what approval is made of gives each faction's word and
+  standing.
 - A short trend line beside the treasury, the debt, the food reserve, approval, army loyalty and
   prosperity shows the last eight quarters, with the food reserve's safe level, the strike
   threshold, the mark below which the army is restless and the prosperity target drawn as
@@ -56,6 +60,15 @@ What each part of the screen shows and does, as built. The rules the game plays 
 - The region list in the left column gives each region's food situation, its living standard as
   a figure and a bar, and its army's stage in words with its loyalty, marked with a sign where
   the army is not loyal. A region's card gives its army's loyalty and stage among its figures.
+- Under the region list the left column shows how the four factions stand: farmers, workers,
+  business and the army, each with the word for its standing (pleased, content, uneasy or angry;
+  for the army its stage), the figure and a trend line of the last eight quarters. A faction
+  that stands badly is marked with a sign beside its word. Each opens to what its standing is
+  made of, lever by lever, and where the budget in force is heading it. The army's standing is
+  national army loyalty.
+- A region's card says what share of its people are farmers, workers and business, and how far
+  the factions as they stand move approval there, with each faction's part. A region whose
+  people follow no faction says nothing of them.
 - After each quarter the left column reports what happened and why, the most serious first: the
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
   is a button: select it to pick that region out on the map and open its card. A quarter in which
@@ -104,6 +117,9 @@ What each part of the screen shows and does, as built. The rules the game plays 
   hostile with none announced, that one may come; a border region's card says what is coming
   to it or what it is costing and for how long; and the crossing's card says it is closed, by
   what and for how long.
+- The budget panel's outlook has a Factions fold: the standing of farmers, workers and business
+  next quarter and where each is heading, with its word, and a note of what each judges. The
+  fold says when a change not yet committed would move any of them.
 - The budget panel's outlook has a Neighbours fold, in a country whose neighbours have
   ambitions: deterrence next quarter and where it is heading, and each neighbour's intention
   next quarter and where it is heading, each before and after the change on the sliders. The

@@ -87,7 +87,8 @@ Prosperity, tiers and people.
   quarters. Rules: rules.md, Trade; balance: `docs/balance/phase-4.md`.
 - **Approval and elections.** One approval number with a visible breakdown. Strikes and protests
   begin below set thresholds. An election every 20 quarters turns approval into a vote share; below
-  50% the game is lost. Factions (farmers, workers, business, army) arrive in Phase 6.
+  50% the game is lost. Since Phase 6 the factions (farmers, workers, business, army) move each
+  region's approval by its mix of them.
 - **Events.** Events and dilemmas began in Phase 1 with a handful, and gain content in every phase.
   Events are local to regions wherever possible.
 - **Finance.** Loans, and bonds once the credit rating is good enough, pull the mine's chain
@@ -142,9 +143,16 @@ Prosperity, tiers and people.
   unrest and a less loyal army. It is drawn on the border, reported at each step and listed in
   the risks ahead before it begins. Rules: rules.md, Border incidents.
 
-### Still to come
-
-- **Factions** (Phase 6): approval broken down by faction.
+- **Factions** (Phase 6): approval broken down by who is pleased and who is not, so that
+  pleasing everyone is impossible. The factions are the engine's own: farmers, workers, business
+  and the army. Farmers, workers and business each have one national standing that answers to a
+  few levers of its own and moves gradually, as approval does. Farmers and workers each judge
+  their share of what the budget spends, and business the tax rate, the deficit, the debt and
+  the large sites in use, so what pleases one costs another, directly or in money. A country
+  file gives each region its mix of the three, and the standings bear on the region's approval
+  by that mix, as one more effect over approval as built: a farming region follows the farmers,
+  a port city business and workers. The army has no share of the people and moves no approval;
+  its standing is its loyalty. Rules: rules.md, Factions.
 
 ## 5. The map
 

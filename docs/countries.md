@@ -121,6 +121,21 @@ few people make its starting Defence deter far more per head:
 In a file of format 2, a region may also set `populationGrowth`, its people's growth in percent a
 year, from 0 to 10. A region that leaves it out grows at the game's own rate.
 
+In a file of `"formatVersion": 13`, a region may give its faction mix in `factions`: the whole
+percentage of its people who are `farmers`, `workers` and `business`, each from 0 to 100 and
+adding up to no more than 100. Those are the factions with a share of a region's people; the
+army has none, and a file cannot add a faction. The three standings bear on the region's
+approval in proportion to these shares, so the mix decides whom a region follows: a farming
+region the farmers, a port city business and workers. Whoever is left over, where the shares
+come to less than 100, follows no faction and is moved by none. A region that leaves `factions`
+out is read as an even mix, a third of its people in each, and so is every region of a file of
+an earlier format, which cannot give one and still loads as it is. Tavara's Lowmere Plains are
+70% farmers, and half of its Salt Coast is business:
+
+```json
+{ "id": "salt-coast", "name": "Salt Coast", "factions": { "farmers": 15, "workers": 35, "business": 50 } }
+```
+
 In a file of `"formatVersion": 4`, a country can start in debt. `start.loans` lists the loans it
 owes as the game begins, each with its `amount` in millions, its yearly `rate` in percent (to at
 most two decimal places, from 0 to 25) and the `quarters` left to repay it (1 to 40):

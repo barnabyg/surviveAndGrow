@@ -6,7 +6,9 @@ The game is won on prosperity held, and lost at the vote, to famine, or to a cou
 left to plot. Neighbours with ambitions watch a country that prospers, and Defence spending
 buys the deterrence that keeps them peaceful. A neighbour left hostile brings border
 incidents, which close its crossings and cost the regions on its border output and approval;
-it never takes land, and never ends the game.
+it never takes land, and never ends the game. Farmers, workers and business each judge the
+budget their own way, and every region follows them by its mix of the three, so no budget
+pleases everyone.
 
 The design is in [docs/design.md](docs/design.md), and the rules as built in
 [docs/rules.md](docs/rules.md).
@@ -53,7 +55,8 @@ country can hide deposits of ore for surveys to find, lock a site until a techno
 say what it starts by spending on Defence, which holds its army loyal or does not, and give
 each neighbour an ambition, which Defence must deter as the country prospers. Where a
 neighbour's border incidents fall is worked out from the map: the crossings that lead to it and
-the regions that face it.
+the regions that face it. It can give each region its faction mix, the share of its people who
+are farmers, workers and business, which decides whose standing moves approval there.
 
 ## Check it
 
