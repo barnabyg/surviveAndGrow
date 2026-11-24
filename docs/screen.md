@@ -28,23 +28,47 @@ What each part of the screen shows and does, as built. The rules the game plays 
   part of the screen it concerns like a lesson: a dilemma, a bailout, a drought or flood warned of
   in risks ahead, a strike or protest, a world price shock announced, a planned project whose
   chain is missing a link, a site decaying, the election four quarters away, a prosperity tier
-  passed, research, once its tab is first opened or research is planned, and surveys, once the
-  card of a region that may hide a deposit is first opened or a survey is planned. When several are due, the first in that order shows. Got it dismisses one, and the
+  passed, research, once its tab is first opened or research is planned, surveys, once the
+  card of a region that may hide a deposit is first opened or a survey is planned, Defence
+  and the army, once the army anywhere is less than loyal or the budget in force would leave it so,
+  neighbours and deterrence, once a neighbour is anything but peaceful, border incidents,
+  once one is announced, and the factions, once they move a region's approval by two points or
+  more. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
   waits while the tour or a lesson is open. A tip about a decision panel behind another tab is
   drawn round the tab that opens it. The tips are written in `src/ui/tips.ts`.
 - Each figure in the top bar shows its change this quarter and any warning, such as the food
   reserve below its safe level. Its standing note (the debt burden, the loan rates, the safe
-  level, the strike threshold, the prosperity tier) is in its tooltip and at the head of its
-  breakdown.
-- Click the treasury, the debt, the credit rating, the food reserve, approval or prosperity in the
-  top bar to see what moved it. Approval, prosperity and the credit rating also list what they
-  are made of.
-- A short trend line beside the treasury, the debt, the food reserve, approval and prosperity shows the last
-  eight quarters, with the food reserve's safe level, the strike threshold and the prosperity
-  target drawn as dashed lines. The
+  level, the strike threshold, the marks of the army's stages, the prosperity tier) is in its
+  tooltip and at the head of its breakdown. Army loyalty names its stage beneath the figure,
+  whatever it is: in a word while the army is loyal, as a warning, with a sign and the mark it
+  has fallen below, while it is restless, and while it is plotting with the quarters left to a
+  coup, counted down each quarter. Its breakdown says where the count towards a coup stands.
+- Click the treasury, the debt, the credit rating, the food reserve, approval, army loyalty or
+  prosperity in the top bar to see what moved it. Approval, army loyalty, prosperity and the
+  credit rating also list what they are made of, and army loyalty how the army stands in each
+  region. In both of approval's lists the Factions line is split beneath it into farmers,
+  workers and business, set in: what moved approval names what moved each faction most, where
+  its part comes to anything, and what approval is made of gives each faction's word and
+  standing.
+- A short trend line beside the treasury, the debt, the food reserve, approval, army loyalty and
+  prosperity shows the last eight quarters, with the food reserve's safe level, the strike
+  threshold, the mark below which the army is restless and the prosperity target drawn as
+  dashed lines. The
   left column has a larger approval chart with the strike threshold and the 50% line marked.
+- The region list in the left column gives each region's food situation, its living standard as
+  a figure and a bar, and its army's stage in words with its loyalty, marked with a sign where
+  the army is not loyal. A region's card gives its army's loyalty and stage among its figures.
+- Under the region list the left column shows how the four factions stand: farmers, workers,
+  business and the army, each with the word for its standing (pleased, content, uneasy or angry;
+  for the army its stage), the figure and a trend line of the last eight quarters. A faction
+  that stands badly is marked with a sign beside its word. Each opens to what its standing is
+  made of, lever by lever, and where the budget in force is heading it. The army's standing is
+  national army loyalty.
+- A region's card says what share of its people are farmers, workers and business, and how far
+  the factions as they stand move approval there, with each faction's part. A region whose
+  people follow no faction says nothing of them.
 - After each quarter the left column reports what happened and why, the most serious first: the
   budget outcome, forced spending cuts, the harvest, hunger and events. A report about one region
   is a button: select it to pick that region out on the map and open its card. A quarter in which
@@ -68,8 +92,39 @@ What each part of the screen shows and does, as built. The rules the game plays 
   links too: every port not yet in use has a dotted shipping lane tagged "✕ Missing trade link",
   and a decaying port's lane is tagged "▲ Weak trade link". Each lens has a scale beside the
   buttons, its steps differ in lightness, and every region also carries its value as text. The
-  lens stays as you chose it from quarter to quarter, and sites, routes, trade routes, events and
-  relief are drawn under all of them.
+  lens stays as you chose it from quarter to quarter, and sites, routes, trade routes,
+  neighbours, events and relief are drawn under all of them.
+- Each neighbour is drawn on the map with what it intends: a tag by its name carries a mark and
+  a word (a ring and "Peaceful", an eye and "Watchful", a spearhead and "Hostile"), on the side
+  of the name away from the border, and the border it shares with the country is dashed while
+  it is watchful and solid, with teeth pointing into the country, while it is hostile. The
+  legend under the map explains the three. Select a neighbour, by its name, its tag or its
+  land, to open its card: its intention, deterrence, the marks below which it is watchful and
+  hostile, its ambition and what that weighs against deterrence in each prosperity tier with
+  the tier in force marked, what moved it last quarter, and where the Defence budget in force
+  settles deterrence and would leave the neighbour, as a warning when that is worse than now.
+  A report or a risk about a neighbour picks it out on the map, as one about a region picks out
+  the region.
+- A border incident is drawn along its neighbour's border, under every lens, from its
+  announcement until it ends: barred diamonds just outside the border, hollow with a dashed
+  edge while it is announced and solid while it is in force, and a second tag beside the
+  neighbour's intention, "▲ Border incident in 2 quarters" or "▲ Border incident: 3 quarters
+  left". While it is in force each region on the border carries the tag "▲ Border incident ·
+  output −20%", and each closed crossing is drawn thinly dashed, with a cross over its bar
+  and the tag "✕ Closed this quarter and 2 more" in place of what it carried. The legend
+  explains the two diamonds and the closed crossing. The neighbour's card says what the
+  incident does, when, and what it costs in tax a quarter, and, while the neighbour is
+  hostile with none announced, that one may come; a border region's card says what is coming
+  to it or what it is costing and for how long; and the crossing's card says it is closed, by
+  what and for how long.
+- The budget panel's outlook has a Factions fold: the standing of farmers, workers and business
+  next quarter and where each is heading, with its word, and a note of what each judges. The
+  fold says when a change not yet committed would move any of them.
+- The budget panel's outlook has a Neighbours fold, in a country whose neighbours have
+  ambitions: deterrence next quarter and where it is heading, and each neighbour's intention
+  next quarter and where it is heading, each before and after the change on the sliders. The
+  fold says "changed" when the change would move deterrence, and a neighbour the sliders would
+  leave hostile, or heading for it, is warned of above the fold whether it is open or not.
 - The trade routes are drawn on the map from the country file: a bar where each border crossing
   meets its neighbour, and a shipping lane from each port in use to the edge of the map. Each
   route is as wide as what it can carry, with a pale core as wide as what it carried last
@@ -77,7 +132,8 @@ What each part of the screen shows and does, as built. The rules the game plays 
   port its chain runs to, and grain bought and sold abroad over the border crossings first, then
   by sea; grain an order could not pay for, or a dilemma's answer left the reserve without, never
   crossed. A port that has just come into use has carried nothing yet. A decaying port's lane is
-  dashed. Select a route to open its card: the mines' ore and the grain it carried last quarter
+  dashed, and a crossing closed by a border incident thinly dashed with a cross over its
+  bar. Select a route to open its card: the mines' ore and the grain it carried last quarter
   and is to carry this quarter with the grain ordered so far, and how much of its capacity is
   free.
 - The side columns scroll on their own when they run long, and the map gives up height to the

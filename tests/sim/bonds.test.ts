@@ -21,6 +21,7 @@ import {
 } from '../../src/sim';
 import { bothCountries, tavara, testland } from './countries';
 import { steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /** A bond of a sum maturing after a term, in Money units ($100,000) and quarters. */
 function bond(amount: number, quarters: number): Borrowing {
@@ -62,13 +63,10 @@ describe.each(bothCountries)('a bond in %s', (_name, country) => {
     // Taxed at 30% the budget runs a surplus, so the rating is not dragged down by a deficit,
     // and enough is spent on agriculture that the harvests feed every region.
     const start = createGame(country(), 7);
-    const earning: Budget = {
+    const earning: Budget = budgetFrom(start.budget, {
       taxRatePercent: 30,
-      spending: {
-        ...start.budget.spending,
-        agriculture: Math.max(30, start.budget.spending.agriculture),
-      },
-    };
+      spending: { agriculture: Math.max(30, start.budget.spending.agriculture) },
+    });
     expect(bondsClosedBecause(start.credit.rating)).toBe(
       'Bonds can be issued only at a credit rating of AA or better. The nation is rated A.',
     );
@@ -290,17 +288,7 @@ function rated(game: GameState, rating: CreditRating): GameState {
 }
 
 /** Everything at its most, at the lowest tax: it spends whatever the treasury holds. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 describe('bonds in the debt', () => {
   it('count in the debt, the debt burden, the most that may yet be owed and the rating', () => {
@@ -413,7 +401,7 @@ describe('the risks ahead', () => {
 
   it('count the maturity quarter’s interest in what falls due', () => {
     // On its course the treasury holds about $100.5m by then: the sum, but not its interest.
-    const game = owingBond(10, 1615);
+    const game = owingBond(10, 1815);
 
     const [risk] = maturityRisks(game);
 

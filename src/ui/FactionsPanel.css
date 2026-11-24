@@ -1,0 +1,106 @@
+/* The factions' standings */
+
+.factions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.factions ul {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+}
+
+.faction-row > summary {
+  min-height: 36px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faction-row > summary::-webkit-details-marker {
+  display: none;
+}
+
+.faction-row > summary:hover {
+  background: var(--card);
+}
+
+.faction-row > summary:focus-visible {
+  outline: 2px solid var(--blue);
+}
+
+.faction-row[open] > summary {
+  border-color: var(--line-strong);
+}
+
+.faction-row__name {
+  flex: 1;
+}
+
+/* The word for how a faction stands; a sign marks one that stands badly. */
+.faction-row__word {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.faction-row__word--troubled {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.faction-row__standing {
+  min-width: 52px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The trend sits in the row, so it gives up the space a vital sign leaves above it. */
+.faction-row .trend {
+  margin-top: 0;
+}
+
+.faction-row .trend--none {
+  width: 84px;
+  text-align: right;
+  font-size: 12px;
+}
+
+.faction-row__causes {
+  width: 100%;
+  margin: 6px 0 0;
+  padding: 0 10px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.faction-row__causes th {
+  padding: 3px 10px;
+  font-weight: 400;
+  text-align: left;
+  color: var(--label);
+}
+
+.faction-row__causes td {
+  padding: 3px 10px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.faction-row__note {
+  margin: 4px 10px 8px;
+  font-size: 13px;
+  color: var(--label);
+}

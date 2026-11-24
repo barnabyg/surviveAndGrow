@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react';
-import type { Figure } from '../sim';
+import type { Contribution, Figure } from '../sim';
 import './VitalSign.css';
 
 interface VitalSignProps {
@@ -15,8 +15,12 @@ interface VitalSignProps {
   readonly formatMovement: (size: number) => string;
   /** Which way the figure moving is good news, coloured so. It is rising unless said. */
   readonly goodWhen?: 'rising' | 'falling';
-  /** A standing remark beneath the figure, such as a warning that it is below a safe level. */
-  readonly remark?: { readonly text: string; readonly tone: 'warning' | 'danger' } | undefined;
+  /**
+   * A standing remark beneath the figure: a warning, such as that it is below a safe level, or
+   * in the plain tone how the figure stands in a word, such as the stage it is read as.
+   */
+  readonly remark?:
+    { readonly text: string; readonly tone: 'plain' | 'warning' | 'danger' } | undefined;
   /** A standing fact worth keeping in view, such as the level at which trouble begins. */
   readonly note?: string | undefined;
   /** The figure's trend line, drawn beside it. */
@@ -29,8 +33,9 @@ interface VitalSignProps {
 
 /**
  * One of the always-visible figures in the top bar. It shows its change this quarter, and
- * opens to list everything that contributed to the change. A warning stays in view on one
- * line; the standing note is in the tooltip, and read out with the figure.
+ * opens to list everything that contributed to the change. A remark stays in view beneath it,
+ * marked with a sign when it is a warning; the standing note is in the tooltip, and read out
+ * with the figure.
  */
 export function VitalSign(props: VitalSignProps) {
   const { label, value, unit, figure, formatChange, formatMovement, breakdownTitle } = props;
@@ -64,7 +69,10 @@ export function VitalSign(props: VitalSignProps) {
         </button>
         <Movement figure={figure} formatMovement={formatMovement} goodWhen={goodWhen} />
         {remark && (
-          <div className={`vital__remark vital__remark--${remark.tone}`}>▲ {remark.text}</div>
+          <div className={`vital__remark vital__remark--${remark.tone}`}>
+            {remark.tone !== 'plain' && '▲ '}
+            {remark.text}
+          </div>
         )}
         {note !== undefined && <span className="visually-hidden">{note}</span>}
       </div>
@@ -82,10 +90,7 @@ export function VitalSign(props: VitalSignProps) {
             <table className="breakdown__table" aria-labelledby={titleId}>
               <tbody>
                 {figure.contributions.map((line) => (
-                  <tr key={line.label}>
-                    <th scope="row">{line.label}</th>
-                    <td>{formatChange(line.amount)}</td>
-                  </tr>
+                  <BreakdownRows key={line.label} line={line} format={formatChange} />
                 ))}
               </tbody>
               <tfoot>
@@ -100,6 +105,36 @@ export function VitalSign(props: VitalSignProps) {
         </section>
       )}
     </div>
+  );
+}
+
+/**
+ * One line of a breakdown, and beneath it the parts it is split into, each with the few words
+ * that say what lies behind it.
+ */
+export function BreakdownRows({
+  line,
+  format,
+}: {
+  readonly line: Contribution;
+  readonly format: (amount: number) => string;
+}) {
+  return (
+    <>
+      <tr>
+        <th scope="row">{line.label}</th>
+        <td>{format(line.amount)}</td>
+      </tr>
+      {line.parts?.map((part) => (
+        <tr key={part.label} className="breakdown__part">
+          <th scope="row">
+            {part.label}
+            {part.note !== undefined && <span className="breakdown__why"> · {part.note}</span>}
+          </th>
+          <td>{format(part.amount)}</td>
+        </tr>
+      ))}
+    </>
   );
 }
 

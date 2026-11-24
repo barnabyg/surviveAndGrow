@@ -6,6 +6,7 @@
 
 import type { Budget } from './budget';
 import type { StartingLoan } from './debt';
+import type { FactionMix } from './factions';
 import type { Money, Range } from './types';
 import type {
   DecorationKind,
@@ -43,6 +44,11 @@ export interface Region {
   readonly growthPerTenThousandPerQuarter: number;
   /** The chance, from 0 to 1, that each kind of event strikes the region in a year. */
   readonly eventLikelihood: Readonly<Record<EventType, number>>;
+  /**
+   * The region's faction mix: the share of its people who are farmers, workers and business
+   * (see `factions.ts`). A file that gives none is read as an even mix.
+   */
+  readonly factionMix: FactionMix;
 }
 
 export interface Settlement {
@@ -100,6 +106,12 @@ export interface Neighbour {
   readonly name: string;
   readonly shape: readonly Point[];
   readonly label: Point;
+  /**
+   * How much it wants of the country, in thousandths. What it weighs against deterrence grows
+   * with the prosperity tier (`deterrence.ts`). A neighbour with none stays peaceful for good,
+   * as every neighbour of a file older than format 12 does.
+   */
+  readonly ambition: number;
 }
 
 /**
@@ -205,4 +217,14 @@ export interface Country {
 /** The name of a region, as reports and the interface write it. */
 export function regionName(country: Country, regionId: string): string {
   return country.regions.find((region) => region.id === regionId)?.name ?? regionId;
+}
+
+/** One of the country's neighbours, by its id, or undefined for one it has not. */
+export function neighbourOf(country: Country, neighbourId: string): Neighbour | undefined {
+  return country.map.neighbours.find((neighbour) => neighbour.id === neighbourId);
+}
+
+/** The name of a neighbour, as reports and the interface write it. */
+export function neighbourName(country: Country, neighbourId: string): string {
+  return neighbourOf(country, neighbourId)?.name ?? neighbourId;
 }

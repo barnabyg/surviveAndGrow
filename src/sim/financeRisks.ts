@@ -48,7 +48,7 @@ export function bondsAhead(state: GameState, courses: Scope['courses']): BondAhe
  * quarters ahead as they are supposed otherwise do not bring it: what a mine's chain earns
  * falls with the price, and the tax it pays with it.
  */
-function oreSlumpRisk(
+export function oreSlumpRisk(
   scope: Scope,
   shows: (path: Path) => number | null,
   risk: (quarter: number, slump: string) => Pick<Risk, 'kind' | 'headline' | 'reason'>,
@@ -59,6 +59,26 @@ function oreSlumpRisk(
   const { forecast } = priceStatus(scope.state, 'ore');
   const slump = `Should the world ore price slump to ${formatPrice(forecast.min)}, the low end of its forecast ${forecastSpan()}, the mines would earn less and pay less in tax`;
   return [{ ...risk(quarter, slump), likelihood, withinQuarters: quarter + 1 }];
+}
+
+/**
+ * What only a rise in the world ore price inside its forecast would bring, when the quarters
+ * ahead as they are supposed otherwise do not: what a mine's chain earns rises with the price,
+ * and a richer country passes a tier sooner. `chance` is what it is weighed at, in thousandths,
+ * and `rise` the words for the supposition.
+ */
+export function oreRise(
+  scope: Scope,
+  shows: (path: Path) => number | null,
+): { readonly quarter: number; readonly chance: number; readonly rise: string } | null {
+  const quarter = shows(scope.oreRise);
+  if (quarter === null) return null;
+  const { forecast } = priceStatus(scope.state, 'ore');
+  return {
+    quarter,
+    chance: balance.risks.oreRiseChancePermille,
+    rise: `Should the world ore price rise to ${formatPrice(forecast.max)}, the high end of its forecast ${forecastSpan()}, the mines would earn more`,
+  };
 }
 
 /**

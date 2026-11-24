@@ -15,19 +15,13 @@ import {
 } from '../../src/sim';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
 import { answering, steward } from './playing';
+import { lavish } from '../budgets';
 
-/** Everything at its most, at the lowest tax: it spends whatever the treasury holds. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+/**
+ * A budget no treasury covers. It names the areas it spends on, so a fixed game is played the
+ * same when the game gains an area.
+ */
+const ruinous: Budget = lavish;
 
 /** How a fixed game is played: whether it borrows and overspends into a bailout first. */
 type Script = 'builds' | 'bailedOut';
@@ -102,17 +96,50 @@ function fingerprint(
  * what locks it, and each country a dam none of these games can research. With those left out
  * of the fingerprint, every game hashed as before. They were pinned once more when each country
  * gained clinics and schools, locked in these games as the dam is: with those sites left out of
- * the fingerprint, every game again hashed as before.
+ * the fingerprint, every game again hashed as before. They were pinned again when the game
+ * gained Defence and the army's loyalty. Played with nothing spent on Defence, and with the
+ * army and Defence left out of the fingerprint and of the bailout's list of capped areas, every
+ * game hashed as before. As pinned, each game spends on Defence what its country starts by
+ * spending, which leaves it less to build with: the summaries below show what that cost it.
+ * They were pinned once more when the game gained the coup: the state gained the count of
+ * quarters the army has plotted, and the report what it says of the count. With both left out
+ * of the fingerprint, every game hashed as before. The army plots twice in Tavara's bailed-out
+ * game, in the quarters after it spends nothing on Defence, and recovers each time before the
+ * count is up; in the other three it never plots. They were pinned again when the neighbours
+ * gained ambitions: the state gained deterrence, the report its figure and what it says when a
+ * neighbour's intention changes, and the preview its forecast of both. With all of those left
+ * out of the fingerprint, every game hashed as before. A hostile neighbour does nothing yet, so
+ * the summaries stand: only Tavara's building game passes a tier, in its second year, where
+ * Voskar turns watchful, and then hostile and back as its overspending cuts Defence. They were
+ * pinned once more when a hostile neighbour gained its border incidents: the state gained the
+ * incidents announced. With that alone left out of the fingerprint, every game hashed as
+ * before: none of the four meets an incident. Three never have a hostile neighbour. Tavara's
+ * building game ends six quarters with Voskar hostile, and in none of them does its draw fall
+ * under the chance, so it too plays exactly as it did. They were pinned again when the game
+ * gained the factions: the state gained their standings, each region's approval its Factions
+ * effect, the record of each quarter and the report the standings, and the preview its forecast
+ * of them. Played on countries whose people follow no faction, and with all of those left out
+ * of the fingerprint, every game hashed as before. As pinned, each country's regions have the
+ * faction mixes it ships with, and the factions move approval, so these games play differently:
+ * each taxes at 30%, which workers and business resent. Tavara's building game still loses its
+ * first vote, with one site fewer kept up. Its bailed-out game, already in protest under
+ * austerity's cap on Defence, now falls to a coup in its fourth year, before the vote it used to
+ * lose. Testland's building game, which used to win its first vote narrowly, loses it with
+ * 48.8%. Testland's bailed-out game plays on as before. Tavara's bailed-out game was pinned
+ * once more when austerity came to cap Defence at what the country started on, where it had
+ * capped it at half: the other three, which meet no cap on Defence below what they spend, kept
+ * their hashes. Its army is now restless under austerity and never plots, so no coup comes, and
+ * it loses the vote in its sixth year with 36.9%, as it did before the factions.
  */
 const outcomes = [
   {
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'builds',
-    hash: '1e286020e64c33a777d9b256642b4a97d2fd4bdf52a1b624601ba25863d8ae33',
+    hash: '8f517ae565d02e69f7f706e855f4a0e7076993fec8dd8a1dff63ec3eac759a93',
     summary: {
       date: { year: 6, quarter: 1 },
-      treasury: 2,
+      treasury: 6,
       outcome: 'lost',
       sites: [
         'lowmere-road operating 3',
@@ -121,11 +148,10 @@ const outcomes = [
         'dustwell-irrigation operating 3',
         'southbank-store operating 2',
         'coast-road operating 3',
-        'highland-road operating 3',
-        'saltmouth-port closed 0',
-        'saltmouth-quay paused 3',
-        'arden-power-line operating 2',
-        'lowmere-power-line operating 2',
+        'highland-road decaying 3',
+        'arden-power-line decaying 2',
+        'lowmere-power-line paused 1',
+        'korrgate-power-line paused 0',
         'korr-falls-dam locked 0',
         'dustwell-clinic locked 0',
         'westhaven-clinic locked 0',
@@ -139,14 +165,14 @@ const outcomes = [
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'bailedOut',
-    hash: '0f6763d6c12642a5ceb212663ff7d88a78057dac8745b23ac5c49e9ffb7d8aba',
+    hash: '808d7e0c6f89ab3ee2f8e1b62cc37d267147bcb377c230da7c1fcd3eb3512ac5',
     summary: {
       date: { year: 6, quarter: 1 },
-      treasury: 2,
+      treasury: 6,
       outcome: 'lost',
       sites: [
         'lowmere-road operating 3',
-        'lowmere-irrigation operating 3',
+        'lowmere-irrigation decaying 3',
         'lowmere-store paused 0',
         'korr-falls-dam locked 0',
         'dustwell-clinic locked 0',
@@ -161,16 +187,15 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'builds',
-    hash: 'd2060dbc8060a16104baa934b7b31684fb11de87b4768cab908d0d7d015e5e4e',
+    hash: 'e214a72e046a1339ddb6cc7c2abcdebfdbd70aee05c4eae75b3286a3bc3f33cf',
     summary: {
-      date: { year: 7, quarter: 1 },
-      treasury: 1,
-      outcome: 'playing',
+      date: { year: 6, quarter: 1 },
+      treasury: 43,
+      outcome: 'lost',
       sites: [
-        'alpha-store decaying 2',
-        'sand-road decaying 3',
-        'north-power-line decaying 2',
-        'sand-power-line decaying 2',
+        'alpha-store operating 2',
+        'north-power-line operating 2',
+        'sand-power-line operating 2',
         'sand-dam locked 0',
         'sand-dam-line locked 0',
         'beta-clinic locked 0',
@@ -183,15 +208,13 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'bailedOut',
-    hash: '3de46725c5848c8a73e4eb6e4b885aac896745222c79191e07177213858c515b',
+    hash: '018f16fb5a437369b4329551e870791466976bf561f7d349770ed5d7ef2cd9e4',
     summary: {
       date: { year: 7, quarter: 1 },
-      treasury: 3,
+      treasury: 5,
       outcome: 'playing',
       sites: [
-        'north-irrigation paused 1',
         'alpha-store decaying 2',
-        'sand-road paused 0',
         'north-power-line decaying 2',
         'sand-power-line decaying 2',
         'sand-dam locked 0',

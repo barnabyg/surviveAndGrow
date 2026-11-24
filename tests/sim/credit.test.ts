@@ -15,6 +15,7 @@ import {
 } from '../../src/sim';
 import { bothCountries, testland } from './countries';
 import { answering, inFirstTerm, steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /** A loan of a sum over a term, in Money units ($100,000) and quarters. */
 function loan(amount: number, quarters: number): Borrowing {
@@ -47,17 +48,7 @@ function fourQuarterRate(game: GameState): number | undefined {
 }
 
 /** Everything at its most, at the lowest tax: it spends whatever the treasury holds. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 describe('the credit rating of a new game', () => {
   it('is A, made of a payment record with no debt and no deficit against it', () => {
@@ -122,13 +113,9 @@ describe.each(bothCountries)('the credit rating in %s', (_name, country) => {
 
     // Played on to the vote with nothing more borrowed, the rating never falls back below A.
     // Enough is spent on agriculture that the harvests feed every region.
-    const fed: Budget = {
-      ...game.budget,
-      spending: {
-        ...game.budget.spending,
-        agriculture: Math.max(30, game.budget.spending.agriculture),
-      },
-    };
+    const fed: Budget = budgetFrom(game.budget, {
+      spending: { agriculture: Math.max(30, game.budget.spending.agriculture) },
+    });
     let state = repaid.state;
     const ratings = [];
     while (inFirstTerm(state)) {

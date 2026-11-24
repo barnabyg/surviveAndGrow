@@ -1,4 +1,13 @@
-import { FOOD_STAGE_NAMES, formatIndex, livingStandards, regionName, type GameState } from '../sim';
+import {
+  ARMY_STAGE_NAMES,
+  armyLoyaltyStatus,
+  FOOD_STAGE_NAMES,
+  formatIndex,
+  formatPercent,
+  livingStandards,
+  regionName,
+  type GameState,
+} from '../sim';
 import './RegionList.css';
 
 interface RegionListProps {
@@ -8,11 +17,12 @@ interface RegionListProps {
 }
 
 /**
- * Every region's food situation and living standard at a glance, so that inequality shows.
- * Picking one picks it out on the map.
+ * Every region's food situation, living standard and army at a glance, so that inequality
+ * shows. Picking one picks it out on the map.
  */
 export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionListProps) {
   const standards = livingStandards(game);
+  const armies = armyLoyaltyStatus(game).regions;
   return (
     <section className="region-list" aria-labelledby="region-list-title" data-tour="regions">
       <div className="section-head">
@@ -20,13 +30,15 @@ export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionLis
           Regions
         </h2>
         <span className="region-list__key" aria-hidden="true">
-          Food · Living standard
+          Food · Living standard · Army
         </span>
       </div>
       <ul>
         {game.regions.map((region, index) => {
           const troubled = region.foodStage !== 'adequate';
           const standard = standards[index]?.value ?? 0;
+          const army = armies[index];
+          const notLoyal = army !== undefined && army.stage !== 'loyal';
           return (
             <li key={region.id}>
               <button
@@ -51,6 +63,17 @@ export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionLis
                   </span>
                   {formatIndex(standard)}
                 </span>
+                {army !== undefined && (
+                  <span
+                    className={
+                      notLoyal ? 'region-row__army region-row__army--not-loyal' : 'region-row__army'
+                    }
+                    aria-label={`Army ${ARMY_STAGE_NAMES[army.stage].toLowerCase()}, loyalty ${formatPercent(army.loyalty)}`}
+                  >
+                    {notLoyal && '▲ '}
+                    {ARMY_STAGE_NAMES[army.stage]} {formatPercent(army.loyalty, 0)}
+                  </span>
+                )}
               </button>
             </li>
           );

@@ -11,10 +11,12 @@ import type { Credit } from './credit';
 import type { Debt } from './debt';
 import { depositIn, withFinds } from './deposits';
 import type { ActiveEvent } from './events';
+import type { FactionLevels, FactionStandings } from './factions';
 import type { Harvest } from './food';
 import type { VitalSigns } from './history';
 import { MIGRATIONS, SAVE_FORMAT_VERSION, toCurrentFormat, type SaveMigration } from './migrations';
 import type { PriceShock } from './priceShocks';
+import type { BorderIncident } from './borderIncidents';
 import {
   projectTerms,
   siteOf,
@@ -47,6 +49,7 @@ import type { RouteCarriage } from './tradeRoutes';
 import type { Contribution, Figure, Money } from './types';
 import {
   APPROVAL_DRIVERS,
+  CIVIL_FACTIONS,
   CREDIT_RATINGS,
   DEBT_KINDS,
   DEBT_SCHEDULES,
@@ -54,8 +57,10 @@ import {
   DILEMMA_TYPES,
   ENDING_CAUSES,
   EVENT_TYPES,
+  FACTION_LEVERS,
   FOOD_STAGES,
   GOODS,
+  LOYALTY_DRIVERS,
   OUTCOME_STATUSES,
   PRICE_SHOCK_TYPES,
   PROJECT_STATUSES,
@@ -70,6 +75,8 @@ import {
   TIERS,
   UNREST_LEVELS,
   type ApprovalDriver,
+  type CivilFaction,
+  type LoyaltyDriver,
   type SpendingArea,
 } from './vocabulary';
 
@@ -144,6 +151,10 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       tier: game.tier,
       startingTier: game.startingTier,
       prosperousQuarters: game.prosperousQuarters,
+      plottingQuarters: game.plottingQuarters,
+      deterrence: game.deterrence,
+      factions: game.factions,
+      borderIncidents: game.borderIncidents,
       austerity: game.austerity,
       outcome: game.outcome,
     },
@@ -236,6 +247,10 @@ export function loadSave(
     tier: oneOf(state.tier, 'state.tier', TIERS, 'a tier of prosperity'),
     startingTier: oneOf(state.startingTier, 'state.startingTier', TIERS, 'a tier of prosperity'),
     prosperousQuarters: whole(state.prosperousQuarters, 'state.prosperousQuarters', 0),
+    plottingQuarters: whole(state.plottingQuarters, 'state.plottingQuarters', 0),
+    deterrence: whole(state.deterrence, 'state.deterrence', 0, 1000),
+    factions: readFactions(record(state.factions, 'state.factions'), 'state.factions'),
+    borderIncidents: readBorderIncidents(state.borderIncidents, 'state.borderIncidents', country),
     austerity:
       state.austerity === null
         ? null
@@ -243,7 +258,16 @@ export function loadSave(
     outcome: readOutcome(record(state.outcome, 'state.outcome'), 'state.outcome', region),
   };
   const report =
-    current.report === null ? null : readReport(record(current.report, 'report'), region);
+    current.report === null
+      ? null
+      : readReport(record(current.report, 'report'), region, (value, path) =>
+          oneOf(
+            value,
+            path,
+            country.map.neighbours.map((neighbour) => neighbour.id),
+            'a neighbour',
+          ),
+        );
   // Austerity's limits are this release's, so the budget in force is brought within them too.
   return { game: { ...game, budget: withinAusterity(game, game.budget) }, report };
 }
@@ -289,6 +313,7 @@ function readBudget(saved: Json, path: string): Budget {
 function readRegions(saved: unknown, path: string, regionIds: readonly string[]): RegionState[] {
   const regions = list(saved, path, (item, itemPath): RegionState => {
     const effects = record(item.approvalEffects, `${itemPath}.approvalEffects`);
+    const loyaltyEffects = record(item.armyLoyaltyEffects, `${itemPath}.armyLoyaltyEffects`);
     return {
       id: text(item.id, `${itemPath}.id`),
       population: whole(item.population, `${itemPath}.population`, 0),
@@ -307,6 +332,13 @@ function readRegions(saved: unknown, path: string, regionIds: readonly string[])
       unrest: oneOf(item.unrest, `${itemPath}.unrest`, UNREST_LEVELS, 'a state of unrest'),
       health: whole(item.health, `${itemPath}.health`, 0, 1000),
       education: whole(item.education, `${itemPath}.education`, 0, 1000),
+      armyLoyalty: whole(item.armyLoyalty, `${itemPath}.armyLoyalty`, 0, 1000),
+      armyLoyaltyEffects: Object.fromEntries(
+        LOYALTY_DRIVERS.map((driver) => [
+          driver,
+          whole(loyaltyEffects[driver], `${itemPath}.armyLoyaltyEffects.${driver}`),
+        ]),
+      ) as Record<LoyaltyDriver, number>,
     };
   });
   const ids = regions.map((region) => region.id);
@@ -502,6 +534,23 @@ function readPriceShocks(saved: unknown, path: string): PriceShock[] {
 }
 
 /**
+ * The border incidents announced and not yet ended: each on the border of one of the
+ * country's neighbours, and no neighbour with two.
+ */
+function readBorderIncidents(saved: unknown, path: string, country: Country): BorderIncident[] {
+  const neighbourIds = country.map.neighbours.map((neighbour) => neighbour.id);
+  const incidents = list(saved, path, (item, itemPath): BorderIncident => ({
+    neighbourId: oneOf(item.neighbourId, `${itemPath}.neighbourId`, neighbourIds, 'a neighbour'),
+    announced: date(item.announced, `${itemPath}.announced`),
+    begins: date(item.begins, `${itemPath}.begins`),
+  }));
+  if (new Set(incidents.map((incident) => incident.neighbourId)).size !== incidents.length) {
+    fail(path, 'holds two incidents on one neighbour’s border');
+  }
+  return incidents;
+}
+
+/**
  * What each trade link carried in the quarter last played: each a crossing or a port of the
  * country, listed once, with whole tonnes of ore and grain.
  */
@@ -528,6 +577,39 @@ function readTradeCarried(saved: unknown, path: string, country: Country): Route
   return carried;
 }
 
+/**
+ * The standing of each civil faction with what each lever adds to it. Every lever the engine
+ * knows is held for every faction, whichever of them the faction answers to in this release.
+ */
+function readFactions(saved: Json, path: string): FactionStandings {
+  return Object.fromEntries(
+    CIVIL_FACTIONS.map((faction) => {
+      const at = `${path}.${faction}`;
+      const held = record(saved[faction], at);
+      const effects = record(held.effects, `${at}.effects`);
+      return [
+        faction,
+        {
+          standing: whole(held.standing, `${at}.standing`, 0, 1000),
+          effects: Object.fromEntries(
+            FACTION_LEVERS.map((lever) => [lever, whole(effects[lever], `${at}.effects.${lever}`)]),
+          ),
+        },
+      ];
+    }),
+  ) as FactionStandings;
+}
+
+/** One figure for each civil faction, in thousandths. */
+function readLevels(saved: Json, path: string): FactionLevels {
+  return Object.fromEntries(
+    CIVIL_FACTIONS.map((faction) => [
+      faction,
+      whole(saved[faction], `${path}.${faction}`, 0, 1000),
+    ]),
+  ) as FactionLevels;
+}
+
 function readHistory(saved: unknown, path: string): VitalSigns[] {
   const history = list(saved, path, (item, itemPath): VitalSigns => ({
     date: date(item.date, `${itemPath}.date`),
@@ -537,6 +619,14 @@ function readHistory(saved: unknown, path: string): VitalSigns[] {
     approval: whole(item.approval, `${itemPath}.approval`, 0, 1000),
     prosperity:
       item.prosperity === null ? null : whole(item.prosperity, `${itemPath}.prosperity`, 0, 1000),
+    armyLoyalty:
+      item.armyLoyalty === null
+        ? null
+        : whole(item.armyLoyalty, `${itemPath}.armyLoyalty`, 0, 1000),
+    standings:
+      item.standings === null
+        ? null
+        : readLevels(record(item.standings, `${itemPath}.standings`), `${itemPath}.standings`),
     debt: whole(item.debt, `${itemPath}.debt`, 0),
     debtBurden: whole(item.debtBurden, `${itemPath}.debtBurden`, 0),
   }));
@@ -627,6 +717,15 @@ function readOutcome(
     return { ...ending, status, cause };
   }
   if (status !== 'lost') fail(`${path}.status`, `cannot be a win when the cause is ${cause}`);
+  if (cause === 'coup') {
+    return {
+      ...ending,
+      status,
+      cause,
+      loyalty: whole(saved.loyalty, `${path}.loyalty`, 0, 1000),
+      quarters: whole(saved.quarters, `${path}.quarters`, 0),
+    };
+  }
   if (cause === 'election') {
     return {
       ...ending,
@@ -639,25 +738,37 @@ function readOutcome(
   return { ...ending, status, cause, regionId: region(saved.regionId, `${path}.regionId`) };
 }
 
-function readReport(saved: Json, region: (value: unknown, path: string) => string): TurnReport {
+function readReport(
+  saved: Json,
+  region: (value: unknown, path: string) => string,
+  neighbour: (value: unknown, path: string) => string,
+): TurnReport {
   /** The region something belongs to, kept only where the save names one. */
   const place = (item: Json, path: string) =>
     item.regionId === undefined ? {} : { regionId: region(item.regionId, `${path}.regionId`) };
+  const contribution = (line: Json, linePath: string): Contribution => ({
+    label: text(line.label, `${linePath}.label`),
+    amount: whole(line.amount, `${linePath}.amount`),
+    ...place(line, linePath),
+    // A line may be split into parts, and may carry a few words on what lies behind it.
+    ...(line.parts === undefined
+      ? {}
+      : { parts: list(line.parts, `${linePath}.parts`, contribution) }),
+    ...(line.note === undefined ? {} : { note: text(line.note, `${linePath}.note`) }),
+  });
   const figure = (value: unknown, path: string): Figure => {
     const written = record(value, path);
     return {
       value: whole(written.value, `${path}.value`),
       change: whole(written.change, `${path}.change`),
-      contributions: list(
-        written.contributions,
-        `${path}.contributions`,
-        (line, linePath): Contribution => ({
-          label: text(line.label, `${linePath}.label`),
-          amount: whole(line.amount, `${linePath}.amount`),
-          ...place(line, linePath),
-        }),
-      ),
+      contributions: list(written.contributions, `${path}.contributions`, contribution),
     };
+  };
+  const standings = (value: unknown, path: string) => {
+    const written = record(value, path);
+    return Object.fromEntries(
+      CIVIL_FACTIONS.map((faction) => [faction, figure(written[faction], `${path}.${faction}`)]),
+    ) as Record<CivilFaction, Figure>;
   };
   const harvest = (value: unknown, path: string): Harvest => {
     const written = record(value, path);
@@ -685,6 +796,10 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
     treasury: figure(saved.treasury, 'report.treasury'),
     food: figure(saved.food, 'report.food'),
     approval: figure(saved.approval, 'report.approval'),
+    armyLoyalty:
+      saved.armyLoyalty === null ? null : figure(saved.armyLoyalty, 'report.armyLoyalty'),
+    deterrence: saved.deterrence === null ? null : figure(saved.deterrence, 'report.deterrence'),
+    standings: saved.standings === null ? null : standings(saved.standings, 'report.standings'),
     debt: saved.debt === null ? null : figure(saved.debt, 'report.debt'),
     credit: saved.credit === null ? null : figure(saved.credit, 'report.credit'),
     prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),
@@ -702,6 +817,9 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
       headline: text(entry.headline, `${path}.headline`),
       cause: text(entry.cause, `${path}.cause`),
       ...place(entry, path),
+      ...(entry.neighbourId === undefined
+        ? {}
+        : { neighbourId: neighbour(entry.neighbourId, `${path}.neighbourId`) }),
     })),
   };
 }

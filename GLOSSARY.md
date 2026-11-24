@@ -78,6 +78,40 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 ## Standing
 
 - **Approval**: the public's support, by region and nationally. The vote share at an election.
+- **Faction**: one of the game's four groups whose favour the government holds or loses:
+  **farmers**, **workers**, **business** and the **army** (`FACTIONS` in
+  `src/sim/vocabulary/factions.ts`). The first three live among each region's people; the army
+  does not. Not "party", "class" or "interest group".
+- **Standing**: how a faction stands with the government: one national figure for each of
+  farmers, workers and business, moved by that faction's own **levers** and read in a **mood**
+  (**pleased**, **content**, **uneasy**, **angry**). The army's standing is national army
+  loyalty. Not "approval", which is the public's and is kept by region, and not "popularity"
+  or "support".
+- **Faction mix**: the share of a region's people who are farmers, workers and business, from
+  the country file. It weighs the three standings into the region's approval, as its
+  **Factions** effect.
+- **Defence**: the spending area that buys the army's loyalty. Not "security", which is a
+  spending area of its own that answers to approval, and not "the military".
+- **Army loyalty**: how loyal the army is, by region and nationally, moved by Defence spending
+  per head and by each region's own unrest. Its **stages** are **loyal**, **restless** and
+  **plotting** (`ARMY_STAGES` in `src/sim/vocabulary/army.ts`).
+- **Coup**: the army taking power, which loses the game. It comes when national army loyalty has
+  ended a set number of quarters running at plotting; the running count is the **countdown**
+  the top bar shows. Not "putsch" or "mutiny", and not a chance event: nothing is rolled.
+- **Neighbour**: a country on the border, drawn on the map from the country file. Each has an
+  **ambition**: how much it wants of the country, which weighs more against deterrence the
+  higher the prosperity tier. Not "enemy": a neighbour never fights.
+- **Deterrence**: one national figure, built over quarters by Defence spending, that a
+  neighbour's ambition is weighed against. Not "military strength" or "defence" (Defence is
+  the spending area).
+- **Intention**: what a neighbour intends: **peaceful**, **watchful** or **hostile**
+  (`INTENTIONS` in `src/sim/vocabulary/neighbours.ts`), read from its ambition at the tier in
+  force against deterrence. Not "stance", "attitude" or "threat level".
+- **Border incident**: what a hostile neighbour does when deterrence fails: for a set time
+  its border crossings carry nothing and the regions on its border produce less and approve
+  less. It is **announced** ahead, **begins** unless it is **called off** because the
+  neighbour is no longer hostile, and **ends**. Not "attack", "invasion", "war" or "raid":
+  there is no combat, no territory changes hands, and it never ends the game.
 - **Prosperity**: the national living standard, on one scale. Its **tiers** are Subsistence,
   Developing, Industrialising and Prosperous; holding Prosperous for four quarters wins the game.
 - **Dilemma**: a choice the game puts to the player, with two or three options that each state

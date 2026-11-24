@@ -30,6 +30,8 @@ import {
 } from './priceShocks';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
+import { couldStillTurn } from './deterrence';
+import { coupRisk, incidentRisk, neighbourRisk } from './threatRisks';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
 import { belowSafeAfterExport, FULL_SWING_PERMILLE } from './trade';
 import { UPKEEP_ORDER_RULE } from './upkeep';
@@ -55,6 +57,8 @@ export interface Risk {
   readonly reason: string;
   /** The region it threatens, when it threatens one place. */
   readonly regionId?: string;
+  /** The neighbour it comes from, when it comes from one. */
+  readonly neighbourId?: string;
   /** How soon it could come, in quarters: 1 is the quarter being decided. */
   readonly withinQuarters: number;
 }
@@ -65,11 +69,13 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 /**
  * The dangers of the coming quarters: famine in a region, grain sold below the reserve's safe
  * level, strikes, a treasury that runs out, a missed payment on a debt that brings a bailout, a
- * bond's maturity that cannot be met, and a lost election. It plays the quarters ahead with the
- * real rules, holding the decisions as they are, once for each course the weather could take and
- * each event that could still begin, and weighs how many of those lead to each danger. The most
- * likely comes first, and a danger too unlikely to matter is left out, unless it would end the
- * game. It changes nothing and draws nothing from the random generator.
+ * bond's maturity that cannot be met, a neighbour turning hostile, a border incident, a coup,
+ * and a lost election.
+ * It plays the quarters ahead with the real rules, holding the decisions as they are, once for
+ * each course the weather could take and each event that could still begin, and weighs how many
+ * of those lead to each danger. The most likely comes first, and a danger too unlikely to matter
+ * is left out, unless it would end the game. It changes nothing and draws nothing from the
+ * random generator.
  * @throws RangeError when a decision is outside what the game allows.
  * @throws Error when the game is already over.
  */
@@ -100,6 +106,11 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
     courses,
     bonds: bondsAhead(state, courses),
     oreSlump: play(state, decisions, played, 0, [], ORE_SLUMP),
+    // A rise matters only through a tier passed sooner, and that only to a neighbour that
+    // could still turn hostile: without one the course is not played again.
+    oreRise: couldStillTurn(state)
+      ? play(state, decisions, played, 0, [], ORE_RISE)
+      : typicalOf(courses),
   };
 
   const risks = [
@@ -114,6 +125,9 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
     ...upkeepRisk(whole),
     ...strikeRisk(whole),
     ...tierRisk(whole),
+    ...neighbourRisk(whole, decisions.budget),
+    ...incidentRisk(whole, decisions.budget),
+    ...coupRisk(whole, decisions.budget),
     ...electionRisk(whole),
   ];
   const rank = (risk: Risk) => LIKELIHOODS.indexOf(risk.likelihood);
@@ -152,6 +166,12 @@ const STEADY: PriceCourse = () => [];
 const ORE_SLUMP: PriceCourse = (quarter) =>
   quarter < balance.trade.forecastQuarters
     ? GOODS.map((good) => (good === 'ore' ? -FULL_SWING_PERMILLE : 0))
+    : [];
+
+/** The world ore price rising as far as its forecast allows, and then left be. */
+const ORE_RISE: PriceCourse = (quarter) =>
+  quarter < balance.trade.forecastQuarters
+    ? GOODS.map((good) => (good === 'ore' ? FULL_SWING_PERMILLE : 0))
     : [];
 
 /** Plays the quarters ahead with the weather at one share of its swing throughout. */
@@ -195,6 +215,9 @@ function play(
         // world ore price every quarter.
         priceShocks: prices(quarter),
         shocksAnnounced: [],
+        // Nor is any border incident supposed announced: one that could be is a risk of its
+        // own. Those already announced begin, are called off and end as the rules have it.
+        incidentRolls: [],
         // No dilemma is supposed to arise: what one does is the player's to choose.
         dilemmaRolls: [],
       },

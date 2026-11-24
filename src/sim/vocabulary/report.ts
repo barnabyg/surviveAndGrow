@@ -12,6 +12,9 @@ export const REPORT_KINDS = [
   'event',
   'strike',
   'protest',
+  'armyLoyalty',
+  'neighbour',
+  'borderIncident',
   'projectStarted',
   'projectPaused',
   'projectCompleted',
@@ -35,6 +38,7 @@ export const REPORT_KINDS = [
   'tier',
   'election',
   'collapse',
+  'coup',
   'victory',
   'quiet',
 ] as const;

@@ -1,3 +1,5 @@
+import type { CrossingClosure, IncidentWatch } from './borderIncidents';
+import { borderEdges } from './borders';
 import { chains } from './chains';
 import type { Country, Point } from './country';
 import { contains } from './geometry';
@@ -8,7 +10,7 @@ import { improvementsOf } from './sites';
 import { knownTechnologies } from './technology';
 import { MAP_FRAME, SITE_CHAIN_ROLES, type Technology } from './vocabulary';
 
-interface Trading {
+interface Trading extends IncidentWatch {
   readonly country: Country;
   readonly projects: readonly Project[];
   readonly worldPrices: WorldPrices;
@@ -45,16 +47,22 @@ export interface TradeRoute {
   readonly kind: 'crossing' | 'port';
   /**
    * How it stands: open; weak while its port decays and carries half what it would in good
-   * repair; or missing, a port not yet in use, which carries nothing.
+   * repair; closed, a border crossing a border incident lets nothing over; or missing, a port
+   * not yet in use, which carries nothing.
    */
-  readonly state: 'open' | 'weak' | 'missing';
+  readonly state: 'open' | 'weak' | 'closed' | 'missing';
   /**
    * What it carries across the border in a quarter, in tonnes: for a missing link, what it
-   * would carry once in use.
+   * would carry once in use, and for a closed crossing nothing.
    */
   readonly capacity: number;
-  /** What it would carry if no technology improved it, in tonnes: `capacity` while none does. */
+  /**
+   * What it would carry if no technology improved it, in tonnes: `capacity` while none does.
+   * For a closed crossing it is what the crossing carries once it is open again.
+   */
   readonly unimproved: number;
+  /** The border incident that closes it this quarter, and for how much longer, or null. */
+  readonly closed: CrossingClosure | null;
   /** The technologies known that make it carry more, in the order they became known. */
   readonly improvedBy: readonly Technology[];
   /** What it carried in the quarter last played: nothing before the first. */
@@ -124,7 +132,8 @@ export function tradeRoutes(
         id: link.id,
         name: link.name,
         kind: link.kind,
-        state: link.decaying ? 'weak' : 'open',
+        state: link.closed !== null ? 'closed' : link.decaying ? 'weak' : 'open',
+        closed: link.closed,
         capacity: link.tonnes,
         unimproved: link.unimproved,
         improvedBy: link.improvedBy,
@@ -146,6 +155,7 @@ export function tradeRoutes(
         name: site.name,
         kind: 'port',
         state: 'missing',
+        closed: null,
         capacity: portTonnesOf(site.type, false, known),
         unimproved: portTonnesOf(site.type),
         improvedBy: improvementsOf(site.type, known).map(([technology]) => technology),
@@ -230,34 +240,6 @@ function crossingPlace(
     if (best === null || distance < best.distance) best = { at, outward: edge.outward, distance };
   }
   return best === null ? [label, [0, 0]] : [best.at, best.outward];
-}
-
-/**
- * The edges of the country's regions that face a neighbour: just outside each lies the
- * neighbour and no region. Each comes with the way out of the country, a unit step.
- */
-function borderEdges(
-  country: Country,
-  shape: readonly Point[],
-): { from: Point; to: Point; outward: Point }[] {
-  return country.regions.flatMap((region) =>
-    region.shape.flatMap((from, index) => {
-      const to = region.shape[(index + 1) % region.shape.length] ?? from;
-      const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
-      if (length === 0) return [];
-      const middle: Point = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
-      const normal: Point = [(to[1] - from[1]) / length, (from[0] - to[0]) / length];
-      const step = (sign: number): Point => [
-        middle[0] + sign * normal[0],
-        middle[1] + sign * normal[1],
-      ];
-      const outward: Point = contains(region.shape, step(1)) ? [-normal[0], -normal[1]] : normal;
-      const beyond = step(outward === normal ? 1 : -1);
-      const faces =
-        contains(shape, beyond) && !country.regions.some((other) => contains(other.shape, beyond));
-      return faces ? [{ from, to, outward }] : [];
-    }),
-  );
 }
 
 /** The point of a line from one point to another nearest a third. */

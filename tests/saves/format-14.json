@@ -1,0 +1,1936 @@
+{
+  "formatVersion": 14,
+  "country": {
+    "id": "tavara",
+    "formatVersion": 11,
+    "file": {
+      "formatVersion": 11,
+      "id": "tavara",
+      "name": "Republic of Tavara",
+      "map": {
+        "seas": [
+          {
+            "name": "Southern Sea",
+            "label": [
+              600,
+              702
+            ]
+          }
+        ],
+        "neighbours": [
+          {
+            "id": "voskar",
+            "name": "Voskar",
+            "shape": [
+              [
+                0,
+                0
+              ],
+              [
+                1080,
+                0
+              ],
+              [
+                1080,
+                280
+              ],
+              [
+                600,
+                280
+              ],
+              [
+                150,
+                120
+              ],
+              [
+                90,
+                100
+              ],
+              [
+                0,
+                90
+              ]
+            ],
+            "label": [
+              760,
+              44
+            ]
+          },
+          {
+            "id": "selama",
+            "name": "Selama",
+            "shape": [
+              [
+                1080,
+                280
+              ],
+              [
+                1080,
+                720
+              ],
+              [
+                940,
+                720
+              ],
+              [
+                925,
+                670
+              ],
+              [
+                900,
+                620
+              ],
+              [
+                500,
+                400
+              ],
+              [
+                600,
+                280
+              ]
+            ],
+            "label": [
+              1022,
+              640
+            ]
+          }
+        ],
+        "rivers": [
+          {
+            "id": "korr",
+            "name": "River Korr",
+            "course": [
+              [
+                650,
+                100
+              ],
+              [
+                630,
+                145
+              ],
+              [
+                605,
+                195
+              ],
+              [
+                575,
+                235
+              ],
+              [
+                558,
+                255
+              ],
+              [
+                530,
+                320
+              ],
+              [
+                505,
+                385
+              ],
+              [
+                512,
+                440
+              ],
+              [
+                540,
+                480
+              ],
+              [
+                590,
+                545
+              ],
+              [
+                640,
+                610
+              ]
+            ]
+          },
+          {
+            "id": "delta-arm",
+            "name": "Delta Arm",
+            "course": [
+              [
+                606,
+                560
+              ],
+              [
+                592,
+                590
+              ],
+              [
+                588,
+                620
+              ]
+            ]
+          }
+        ],
+        "decorations": [
+          {
+            "kind": "mountain",
+            "at": [
+              345,
+              159
+            ]
+          },
+          {
+            "kind": "mountain",
+            "at": [
+              385,
+              187
+            ]
+          },
+          {
+            "kind": "mountain",
+            "at": [
+              545,
+              144
+            ]
+          },
+          {
+            "kind": "mountain",
+            "at": [
+              580,
+              179
+            ]
+          },
+          {
+            "kind": "mountain",
+            "at": [
+              690,
+              131
+            ]
+          },
+          {
+            "kind": "mountain",
+            "at": [
+              722,
+              179
+            ]
+          },
+          {
+            "kind": "mountain",
+            "at": [
+              822,
+              134
+            ]
+          },
+          {
+            "kind": "mountain",
+            "at": [
+              860,
+              174
+            ]
+          },
+          {
+            "kind": "dune",
+            "at": [
+              779,
+              290
+            ]
+          },
+          {
+            "kind": "dune",
+            "at": [
+              799,
+              365
+            ]
+          },
+          {
+            "kind": "dune",
+            "at": [
+              894,
+              355
+            ]
+          },
+          {
+            "kind": "dune",
+            "at": [
+              849,
+              440
+            ]
+          },
+          {
+            "kind": "dune",
+            "at": [
+              779,
+              455
+            ]
+          },
+          {
+            "kind": "dune",
+            "at": [
+              924,
+              430
+            ]
+          },
+          {
+            "kind": "dune",
+            "at": [
+              899,
+              240
+            ]
+          },
+          {
+            "kind": "dune",
+            "at": [
+              819,
+              255
+            ]
+          },
+          {
+            "kind": "field",
+            "at": [
+              408,
+              292
+            ]
+          },
+          {
+            "kind": "field",
+            "at": [
+              458,
+              277
+            ]
+          },
+          {
+            "kind": "field",
+            "at": [
+              698,
+              302
+            ]
+          },
+          {
+            "kind": "field",
+            "at": [
+              608,
+              442
+            ]
+          },
+          {
+            "kind": "field",
+            "at": [
+              668,
+              482
+            ]
+          },
+          {
+            "kind": "field",
+            "at": [
+              388,
+              382
+            ]
+          }
+        ]
+      },
+      "regions": [
+        {
+          "id": "korr-highlands",
+          "name": "Korr Highlands",
+          "terrain": "highlands",
+          "shape": [
+            [
+              300,
+              80
+            ],
+            [
+              360,
+              92
+            ],
+            [
+              420,
+              82
+            ],
+            [
+              470,
+              95
+            ],
+            [
+              530,
+              74
+            ],
+            [
+              590,
+              80
+            ],
+            [
+              640,
+              60
+            ],
+            [
+              700,
+              84
+            ],
+            [
+              750,
+              72
+            ],
+            [
+              800,
+              90
+            ],
+            [
+              860,
+              108
+            ],
+            [
+              900,
+              140
+            ],
+            [
+              930,
+              150
+            ],
+            [
+              830,
+              200
+            ],
+            [
+              720,
+              240
+            ],
+            [
+              640,
+              228
+            ],
+            [
+              560,
+              250
+            ],
+            [
+              440,
+              245
+            ],
+            [
+              330,
+              230
+            ],
+            [
+              318,
+              150
+            ]
+          ],
+          "label": [
+            450,
+            128
+          ],
+          "population": 500000,
+          "output": 16,
+          "farmland": 180,
+          "eventLikelihood": {
+            "drought": 0
+          }
+        },
+        {
+          "id": "salt-coast",
+          "name": "Salt Coast",
+          "terrain": "coast",
+          "shape": [
+            [
+              150,
+              120
+            ],
+            [
+              200,
+              98
+            ],
+            [
+              250,
+              104
+            ],
+            [
+              300,
+              80
+            ],
+            [
+              318,
+              150
+            ],
+            [
+              330,
+              230
+            ],
+            [
+              322,
+              285
+            ],
+            [
+              340,
+              340
+            ],
+            [
+              360,
+              420
+            ],
+            [
+              400,
+              500
+            ],
+            [
+              350,
+              560
+            ],
+            [
+              330,
+              620
+            ],
+            [
+              290,
+              598
+            ],
+            [
+              240,
+              560
+            ],
+            [
+              215,
+              515
+            ],
+            [
+              180,
+              470
+            ],
+            [
+              170,
+              445
+            ],
+            [
+              150,
+              430
+            ],
+            [
+              120,
+              380
+            ],
+            [
+              108,
+              320
+            ],
+            [
+              100,
+              260
+            ],
+            [
+              112,
+              200
+            ],
+            [
+              128,
+              160
+            ]
+          ],
+          "label": [
+            215,
+            300
+          ],
+          "population": 800000,
+          "output": 28,
+          "farmland": 200,
+          "eventLikelihood": {
+            "drought": 0
+          }
+        },
+        {
+          "id": "lowmere-plains",
+          "name": "Lowmere Plains",
+          "terrain": "plains",
+          "shape": [
+            [
+              330,
+              230
+            ],
+            [
+              440,
+              245
+            ],
+            [
+              560,
+              250
+            ],
+            [
+              640,
+              228
+            ],
+            [
+              720,
+              240
+            ],
+            [
+              735,
+              330
+            ],
+            [
+              705,
+              400
+            ],
+            [
+              700,
+              470
+            ],
+            [
+              630,
+              500
+            ],
+            [
+              570,
+              515
+            ],
+            [
+              480,
+              520
+            ],
+            [
+              400,
+              500
+            ],
+            [
+              360,
+              420
+            ],
+            [
+              340,
+              340
+            ],
+            [
+              322,
+              285
+            ]
+          ],
+          "label": [
+            648,
+            276
+          ],
+          "population": 1400000,
+          "output": 38,
+          "farmland": 320,
+          "eventLikelihood": {
+            "drought": 0
+          }
+        },
+        {
+          "id": "dry-east",
+          "name": "The Dry East",
+          "terrain": "arid",
+          "shape": [
+            [
+              930,
+              150
+            ],
+            [
+              962,
+              200
+            ],
+            [
+              980,
+              270
+            ],
+            [
+              958,
+              330
+            ],
+            [
+              950,
+              400
+            ],
+            [
+              975,
+              455
+            ],
+            [
+              990,
+              520
+            ],
+            [
+              960,
+              575
+            ],
+            [
+              900,
+              620
+            ],
+            [
+              800,
+              540
+            ],
+            [
+              700,
+              470
+            ],
+            [
+              705,
+              400
+            ],
+            [
+              735,
+              330
+            ],
+            [
+              720,
+              240
+            ],
+            [
+              830,
+              200
+            ]
+          ],
+          "label": [
+            845,
+            395
+          ],
+          "population": 600000,
+          "output": 12,
+          "farmland": 260,
+          "eventLikelihood": {
+            "drought": 0
+          }
+        },
+        {
+          "id": "south-delta",
+          "name": "South Delta",
+          "terrain": "delta",
+          "shape": [
+            [
+              400,
+              500
+            ],
+            [
+              480,
+              520
+            ],
+            [
+              570,
+              515
+            ],
+            [
+              630,
+              500
+            ],
+            [
+              700,
+              470
+            ],
+            [
+              800,
+              540
+            ],
+            [
+              900,
+              620
+            ],
+            [
+              850,
+              640
+            ],
+            [
+              800,
+              632
+            ],
+            [
+              760,
+              650
+            ],
+            [
+              715,
+              640
+            ],
+            [
+              680,
+              618
+            ],
+            [
+              640,
+              610
+            ],
+            [
+              615,
+              628
+            ],
+            [
+              590,
+              622
+            ],
+            [
+              560,
+              640
+            ],
+            [
+              500,
+              662
+            ],
+            [
+              430,
+              670
+            ],
+            [
+              380,
+              650
+            ],
+            [
+              330,
+              620
+            ],
+            [
+              350,
+              560
+            ]
+          ],
+          "label": [
+            450,
+            620
+          ],
+          "population": 1000000,
+          "output": 26,
+          "farmland": 200,
+          "eventLikelihood": {
+            "drought": 0
+          }
+        },
+        {
+          "id": "arden-vale",
+          "name": "Arden Vale",
+          "terrain": "valley",
+          "shape": [
+            [
+              425,
+              345
+            ],
+            [
+              480,
+              328
+            ],
+            [
+              535,
+              340
+            ],
+            [
+              558,
+              395
+            ],
+            [
+              540,
+              450
+            ],
+            [
+              480,
+              472
+            ],
+            [
+              425,
+              455
+            ],
+            [
+              405,
+              400
+            ]
+          ],
+          "label": [
+            462,
+            447
+          ],
+          "population": 900000,
+          "output": 52,
+          "farmland": 130,
+          "eventLikelihood": {
+            "drought": 0
+          }
+        }
+      ],
+      "settlements": [
+        {
+          "id": "arden",
+          "name": "Arden",
+          "region": "arden-vale",
+          "at": [
+            488,
+            400
+          ],
+          "size": "town",
+          "labelSide": "left"
+        },
+        {
+          "id": "korrgate",
+          "name": "Korrgate",
+          "region": "korr-highlands",
+          "at": [
+            460,
+            186
+          ],
+          "size": "village"
+        },
+        {
+          "id": "lowmere",
+          "name": "Lowmere",
+          "region": "lowmere-plains",
+          "at": [
+            640,
+            405
+          ],
+          "size": "village",
+          "labelSide": "below"
+        },
+        {
+          "id": "dustwell",
+          "name": "Dustwell",
+          "region": "dry-east",
+          "at": [
+            850,
+            305
+          ],
+          "size": "village"
+        },
+        {
+          "id": "southbank",
+          "name": "Southbank",
+          "region": "south-delta",
+          "at": [
+            600,
+            575
+          ],
+          "size": "village",
+          "labelSide": "left"
+        },
+        {
+          "id": "westhaven",
+          "name": "Westhaven",
+          "region": "salt-coast",
+          "at": [
+            198,
+            424
+          ],
+          "size": "village"
+        }
+      ],
+      "sites": [
+        {
+          "id": "lowmere-road",
+          "type": "farmRoad",
+          "name": "Farm road, Arden to Lowmere",
+          "region": "lowmere-plains",
+          "route": [
+            [
+              502,
+              403
+            ],
+            [
+              565,
+              398
+            ],
+            [
+              626,
+              405
+            ]
+          ]
+        },
+        {
+          "id": "lowmere-irrigation",
+          "type": "irrigation",
+          "name": "Lowmere irrigation",
+          "region": "lowmere-plains",
+          "at": [
+            395,
+            300
+          ]
+        },
+        {
+          "id": "lowmere-store",
+          "type": "grainStore",
+          "name": "Lowmere grain store",
+          "region": "lowmere-plains",
+          "at": [
+            674,
+            390
+          ]
+        },
+        {
+          "id": "dustwell-irrigation",
+          "type": "irrigation",
+          "name": "Dustwell irrigation",
+          "region": "dry-east",
+          "at": [
+            775,
+            290
+          ]
+        },
+        {
+          "id": "southbank-store",
+          "type": "grainStore",
+          "name": "Southbank grain store",
+          "region": "south-delta",
+          "at": [
+            652,
+            552
+          ]
+        },
+        {
+          "id": "coast-road",
+          "type": "farmRoad",
+          "name": "Farm road, Westhaven to Arden",
+          "region": "salt-coast",
+          "route": [
+            [
+              212,
+              426
+            ],
+            [
+              300,
+              416
+            ],
+            [
+              380,
+              406
+            ],
+            [
+              472,
+              401
+            ]
+          ]
+        },
+        {
+          "id": "highland-road",
+          "type": "farmRoad",
+          "name": "Farm road, Korrgate to Arden",
+          "region": "korr-highlands",
+          "route": [
+            [
+              462,
+              198
+            ],
+            [
+              470,
+              262
+            ],
+            [
+              480,
+              334
+            ],
+            [
+              486,
+              386
+            ]
+          ]
+        },
+        {
+          "id": "korr-mine",
+          "type": "mine",
+          "name": "Korrgate mine",
+          "region": "korr-highlands",
+          "at": [
+            365,
+            118
+          ],
+          "dependsOn": [
+            "korr-trunk-road"
+          ]
+        },
+        {
+          "id": "korr-trunk-road",
+          "type": "trunkRoad",
+          "name": "Trunk road, Korrgate mine to Saltmouth",
+          "region": "salt-coast",
+          "route": [
+            [
+              358,
+              135
+            ],
+            [
+              330,
+              180
+            ],
+            [
+              290,
+              205
+            ],
+            [
+              220,
+              222
+            ],
+            [
+              155,
+              222
+            ]
+          ],
+          "dependsOn": [
+            "saltmouth-port"
+          ]
+        },
+        {
+          "id": "saltmouth-port",
+          "type": "port",
+          "name": "Saltmouth port",
+          "region": "salt-coast",
+          "at": [
+            140,
+            222
+          ]
+        },
+        {
+          "id": "saltmouth-quay",
+          "type": "shallowPort",
+          "name": "Saltmouth quay",
+          "region": "salt-coast",
+          "at": [
+            215,
+            122
+          ],
+          "alternatives": [
+            "saltmouth-port"
+          ]
+        },
+        {
+          "id": "korr-falls-station",
+          "type": "powerStation",
+          "name": "Korr Falls power station",
+          "region": "korr-highlands",
+          "at": [
+            645,
+            200
+          ]
+        },
+        {
+          "id": "arden-power-line",
+          "type": "powerLine",
+          "name": "Power line, Korr Falls to Arden",
+          "region": "arden-vale",
+          "route": [
+            [
+              640,
+              212
+            ],
+            [
+              575,
+              290
+            ],
+            [
+              505,
+              390
+            ]
+          ],
+          "dependsOn": [
+            "korr-falls-station"
+          ]
+        },
+        {
+          "id": "lowmere-power-line",
+          "type": "powerLine",
+          "name": "Power line, Korr Falls to Lowmere",
+          "region": "lowmere-plains",
+          "route": [
+            [
+              652,
+              214
+            ],
+            [
+              705,
+              300
+            ],
+            [
+              690,
+              360
+            ],
+            [
+              645,
+              393
+            ]
+          ],
+          "dependsOn": [
+            "korr-falls-station"
+          ]
+        },
+        {
+          "id": "korrgate-power-line",
+          "type": "powerLine",
+          "name": "Power line, Korr Falls to Korrgate",
+          "region": "korr-highlands",
+          "route": [
+            [
+              633,
+              200
+            ],
+            [
+              555,
+              206
+            ],
+            [
+              476,
+              192
+            ]
+          ],
+          "dependsOn": [
+            "korr-falls-station"
+          ]
+        },
+        {
+          "id": "korr-falls-dam",
+          "type": "dam",
+          "name": "Korr Falls dam",
+          "region": "korr-highlands",
+          "at": [
+            626,
+            148
+          ],
+          "alternatives": [
+            "korr-falls-station"
+          ]
+        },
+        {
+          "id": "dustwell-clinic",
+          "type": "clinic",
+          "name": "Dustwell clinic",
+          "region": "dry-east",
+          "at": [
+            892,
+            338
+          ]
+        },
+        {
+          "id": "westhaven-clinic",
+          "type": "clinic",
+          "name": "Westhaven clinic",
+          "region": "salt-coast",
+          "at": [
+            240,
+            464
+          ]
+        },
+        {
+          "id": "southbank-school",
+          "type": "school",
+          "name": "Southbank school",
+          "region": "south-delta",
+          "at": [
+            520,
+            600
+          ]
+        },
+        {
+          "id": "korrgate-school",
+          "type": "school",
+          "name": "Korrgate school",
+          "region": "korr-highlands",
+          "at": [
+            424,
+            210
+          ]
+        }
+      ],
+      "deposits": [
+        {
+          "id": "westhaven-ore",
+          "region": "salt-coast",
+          "likelihood": 0.6,
+          "tonnes": {
+            "min": 150000,
+            "max": 350000
+          },
+          "mine": {
+            "id": "westhaven-mine",
+            "type": "mine",
+            "name": "Westhaven mine",
+            "at": [
+              170,
+              330
+            ],
+            "dependsOn": [
+              "westhaven-trunk-road"
+            ]
+          },
+          "route": {
+            "id": "westhaven-trunk-road",
+            "type": "trunkRoad",
+            "name": "Trunk road, Westhaven mine to Saltmouth",
+            "region": "salt-coast",
+            "route": [
+              [
+                172,
+                318
+              ],
+              [
+                150,
+                280
+              ],
+              [
+                142,
+                236
+              ]
+            ],
+            "dependsOn": [
+              "saltmouth-port"
+            ]
+          }
+        },
+        {
+          "id": "dustwell-ore",
+          "region": "dry-east",
+          "likelihood": 0.35,
+          "tonnes": {
+            "min": 400000,
+            "max": 900000
+          },
+          "mine": {
+            "id": "dustwell-mine",
+            "type": "mine",
+            "name": "Dustwell mine",
+            "at": [
+              880,
+              500
+            ],
+            "dependsOn": [
+              "dustwell-trunk-road"
+            ]
+          },
+          "route": {
+            "id": "dustwell-trunk-road",
+            "type": "trunkRoad",
+            "name": "Trunk road, Dustwell mine to Saltmouth",
+            "region": "dry-east",
+            "route": [
+              [
+                868,
+                492
+              ],
+              [
+                760,
+                430
+              ],
+              [
+                700,
+                330
+              ],
+              [
+                600,
+                300
+              ],
+              [
+                480,
+                262
+              ],
+              [
+                300,
+                215
+              ],
+              [
+                220,
+                226
+              ],
+              [
+                152,
+                226
+              ]
+            ],
+            "dependsOn": [
+              "saltmouth-port"
+            ]
+          }
+        }
+      ],
+      "crossings": [
+        {
+          "id": "korr-pass",
+          "name": "Korr Pass",
+          "neighbour": "voskar",
+          "tonnes": 50000
+        },
+        {
+          "id": "selama-bridge",
+          "name": "Selama bridge",
+          "neighbour": "selama",
+          "tonnes": 40000
+        }
+      ],
+      "dilemmaLikelihood": {
+        "teachersPay": 0.3
+      },
+      "priceShockLikelihood": {
+        "failedHarvestsAbroad": 0.04,
+        "oreGlut": 0.05
+      },
+      "start": {
+        "treasury": 42,
+        "budget": {
+          "taxRate": 18,
+          "spending": {
+            "agriculture": 11,
+            "foodRelief": 7,
+            "health": 7,
+            "education": 6,
+            "security": 5,
+            "defence": 2
+          }
+        },
+        "foodReserve": 182000
+      }
+    }
+  },
+  "seed": 2026,
+  "rng": 120308120,
+  "state": {
+    "date": {
+      "year": 2,
+      "quarter": 4
+    },
+    "treasury": 70,
+    "budget": {
+      "taxRatePercent": 18,
+      "spending": {
+        "agriculture": 110,
+        "foodRelief": 70,
+        "health": 70,
+        "education": 60,
+        "security": 50,
+        "defence": 0,
+        "upkeep": 50
+      }
+    },
+    "reliefRegionId": null,
+    "foodReserve": 314751,
+    "agricultureSpentThisYear": 330,
+    "regions": [
+      {
+        "id": "korr-highlands",
+        "population": 510593,
+        "output": 160,
+        "foodStock": 25301,
+        "weather": 45,
+        "foodStage": "adequate",
+        "famineQuarters": 0,
+        "approval": 514,
+        "approvalEffects": {
+          "food": 0,
+          "tax": 0,
+          "health": 5,
+          "education": -3,
+          "security": -3,
+          "events": 0
+        },
+        "unrest": "calm",
+        "health": 145,
+        "education": 124,
+        "armyLoyalty": 279,
+        "armyLoyaltyEffects": {
+          "defence": -321,
+          "unrest": 0
+        }
+      },
+      {
+        "id": "salt-coast",
+        "population": 816949,
+        "output": 280,
+        "foodStock": 40482,
+        "weather": 40,
+        "foodStage": "adequate",
+        "famineQuarters": 0,
+        "approval": 514,
+        "approvalEffects": {
+          "food": 0,
+          "tax": 0,
+          "health": 5,
+          "education": -3,
+          "security": -3,
+          "events": 0
+        },
+        "unrest": "calm",
+        "health": 145,
+        "education": 124,
+        "armyLoyalty": 279,
+        "armyLoyaltyEffects": {
+          "defence": -321,
+          "unrest": 0
+        }
+      },
+      {
+        "id": "lowmere-plains",
+        "population": 1429663,
+        "output": 380,
+        "foodStock": 70843,
+        "weather": 11,
+        "foodStage": "adequate",
+        "famineQuarters": 0,
+        "approval": 514,
+        "approvalEffects": {
+          "food": 0,
+          "tax": 0,
+          "health": 5,
+          "education": -3,
+          "security": -3,
+          "events": 0
+        },
+        "unrest": "calm",
+        "health": 145,
+        "education": 124,
+        "armyLoyalty": 279,
+        "armyLoyaltyEffects": {
+          "defence": -321,
+          "unrest": 0
+        }
+      },
+      {
+        "id": "dry-east",
+        "population": 612711,
+        "output": 120,
+        "foodStock": 30361,
+        "weather": -83,
+        "foodStage": "adequate",
+        "famineQuarters": 0,
+        "approval": 514,
+        "approvalEffects": {
+          "food": 0,
+          "tax": 0,
+          "health": 5,
+          "education": -3,
+          "security": -3,
+          "events": 0
+        },
+        "unrest": "calm",
+        "health": 145,
+        "education": 124,
+        "armyLoyalty": 279,
+        "armyLoyaltyEffects": {
+          "defence": -321,
+          "unrest": 0
+        }
+      },
+      {
+        "id": "south-delta",
+        "population": 1021189,
+        "output": 260,
+        "foodStock": 50602,
+        "weather": 2,
+        "foodStage": "adequate",
+        "famineQuarters": 0,
+        "approval": 514,
+        "approvalEffects": {
+          "food": 0,
+          "tax": 0,
+          "health": 5,
+          "education": -3,
+          "security": -3,
+          "events": 0
+        },
+        "unrest": "calm",
+        "health": 145,
+        "education": 124,
+        "armyLoyalty": 279,
+        "armyLoyaltyEffects": {
+          "defence": -321,
+          "unrest": 0
+        }
+      },
+      {
+        "id": "arden-vale",
+        "population": 919068,
+        "output": 520,
+        "foodStock": 45542,
+        "weather": 6,
+        "foodStage": "adequate",
+        "famineQuarters": 0,
+        "approval": 514,
+        "approvalEffects": {
+          "food": 0,
+          "tax": 0,
+          "health": 5,
+          "education": -3,
+          "security": -3,
+          "events": 0
+        },
+        "unrest": "calm",
+        "health": 145,
+        "education": 124,
+        "armyLoyalty": 279,
+        "armyLoyaltyEffects": {
+          "defence": -321,
+          "unrest": 0
+        }
+      }
+    ],
+    "events": [],
+    "projects": [],
+    "debts": [],
+    "credit": {
+      "rating": "a",
+      "record": 700,
+      "deficit": 161
+    },
+    "worldPrices": {
+      "grain": [
+        240,
+        223,
+        209,
+        247,
+        247,
+        264,
+        273,
+        238
+      ],
+      "ore": [
+        100,
+        107,
+        96,
+        99,
+        99,
+        92,
+        85,
+        101
+      ]
+    },
+    "priceShocks": [],
+    "tradeCarried": [],
+    "history": [
+      {
+        "date": {
+          "year": 1,
+          "quarter": 1
+        },
+        "treasury": 420,
+        "foodReserve": 182000,
+        "quarterlyConsumption": 260000,
+        "approval": 518,
+        "prosperity": 210,
+        "armyLoyalty": 584,
+        "debt": 0,
+        "debtBurden": 0
+      },
+      {
+        "date": {
+          "year": 1,
+          "quarter": 2
+        },
+        "treasury": 370,
+        "foodReserve": 167440,
+        "quarterlyConsumption": 260780,
+        "approval": 518,
+        "prosperity": 210,
+        "armyLoyalty": 507,
+        "debt": 0,
+        "debtBurden": 0
+      },
+      {
+        "date": {
+          "year": 1,
+          "quarter": 3
+        },
+        "treasury": 320,
+        "foodReserve": 154045,
+        "quarterlyConsumption": 261560,
+        "approval": 517,
+        "prosperity": 210,
+        "armyLoyalty": 445,
+        "debt": 0,
+        "debtBurden": 0
+      },
+      {
+        "date": {
+          "year": 1,
+          "quarter": 4
+        },
+        "treasury": 270,
+        "foodReserve": 141722,
+        "quarterlyConsumption": 262344,
+        "approval": 517,
+        "prosperity": 209,
+        "armyLoyalty": 396,
+        "debt": 0,
+        "debtBurden": 0
+      },
+      {
+        "date": {
+          "year": 2,
+          "quarter": 1
+        },
+        "treasury": 220,
+        "foodReserve": 404205,
+        "quarterlyConsumption": 263131,
+        "approval": 517,
+        "prosperity": 209,
+        "armyLoyalty": 356,
+        "debt": 0,
+        "debtBurden": 0
+      },
+      {
+        "date": {
+          "year": 2,
+          "quarter": 2
+        },
+        "treasury": 170,
+        "foodReserve": 371869,
+        "quarterlyConsumption": 263921,
+        "approval": 515,
+        "prosperity": 209,
+        "armyLoyalty": 324,
+        "debt": 0,
+        "debtBurden": 0
+      },
+      {
+        "date": {
+          "year": 2,
+          "quarter": 3
+        },
+        "treasury": 120,
+        "foodReserve": 342120,
+        "quarterlyConsumption": 264712,
+        "approval": 515,
+        "prosperity": 209,
+        "armyLoyalty": 299,
+        "debt": 0,
+        "debtBurden": 0
+      },
+      {
+        "date": {
+          "year": 2,
+          "quarter": 4
+        },
+        "treasury": 70,
+        "foodReserve": 314751,
+        "quarterlyConsumption": 265506,
+        "approval": 514,
+        "prosperity": 209,
+        "armyLoyalty": 279,
+        "debt": 0,
+        "debtBurden": 0
+      }
+    ],
+    "dilemma": {
+      "type": "teachersPay",
+      "regionId": null,
+      "options": [
+        {
+          "id": "grant",
+          "effects": [
+            {
+              "kind": "treasury",
+              "amount": -42
+            },
+            {
+              "kind": "approval",
+              "permille": 20
+            }
+          ]
+        },
+        {
+          "id": "refuse",
+          "effects": [
+            {
+              "kind": "approval",
+              "permille": -30
+            }
+          ]
+        }
+      ]
+    },
+    "dilemmasAnswered": [],
+    "tier": "subsistence",
+    "startingTier": "subsistence",
+    "prosperousQuarters": 0,
+    "plottingQuarters": 2,
+    "austerity": null,
+    "outcome": {
+      "status": "playing"
+    }
+  },
+  "report": {
+    "date": {
+      "year": 2,
+      "quarter": 3
+    },
+    "treasury": {
+      "value": 70,
+      "change": -50,
+      "contributions": [
+        {
+          "label": "Tax from Korr Highlands",
+          "amount": 29,
+          "regionId": "korr-highlands"
+        },
+        {
+          "label": "Tax from Salt Coast",
+          "amount": 50,
+          "regionId": "salt-coast"
+        },
+        {
+          "label": "Tax from Lowmere Plains",
+          "amount": 68,
+          "regionId": "lowmere-plains"
+        },
+        {
+          "label": "Tax from The Dry East",
+          "amount": 22,
+          "regionId": "dry-east"
+        },
+        {
+          "label": "Tax from South Delta",
+          "amount": 47,
+          "regionId": "south-delta"
+        },
+        {
+          "label": "Tax from Arden Vale",
+          "amount": 94,
+          "regionId": "arden-vale"
+        },
+        {
+          "label": "Agriculture",
+          "amount": -110
+        },
+        {
+          "label": "Food relief",
+          "amount": -70
+        },
+        {
+          "label": "Health",
+          "amount": -70
+        },
+        {
+          "label": "Education",
+          "amount": -60
+        },
+        {
+          "label": "Security",
+          "amount": -50
+        },
+        {
+          "label": "Defence",
+          "amount": 0
+        },
+        {
+          "label": "Upkeep",
+          "amount": 0
+        }
+      ]
+    },
+    "food": {
+      "value": 314751,
+      "change": -27369,
+      "contributions": [
+        {
+          "label": "Spoiled in store",
+          "amount": -27369
+        }
+      ]
+    },
+    "approval": {
+      "value": 514,
+      "change": -1,
+      "contributions": [
+        {
+          "label": "Food",
+          "amount": 0
+        },
+        {
+          "label": "Tax rate",
+          "amount": 0
+        },
+        {
+          "label": "Health spending",
+          "amount": -1
+        },
+        {
+          "label": "Education spending",
+          "amount": 0
+        },
+        {
+          "label": "Security spending",
+          "amount": 0
+        }
+      ]
+    },
+    "armyLoyalty": {
+      "value": 279,
+      "change": -20,
+      "contributions": [
+        {
+          "label": "Defence spending",
+          "amount": -20
+        },
+        {
+          "label": "Unrest",
+          "amount": 0
+        }
+      ]
+    },
+    "debt": {
+      "value": 0,
+      "change": 0,
+      "contributions": []
+    },
+    "credit": {
+      "value": 652,
+      "change": 0,
+      "contributions": []
+    },
+    "prosperity": {
+      "value": 209,
+      "change": 0,
+      "contributions": [
+        {
+          "label": "Food security",
+          "amount": 0
+        },
+        {
+          "label": "Income per head",
+          "amount": 0
+        },
+        {
+          "label": "Health",
+          "amount": 0
+        },
+        {
+          "label": "Education",
+          "amount": 0
+        },
+        {
+          "label": "Infrastructure access",
+          "amount": 0
+        }
+      ]
+    },
+    "population": {
+      "value": 5310173,
+      "change": 15880,
+      "contributions": [
+        {
+          "label": "Growth in Korr Highlands",
+          "amount": 1527,
+          "regionId": "korr-highlands"
+        },
+        {
+          "label": "Growth in Salt Coast",
+          "amount": 2443,
+          "regionId": "salt-coast"
+        },
+        {
+          "label": "Growth in Lowmere Plains",
+          "amount": 4276,
+          "regionId": "lowmere-plains"
+        },
+        {
+          "label": "Growth in The Dry East",
+          "amount": 1832,
+          "regionId": "dry-east"
+        },
+        {
+          "label": "Growth in South Delta",
+          "amount": 3054,
+          "regionId": "south-delta"
+        },
+        {
+          "label": "Growth in Arden Vale",
+          "amount": 2748,
+          "regionId": "arden-vale"
+        }
+      ]
+    },
+    "harvest": null,
+    "election": null,
+    "entries": [
+      {
+        "kind": "coup",
+        "seriousness": "serious",
+        "headline": "The army plots: 2 quarters to a coup",
+        "cause": "National army loyalty has ended 2 quarters running below 30%, where the army plots, and stands at 27.9%. 2 more quarters of it and the army takes power. Loyalty back at 30% or above ends the count."
+      },
+      {
+        "kind": "budget",
+        "seriousness": "warning",
+        "headline": "The treasury is shrinking",
+        "cause": "Spending of $36.0m outran revenue of $31.0m. At this deficit the treasury lasts 1 more quarter."
+      }
+    ]
+  }
+}

@@ -34,8 +34,8 @@ test('a loan is planned with its cost shown, arrives as the quarter ends and is 
 
   await endQuarters(page, 1);
 
-  // $42.0m and $31.0m of revenue, less $36.0m of spending, and the $25.0m loan.
-  await expect(treasury(page)).toContainText('$62.0m');
+  // $42.0m and $31.0m of revenue, less $38.0m of spending, and the $25.0m loan.
+  await expect(treasury(page)).toContainText('$60.0m');
   await expect(debt(page)).toContainText('$25.0m');
   // Against a year's revenue of $124.0m.
   await expect(debt(page)).toContainText('Burden 20.1%');
@@ -48,7 +48,7 @@ test('a loan is planned with its cost shown, arrives as the quarter ends and is 
   await endQuarters(page, 1);
 
   // The first repayment: $0.5m of interest and $3.0m off the principal, paid before anything else.
-  await expect(treasury(page)).toContainText('$53.5m');
+  await expect(treasury(page)).toContainText('$49.5m');
   await expect(debt(page)).toContainText('$22.0m');
   await treasury(page)
     .getByRole('button', { name: /Treasury/ })

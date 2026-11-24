@@ -44,6 +44,7 @@ import {
   withinAusterity,
 } from '../../src/sim';
 import type { Decide } from './batch';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /**
  * The decisions brought within what austerity allows. The players plan as if there were none:
@@ -151,18 +152,12 @@ const doesNothing: Decide = (game) => ({
  */
 const popularity: Decide = (game) => {
   const { taxRatePercent, spending } = budgetLimits;
-  const lowTax: Budget = {
-    taxRatePercent: taxRatePercent.min,
-    spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
-  };
+  const lowTax: Budget = budgetOf({ taxRatePercent: taxRatePercent.min });
   // Everything in the treasury once this quarter's tax is in, shared between the three.
   const available = previewAllowed(game, { budget: lowTax }).treasury.min;
   const share = Math.min(spending.max, stepped(Math.floor(available / 3)));
   return {
-    budget: {
-      ...lowTax,
-      spending: { ...lowTax.spending, health: share, education: share, security: share },
-    },
+    budget: budgetFrom(lowTax, { spending: { health: share, education: share, security: share } }),
     dilemmaChoice: answer(game, (option) => approvalOf(option) * 1000 + moneyOf(option)),
   };
 };
@@ -773,15 +768,13 @@ function withFarms(game: GameState, budget: Budget): Budget {
  */
 function usualServices(game: GameState): Budget {
   const { spending } = game.country.start.budget;
-  return {
-    ...game.budget,
+  return budgetFrom(game.budget, {
     spending: {
-      ...game.budget.spending,
       health: spending.health,
       education: spending.education,
       security: spending.security,
     },
-  };
+  });
 }
 
 /**
@@ -948,7 +941,7 @@ function judge(game: GameState, option: DilemmaOption, campaigning: boolean): nu
 }
 
 function spend(budget: Budget, area: SpendingArea, amount: Money): Budget {
-  return { ...budget, spending: { ...budget.spending, [area]: amount } };
+  return budgetFrom(budget, { spending: { [area]: amount } });
 }
 
 /** An amount brought down to a whole step of spending. */
@@ -1164,10 +1157,10 @@ export const DEGENERATE_PLAYERS: readonly ScriptedPlayer[] = [
       'Top tax and nothing for services until the campaign, then everything saved on approval.',
     decide: (game) => {
       const quartersLeft = electionStatus(game).quartersAway + 1;
-      const squeezed: Budget = {
+      const squeezed: Budget = budgetFrom(game.budget, {
         taxRatePercent: budgetLimits.taxRatePercent.max,
-        spending: { ...game.budget.spending, health: 0, education: 0, security: 0 },
-      };
+        spending: { health: 0, education: 0, security: 0 },
+      });
       const { budget, reliefRegionId } = relieving(game, squeezed);
       const choices = { reliefRegionId, dilemmaChoice: answer(game, changesNothing) };
       if (quartersLeft > habits.campaignQuarters) return { budget, ...choices };

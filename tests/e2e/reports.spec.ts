@@ -22,7 +22,7 @@ test('ending a quarter in deficit reports the shrinking treasury, with an icon a
   await expect(entries).toHaveCount(1);
   await expect(entries.first()).toContainText('The treasury is shrinking');
   await expect(entries.first()).toContainText(
-    'Spending of $36.0m outran revenue of $31.0m. At this deficit the treasury lasts 7 more quarters.',
+    'Spending of $38.0m outran revenue of $31.0m. At this deficit the treasury lasts 5 more quarters.',
   );
   // The icon says what kind of report it is, and the words say how serious.
   await expect(entries.first().getByRole('img', { name: 'Budget report' })).toBeVisible();

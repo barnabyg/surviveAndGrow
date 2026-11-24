@@ -41,9 +41,9 @@
 }
 
 /* The signs take the room the bar leaves beside the name and the actions. They never take
-   less than about the width of all seven in a row, so on a narrower screen they have a line of
-   their own (and the actions the next) rather than stack in a column; where even a whole
-   line is too narrow, the last of them fold onto a second. */
+   less than about the width of seven of them in a row, so on a narrower screen they have a line
+   of their own (and the actions the next) rather than stack in a column; where a line is too
+   narrow for them all, the last of them fold onto a second. */
 .vitals {
   flex: 1 1 0;
   min-width: min(100%, 1150px);

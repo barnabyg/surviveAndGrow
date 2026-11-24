@@ -1,12 +1,19 @@
 import {
+  ARMY_STAGE_NAMES,
+  armyLoyaltyStatus,
+  borderIncidentStatuses,
   buildingBarred,
+  CIVIL_FACTIONS,
   DECAYING_SHARE,
   describeEvent,
   describeUnrest,
+  FACTION_NAMES,
   FOOD_STAGE_NAMES,
   formatCount,
   formatMoney,
   formatPercent,
+  formatPoints,
+  formatSignedPoints,
   formatIndex,
   formatQuarters,
   formatTonnes,
@@ -15,6 +22,7 @@ import {
   livingStandards,
   percentOff,
   PROSPERITY_PART_NAMES,
+  regionFactions,
   serviceLevels,
   surveyStatus,
   SURVEY_STATE_NAMES,
@@ -25,12 +33,15 @@ import {
   type GameState,
   type LivingStandard,
   type Preview,
+  type RegionArmyLoyalty,
+  type RegionFactions,
   type ProjectPlan,
   type SurveyStatus,
   type TurnReport,
   type WeatherHold,
+  quartersLeftWords,
 } from '../sim';
-import { formatSignedCount } from './format';
+import { formatDate, formatSignedCount } from './format';
 import './map-card.css';
 
 interface RegionCardProps {
@@ -65,8 +76,13 @@ export function RegionCard(props: RegionCardProps) {
   const relieved = reliefRegionId === regionId;
   const survey = surveyStatus(game, regionId, plan);
   const unrest = describeUnrest(state.unrest);
+  // The border incidents announced or in force on a border this region is on.
+  const incidents = borderIncidentStatuses(game).filter((incident) =>
+    incident.regionIds.includes(regionId),
+  );
   const standard = livingStandards(game).find((entry) => entry.regionId === regionId);
   const services = serviceLevels(game, budget).filter((entry) => entry.regionId === regionId);
+  const army = armyLoyaltyStatus(game, budget).regions.find((entry) => entry.regionId === regionId);
   // What moved the region's people last quarter: its growth, and any deaths in famine.
   const moved = (report?.population?.contributions ?? []).filter(
     (line) => line.regionId === regionId,
@@ -107,6 +123,14 @@ export function RegionCard(props: RegionCardProps) {
           <dt>Approval</dt>
           <dd>{formatPercent(state.approval)}</dd>
         </div>
+        {army !== undefined && (
+          <div>
+            <dt>Army loyalty</dt>
+            <dd>
+              {formatPercent(army.loyalty)} · {ARMY_STAGE_NAMES[army.stage]}
+            </dd>
+          </div>
+        )}
         {services.map((entry) => (
           <div key={entry.service}>
             <dt>{PROSPERITY_PART_NAMES[entry.service]}</dt>
@@ -145,6 +169,21 @@ export function RegionCard(props: RegionCardProps) {
         ))}
       <WeatherHoldParts hold={weatherHold(game, regionId)} />
       {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
+      {incidents.map((incident) => (
+        <p
+          key={incident.neighbourId}
+          className="warning-note"
+          role="status"
+          aria-label={incident.headline}
+        >
+          ▲{' '}
+          {incident.inForce
+            ? `${incident.headline} · output −${incident.outputCutPercent}% ${quartersLeftWords(incident.quartersLeft)}. The treasury’s breakdown shows the tax it costs here.`
+            : `${incident.headline} from ${formatDate(incident.begins)}: output −${incident.outputCutPercent}% for ${formatQuarters(incident.lastsQuarters)}, and a blow of ${formatPoints(Math.abs(incident.approvalPermille))} to approval here as it begins. It is called off if ${incident.name} is no longer hostile by then.`}
+        </p>
+      ))}
+      {army !== undefined && <ArmyNote army={army} />}
+      <FactionsNote factions={regionFactions(game, regionId)} />
       {events.map((event) => (
         <p key={event.type} className="warning-note">
           ▲ {describeEvent(game, event)}
@@ -274,6 +313,54 @@ function SurveyButton({
     >
       Survey
     </button>
+  );
+}
+
+/**
+ * A warning, by a sign as well as colour, while the army in the region is anything but loyal or
+ * is heading that way: how it stands and where it is heading, in a line. A loyal army that is
+ * staying loyal has its figure above and no more said of it, so the card stays short.
+ */
+function ArmyNote({ army }: { readonly army: RegionArmyLoyalty }) {
+  if (army.stage === 'loyal' && army.settlesStage === 'loyal') return null;
+  const heading =
+    army.settles === army.loyalty
+      ? ''
+      : `, and heading for ${formatPercent(army.settles)}, ${ARMY_STAGE_NAMES[army.settlesStage].toLowerCase()}, as Defence spending and the unrest here stand`;
+  return (
+    <p className="warning-note" role="status" aria-label="Army">
+      ▲ The army here is {ARMY_STAGE_NAMES[army.stage].toLowerCase()}
+      {heading}.
+    </p>
+  );
+}
+
+/**
+ * The region's faction mix and what the factions as they stand do to its approval, in a line:
+ * the share of its people in each, then the effect and each faction's part of it. A region
+ * whose people follow none shows nothing.
+ */
+function FactionsNote({ factions }: { readonly factions: RegionFactions }) {
+  const mixed = CIVIL_FACTIONS.filter((faction) => factions.shares[faction] > 0);
+  // A region whose people follow no faction has nothing to say of them.
+  if (mixed.length === 0) return null;
+  const shares = listed(
+    mixed.map(
+      (faction) =>
+        `${formatPercent(factions.shares[faction], 0)} ${FACTION_NAMES[faction].toLowerCase()}`,
+    ),
+  );
+  const parts = listed(
+    mixed.map(
+      (faction) =>
+        `${FACTION_NAMES[faction].toLowerCase()} ${formatSignedPoints(factions.parts[faction])}`,
+    ),
+  );
+  return (
+    <p className="map-card__note" role="note" aria-label="Factions">
+      <span className="map-card__term">Factions</span> {shares}. As they stand they move approval
+      here by {formatSignedPoints(factions.effect)}: {parts}.
+    </p>
   );
 }
 

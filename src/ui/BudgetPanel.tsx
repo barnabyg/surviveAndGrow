@@ -1,20 +1,28 @@
-import { useId } from 'react';
+import { Fragment, useId } from 'react';
 import {
+  ARMY_STAGE_NAMES,
+  armyStageAt,
   austerityStatus,
   budgetBounds,
   CREDIT_RATING_NAMES,
   CREDIT_RATINGS,
   exactly,
+  FACTION_MOOD_NAMES,
+  FACTION_NAMES,
   foodStatus,
   formatMoney,
   formatIndex,
   formatPercent,
   formatTonnes,
+  INTENTION_NAMES,
+  INTENTIONS,
   missedPaymentMeans,
   MONEY_PER_MILLION,
   monthsOfFood,
+  moodAt,
   previewQuarter,
   ratingRank,
+  neighbourName,
   regionName,
   SPENDING_AREA_NAMES,
   SPENDING_AREAS,
@@ -291,6 +299,18 @@ export function BudgetPanel(props: BudgetPanelProps) {
           format={formatPercent}
         />
         <Projection
+          label="Army loyalty next quarter"
+          before={before.armyLoyalty}
+          after={after.armyLoyalty}
+          format={loyaltyWithStage}
+        />
+        <Projection
+          label="Army loyalty is heading for"
+          before={before.armyLoyaltyHeading}
+          after={after.armyLoyaltyHeading}
+          format={loyaltyWithStage}
+        />
+        <Projection
           label="Prosperity next quarter"
           before={before.prosperity}
           after={after.prosperity}
@@ -314,6 +334,105 @@ export function BudgetPanel(props: BudgetPanelProps) {
             )
           );
         })}
+        <More
+          summary="Factions"
+          note={
+            after.standings.some((outlook, index) => {
+              const was = before.standings[index] ?? outlook;
+              return was.standing !== outlook.standing || was.heading !== outlook.heading;
+            })
+              ? 'changed'
+              : null
+          }
+        >
+          {after.standings.map((outlook, index) => {
+            const was = before.standings[index] ?? outlook;
+            const name = FACTION_NAMES[outlook.faction];
+            return (
+              <Fragment key={outlook.faction}>
+                <Projection
+                  label={`${name} next quarter`}
+                  before={exactly(was.standing)}
+                  after={exactly(outlook.standing)}
+                  format={standingWithMood}
+                />
+                <Projection
+                  label={`${name} heading for`}
+                  before={exactly(was.heading)}
+                  after={exactly(outlook.heading)}
+                  format={standingWithMood}
+                />
+              </Fragment>
+            );
+          })}
+          <p className="outlook__note">
+            Farmers and workers each judge their share of what the budget spends, and business the
+            tax rate and how far the budget runs short, so what pleases one costs another. Each
+            standing moves a part of the way each quarter, and bears on approval where its people
+            live. The army’s standing is its loyalty, above.
+          </p>
+        </More>
+        {game.country.map.neighbours.some((neighbour) => neighbour.ambition > 0) && (
+          <>
+            {after.neighbours
+              .filter((neighbour) => neighbour.heading === 'hostile')
+              .map((neighbour) => (
+                <p key={neighbour.neighbourId} className="warning-note">
+                  ▲ {neighbourName(game.country, neighbour.neighbourId)}{' '}
+                  {neighbour.intention === 'hostile'
+                    ? 'is hostile when the quarter ends: deterrence is too low.'
+                    : 'is heading for hostile: Defence would settle deterrence too low.'}
+                </p>
+              ))}
+            <More
+              summary="Neighbours"
+              note={
+                moved(before.deterrence, after.deterrence) ||
+                moved(before.deterrenceHeading, after.deterrenceHeading)
+                  ? 'changed'
+                  : null
+              }
+            >
+              <Projection
+                label="Deterrence next quarter"
+                before={before.deterrence}
+                after={after.deterrence}
+                format={formatPercent}
+              />
+              <Projection
+                label="Deterrence is heading for"
+                before={before.deterrenceHeading}
+                after={after.deterrenceHeading}
+                format={formatPercent}
+              />
+              {after.neighbours.map((neighbour, index) => {
+                const was = before.neighbours[index] ?? neighbour;
+                const name = neighbourName(game.country, neighbour.neighbourId);
+                return (
+                  <Fragment key={neighbour.neighbourId}>
+                    <Projection
+                      label={`${name} next quarter`}
+                      before={exactly(INTENTIONS.indexOf(was.intention))}
+                      after={exactly(INTENTIONS.indexOf(neighbour.intention))}
+                      format={intentionAt}
+                    />
+                    <Projection
+                      label={`${name} is heading for`}
+                      before={exactly(INTENTIONS.indexOf(was.heading))}
+                      after={exactly(INTENTIONS.indexOf(neighbour.heading))}
+                      format={intentionAt}
+                    />
+                  </Fragment>
+                );
+              })}
+              <p className="outlook__note">
+                Defence spending builds deterrence a part of the way each quarter, and each
+                neighbour weighs its ambition against it. Pick a neighbour on the map to see what it
+                would take.
+              </p>
+            </More>
+          </>
+        )}
         <More
           summary="Food forecast"
           note={
@@ -355,6 +474,21 @@ export function BudgetPanel(props: BudgetPanelProps) {
       </section>
     </DecisionPanel>
   );
+}
+
+/** An intention by its place among the intentions, in a word: "watchful". */
+function intentionAt(rank: number): string {
+  return INTENTION_NAMES[INTENTIONS[rank] ?? 'peaceful'].toLowerCase();
+}
+
+/** A faction's standing with the mood it is read as, in words: "56.1%, content". */
+function standingWithMood(permille: number): string {
+  return `${formatPercent(permille)}, ${FACTION_MOOD_NAMES[moodAt(permille)].toLowerCase()}`;
+}
+
+/** An army loyalty with the stage it is read as, in words: "58.4%, loyal". */
+function loyaltyWithStage(permille: number): string {
+  return `${formatPercent(permille)}, ${ARMY_STAGE_NAMES[armyStageAt(permille)].toLowerCase()}`;
 }
 
 /** Whether a pending change would move a projected figure. */

@@ -19,6 +19,7 @@ import {
 } from '../../src/sim';
 import { bothCountries, tavara, testland, testlandInDebt } from './countries';
 import { answering, inFirstTerm, steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /** A loan of a sum over a term, in Money units ($100,000) and quarters. */
 function loan(amount: number, quarters: number): Borrowing {
@@ -26,17 +27,7 @@ function loan(amount: number, quarters: number): Borrowing {
 }
 
 /** Everything at its most, at the lowest tax: it spends whatever the treasury holds. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 interface Played {
   readonly state: GameState;
@@ -272,9 +263,7 @@ describe('austerity', () => {
         'The tax rate cannot go below 25% during austerity, until Year 3 · Quarter 3 ends.',
       ),
     );
-    expect(
-      decide({ budget: { ...state.budget, spending: { ...state.budget.spending, health: 20 } } }),
-    ).toThrow(
+    expect(decide({ budget: budgetFrom(state.budget, { spending: { health: 20 } }) })).toThrow(
       new RangeError(
         'Health spending cannot go above $1.0m during austerity, until Year 3 · Quarter 3 ends.',
       ),
@@ -427,10 +416,7 @@ describe.each([...bothCountries, ['Testland, starting in debt', testlandInDebt] 
       const sensible = (game: GameState) => {
         const { start } = game.country;
         const foodRelief = Math.max(50, start.budget.spending.foodRelief);
-        return withinAusterity(game, {
-          ...start.budget,
-          spending: { ...start.budget.spending, foodRelief },
-        });
+        return withinAusterity(game, budgetFrom(start.budget, { spending: { foodRelief } }));
       };
       while (inAusterity()) {
         expect(state.outcome).toEqual({ status: 'playing' });

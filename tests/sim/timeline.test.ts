@@ -12,28 +12,16 @@ import {
 } from '../../src/sim';
 import { bothCountries, tavara } from './countries';
 import { steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /**
  * Every tax the country can bear and nothing spent but the upkeep of what is built, so every
  * instalment can be paid and every site in use stays in good repair.
  */
-const austere: Budget = {
-  taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 200 },
-};
+const austere: Budget = budgetOf({ taxRatePercent: 40, spending: { upkeep: 200 } });
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left for building. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 /** Plays one quarter for each set of decisions given, in order. */
 function play(start: GameState, quarters: readonly Partial<Decisions>[]): GameState {
@@ -46,10 +34,10 @@ function play(start: GameState, quarters: readonly Partial<Decisions>[]): GameSt
 /** Plays carefully, with money for relief, so that hunger does not end the game early. */
 function playCarefully(start: GameState, quarters: number): GameState {
   let state = start;
-  const budget = {
+  const budget = budgetFrom(start.budget, {
     taxRatePercent: 30,
-    spending: { ...start.budget.spending, foodRelief: 70, security: 0 },
-  };
+    spending: { foodRelief: 70, security: 0 },
+  });
   for (let quarter = 0; quarter < quarters; quarter += 1) {
     state = advanceQuarter(state, steward(state, budget)).state;
   }

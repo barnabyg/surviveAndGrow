@@ -5,6 +5,7 @@ import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   createGame,
+  factionsStatus,
   loadCountry,
   pendingDilemma,
   SAVE_FORMAT_VERSION,
@@ -24,38 +25,50 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought and the teachers asking for a rise now
-  // and then. Format 12 let a project survey a region. The game, on seed 3, starts a survey of
-  // the Salt Coast in its first quarter and one of the Dry East in its second, on the budget it
-  // starts with. It is saved as Year 1 · Quarter 3 begins: the Salt Coast surveyed, its
-  // Westhaven deposit found and on the map, and the Dry East one of its two quarters surveyed.
+  // and then. Format 17 added the factions: each region has a faction mix (country file format
+  // 13), farmers, workers and business each have a standing, and every region's approval
+  // carries a Factions effect. On seed 2026 the game spends $5.0m more on agriculture from its
+  // first quarter and keeps the rest of the budget it starts with, for three quarters. It is
+  // saved as Year 1 · Quarter 4 begins: the farmers have risen from 56.1% to 61.3% and are
+  // pleased, the workers and business have each lost ground, and the last report has the
+  // Factions line of approval split by faction.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
   });
-  const quarters: Partial<Decisions>[] = [
-    { startSurveys: ['salt-coast'] },
-    { startSurveys: ['dry-east'] },
-  ];
-  let game = createGame(country, 3);
+  const budget = {
+    taxRatePercent: country.start.budget.taxRatePercent,
+    spending: {
+      ...country.start.budget.spending,
+      agriculture: country.start.budget.spending.agriculture + 50,
+    },
+  };
+  let game = createGame(country, 2026);
   let report: TurnReport | null = null;
-  for (const decisions of quarters) {
+  for (let quarter = 0; quarter < 3; quarter += 1) {
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
-    const result = advanceQuarter(game, { budget: game.budget, ...decisions, dilemmaChoice });
+    const decisions: Decisions = { budget, dilemmaChoice };
+    const result = advanceQuarter(game, decisions);
     game = result.state;
     report = result.report;
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.date).toEqual({ year: 1, quarter: 3 });
-  expect(
-    game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
-  ).toEqual([
-    [{ kind: 'survey', regionId: 'salt-coast' }, 'surveyed', 2],
-    [{ kind: 'survey', regionId: 'dry-east' }, 'building', 1],
+  expect(game.date).toEqual({ year: 1, quarter: 4 });
+  expect(game.history.map((record) => record.standings?.farmers)).toEqual([561, 582, 599, 613]);
+  expect(factionsStatus(game).standings.map((each) => each.word)).toEqual([
+    'Pleased',
+    'Content',
+    'Content',
+    'Loyal',
   ]);
-  expect(game.country.sites.map((site) => site.id)).toContain('westhaven-mine');
+  expect(
+    report?.approval.contributions
+      .find((line) => line.label === 'Factions')
+      ?.parts?.map((part) => part.label),
+  ).toEqual(['Farmers', 'Workers', 'Business']);
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

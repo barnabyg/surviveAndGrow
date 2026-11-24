@@ -14,6 +14,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland } from './countries';
 import { steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 const seeds = Array.from({ length: 30 }, (_, index) => index + 1);
 
@@ -46,11 +47,11 @@ function harvestOf(year: Year): NonNullable<TurnReport['harvest']> {
 }
 
 function withRelief(budget: Budget, foodRelief: number): Budget {
-  return { ...budget, spending: { ...budget.spending, foodRelief } };
+  return budgetFrom(budget, { spending: { foodRelief } });
 }
 
 function withAgriculture(budget: Budget, agriculture: number): Budget {
-  return { ...budget, spending: { ...budget.spending, agriculture } };
+  return budgetFrom(budget, { spending: { agriculture } });
 }
 
 /**
@@ -255,10 +256,10 @@ describe.each(bothCountries)('food in %s', (_name, country) => {
       const game = createGame(country(), seed);
       // Taxed too lightly to pay for itself: the treasury empties within the year, and
       // agriculture is then cut along with everything else.
-      const budget: Budget = {
+      const budget: Budget = budgetFrom(game.budget, {
         taxRatePercent: 5,
-        spending: { ...game.budget.spending, agriculture: 200, health: 100 },
-      };
+        spending: { agriculture: 200, health: 100 },
+      });
 
       const year = playYear(game, budget);
       const { total } = harvestOf(year);

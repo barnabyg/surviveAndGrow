@@ -1,5 +1,7 @@
-import { sum } from './arithmetic';
+import { populationOf, sum } from './arithmetic';
+import { defenceToHoldLoyal } from './army';
 import { balance } from './balance';
+import { DEFENCE_FORMAT } from './countryFormats';
 import { spendingFault, taxOn, taxRateFault, type Budget } from './budget';
 import type { Country, Region, Site } from './country';
 import { join, type Json, type Reader } from './countryReader';
@@ -15,9 +17,18 @@ import { SPENDING_AREAS, type SpendingArea } from './vocabulary';
  * is held to the same rules as a budget the player sets. Upkeep may be left out: the game
  * then starts with enough to keep in good repair every one of the country's sites that can
  * stand together, which costs nothing until they are built, since upkeep is spent only as
- * far as it is needed. A site locked until research is done is left out of it.
+ * far as it is needed. A site locked until research is done is left out of it. A file older
+ * than format 11 cannot name Defence: it is read as spending the least that holds the army
+ * loyal, for the people the country starts with.
  */
-function readBudget(reader: Reader, budget: Json, path: string, sites: readonly Site[]): Budget {
+function readBudget(
+  reader: Reader,
+  budget: Json,
+  path: string,
+  formatVersion: number,
+  regions: readonly Region[],
+  sites: readonly Site[],
+): Budget {
   const spendingPath = join(path, 'spending');
   const written = reader.object(budget, 'spending', path);
   for (const key of Object.keys(written)) {
@@ -33,6 +44,15 @@ function readBudget(reader: Reader, budget: Json, path: string, sites: readonly 
       if (area === 'upkeep' && written.upkeep === undefined) {
         const open = sites.filter((site) => technologiesNeeded(site).length === 0);
         return [area, upkeepForEvery(costliestTogether(open).map((site) => site.type))];
+      }
+      if (area === 'defence' && formatVersion < DEFENCE_FORMAT) {
+        if (written.defence !== undefined) {
+          reader.fault(
+            join(spendingPath, area),
+            `needs country file format ${DEFENCE_FORMAT} or later`,
+          );
+        }
+        return [area, defenceToHoldLoyal(populationOf(regions))];
       }
       const before = reader.faults.length;
       const amount = reader.money(written, area, spendingPath);
@@ -59,7 +79,14 @@ export function readStart(
   sites: readonly Site[],
 ): Country['start'] {
   const treasury = reader.money(start, 'treasury', 'start');
-  const budget = readBudget(reader, reader.object(start, 'budget', 'start'), 'start.budget', sites);
+  const budget = readBudget(
+    reader,
+    reader.object(start, 'budget', 'start'),
+    'start.budget',
+    formatVersion,
+    regions,
+    sites,
+  );
   return {
     treasury,
     budget,

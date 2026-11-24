@@ -9,18 +9,24 @@ interface TrendLineProps {
   readonly format: (value: number) => string;
   /** A level drawn across the chart as a dashed line, such as the strike threshold. */
   readonly mark?: Mark;
+  /** How large to draw it: beside a vital sign, or small, in a row of a list. */
+  readonly size?: keyof typeof SIZES;
 }
 
-const WIDTH = 150;
-const HEIGHT = 44;
+const SIZES = {
+  vital: { width: 150, height: 44 },
+  small: { width: 84, height: 28 },
+} as const;
 const INSET = 5;
 
 /**
  * The short trend line beside a vital sign. The figure is a solid line ending in a dot at
  * the position now; a mark is a dashed line. Its description says the same in words.
  */
-export function TrendLine({ subject, values, format, mark }: TrendLineProps) {
+export function TrendLine({ subject, values, format, mark, size = 'vital' }: TrendLineProps) {
   if (!hasTrend(values)) return <span className="trend trend--none">No trend yet</span>;
+
+  const { width: WIDTH, height: HEIGHT } = SIZES[size];
 
   const y = verticalScale(
     mark === undefined ? values : [...values, mark.value],

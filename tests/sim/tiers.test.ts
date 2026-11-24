@@ -17,6 +17,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { withChances } from './countries';
+import { budgetFrom } from '../budgets';
 
 interface File {
   regions: { id: string; output: number }[];
@@ -37,19 +38,14 @@ function scaled(file: unknown, percent: number): File {
 function generous(game: GameState): Budget {
   const people = game.regions.reduce((total, region) => total + region.population, 0);
   const amount = Math.min(200, Math.ceil((1000 * people) / 11_000_000 / 10) * 10);
-  return {
-    ...game.budget,
-    spending: { ...game.budget.spending, health: amount, education: amount },
-  };
+  return budgetFrom(game.budget, { spending: { health: amount, education: amount } });
 }
 
 /** The budget in force with nothing spent on farming, relief, health or education. */
 function neglect(game: GameState): Budget {
-  const { spending } = game.budget;
-  return {
-    ...game.budget,
-    spending: { ...spending, agriculture: 0, foodRelief: 0, health: 0, education: 0 },
-  };
+  return budgetFrom(game.budget, {
+    spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0 },
+  });
 }
 
 /**

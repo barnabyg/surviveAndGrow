@@ -17,6 +17,7 @@ import {
   type TurnReport,
 } from '../sim';
 import { ApprovalChart } from './ApprovalChart';
+import { FactionsPanel } from './FactionsPanel';
 import { BudgetPanel, budgetTab, countChanges } from './BudgetPanel';
 import { ConfirmDialog, RestartDialog } from './ConfirmDialog';
 import { DecisionTabs } from './DecisionPanel';
@@ -31,6 +32,7 @@ import { MapView } from './MapView';
 import { ProjectsPanel, projectsTab } from './ProjectsPanel';
 import { ResearchPanel, researchTab } from './ResearchPanel';
 import { QuarterSummary } from './QuarterSummary';
+import { NeighbourCard } from './NeighbourCard';
 import { RegionCard } from './RegionCard';
 import { RegionList } from './RegionList';
 import { ReliefPanel, reliefTab } from './ReliefPanel';
@@ -93,10 +95,12 @@ export function GameScreen(props: GameScreenProps) {
   const [pending, setPending] = useState(initialGame.budget);
   // Relief goes on being sent where it was last sent, as the budget in force goes on.
   const [reliefRegionId, setReliefRegionId] = useState<string | null>(initialGame.reliefRegionId);
-  // One thing is picked out on the map at a time: a region or a site. Its card is the one shown.
+  // One thing is picked out on the map at a time: a region, a site, a trade route or a
+  // neighbour. Its card is the one shown.
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+  const [selectedNeighbourId, setSelectedNeighbourId] = useState<string | null>(null);
   // The decisions tab chosen last, which the browser remembers.
   const [decisionTab, setDecisionTab] = useState(readDecisionTab);
   // The sites the player means to start building on. Building begins when the quarter
@@ -113,7 +117,7 @@ export function GameScreen(props: GameScreenProps) {
   // ends, so until then an order can be taken back, like a loan.
   const [plannedTrade, setPlannedTrade] = useState<readonly TradeOrder[]>([]);
   // The report the player last selected, by its place in the list. It counts as selected
-  // only while its region is still the one picked out on the map.
+  // only while its region or neighbour is still the one picked out on the map.
   const [reportPicked, setReportPicked] = useState<number | null>(null);
   // The same for a risk the player selected, kept by its headline since the list changes.
   const [riskPicked, setRiskPicked] = useState<string | null>(null);
@@ -187,9 +191,12 @@ export function GameScreen(props: GameScreenProps) {
       dilemmaChoice,
     ],
   );
-  const pickedRisk = risks.findIndex(
-    (risk) => risk.headline === riskPicked && risk.regionId === selectedRegionId,
-  );
+  // Whether a report or a risk about one place is about the place picked out on the map.
+  const pickedOut = (row: { readonly regionId?: string; readonly neighbourId?: string }) =>
+    row.regionId !== undefined
+      ? row.regionId === selectedRegionId
+      : row.neighbourId !== undefined && row.neighbourId === selectedNeighbourId;
+  const pickedRisk = risks.findIndex((risk) => risk.headline === riskPicked && pickedOut(risk));
   const selectedRisk = pickedRisk === -1 ? null : pickedRisk;
   const tips = useTips({
     game,
@@ -217,26 +224,41 @@ export function GameScreen(props: GameScreenProps) {
     siteStatus(game, selectedSiteId).state === 'empty'
       ? siteSchedule(game, selectedSiteId)
       : null;
-  const selectedEntry =
-    reportPicked !== null && report?.entries[reportPicked]?.regionId === selectedRegionId
-      ? reportPicked
-      : null;
+  const pickedEntry = reportPicked === null ? undefined : report?.entries[reportPicked];
+  const selectedEntry = pickedEntry !== undefined && pickedOut(pickedEntry) ? reportPicked : null;
 
   const selectRegion = (regionId: string | null) => {
     if (regionId !== null) did('select-region');
     setSelectedRegionId(regionId);
     setSelectedSiteId(null);
     setSelectedRouteId(null);
+    setSelectedNeighbourId(null);
   };
   const selectSite = (siteId: string | null) => {
     setSelectedSiteId(siteId);
     setSelectedRegionId(null);
     setSelectedRouteId(null);
+    setSelectedNeighbourId(null);
   };
   const selectRoute = (routeId: string | null) => {
     setSelectedRouteId(routeId);
     setSelectedRegionId(null);
     setSelectedSiteId(null);
+    setSelectedNeighbourId(null);
+  };
+  const selectNeighbour = (neighbourId: string | null) => {
+    setSelectedNeighbourId(neighbourId);
+    setSelectedRegionId(null);
+    setSelectedSiteId(null);
+    setSelectedRouteId(null);
+  };
+  // Picks out the place a report or a risk is about, or lets go of it.
+  const selectPlace = (
+    row: { readonly regionId?: string; readonly neighbourId?: string },
+    letGo: boolean,
+  ) => {
+    if (row.regionId !== undefined) selectRegion(letGo ? null : row.regionId);
+    else if (row.neighbourId !== undefined) selectNeighbour(letGo ? null : row.neighbourId);
   };
 
   // Planning a project picks its site out on the map, so the player sees where it will stand.
@@ -261,20 +283,20 @@ export function GameScreen(props: GameScreenProps) {
     );
   };
 
-  // Selecting a report picks its region out on the map; selecting it again lets go.
+  // Selecting a report picks its region or neighbour out on the map; selecting it again lets go.
   const selectEntry = (index: number) => {
-    const regionId = report?.entries[index]?.regionId;
-    if (regionId === undefined) return;
+    const entry = report?.entries[index];
+    if (entry === undefined) return;
     setReportPicked(index === selectedEntry ? null : index);
-    selectRegion(index === selectedEntry ? null : regionId);
+    selectPlace(entry, index === selectedEntry);
   };
 
-  // A risk to one region picks that region out the same way.
+  // A risk to one region, or from one neighbour, picks that place out the same way.
   const selectRisk = (index: number) => {
     const risk = risks[index];
-    if (risk?.regionId === undefined) return;
+    if (risk === undefined) return;
     setRiskPicked(index === selectedRisk ? null : risk.headline);
-    selectRegion(index === selectedRisk ? null : risk.regionId);
+    selectPlace(risk, index === selectedRisk);
   };
 
   const resolveQuarter = () => {
@@ -338,6 +360,7 @@ export function GameScreen(props: GameScreenProps) {
               selectedRegionId={selectedRegionId}
               onSelectRegion={selectRegion}
             />
+            <FactionsPanel game={game} />
             <ApprovalChart game={game} />
           </aside>
           <main className="column column--country" aria-label="Country">
@@ -364,6 +387,8 @@ export function GameScreen(props: GameScreenProps) {
                   plannedTrade={plannedTrade}
                   selectedRouteId={selectedRouteId}
                   onSelectRoute={selectRoute}
+                  selectedNeighbourId={selectedNeighbourId}
+                  onSelectNeighbour={selectNeighbour}
                 />
                 {preview !== null && selectedRegionId !== null && (
                   <RegionCard
@@ -393,6 +418,17 @@ export function GameScreen(props: GameScreenProps) {
                     onPlan={planSite}
                     onClose={() => {
                       selectSite(null);
+                    }}
+                  />
+                )}
+                {selectedNeighbourId !== null && (
+                  <NeighbourCard
+                    game={game}
+                    report={report}
+                    neighbourId={selectedNeighbourId}
+                    budget={committed}
+                    onClose={() => {
+                      selectNeighbour(null);
                     }}
                   />
                 )}

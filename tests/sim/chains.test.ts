@@ -16,6 +16,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { withDroughtChance, withoutPoweredMines } from './countries';
 import { steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 interface Played {
   readonly state: GameState;
@@ -52,10 +53,7 @@ function rich(file: unknown): Country {
 
 /** The country's own spending with enough tax to pay for it, and upkeep set as given. */
 function solvent(country: Country, upkeep: number): Budget {
-  return {
-    taxRatePercent: 25,
-    spending: { ...country.start.budget.spending, upkeep },
-  };
+  return budgetFrom(country.start.budget, { taxRatePercent: 25, spending: { upkeep } });
 }
 
 /** The first mine in the country, and the trunk road and port its chain runs through. */

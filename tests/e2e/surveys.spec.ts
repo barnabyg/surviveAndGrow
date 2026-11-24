@@ -49,9 +49,7 @@ test('a survey is planned from the region’s card, finds a deposit and puts its
     map(page).getByRole('button', { name: /^Trunk road, Westhaven mine to Saltmouth/ }),
   ).toBeVisible();
 
-  await map(page)
-    .getByRole('button', { name: /^Salt Coast/ })
-    .click();
+  // The region's card has stayed open, and now says what was found.
   await expect(survey(page).getByRole('status', { name: 'Survey result' })).toHaveText(
     'Surveyed: a deposit of ore was found. Its mine could yield 290,000 t a quarter.',
   );

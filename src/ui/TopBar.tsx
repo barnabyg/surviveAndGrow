@@ -1,5 +1,8 @@
 import {
   approvalStatus,
+  ARMY_STAGE_NAMES,
+  armyLoyaltyStatus,
+  coupStatus,
   austerityStatus,
   creditRules,
   creditStatus,
@@ -29,6 +32,8 @@ import {
   UNREST_NAMES,
   victoryStatus,
   type ApprovalStatus,
+  type ArmyLoyaltyStatus,
+  type CoupStatus,
   type GameState,
   type TurnReport,
   type VictoryStatus,
@@ -39,7 +44,7 @@ import { Crest } from './Crest';
 import { formatDate, formatSigned, formatSignedCount, formatSignedTonnes } from './format';
 import { recent, type Mark } from './trend';
 import { TrendLine } from './TrendLine';
-import { VitalSign } from './VitalSign';
+import { BreakdownRows, VitalSign } from './VitalSign';
 import type { TipsState } from './TipCard';
 import { TopBarActions } from './TopBarActions';
 import './TopBar.css';
@@ -104,11 +109,58 @@ function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
   return { text, tone } as const;
 }
 
+/** What the army's sign says once the count is run and the game is lost to a coup. */
+const COUP_HAS_COME = 'the army has taken power';
+
+/**
+ * The stage the army is in, named beneath its loyalty whatever it is: in a word while it is
+ * loyal, as a warning with the mark it has fallen below while it is restless, and while it is
+ * plotting with the quarters left to a coup, counted down.
+ */
+function armyRemark(army: ArmyLoyaltyStatus, coup: CoupStatus) {
+  const name = ARMY_STAGE_NAMES[army.stage];
+  if (army.stage === 'loyal') return { text: name, tone: 'plain' } as const;
+  if (army.stage === 'plotting') {
+    // Once the count is run the coup has come: the game is over, and nothing is left to count.
+    const text =
+      coup.left <= 0
+        ? `${name}: ${COUP_HAS_COME}`
+        : `${name}: ${formatQuarters(coup.left)} to a coup`;
+    return { text, tone: 'danger' } as const;
+  }
+  return {
+    text: `${name}: below ${formatPercent(army.restlessBelow, 0)}`,
+    tone: 'warning',
+  } as const;
+}
+
+/** What the count towards a coup stands at, in sentences for the army's breakdown. */
+function coupCount(coup: CoupStatus): string {
+  const mark = formatPercent(coup.plottingBelow, 0);
+  const rule = `The army takes power once national loyalty has ended ${formatQuarters(coup.needed)} running below ${mark}.`;
+  if (!coup.plotting) return `${rule} It is not plotting, so nothing is counted.`;
+  const counted =
+    coup.held === 0 ? 'None is counted yet' : `It has ended ${formatQuarters(coup.held)} there`;
+  if (coup.left <= 0) return `${rule} ${counted}: ${COUP_HAS_COME}.`;
+  const left =
+    coup.left === 1
+      ? `the coup comes as this quarter ends, unless loyalty is back at ${mark} or above by then`
+      : `${coup.left} more, this quarter among them, bring the coup`;
+  return `${rule} ${counted}: ${left}.`;
+}
+
 export function TopBar(props: TopBarProps) {
   const { game, report, onEndQuarter, onRestart, onTour, tips } = props;
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
+  const army = armyLoyaltyStatus(game);
+  const coup = coupStatus(game);
+  const restlessMark: Mark = {
+    value: army.restlessBelow,
+    label: `Restless below ${formatPercent(army.restlessBelow, 0)}`,
+    name: `the ${formatPercent(army.restlessBelow, 0)} restless mark`,
+  };
   const debt = debtStatus(game);
   const credit = creditStatus(game);
   const election = electionStatus(game);
@@ -336,12 +388,11 @@ export function TopBar(props: TopBarProps) {
           <table className="breakdown__table" aria-label="What approval is made of">
             <tbody>
               {approval.causes.map((cause, index) => (
-                <tr key={cause.label}>
-                  <th scope="row">{cause.label}</th>
-                  <td>
-                    {index === 0 ? formatPercent(cause.amount) : formatSignedPoints(cause.amount)}
-                  </td>
-                </tr>
+                <BreakdownRows
+                  key={cause.label}
+                  line={cause}
+                  format={index === 0 ? formatPercent : formatSignedPoints}
+                />
               ))}
             </tbody>
             <tfoot>
@@ -353,10 +404,77 @@ export function TopBar(props: TopBarProps) {
           </table>
           <p className="breakdown__empty">
             Approval moves a part of the way each quarter towards where the budget and the food
-            situation would settle it. A region strikes below{' '}
-            {formatPercent(approval.strikesBelow, 0)} and protests below{' '}
+            situation would settle it. The factions bear on each region by its mix of farmers,
+            workers and business, as far as each stands above or below neutral. A region strikes
+            below {formatPercent(approval.strikesBelow, 0)} and protests below{' '}
             {formatPercent(approval.protestsBelow, 0)}.
           </p>
+        </VitalSign>
+        <VitalSign
+          label="Army loyalty"
+          value={formatPercent(army.loyalty)}
+          figure={report?.armyLoyalty ?? null}
+          formatChange={formatSignedPoints}
+          formatMovement={formatPoints}
+          remark={armyRemark(army, coup)}
+          note={`${restlessMark.label} · plotting below ${formatPercent(army.plottingBelow, 0)} · a coup after ${formatQuarters(coup.needed)} of plotting`}
+          breakdownTitle="What moved army loyalty"
+          trend={
+            <TrendLine
+              subject="Army loyalty"
+              // Quarters recorded before the army was kept are left out.
+              values={shown.flatMap((record) =>
+                record.armyLoyalty === null ? [] : [record.armyLoyalty],
+              )}
+              format={formatPercent}
+              mark={restlessMark}
+            />
+          }
+        >
+          <h2 className="label">What army loyalty is made of</h2>
+          <table className="breakdown__table" aria-label="What army loyalty is made of">
+            <tbody>
+              {army.causes.map((cause, index) => (
+                <tr key={cause.label}>
+                  <th scope="row">{cause.label}</th>
+                  <td>
+                    {index === 0 ? formatPercent(cause.amount) : formatSignedPoints(cause.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Army loyalty now</th>
+                <td>
+                  {formatPercent(army.loyalty)} · {ARMY_STAGE_NAMES[army.stage]}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+          <p className="breakdown__empty">
+            Army loyalty moves a part of the way each quarter towards where Defence spending and
+            each region’s unrest would settle it: {formatPercent(army.settles)},{' '}
+            {ARMY_STAGE_NAMES[army.settlesStage].toLowerCase()}, on the budget in force. Defence is{' '}
+            {formatMoney(army.spent)} a quarter, and the army expects {formatMoney(army.expected)}{' '}
+            for the country’s people. Strikes in a region pull the army there down, and protests
+            further. The army is restless below {formatPercent(army.restlessBelow, 0)} and plotting
+            below {formatPercent(army.plottingBelow, 0)}.
+          </p>
+          <p className="breakdown__empty">{coupCount(coup)}</p>
+          <h2 className="label">The army by region</h2>
+          <table className="breakdown__table" aria-label="The army by region">
+            <tbody>
+              {army.regions.map((region) => (
+                <tr key={region.regionId}>
+                  <th scope="row">{regionName(game.country, region.regionId)}</th>
+                  <td>
+                    {formatPercent(region.loyalty)} · {ARMY_STAGE_NAMES[region.stage]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </VitalSign>
         <VitalSign
           label="Prosperity"

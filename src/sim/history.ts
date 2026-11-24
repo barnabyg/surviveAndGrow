@@ -1,7 +1,10 @@
 import { nationalApproval } from './approval';
+import { nationalLoyalty } from './army';
+import type { BorderIncident } from './borderIncidents';
 import type { Budget } from './budget';
 import type { Country } from './country';
 import { debtBurden, debtOf, type Debt } from './debt';
+import { levelsOf, type FactionLevels, type FactionStandings } from './factions';
 import { foodStatus } from './food';
 import type { Project } from './projects';
 import { prosperityStatus } from './prosperity';
@@ -29,6 +32,16 @@ export interface VitalSigns {
    * did not yet measure it.
    */
   readonly prosperity: number | null;
+  /**
+   * National army loyalty, in thousandths, or null for a quarter recorded by a release that
+   * kept no army.
+   */
+  readonly armyLoyalty: number | null;
+  /**
+   * The standing of farmers, workers and business, in thousandths, or null for a quarter
+   * recorded by a release that had no factions.
+   */
+  readonly standings: FactionLevels | null;
   /** What the nation owed. */
   readonly debt: Money;
   /** The debt against a year's revenue at the budget in force, in thousandths. */
@@ -46,6 +59,8 @@ export function vitalSigns(position: {
   readonly budget: Budget;
   readonly debts: readonly Debt[];
   readonly worldPrices: WorldPrices;
+  readonly borderIncidents: readonly BorderIncident[];
+  readonly factions: FactionStandings;
   /** National prosperity, when it has already been worked out for this position. */
   readonly prosperity?: number;
   /** The debt burden, when it has already been worked out for this position. */
@@ -58,6 +73,8 @@ export function vitalSigns(position: {
     quarterlyConsumption: foodStatus(position).quarterlyConsumption,
     approval: nationalApproval(position.regions),
     prosperity: position.prosperity ?? prosperityStatus(position).value,
+    armyLoyalty: nationalLoyalty(position.regions),
+    standings: levelsOf(position.factions),
     debt: debtOf(position.debts),
     debtBurden: position.debtBurden ?? debtBurden(position),
   };

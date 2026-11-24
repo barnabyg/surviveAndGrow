@@ -1,5 +1,5 @@
 {
-  "formatVersion": 10,
+  "formatVersion": 13,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -14,7 +14,8 @@
           [1080, 720],
           [0, 720]
         ],
-        "label": [540, 60]
+        "label": [540, 60],
+        "ambition": 85
       }
     ],
     "rivers": [],
@@ -44,6 +45,11 @@
       "population": 300000,
       "output": 20,
       "farmland": 70,
+      "factions": {
+        "farmers": 20,
+        "workers": 35,
+        "business": 45
+      },
       "eventLikelihood": {
         "flood": 0.15
       }
@@ -62,6 +68,11 @@
       "population": 100000,
       "output": 5,
       "farmland": 52,
+      "factions": {
+        "farmers": 70,
+        "workers": 25,
+        "business": 5
+      },
       "eventLikelihood": {
         "drought": 0.25
       }
@@ -267,7 +278,8 @@
         "foodRelief": 0,
         "health": 1,
         "education": 1,
-        "security": 1
+        "security": 1,
+        "defence": 1
       }
     },
     "foodReserve": 30000,

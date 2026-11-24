@@ -26,6 +26,7 @@ import {
   withoutPriceShocks,
 } from './countries';
 import { steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /** A country with a treasury that can pay for a whole chain, and no drought or dilemma. */
 function rich(file: unknown): Country {
@@ -41,7 +42,7 @@ const withMine: [name: string, country: () => Country][] = [
 
 /** The country's own spending with a 25% tax, and upkeep enough for a chain. */
 function solvent(country: Country): Budget {
-  return { taxRatePercent: 25, spending: { ...country.start.budget.spending, upkeep: 40 } };
+  return budgetFrom(country.start.budget, { taxRatePercent: 25, spending: { upkeep: 40 } });
 }
 
 /** The first mine in the country, and the trunk road and port its chain runs through. */
@@ -253,10 +254,10 @@ describe('a slump in the world ore price inside its forecast, in Tavara', () => 
 
   it('is warned of when it would empty the treasury, before the treasury suffers', () => {
     // Health and education raised until the budget only just balances on the mine's tax.
-    const budget: Budget = {
+    const budget: Budget = budgetFrom(solvent(country), {
       taxRatePercent: 25,
-      spending: { ...solvent(country).spending, health: 200, education: 110 },
-    };
+      spending: { health: 200, education: 90 },
+    });
     const poor: GameState = { ...game, treasury: 20 };
 
     const warning = risksAhead(poor, { budget }).find((risk) => risk.kind === 'treasury');
@@ -280,10 +281,10 @@ describe('a slump in the world ore price inside its forecast, in Tavara', () => 
   it('is warned of when it would pause research, in the research’s own words', () => {
     // The budget of the test above, which only just balances on the mine’s tax, and a
     // treasury that covers the seed’s $2.0m instalments while the ore price holds.
-    const budget: Budget = {
+    const budget: Budget = budgetFrom(solvent(country), {
       taxRatePercent: 25,
-      spending: { ...solvent(country).spending, health: 200, education: 110 },
-    };
+      spending: { health: 200, education: 90 },
+    });
     const poor: GameState = { ...game, treasury: 140 };
     const treasuryRisk = (decisions: Decisions) =>
       risksAhead(poor, decisions).find((risk) => risk.kind === 'treasury');
@@ -309,10 +310,7 @@ describe('a slump in the world ore price inside its forecast, in Tavara', () => 
       quartersLeft: 8,
       schedule: 'level',
     };
-    const lean: Budget = {
-      taxRatePercent: 25,
-      spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 40 },
-    };
+    const lean: Budget = budgetOf({ taxRatePercent: 25, spending: { upkeep: 40 } });
     const owing: GameState = { ...game, treasury: 100, debts: [loan] };
 
     const warning = risksAhead(owing, { budget: lean }).find((risk) => risk.kind === 'bailout');

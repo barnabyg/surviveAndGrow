@@ -9,8 +9,13 @@ const credit = async (page: Page) =>
 test('bonds are earned by repaying a loan on time to AA, then issued and marked on the timeline', async ({
   page,
 }) => {
-  // Tavara without drought, so nothing but the loan moves the rating.
-  await startGame(page, { countryFile: tavaraWith({ drought: [] }) });
+  // Tavara without drought, so nothing but the loan moves the rating, and with $5.0m on food
+  // relief, which no one here needs, so that the treasury covers the budget until bonds open.
+  const countryFile = tavaraWith({ drought: [] }) as ReturnType<typeof tavaraWith> & {
+    start: { budget: { spending: Record<string, number> } };
+  };
+  countryFile.start.budget.spending.foodRelief = 5;
+  await startGame(page, { countryFile });
 
   // The game opens rated A, below the AA that bonds need, and the panel says so.
   await expect(await credit(page)).toContainText('Credit rating A');

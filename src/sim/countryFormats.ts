@@ -13,10 +13,30 @@ import type { EventType, SiteType, Technology } from './vocabulary';
  * cannot, format 5 added border crossings, which format 4 cannot, format 6 added floods,
  * which format 5 cannot, format 7 added world price shocks, which format 6 cannot, format 8
  * added hidden deposits that a survey may find, which format 7 cannot, format 9 added sites
- * locked until a technology is known, among them dams, which format 8 cannot, and format 10
- * added clinics and schools, which format 9 cannot.
+ * locked until a technology is known, among them dams, which format 8 cannot, format 10
+ * added clinics and schools, which format 9 cannot, format 11 added Defence to the starting
+ * budget, which format 10 cannot name, format 12 added a neighbour's ambition, which format 11
+ * cannot, and format 13 added a region's faction mix, which format 12 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 10;
+export const COUNTRY_FORMAT_VERSION = 13;
+
+/**
+ * The country file format that first lets a file give a region its faction mix. The regions of
+ * an older file follow no faction more than another.
+ */
+export const FACTION_MIX_FORMAT = 13;
+
+/**
+ * The country file format that first lets a file give a neighbour an ambition. The neighbours
+ * of an older file have none, and stay peaceful for good.
+ */
+export const AMBITION_FORMAT = 12;
+
+/**
+ * The country file format that first lets, and makes, a file say what the country starts by
+ * spending on Defence. An older file is read as spending the least that holds the army loyal.
+ */
+export const DEFENCE_FORMAT = 11;
 
 /**
  * The country file format that first lets a site say which technology it needs, and name a

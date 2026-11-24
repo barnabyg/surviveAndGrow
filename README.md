@@ -2,6 +2,13 @@
 
 A turn-based economics and politics survival game that runs in the browser. You lead a small
 developing country: raise its living standards, and stay in office long enough to see it done.
+The game is won on prosperity held, and lost at the vote, to famine, or to a coup by an army
+left to plot. Neighbours with ambitions watch a country that prospers, and Defence spending
+buys the deterrence that keeps them peaceful. A neighbour left hostile brings border
+incidents, which close its crossings and cost the regions on its border output and approval;
+it never takes land, and never ends the game. Farmers, workers and business each judge the
+budget their own way, and every region follows them by its mix of the three, so no budget
+pleases everyone.
 
 The design is in [docs/design.md](docs/design.md), and the rules as built in
 [docs/rules.md](docs/rules.md).
@@ -44,7 +51,12 @@ is in [docs/screen.md](docs/screen.md), and the rules as built, one heading per 
 
 A country is one data file; the engine contains no country-specific code. The format, and how to
 try a country of your own with `?country=`, are in [docs/countries.md](docs/countries.md). A
-country can hide deposits of ore for surveys to find, and lock a site until a technology is known.
+country can hide deposits of ore for surveys to find, lock a site until a technology is known,
+say what it starts by spending on Defence, which holds its army loyal or does not, and give
+each neighbour an ambition, which Defence must deter as the country prospers. Where a
+neighbour's border incidents fall is worked out from the map: the crossings that lead to it and
+the regions that face it. It can give each region its faction mix, the share of its people who
+are farmers, workers and business, which decides whose standing moves approval there.
 
 ## Check it
 
@@ -110,8 +122,8 @@ npm run balance
 
 This plays scripted players through whole games with no screen, on the countries as they ship,
 for up to four terms each, and reports how often each wins on prosperity, how often it is still in
-office when its terms are up, and what the others lose to: the vote, by term, or famine, by
-region. It also gives the terms served, the quarter of each win, and the prosperity and tier each
+office when its terms are up, and what the others lose to: the vote, by term, famine, by
+region, or a coup. It also gives the terms served, the quarter of each win, and the prosperity and tier each
 game reached, and what each player borrowed: how many games a bailout struck, how often the debt
 test held back a win and whether it was won later, and the debt burden; and what each traded:
 the grain bought and sold abroad, what it brought in and cost, and the world price shocks,

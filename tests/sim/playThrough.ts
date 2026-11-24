@@ -37,6 +37,9 @@ function outcome(result: GameResult, termQuarters: number): string {
   if (result.ending === 'lostElection' && result.terms === 1 && result.voteShare !== null) {
     return `loses its first vote with ${formatPercent(result.voteShare)}`;
   }
+  if (result.ending === 'lostElection' && result.terms === 2) {
+    return 'wins its first vote and loses its second';
+  }
   if (result.ending === 'lostElection' && result.terms === 3) {
     return 'wins its first two votes and loses its third';
   }

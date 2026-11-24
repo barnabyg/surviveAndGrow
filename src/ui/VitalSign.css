@@ -55,6 +55,12 @@
   display: block;
 }
 
+/* A sign's name stays on one line, as its figure does: a name of two words, beside a short
+   figure, would otherwise fold where the trend line takes the room. */
+.vital__button .label {
+  white-space: nowrap;
+}
+
 /* The lines beneath the figure are cut short, with their whole text in the tooltip, so a
    narrow window never stacks them a word to a line: the change and the note to one line, a
    warning to two. They claim no width of their own (contain), so the figure, not the line

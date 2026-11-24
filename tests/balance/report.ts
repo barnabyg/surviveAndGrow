@@ -50,8 +50,8 @@ export function writeUp(
   const lines = [
     `### ${country.name}, seeds ${seeds}, up to ${terms} ${terms === 1 ? 'term' : 'terms'}${without}`,
     '',
-    '| Player | Games | Won | Still in office | Lost the vote | Lost to famine | Terms served | Quarter of the win | Prosperity at the end |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
+    '| Player | Games | Won | Still in office | Lost the vote | Lost to famine | Lost to a coup | Terms served | Quarter of the win | Prosperity at the end |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |',
     ...rows.map(({ player, summary }) => {
       const famines = summary.famine.reduce((total, region) => total + region.games, 0);
       return `| ${[
@@ -61,6 +61,7 @@ export function writeUp(
         share(summary.inOffice, summary.games),
         share(summary.lostElection, summary.games),
         share(famines, summary.games),
+        share(summary.coup, summary.games),
         spread(summary.terms, String),
         spread(summary.winQuarter, String),
         spread(summary.prosperity, (permille) => formatIndex(permille)),
@@ -144,6 +145,10 @@ export function writeUp(
       const when = spread(summary.famineQuarter, (quarter) => `${quarter}`);
       return `- ${player}: lost the vote ${votes === '' ? 'in no game' : votes}; famine brought the state down in ${
         where === '' ? 'no game' : `${where} (in quarter ${when})`
+      }; the army took power in ${
+        summary.coup === 0
+          ? 'no game'
+          : `${summary.coup} (in quarter ${spread(summary.coupQuarter, String)})`
       }.`;
     }),
     '',

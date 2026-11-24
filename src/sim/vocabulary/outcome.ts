@@ -4,4 +4,4 @@
 export const OUTCOME_STATUSES = ['playing', 'won', 'lost'] as const;
 
 /** The ways a game can end. */
-export const ENDING_CAUSES = ['famine', 'election', 'prosperity'] as const;
+export const ENDING_CAUSES = ['famine', 'coup', 'election', 'prosperity'] as const;

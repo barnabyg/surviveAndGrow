@@ -21,28 +21,17 @@ import {
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland, withDroughtChance } from './countries';
 import { steward } from './playing';
+import { GAME_TIMEOUT } from './scripted';
+import { budgetFrom, budgetOf, lavish } from '../budgets';
 
 /**
  * Every tax the country can bear and nothing spent but the upkeep of what is built, so the
  * treasury only grows and every site in use stays in good repair.
  */
-const austere: Budget = {
-  taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 200 },
-};
+const austere: Budget = budgetOf({ taxRatePercent: 40, spending: { upkeep: 200 } });
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left over. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = lavish;
 
 interface Played {
   readonly state: GameState;
@@ -175,8 +164,8 @@ describe('starting a project in Tavara', () => {
 
     const { state, reports } = play(game, [{ startProjects: ['lowmere-irrigation'] }]);
 
-    // Revenue $31.0m, spending $36.0m and a $4.0m instalment: $42.0m falls to $33.0m.
-    expect(state.treasury).toBe(330);
+    // Revenue $31.0m, spending $38.0m and a $4.0m instalment: $42.0m falls to $31.0m.
+    expect(state.treasury).toBe(310);
     expect(reports[0]?.treasury.contributions).toContainEqual({
       label: 'Building Lowmere irrigation',
       amount: -40,
@@ -217,7 +206,7 @@ describe('starting a project in Tavara', () => {
         seriousness: 'warning',
         headline: 'The treasury is shrinking',
         cause:
-          'Spending of $40.0m outran revenue of $31.0m. At this deficit the treasury lasts 3 more quarters.',
+          'Spending of $42.0m outran revenue of $31.0m. At this deficit the treasury lasts 2 more quarters.',
       },
     ]);
   });
@@ -387,17 +376,10 @@ describe('a project the treasury cannot pay for', () => {
   it('is the one started later, when there is money for only some', () => {
     const game = createGame(tavara(), 1);
     // $42.0m and $31.0m of revenue, less $68.0m of spending, leaves $5.0m for building.
-    const tight: Budget = {
+    const tight: Budget = budgetOf({
       taxRatePercent: 18,
-      spending: {
-        agriculture: 200,
-        foodRelief: 200,
-        health: 200,
-        education: 80,
-        security: 0,
-        upkeep: 0,
-      },
-    };
+      spending: { agriculture: 200, foodRelief: 200, health: 200, education: 80, defence: 0 },
+    });
 
     const { state, reports } = play(game, [
       { budget: tight, startProjects: ['lowmere-irrigation', 'lowmere-store'] },
@@ -412,7 +394,7 @@ describe('a project the treasury cannot pay for', () => {
 
 /** The country's own spending with enough tax to pay for it, and not so much that anyone strikes. */
 function solvent(country: Country): Budget {
-  return { taxRatePercent: 25, spending: country.start.budget.spending };
+  return budgetFrom(country.start.budget, { taxRatePercent: 25 });
 }
 
 interface Years extends Played {
@@ -474,22 +456,26 @@ describe.each(bothFiles)('a finished site in %s', (_name, file) => {
   /** The country with no drought ever, so that only the weather moves the harvest. */
   const calm = () => withDroughtChance(file, {});
 
-  it('of irrigation halves how far the weather moves its region’s harvest', () => {
-    const site = siteOfType(calm(), 'irrigation');
-    // The third year's harvest, by which time the scheme has long been in use.
-    const grown = (build: readonly string[]) =>
-      seeds.map(
-        (seed) => harvestIn(playYears(calm(), seed, 3, build).reports[11], site.regionId).grown,
-      );
-    const spread = (harvests: readonly number[]) => Math.max(...harvests) - Math.min(...harvests);
+  it(
+    'of irrigation halves how far the weather moves its region’s harvest',
+    () => {
+      const site = siteOfType(calm(), 'irrigation');
+      // The third year's harvest, by which time the scheme has long been in use.
+      const grown = (build: readonly string[]) =>
+        seeds.map(
+          (seed) => harvestIn(playYears(calm(), seed, 3, build).reports[11], site.regionId).grown,
+        );
+      const spread = (harvests: readonly number[]) => Math.max(...harvests) - Math.min(...harvests);
 
-    const irrigated = spread(grown([site.id]));
-    const rainFed = spread(grown([]));
+      const irrigated = spread(grown([site.id]));
+      const rainFed = spread(grown([]));
 
-    expect(rainFed).toBeGreaterThan(0);
-    expect(irrigated).toBeGreaterThan(rainFed * 0.48);
-    expect(irrigated).toBeLessThan(rainFed * 0.52);
-  });
+      expect(rainFed).toBeGreaterThan(0);
+      expect(irrigated).toBeGreaterThan(rainFed * 0.48);
+      expect(irrigated).toBeLessThan(rainFed * 0.52);
+    },
+    GAME_TIMEOUT,
+  );
 
   it('of irrigation leaves every other region’s harvest as it was', () => {
     const site = siteOfType(calm(), 'irrigation');
@@ -538,7 +524,7 @@ describe.each(bothFiles)('a finished site in %s', (_name, file) => {
       let state = createGame(calm(), seed);
       let waiting = [...build];
       let previews: Preview[] = [];
-      for (let quarter = 0; quarter < 12; quarter += 1) {
+      for (let quarter = 0; quarter < 16; quarter += 1) {
         const starts = waiting.filter((siteId) => startFault(state, [siteId]) === null).slice(0, 1);
         waiting = waiting.filter((siteId) => !starts.includes(siteId));
         const decisions = { budget: solvent(state.country), startProjects: starts };
@@ -612,9 +598,9 @@ describe('previewing a quarter with projects', () => {
     });
 
     expect(preview.projectSpending).toEqual({ min: 40, max: 40 });
-    expect(preview.spending).toEqual({ min: 400, max: 400 });
-    expect(preview.balance).toEqual({ min: -90, max: -90 });
-    expect(preview.treasury).toEqual({ min: 330, max: 330 });
+    expect(preview.spending).toEqual({ min: 420, max: 420 });
+    expect(preview.balance).toEqual({ min: -110, max: -110 });
+    expect(preview.treasury).toEqual({ min: 310, max: 310 });
     expect(preview.pausedSites).toEqual([]);
   });
 

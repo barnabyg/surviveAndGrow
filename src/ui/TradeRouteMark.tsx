@@ -1,4 +1,11 @@
-import { formatTonnes, MAP_FRAME, type Neighbour, type Point, type TradeRoute } from '../sim';
+import {
+  formatTonnes,
+  MAP_FRAME,
+  quartersLeftWords,
+  type Neighbour,
+  type Point,
+  type TradeRoute,
+} from '../sim';
 import type { MapPalette } from './mapPalette';
 
 /** The most a route can carry, in tonnes, at which its line is drawn at its widest. */
@@ -27,7 +34,9 @@ export function routeDescription(route: TradeRoute, neighbourName: string | null
   const how =
     route.state === 'missing'
       ? `missing trade link: it would carry ${formatTonnes(route.capacity)} a quarter once the port is in use`
-      : `carried ${carriedText(route)} last quarter`;
+      : route.closed !== null
+        ? `closed by the border incident with ${route.closed.name}, ${quartersLeftWords(route.closed.quartersLeft)}: it carries nothing`
+        : `carried ${carriedText(route)} last quarter`;
   const weak =
     route.state === 'weak' ? ['weak trade link: half its capacity while the port decays'] : [];
   return [routeTitle(route), ...what, how, ...weak].join(', ');
@@ -53,19 +62,30 @@ interface TradeRouteMarkProps {
  * it carried last quarter, and a tag that gives both in tonnes. A border crossing also has a
  * bar across the border where it stands. A missing trade link is dotted, in the style of a
  * missing link in a chain, and tagged; a weak one is dashed, and tagged under the
- * infrastructure lens.
+ * infrastructure lens. A crossing closed by a border incident is drawn as wide as what it
+ * carries when open, but thinly dashed, with a cross over its bar and a tag that says it is
+ * closed and for how long.
  */
 export function TradeRouteMark(props: TradeRouteMarkProps) {
   const { route, neighbour, palette, selected, infrastructure, onSelect } = props;
   const [start = [0, 0], end = start] = [route.path[0], route.path.at(-1)];
   const points = route.path.map(([x, y]) => `${x},${y}`).join(' ');
-  const width = routeWidth(route.capacity);
+  const closed = route.closed !== null;
+  const width = routeWidth(closed ? route.unimproved : route.capacity);
   const share = route.capacity > 0 ? route.carried.total / route.capacity : 0;
   const missing = route.state === 'missing';
   const weak = route.state === 'weak';
   const tags = [
     ...(missing ? [{ text: '✕ Missing trade link', fill: palette.tagText }] : []),
-    ...(!missing ? [{ text: carriedText(route), fill: palette.tagText }] : []),
+    ...(route.closed !== null
+      ? [
+          {
+            text: `✕ Closed ${quartersLeftWords(route.closed.quartersLeft)}`,
+            fill: palette.tagText,
+          },
+        ]
+      : []),
+    ...(!missing && !closed ? [{ text: carriedText(route), fill: palette.tagText }] : []),
     ...(weak && infrastructure ? [{ text: '▲ Weak trade link', fill: palette.tagText }] : []),
   ];
   const halfWidth = Math.max(...tags.map((tag) => tagWidthOf(tag.text))) / 2;
@@ -78,6 +98,7 @@ export function TradeRouteMark(props: TradeRouteMarkProps) {
       aria-label={routeDescription(route, neighbour?.name ?? null)}
       aria-pressed={selected}
       data-kind={route.kind}
+      data-state={route.state}
       onClick={() => {
         onSelect(route.id);
       }}
@@ -135,7 +156,7 @@ export function TradeRouteMark(props: TradeRouteMarkProps) {
               stroke={palette.roadCasing}
               strokeWidth={width}
               strokeLinecap="butt"
-              {...(weak ? { strokeDasharray: '10 5' } : {})}
+              {...(weak ? { strokeDasharray: '10 5' } : closed ? { strokeDasharray: '3 7' } : {})}
             />
             {share > 0 && (
               <polyline
@@ -148,7 +169,9 @@ export function TradeRouteMark(props: TradeRouteMarkProps) {
             )}
           </>
         )}
-        {route.kind === 'crossing' && <CrossingBar at={start} towards={end} palette={palette} />}
+        {route.kind === 'crossing' && (
+          <CrossingBar at={start} towards={end} palette={palette} closed={closed} />
+        )}
       </g>
       {tags.map((tag, index) => {
         const tagWidth = tagWidthOf(tag.text);
@@ -174,19 +197,27 @@ export function TradeRouteMark(props: TradeRouteMarkProps) {
   );
 }
 
-/** The bar a border crossing draws across the border where it stands. */
+/**
+ * The bar a border crossing draws across the border where it stands. A closed crossing has a
+ * cross over it: two more bars, set across the way through.
+ */
 function CrossingBar(props: {
   readonly at: Point;
   readonly towards: Point;
   readonly palette: MapPalette;
+  readonly closed: boolean;
 }) {
-  const { at, towards, palette } = props;
+  const { at, towards, palette, closed } = props;
   const length = Math.hypot(towards[0] - at[0], towards[1] - at[1]) || 1;
   // Across the route, 10 either side of the border.
   const [dx, dy] = [((at[1] - towards[1]) / length) * 10, ((towards[0] - at[0]) / length) * 10];
-  const d = `M${at[0] - dx},${at[1] - dy} L${at[0] + dx},${at[1] + dy}`;
+  // Along the route, the same distance, for the arms of a closed crossing's cross.
+  const [ax, ay] = [((towards[0] - at[0]) / length) * 10, ((towards[1] - at[1]) / length) * 10];
+  const bar = `M${at[0] - dx},${at[1] - dy} L${at[0] + dx},${at[1] + dy}`;
+  const cross = `M${at[0] - dx - ax},${at[1] - dy - ay} L${at[0] + dx + ax},${at[1] + dy + ay} M${at[0] + dx - ax},${at[1] + dy - ay} L${at[0] - dx + ax},${at[1] - dy + ay}`;
+  const d = closed ? `${bar} ${cross}` : bar;
   return (
-    <g className="map__crossing-bar">
+    <g className="map__crossing-bar" data-closed={closed ? 'true' : undefined}>
       <path d={d} stroke={palette.tagBackground} strokeWidth="7" />
       <path d={d} stroke={palette.tagText} strokeWidth="3" />
     </g>

@@ -1,4 +1,4 @@
-import { MONEY_PER_MILLION, type Money } from './types';
+import { MONEY_PER_MILLION, type GameDate, type Money } from './types';
 
 const MINUS = '−';
 
@@ -11,6 +11,11 @@ export function formatMoney(amount: Money): string {
 /** A weight of food as the player reads it: `1,262,660 t`, or `−14,560 t` when negative. */
 export function formatTonnes(tonnes: number): string {
   return `${tonnes < 0 ? MINUS : ''}${formatCount(Math.abs(tonnes))} t`;
+}
+
+/** A date as a report reads it: `Year 1 · Quarter 4`. */
+export function formatDate(date: GameDate): string {
+  return `Year ${date.year} · Quarter ${date.quarter}`;
 }
 
 /** A whole number with its thousands marked off: `18,000`. */

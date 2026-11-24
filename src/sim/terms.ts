@@ -53,10 +53,10 @@ export interface TermRecord {
    */
   readonly prosperity: { readonly start: number | null; readonly end: number | null };
   /**
-   * How it ended: in re-election, in defeat at the vote, in the state's collapse, in the
-   * prosperity win, or not at all, while the government is still in office.
+   * How it ended: in re-election, in defeat at the vote, in the state's collapse, in a coup,
+   * in the prosperity win, or not at all, while the government is still in office.
    */
-  readonly ending: 'reelected' | 'defeated' | 'collapsed' | 'won' | 'inOffice';
+  readonly ending: 'reelected' | 'defeated' | 'collapsed' | 'overthrown' | 'won' | 'inOffice';
 }
 
 /**
@@ -95,6 +95,8 @@ function endingOf(outcome: Outcome): TermRecord['ending'] {
       return 'defeated';
     case 'famine':
       return 'collapsed';
+    case 'coup':
+      return 'overthrown';
     case 'prosperity':
       return 'won';
   }

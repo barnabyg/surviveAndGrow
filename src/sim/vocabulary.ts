@@ -3,12 +3,15 @@
  * The lists live in `vocabulary/`, one mechanic's names to a file, and are read through this one.
  */
 
+export * from './vocabulary/army';
 export * from './vocabulary/budget';
 export * from './vocabulary/dilemmas';
 export * from './vocabulary/events';
+export * from './vocabulary/factions';
 export * from './vocabulary/finance';
 export * from './vocabulary/food';
 export * from './vocabulary/map';
+export * from './vocabulary/neighbours';
 export * from './vocabulary/outcome';
 export * from './vocabulary/politics';
 export * from './vocabulary/priceShocks';

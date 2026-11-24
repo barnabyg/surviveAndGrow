@@ -1,6 +1,7 @@
 import { sum } from './arithmetic';
 import { borrowingBarred, type Austere } from './austerity';
 import { balance } from './balance';
+import type { BorderIncident } from './borderIncidents';
 import { revenueOf, type Budget } from './budget';
 import { dateOfQuarter, quarterNumber } from './calendar';
 import type { Country } from './country';
@@ -114,6 +115,9 @@ export interface Owing {
   readonly debts: readonly Debt[];
   /** The world prices, which set what a mine's chain earns and so pays in tax. */
   readonly worldPrices: WorldPrices;
+  /** The quarter the revenue is judged in, and the border incidents that may cut it then. */
+  readonly date: GameDate;
+  readonly borderIncidents: readonly BorderIncident[];
 }
 
 /** What judging debt needs of the game: what it owes, its revenue, and its credit rating. */

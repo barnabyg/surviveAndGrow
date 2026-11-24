@@ -53,7 +53,7 @@ test('a tab out of sight still says what is pending in it', async ({ page }) => 
 test('the quarter ahead stays in view whichever tab is open', async ({ page }) => {
   await startGame(page);
   const summary = decisions(page).getByRole('region', { name: 'Quarter ahead' });
-  await expect(summary.getByRole('group', { name: 'Treasury' })).toContainText('$37.0m');
+  await expect(summary.getByRole('group', { name: 'Treasury' })).toContainText('$35.0m');
   await expect(summary.getByRole('group', { name: 'Vote share forecast' })).toBeVisible();
 
   await openTab(page, 'Trade');

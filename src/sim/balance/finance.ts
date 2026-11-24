@@ -119,13 +119,16 @@ export const financeBalance = {
        * starting budget spends on it, brought down onto a step of the slider but never below
        * one step unless the starting budget spends nothing there. Areas left out are not
        * capped: food relief and upkeep, so that austerity starves no one and lets nothing
-       * decay that the player keeps up.
+       * decay that the player keeps up. Defence is held to what the country started on and
+       * not below it: a cap that left the army short would turn a bailout into a coup the
+       * player could do nothing about.
        */
       spendingCapPermille: {
         agriculture: 1000,
         health: 800,
         education: 800,
         security: 800,
+        defence: 1000,
       } satisfies Partial<Record<SpendingArea, number>> as Partial<Record<SpendingArea, number>>,
     },
     /**

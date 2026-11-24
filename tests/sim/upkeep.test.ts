@@ -14,6 +14,7 @@ import {
 } from '../../src/sim';
 import { bothCountries, tavara } from './countries';
 import { steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 interface Played {
   readonly state: GameState;
@@ -35,11 +36,10 @@ function play(start: GameState, quarters: readonly Partial<Decisions>[]): Played
 
 /** The country's own spending with enough tax to pay for it, and upkeep set as given. */
 function solvent(country: Country, upkeep?: number): Budget {
-  const { spending } = country.start.budget;
-  return {
+  return budgetFrom(country.start.budget, {
     taxRatePercent: 25,
-    spending: { ...spending, upkeep: upkeep ?? spending.upkeep },
-  };
+    ...(upkeep === undefined ? {} : { spending: { upkeep } }),
+  });
 }
 
 function siteOfType(country: Country, type: string) {

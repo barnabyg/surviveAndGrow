@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { advanceQuarter, createGame, risksAhead, type GameState } from '../../src/sim';
+import {
+  advanceQuarter,
+  armyLoyaltyStatus,
+  createGame,
+  deterrenceStatus,
+  factionsNoticeablePermille,
+  regionFactions,
+  risksAhead,
+  type GameState,
+} from '../../src/sim';
+import { budgetFrom } from '../budgets';
 import { TIPS, tipsDue, type TipCondition } from '../../src/ui/tips';
-import { SCRIPTED_PLAYERS, withinRules } from '../balance/players';
+import { withinRules } from '../balance/players';
 import { tavaraAsShipped } from '../sim/countries';
+import { answering } from '../sim/playing';
+import { GAME_TIMEOUT, playerNamed } from '../sim/scripted';
 
 /**
  * A game in the country as it ships in which each tip's condition arises: the scripted player,
@@ -17,20 +29,29 @@ const ARISES: readonly [TipCondition, player: string, seed: number, quarter: num
   ['missing-link', 'Sensible borrower', 1, 1],
   ['decay', 'Sensible', 2, 5],
   ['unrest', 'Does nothing', 4, 7],
+  ['army-loyalty', 'Sensible', 3, 14],
+  ['factions', 'Sensible', 1, 2],
   ['tier-passed', 'Sensible', 1, 7],
+  ['neighbours', 'Sensible', 1, 7],
+  ['border-incident', 'Borrow and build at once', 1, 7],
   ['bailout', 'Reckless borrower', 5, 13],
   ['election-near', 'Sensible', 1, 16],
 ];
 
-/** The tip conditions that hold as the given quarter is decided in a scripted player's game. */
-function dueIn(playerName: string, seed: number, quarter: number): ReadonlySet<TipCondition> {
-  const player = SCRIPTED_PLAYERS.find((candidate) => candidate.name === playerName);
-  if (player === undefined) throw new Error(`No scripted player is named ${playerName}.`);
+/** A scripted player's game in the country as it ships, as the given quarter is decided. */
+function playedBy(playerName: string, seed: number, quarter: number): GameState {
+  const player = playerNamed(playerName);
   let game: GameState = createGame(tavaraAsShipped(), seed);
   for (let played = 0; played < quarter; played += 1) {
     game = advanceQuarter(game, withinRules(game, player.decide(game))).state;
   }
-  const decisions = withinRules(game, player.decide(game));
+  return game;
+}
+
+/** The tip conditions that hold as the given quarter is decided in a scripted player's game. */
+function dueIn(playerName: string, seed: number, quarter: number): ReadonlySet<TipCondition> {
+  const game = playedBy(playerName, seed, quarter);
+  const decisions = withinRules(game, playerNamed(playerName).decide(game));
   return tipsDue({ game, risks: [], plannedSiteIds: decisions.startProjects ?? [] });
 }
 
@@ -56,6 +77,8 @@ describe('the first-time tips', () => {
     (condition, player, seed, quarter) => {
       expect(dueIn(player, seed, quarter).has(condition)).toBe(true);
     },
+    // Each plays a scripted player's game, which takes longer while the suite runs alongside.
+    GAME_TIMEOUT,
   );
 
   it('wait for a drought or flood that risks ahead warns of', () => {
@@ -104,6 +127,82 @@ describe('the first-time tips', () => {
     expect(
       tipsDue({ game, risks: [], plannedSiteIds: [], selectedRegionId: 'arden-vale' }),
     ).not.toContain('survey');
+  });
+
+  it('wait for defence and the army once the budget in force would leave the army less than loyal', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [] })).not.toContain('army-loyalty');
+    // One quarter with Defence cut to nothing: the army is still loyal, but no longer heading so.
+    const cut = budgetFrom(game.budget, { spending: { defence: 0 } });
+    const undefended = advanceQuarter(game, { budget: cut }).state;
+    expect(armyLoyaltyStatus(undefended).stage).toBe('loyal');
+    expect(tipsDue({ game: undefended, risks: [], plannedSiteIds: [] })).toContain('army-loyalty');
+    // With Defence restored it waits again, since nothing is slipping.
+    const restored = advanceQuarter(undefended, { budget: game.budget }).state;
+    expect(tipsDue({ game: restored, risks: [], plannedSiteIds: [] })).not.toContain(
+      'army-loyalty',
+    );
+  });
+
+  it(
+    'wait for neighbours and deterrence once a neighbour is anything but peaceful',
+    () => {
+      // Sensible's game on seed 1 passes into Developing as its seventh quarter ends, and with
+      // that Voskar turns watchful.
+      const peaceful = playedBy('Sensible', 1, 6);
+      expect(deterrenceStatus(peaceful).neighbours.map((each) => each.intention)).toEqual([
+        'peaceful',
+        'peaceful',
+      ]);
+      expect(tipsDue({ game: peaceful, risks: [], plannedSiteIds: [] })).not.toContain(
+        'neighbours',
+      );
+      const watched = playedBy('Sensible', 1, 7);
+      expect(deterrenceStatus(watched).neighbours.map((each) => each.intention)).toEqual([
+        'watchful',
+        'peaceful',
+      ]);
+      expect(tipsDue({ game: watched, risks: [], plannedSiteIds: [] })).toContain('neighbours');
+    },
+    GAME_TIMEOUT,
+  );
+
+  it(
+    'wait for border incidents until a hostile neighbour announces one',
+    () => {
+      // Borrowing and building at once carries seed 1 up the tiers on the Defence it started
+      // with: Voskar turns hostile, and announces an incident as the seventh quarter ends.
+      const before = playedBy('Borrow and build at once', 1, 6);
+      expect(before.borderIncidents).toEqual([]);
+      expect(tipsDue({ game: before, risks: [], plannedSiteIds: [] })).not.toContain(
+        'border-incident',
+      );
+      const announced = playedBy('Borrow and build at once', 1, 7);
+      expect(announced.borderIncidents.map((incident) => incident.neighbourId)).toEqual(['voskar']);
+      expect(tipsDue({ game: announced, risks: [], plannedSiteIds: [] })).toContain(
+        'border-incident',
+      );
+    },
+    GAME_TIMEOUT,
+  );
+
+  it('wait for the factions until they move a region’s approval by two points or more', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    expect(factionsNoticeablePermille).toBe(20);
+    // The starting budget leaves the factions near neutral: a point or so in any region.
+    expect(game.regions.map((region) => region.approvalEffects.factions)).toEqual([
+      5, 2, 11, 12, 9, 0,
+    ]);
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [] })).not.toContain('factions');
+    // $9.0m more for agriculture is a share the farmers notice: within the year the Dry East,
+    // three in four of them farmers, is two points up for it.
+    const favouring = budgetFrom(game.budget, { spending: { agriculture: 200 } });
+    let favoured = game;
+    for (let quarter = 0; quarter < 3; quarter += 1) {
+      favoured = advanceQuarter(favoured, answering(favoured, { budget: favouring })).state;
+    }
+    expect(regionFactions(favoured, 'dry-east').effect).toBeGreaterThanOrEqual(20);
+    expect(tipsDue({ game: favoured, risks: [], plannedSiteIds: [] })).toContain('factions');
   });
 
   it('wait for nothing in a game that has only just begun, risks ahead aside', () => {

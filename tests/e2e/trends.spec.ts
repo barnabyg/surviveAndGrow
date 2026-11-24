@@ -30,10 +30,10 @@ test('trend lines appear beside the vital signs once quarters have been played',
 
   await endQuarters(page, 3);
 
-  // The budget runs $5.0m short a quarter, and the reserve spoils with no harvest yet in.
+  // The budget runs $7.0m short a quarter, and the reserve spoils with no harvest yet in.
   await expect(
     treasury(page).getByRole('img', {
-      name: 'Treasury over the last 3 quarters: fell from $42.0m to $27.0m.',
+      name: 'Treasury over the last 3 quarters: fell from $42.0m to $21.0m.',
     }),
   ).toBeVisible();
   await expect(
@@ -84,10 +84,10 @@ test('a trend covers the last eight quarters and no more', async ({ page }) => {
 
   await endQuarters(page, 10);
 
-  // Two quarters in, the treasury stood at $32.0m; that is where the eight quarters begin.
+  // Two quarters in, the treasury stood at $28.0m; that is where the eight quarters begin.
   await expect(
     treasury(page).getByRole('img', {
-      name: /^Treasury over the last 8 quarters: fell from \$32\.0m to \$\d+\.\dm\.$/,
+      name: /^Treasury over the last 8 quarters: fell from \$28\.0m to \$\d+\.\dm\.$/,
     }),
   ).toBeVisible();
   await expect(approvalChart(page).getByText('8 quarters ago')).toBeVisible();

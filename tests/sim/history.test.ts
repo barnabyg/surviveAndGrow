@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   approvalStatus,
+  armyLoyaltyStatus,
   createGame,
   debtStatus,
   foodStatus,
@@ -25,6 +26,15 @@ function play(start: GameState, quarters: number) {
   return { state, reports };
 }
 
+/**
+ * Where Tavara's starting budget settles the factions. Agriculture takes $11.0m of the $38.0m
+ * spent, 289 thousandths against the 240 farmers take as their due: 49/240 of their 300
+ * (+61). Health and education take $13.0m, 342 against 370: 28/370 of the workers' 300 (−22).
+ * The budget raises $31.0m, so it runs 225 thousandths short, against the 400 at which a
+ * deficit costs business its whole 150 (−84), and owing nothing is worth its whole 100.
+ */
+const STARTING_STANDINGS = { farmers: 561, workers: 478, business: 516 };
+
 describe('the history of the vital signs in Tavara', () => {
   it('opens with the position the game starts from', () => {
     const game = createGame(tavara(), 1);
@@ -38,6 +48,8 @@ describe('the history of the vital signs in Tavara', () => {
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
@@ -47,8 +59,9 @@ describe('the history of the vital signs in Tavara', () => {
   it('adds the position each quarter leaves behind', () => {
     const { state } = play(createGame(tavara(), 1), 3);
 
-    // The budget runs $5.0m short each quarter, and 8% of the reserve spoils each quarter:
-    // 14,560 t of 182,000 t, then 13,395 t, then 12,323 t. Nothing moves approval.
+    // The budget runs $7.0m short each quarter, and 8% of the reserve spoils each quarter:
+    // 14,560 t of 182,000 t, then 13,395 t, then 12,323 t. Nothing moves approval, the army or
+    // the factions.
     expect(state.history).toEqual([
       {
         date: { year: 1, quarter: 1 },
@@ -57,36 +70,44 @@ describe('the history of the vital signs in Tavara', () => {
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
       {
         date: { year: 1, quarter: 2 },
-        treasury: 370,
+        treasury: 350,
         foodReserve: 167440,
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
       {
         date: { year: 1, quarter: 3 },
-        treasury: 320,
+        treasury: 280,
         foodReserve: 154045,
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
       {
         date: { year: 1, quarter: 4 },
-        treasury: 270,
+        treasury: 210,
         foodReserve: 141722,
         quarterlyConsumption: 260000,
         approval: 518,
         prosperity: 210,
+        armyLoyalty: 584,
+        standings: STARTING_STANDINGS,
         debt: 0,
         debtBurden: 0,
       },
@@ -121,12 +142,19 @@ describe.each(bothCountries)('the history of the vital signs in %s', (_name, cou
         quarterlyConsumption: foodStatus(state).quarterlyConsumption,
         approval: report.approval.value,
         prosperity: report.prosperity?.value,
+        armyLoyalty: report.armyLoyalty?.value,
+        standings: {
+          farmers: report.standings?.farmers.value,
+          workers: report.standings?.workers.value,
+          business: report.standings?.business.value,
+        },
         debt: report.debt?.value,
         debtBurden: debtStatus(state).burden,
       });
       expect(latest?.treasury).toBe(state.treasury);
       expect(latest?.approval).toBe(approvalStatus(state).approval);
       expect(latest?.prosperity).toBe(prosperityStatus(state).value);
+      expect(latest?.armyLoyalty).toBe(armyLoyaltyStatus(state).loyalty);
       // Everything before it is what was there already.
       expect(state.history.slice(0, -1)).toEqual(game.history);
       game = state;

@@ -1,3 +1,5 @@
+import { listed, SPENDING_AREA_NAMES, SPENDING_AREAS } from '../sim';
+
 /**
  * One step of the guided tour of the main screen. The step picks out the element marked
  * `data-tour="<target>"`, or with a null target stands alone in the middle of the screen.
@@ -10,6 +12,11 @@ export interface TourStep {
   readonly text: string;
 }
 
+/** The spending areas as a sentence names them, so that the tour keeps up with the budget. */
+const SPENDING_AREAS_LISTED = listed(
+  SPENDING_AREAS.map((area) => SPENDING_AREA_NAMES[area].toLowerCase()),
+);
+
 /** The guided tour, in the order it is shown: the top bar, then the columns left to right. */
 export const TOUR_STEPS: readonly TourStep[] = [
   {
@@ -20,7 +27,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     target: 'vitals',
     title: 'Vital signs',
-    text: 'The treasury, debt, credit rating, food reserve, approval, prosperity against its target and the time to the next election, always in view. Click a figure to see what moved it. The short lines beside them are the last eight quarters.',
+    text: 'The treasury, debt, credit rating, food reserve, approval, army loyalty, prosperity against its target and the time to the next election, always in view. Click a figure to see what moved it. The short lines beside them are the last eight quarters.',
   },
   {
     target: 'end-quarter',
@@ -40,7 +47,12 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     target: 'regions',
     title: 'Living standards by region',
-    text: 'Each region’s living standard. National prosperity is built from these, so a region left behind holds the whole country back. Select a region to open its card.',
+    text: 'Each region’s food, living standard and army. National prosperity is built from the living standards, so a region left behind holds the whole country back. Select a region to open its card.',
+  },
+  {
+    target: 'factions',
+    title: 'Factions',
+    text: 'How farmers, workers, business and the army each stand with you, in a figure, a word and a trend. Each region follows the first three by its mix of them, so its approval moves as they do; the army’s standing is its loyalty. A share of the budget won for one is taken from another, so no budget pleases them all. Open one to see what it is made of.',
   },
   {
     target: 'approval-chart',
@@ -80,7 +92,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     target: 'budget',
     title: 'Budget',
-    text: 'The decisions are in tabs: budget, projects, research, finance, trade and relief, each saying where it stands. The budget sets the tax rate and spending on agriculture, food relief, health, education, security and upkeep. Move a slider and the projection shows what it would do. Nothing counts until you commit it.',
+    text: `The decisions are in tabs: budget, projects, research, finance, trade and relief, each saying where it stands. The budget sets the tax rate and spending on ${SPENDING_AREAS_LISTED}. Move a slider and the projection shows what it would do. Nothing counts until you commit it.`,
   },
   {
     target: 'projects',

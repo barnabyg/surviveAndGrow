@@ -13,8 +13,9 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
-import { withChances, withDroughtChance, withoutPoweredMines } from './countries';
+import { withChances, withDroughtChance, withoutAmbitions, withoutPoweredMines } from './countries';
 import { steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 /*
  * World price shocks played out over whole games, in both countries: each comes, is reported
@@ -133,9 +134,13 @@ describe.each(files)('failed harvests abroad, over four years in %s', (_name, fi
   });
 });
 
-/** A country rich enough to build its first mine's chain at once, with no drought or dilemma. */
+/**
+ * A country rich enough to build its first mine's chain at once, with no drought or dilemma.
+ * Its neighbours have no ambition: a mine's earnings carry a country up the tiers, where a
+ * neighbour left undeterred turns hostile, and its border incidents are not what this is about.
+ */
 function rich(file: unknown, glut: number): Country {
-  const copy = withoutPoweredMines(file) as { start: { treasury: number } };
+  const copy = withoutPoweredMines(withoutAmbitions(file)) as { start: { treasury: number } };
   copy.start.treasury = 2000;
   const calm = withDroughtChance(copy, {});
   return loadCountry({
@@ -155,10 +160,10 @@ function minesEarning(file: unknown): GameState {
     (site) => site.type === 'port' && road?.dependsOn.includes(site.id),
   );
   const chain = [mine, road, port].map((site) => site?.id ?? '');
-  const budget: Budget = {
+  const budget: Budget = budgetFrom(country.start.budget, {
     taxRatePercent: 25,
-    spending: { ...country.start.budget.spending, upkeep: 40 },
-  };
+    spending: { upkeep: 40 },
+  });
   return play(createGame(country, 11), 9, (game) => ({
     ...steward(game, budget),
     startProjects: game.history.length === 1 ? chain : [],
@@ -171,11 +176,12 @@ function minesEarning(file: unknown): GameState {
  * when its ore sells for less.
  */
 const mining = [
-  { name: 'Tavara', file: tavaraFile, services: 140 },
-  { name: 'Testland', file: testlandFile, services: 40 },
+  { name: 'Tavara', file: tavaraFile, health: 130, education: 130 },
+  { name: 'Testland', file: testlandFile, health: 40, education: 30 },
 ] as const;
 
-describe.each(mining)('an ore glut in $name, with the mine earning', ({ file, services }) => {
+describe.each(mining)('an ore glut in $name, with the mine earning', (scenario) => {
+  const { file, health, education } = scenario;
   const earning = minesEarning(file);
   // Testland's mine soon wins it the game, so here it has only begun to hold prosperity.
   const from = (glut: number): GameState => ({
@@ -184,14 +190,19 @@ describe.each(mining)('an ore glut in $name, with the mine earning', ({ file, se
     treasury: 50,
     prosperousQuarters: 0,
   });
-  const budget: Budget = {
+  const budget: Budget = budgetFrom(earning.budget, {
     taxRatePercent: 25,
-    spending: { ...earning.budget.spending, upkeep: 40, health: services, education: services },
-  };
-  const lavish: Budget = {
-    ...budget,
-    spending: { ...budget.spending, agriculture: 200, health: 200, education: 200, security: 200 },
-  };
+    spending: { upkeep: 40, health, education },
+  });
+  // The spree: $80.0m a quarter over these four areas and Defence together.
+  const lavish: Budget = budgetFrom(budget, {
+    spending: {
+      agriculture: 200,
+      health: 200,
+      education: 200,
+      security: 200 - budget.spending.defence,
+    },
+  });
 
   /** Keeps the budget, within any austerity a bailout brings. */
   const careful = (game: GameState): Decisions => steward(game, withinAusterity(game, budget));

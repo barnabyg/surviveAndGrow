@@ -2,15 +2,14 @@ import { describe, expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
-  capacityOfTonnes,
   createGame,
+  factionsStatus,
   loadCountry,
   loadSave,
+  regionFactions,
   SAVE_FORMAT_VERSION,
   SaveError,
   saveGame,
-  startFault,
-  surveyedRegions,
   type Budget,
   type Country,
   type Decisions,
@@ -21,6 +20,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import format11Save from '../saves/format-11.json';
 import format12Save from '../saves/format-12.json';
+import format17Save from '../saves/format-17.json';
 import {
   bothCountries,
   tavara,
@@ -31,6 +31,7 @@ import {
 } from './countries';
 import { valueAt, withValue, without, type Path } from './files';
 import { answering, steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 /** A save as it comes back out of storage: text, read again. */
 function stored(save: unknown): unknown {
@@ -56,23 +57,10 @@ const countries = [
 ] as const;
 
 /** Every tax the country can bear and nothing spent, so the treasury only grows. */
-const austere: Budget = {
-  taxRatePercent: 40,
-  spending: { agriculture: 0, foodRelief: 0, health: 0, education: 0, security: 0, upkeep: 0 },
-};
+const austere: Budget = budgetOf({ taxRatePercent: 40 });
 
 /** A budget the treasury cannot cover: spending is cut and nothing is left over. */
-const ruinous: Budget = {
-  taxRatePercent: 5,
-  spending: {
-    agriculture: 200,
-    foodRelief: 200,
-    health: 200,
-    education: 200,
-    security: 200,
-    upkeep: 200,
-  },
-};
+const ruinous: Budget = budgetOf({ taxRatePercent: 5, elsewhere: 200 });
 
 /**
  * Plays the same game along two lines: one never saved, and one saved, stored and restored
@@ -116,7 +104,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(12);
+    expect(save.formatVersion).toBe(17);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -178,7 +166,7 @@ describe.each(countries)(
           quarter === 0
             ? ruinous
             : quarter === 6
-              ? { ...austere, spending: { ...austere.spending, upkeep: 10 } }
+              ? budgetFrom(austere, { spending: { upkeep: 10 } })
               : austere,
         ...(quarter === 0 ? { startProjects: [store.id] } : {}),
       }));
@@ -213,7 +201,7 @@ describe.each(countries)(
 
       // The store is paid for out of a high tax, and its upkeep is paid every quarter.
       const passed = playThroughSaves(createGame(country, 4), 10, (_game, quarter) => ({
-        budget: { ...austere, spending: { ...austere.spending, upkeep: 10 } },
+        budget: budgetFrom(austere, { spending: { upkeep: 10 } }),
         ...(quarter === 0 ? { startProjects: [store.id] } : {}),
       }));
 
@@ -278,7 +266,7 @@ describe('a game on a country that starts in debt', () => {
 
     const resumed = loadSave(save);
     expect(resumed).toEqual({ game: state, report });
-    expect(resumed.game.country.formatVersion).toBe(10);
+    expect(resumed.game.country.formatVersion).toBe(13);
     expect(resumed.game.country.start.loans).toEqual(start.country.start.loans);
     expect(resumed.game.debts.map((debt) => debt.number)).toEqual([1, 2]);
     expect(advanceQuarter(resumed.game, steward(resumed.game))).toEqual(
@@ -346,8 +334,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 13))).toBe(
-      'The saved game was written by a newer release of the game (save format 13; this release reads format 12). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 18))).toBe(
+      'The saved game was written by a newer release of the game (save format 18; this release reads format 17). Open it with that release.',
     );
   });
 
@@ -362,8 +350,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when the country it carries will not load', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 11))).toBe(
-      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 11, but this game reads versions 1 to 10.',
+    expect(refusal(withValue(save, ['country', 'file', 'formatVersion'], 14))).toBe(
+      'The saved game’s country cannot be loaded, so the game cannot be opened. formatVersion is 14, but this game reads versions 1 to 13.',
     );
     expect(refusal(without(save, ['country', 'file']))).toMatch(/country cannot be loaded/);
     expect(refusal(without(save, ['country']))).toBe(
@@ -686,81 +674,135 @@ describe.each(bothCountries)('a save of a game in %s from an older format', (_na
 describe('a save written under other budget limits', () => {
   it('opens on the nearest budget the game now allows', () => {
     const { save } = midGameSave(tavara);
-    const outside = {
+    const outside = budgetOf({
       taxRatePercent: 90,
-      spending: {
-        agriculture: 205,
-        foodRelief: 1000,
-        health: 0,
-        education: 70,
-        security: 13,
-        upkeep: 0,
-      },
-    };
+      spending: { agriculture: 205, foodRelief: 1000, education: 70, security: 13 },
+    });
 
     const restored = loadSave(withValue(save, ['state', 'budget'], outside));
 
-    expect(restored.game.budget).toEqual({
-      taxRatePercent: 40,
-      spending: {
-        agriculture: 200,
-        foodRelief: 200,
-        health: 0,
-        education: 70,
-        security: 10,
-        upkeep: 0,
-      },
-    });
+    expect(restored.game.budget).toEqual(
+      budgetOf({
+        taxRatePercent: 40,
+        spending: { agriculture: 200, foodRelief: 200, education: 70, security: 10 },
+      }),
+    );
   });
 });
 
-describe('the save kept from save format 12', () => {
-  it('still opens on the game it was written from, a deposit found and a survey under way', () => {
-    const { game, report } = loadSave(format12Save);
+describe('the save kept from save format 17', () => {
+  it('still opens on the game it was written from, the farmers pleased by a budget that favours them', () => {
+    const { game, report } = loadSave(format17Save);
 
-    expect(game.date).toEqual({ year: 1, quarter: 3 });
+    expect(game.date).toEqual({ year: 1, quarter: 4 });
+    expect(game.country.formatVersion).toBe(13);
+    expect(game.budget.spending.agriculture).toBe(160);
     expect(
-      game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+      factionsStatus(game).standings.map((each) => [each.name, each.standing, each.word]),
     ).toEqual([
-      [{ kind: 'survey', regionId: 'salt-coast' }, 'surveyed', 2],
-      [{ kind: 'survey', regionId: 'dry-east' }, 'building', 1],
+      ['Farmers', 613, 'Pleased'],
+      ['Workers', 461, 'Content'],
+      ['Business', 485, 'Content'],
+      // The country as it ships grows, so the same Defence is a little less a head each quarter.
+      ['Army', 581, 'Loyal'],
     ]);
-    expect(surveyedRegions(game.projects)).toEqual(['salt-coast']);
-    expect(game.country.sites.slice(-2).map((site) => [site.id, site.capacity])).toEqual([
-      ['westhaven-mine', capacityOfTonnes(290_000)],
-      ['westhaven-trunk-road', undefined],
+    expect(game.history.map((record) => record.standings)).toEqual([
+      { farmers: 561, workers: 478, business: 516 },
+      { farmers: 582, workers: 471, business: 503 },
+      { farmers: 599, workers: 465, business: 493 },
+      { farmers: 613, workers: 461, business: 485 },
     ]);
-    expect(report?.entries.map((entry) => entry.headline)).toEqual(
-      expect.arrayContaining(['Survey finished: Salt Coast', 'Survey begins: The Dry East']),
-    );
+    // Lowmere Plains, seven in ten of them farmers, gains by it; Salt Coast, half of it
+    // business, loses.
+    expect(regionFactions(game, 'lowmere-plains')).toMatchObject({
+      shares: { farmers: 700, workers: 200, business: 100 },
+      effect: 21,
+    });
+    expect(regionFactions(game, 'salt-coast')).toMatchObject({
+      shares: { farmers: 150, workers: 350, business: 500 },
+      effect: -1,
+    });
+    expect(report?.standings?.farmers).toEqual({
+      value: 613,
+      change: 14,
+      contributions: [
+        { label: 'Agriculture’s share of spending', amount: 14 },
+        { label: 'Drought and flood', amount: 0 },
+      ],
+    });
+    const line = report?.approval.contributions.find((each) => each.label === 'Factions');
+    // Each part that moved approval says what moved its faction most. Workers and business
+    // lost ground too, but neither by enough to move national approval a tenth of a point.
+    expect(line).toEqual({
+      label: 'Factions',
+      amount: 2,
+      parts: [
+        { label: 'Farmers', amount: 2, note: 'Agriculture’s share of spending' },
+        { label: 'Workers', amount: 0 },
+        { label: 'Business', amount: 0 },
+      ],
+    });
   });
 
-  it('plays on, the Dry East surveyed, with the Westhaven mine there to be built', () => {
-    const { game } = loadSave(format12Save);
+  it('plays on: back on the budget it started with, the standings turn for where they began', () => {
+    let { game } = loadSave(format17Save);
+    const started = game.country.start.budget;
 
-    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
+    for (let quarter = 0; quarter < 2; quarter += 1) {
+      game = advanceQuarter(game, answering(game, steward(game, started))).state;
+    }
+    const [farmers, workers, business] = factionsStatus(game).standings;
+    expect(farmers?.standing).toBeLessThan(613);
+    expect(farmers?.standing).toBeGreaterThan(561);
+    expect(workers?.standing).toBeGreaterThan(461);
+    expect(business?.standing).toBeGreaterThan(485);
+  });
 
-    expect(report.entries).toContainEqual(
-      expect.objectContaining({
-        headline: 'Survey finished: The Dry East',
-        cause:
-          'The surveyors have reported. They found a deposit of ore whose mine could yield 800,000 t a quarter. Dustwell mine and Trunk road, Dustwell mine to Saltmouth can be built from next quarter.',
-      }),
+  it('is refused when a standing, a lever’s effect or a split line is not one the game could hold', () => {
+    const farmers = ['state', 'factions', 'farmers'];
+    expect(refusal(withValue(format17Save, [...farmers, 'standing'], 1001))).toMatch(
+      /^The saved game is damaged and cannot be opened: state\.factions\.farmers\.standing is 1001/,
     );
-    expect(surveyedRegions(state.projects)).toEqual(['salt-coast', 'dry-east']);
+    expect(refusal(without(format17Save, [...farmers, 'effects', 'harvest']))).toMatch(
+      /^The saved game is damaged and cannot be opened: state\.factions\.farmers\.effects\.harvest/,
+    );
+    expect(refusal(without(format17Save, ['state', 'factions', 'business']))).toMatch(
+      /^The saved game is damaged and cannot be opened: state\.factions\.business/,
+    );
     expect(
-      startFault({ ...state, treasury: 2000 }, ['westhaven-mine', 'dustwell-mine']),
-    ).toBeNull();
+      refusal(withValue(format17Save, ['state', 'history', 0, 'standings', 'workers'], -1)),
+    ).toMatch(
+      /^The saved game is damaged and cannot be opened: state\.history\[0\]\.standings\.workers/,
+    );
+    expect(
+      refusal(without(format17Save, ['state', 'regions', 0, 'approvalEffects', 'factions'])),
+    ).toMatch(
+      /^The saved game is damaged and cannot be opened: state\.regions\[0\]\.approvalEffects\.factions/,
+    );
+    const index = format17Save.report.approval.contributions.findIndex(
+      (each) => each.label === 'Factions',
+    );
+    expect(
+      refusal(
+        withValue(
+          format17Save,
+          ['report', 'approval', 'contributions', index, 'parts', 0, 'amount'],
+          'some',
+        ),
+      ),
+    ).toMatch(
+      /^The saved game is damaged and cannot be opened: report\.approval\.contributions\[\d+\]\.parts\[0\]\.amount/,
+    );
   });
 
-  // This holds for as long as format 12 is the current format: saving must write exactly
+  // This holds for as long as format 17 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(12);
-    const { game, report } = loadSave(format12Save);
+    expect(SAVE_FORMAT_VERSION).toBe(17);
+    const { game, report } = loadSave(format17Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format12Save);
+    expect(stored(saveGame(game, report))).toEqual(format17Save);
   });
 });
 

@@ -9,6 +9,7 @@ import {
   formatPrice,
   formatTonnes,
   importTerms,
+  listed,
   ORDER_STEP_TONNES,
   plannedExport,
   plannedImport,
@@ -17,6 +18,7 @@ import {
   type GameState,
   type Preview,
   type TradeOrder,
+  quartersLeftWords,
 } from '../sim';
 import { DecisionPanel, type DecisionTab } from './DecisionPanel';
 import { More } from './More';
@@ -248,6 +250,7 @@ function TradeCapacityView({
   const crossingTo = new Map(
     game.country.crossings.map((crossing) => [crossing.id, crossing.neighbourId]),
   );
+  const closed = capacity.links.filter((link) => link.closed !== null);
   const rows: [label: string, tonnes: string][] = [
     ['Trade links carry', formatTonnes(capacity.total)],
     ...(capacity.ore > 0
@@ -269,6 +272,16 @@ function TradeCapacityView({
           ))}
         </tbody>
       </table>
+      {closed.length > 0 && (
+        <p className="warning-note" role="status" aria-label="Closed crossings">
+          ✕ {listed(closed.map((link) => link.name))} {closed.length > 1 ? 'are' : 'is'} closed by a
+          border incident and {closed.length > 1 ? 'carry' : 'carries'} nothing:{' '}
+          {closed
+            .map((link) => `${link.name} ${quartersLeftWords(link.closed?.quartersLeft ?? 0)}`)
+            .join(', ')}
+          .
+        </p>
+      )}
       <More summary="Trade links">
         <ul className="trade__links" aria-label="Trade links">
           {capacity.links.map((link) => (
@@ -279,7 +292,9 @@ function TradeCapacityView({
                   ? `Border crossing to ${neighbourName(crossingTo.get(link.id) ?? '')}`
                   : link.decaying
                     ? 'Port, decaying: half its capacity'
-                    : 'Port'}{' '}
+                    : 'Port'}
+                {link.closed !== null &&
+                  `, ✕ closed by the border incident ${quartersLeftWords(link.closed.quartersLeft)}`}{' '}
                 · {formatTonnes(link.tonnes)}
               </span>
             </li>
@@ -287,8 +302,9 @@ function TradeCapacityView({
         </ul>
         <p className="section-empty">
           Everything that crosses the border moves through a trade link: the border crossings, and
-          each port in use, which carries half while it decays. The mines’ ore takes its share
-          first, and grain bought and sold is limited to what is left.
+          each port in use, which carries half while it decays. A border incident closes the
+          crossings to its neighbour while it lasts. The mines’ ore takes its share first, and grain
+          bought and sold is limited to what is left.
         </p>
       </More>
     </div>

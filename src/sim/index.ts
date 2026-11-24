@@ -15,6 +15,7 @@ export {
   COUNTRY_FORMAT_VERSION,
   CountryFileError,
   loadCountry,
+  neighbourName,
   regionName,
   type Country,
   type Crossing,
@@ -36,6 +37,14 @@ export {
   type ApprovalStatus,
   type RegionUnrest,
 } from './approval';
+export {
+  armyLoyaltyStatus,
+  armyStageAt,
+  nationalLoyalty,
+  type ArmyLoyaltyEffects,
+  type ArmyLoyaltyStatus,
+  type RegionArmyLoyalty,
+} from './army';
 export { type Budget } from './budget';
 export { missedPaymentMeans } from './bailout';
 export {
@@ -166,7 +175,44 @@ export { settlementLook, settlementLooks, type SettlementLook } from './settleme
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
 export { termRecords, type TermRecord } from './terms';
 export { victoryStatus, type DebtTest, type VictoryStatus } from './victory';
+export { borderRegions, neighbourBorder, type BorderEdge } from './borders';
+export {
+  borderIncidentStatuses,
+  borderIncidentTerms,
+  quartersLeftWords,
+  type BorderIncident,
+  type CrossingClosure,
+  type IncidentCost,
+  type IncidentStatus,
+} from './borderIncidents';
+export { coupAfterPlottingQuarters, coupStatus, type Coup, type CoupStatus } from './coup';
+export {
+  deterrenceStatus,
+  intentionIn,
+  type DeterrenceStatus,
+  type NeighbourOutlook,
+  type NeighbourStatus,
+} from './deterrence';
+export {
+  bestStanding,
+  factionsNoticeablePermille,
+  moodAt,
+  type FactionEffects,
+  type FactionLevels,
+  type FactionMix,
+  type FactionStanding,
+  type FactionStandings,
+} from './factions';
+export {
+  factionsStatus,
+  regionFactions,
+  type FactionOutlook,
+  type FactionsStatus,
+  type FactionStatus,
+  type RegionFactions,
+} from './factionStatus';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
+export { incidentTaxCost } from './threatRisks';
 export { SAVE_FORMAT_VERSION, type SaveMigration } from './migrations';
 export { loadSave, saveGame, type RestoredGame, type SavedGame } from './save';
 export { SaveError } from './saveChecks';
@@ -249,21 +295,35 @@ export {
   type Range,
 } from './types';
 export {
+  ARMY_STAGE_NAMES,
+  ARMY_STAGES,
   CHAIN_ROLES,
+  CIVIL_FACTIONS,
   CREDIT_RATING_NAMES,
   CREDIT_RATINGS,
   DEBT_KIND_NAMES,
   DEBT_KINDS,
   DEBT_SCHEDULES,
   DILEMMA_TYPES,
+  FACTION_LEVER_NAMES,
+  FACTION_LEVERS,
+  FACTION_MOOD_NAMES,
+  FACTION_MOODS,
+  FACTION_NAMES,
+  FACTIONS,
   FOOD_STAGE_NAMES,
   FOOD_STAGES,
   GOOD_NAMES,
   GOODS,
+  BORDER_INCIDENT_NAME,
+  INTENTION_NAMES,
+  INTENTIONS,
   ORDERED_GOODS,
   LASTING_SERVICE_NAMES,
   LIKELIHOOD_NAMES,
   LIKELIHOODS,
+  LOYALTY_DRIVER_NAMES,
+  LOYALTY_DRIVERS,
   MAP_FRAME,
   PROSPERITY_PART_NAMES,
   PROSPERITY_PARTS,
@@ -287,18 +347,25 @@ export {
   UNREST_NAMES,
   WEATHER_HELD_BY,
   type ApprovalDriver,
+  type ArmyStage,
   type ChainRole,
+  type CivilFaction,
   type CreditRating,
   type DebtKind,
   type DebtSchedule,
   type DecorationKind,
+  type Faction,
+  type FactionLever,
+  type FactionMood,
   type DilemmaType,
   type EventType,
   type FoodStage,
   type Good,
+  type Intention,
   type LabelSide,
   type LastingService,
   type Likelihood,
+  type LoyaltyDriver,
   type PowerRole,
   type ProjectStatus,
   type ProjectTargetKind,

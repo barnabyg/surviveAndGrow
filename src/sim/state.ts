@@ -1,11 +1,16 @@
 import type { ApprovalEffects, RegionUnrest } from './approval';
+import type { ArmyLoyaltyEffects } from './army';
 import type { Austerity } from './austerity';
+import type { BorderIncident } from './borderIncidents';
 import type { Budget } from './budget';
 import type { Country } from './country';
 import type { Credit } from './credit';
 import type { Borrowing, Debt } from './debt';
+import type { NeighbourOutlook } from './deterrence';
 import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
 import type { ActiveEvent, EventStrike } from './events';
+import type { FactionStandings } from './factions';
+import type { FactionOutlook } from './factionStatus';
 import type { Harvest } from './food';
 import type { PriceShock } from './priceShocks';
 import type { Project } from './projects';
@@ -17,6 +22,7 @@ import type { TradeOrder, WorldPrices } from './trade';
 import type { RouteCarriage } from './tradeRoutes';
 import type { Figure, GameDate, Money, Range } from './types';
 import type {
+  CivilFaction,
   CreditRating,
   FoodStage,
   PriceShockType,
@@ -61,6 +67,13 @@ export interface RegionState {
   readonly health: number;
   /** The level of education in the region, in thousandths, built and worn like health. */
   readonly education: number;
+  /**
+   * How loyal the army in the region is, in thousandths. It is the baseline plus the effects
+   * below, held between nothing and the whole, and is read in stages (see `army.ts`).
+   */
+  readonly armyLoyalty: number;
+  /** What each driver now adds to or takes from the region's army loyalty, in thousandths. */
+  readonly armyLoyaltyEffects: ArmyLoyaltyEffects;
 }
 
 /** How a finished game ended, in words the player can be shown whatever the cause. */
@@ -74,7 +87,8 @@ interface Ending {
 /**
  * Whether the game is still being played, and if not, how it ended. The game runs over as
  * many terms as the government keeps winning. It is won by holding prosperity in the top
- * tier for long enough (see `victory.ts`), and lost by losing an election or by famine.
+ * tier for long enough (see `victory.ts`), and lost by losing an election, by famine or to a
+ * coup (see `coup.ts`).
  */
 export type Outcome =
   | { readonly status: 'playing' }
@@ -83,6 +97,14 @@ export type Outcome =
       readonly cause: 'famine';
       /** The region where the famine took hold. */
       readonly regionId: string;
+    })
+  | (Ending & {
+      readonly status: 'lost';
+      readonly cause: 'coup';
+      /** National army loyalty as the army took power, in thousandths. */
+      readonly loyalty: number;
+      /** How many quarters running the army had plotted. */
+      readonly quarters: number;
     })
   | (Ending & {
       readonly status: 'lost';
@@ -165,6 +187,29 @@ export interface GameState {
    */
   readonly prosperousQuarters: number;
   /**
+   * How many quarters running national army loyalty has ended at plotting. It goes back to
+   * nothing in any quarter that ends above it, and the game is lost to a coup when it reaches
+   * `balance.army.coup.afterPlottingQuarters`.
+   */
+  readonly plottingQuarters: number;
+  /**
+   * Deterrence against the neighbours, in thousandths: one national figure, which Defence
+   * spending builds and lets go over the quarters (see `deterrence.ts`). What each neighbour
+   * intends is read from it and the tier in force, and is not kept.
+   */
+  readonly deterrence: number;
+  /**
+   * How farmers, workers and business each stand with the government, and what each lever
+   * now adds to or takes from that (see `factions.ts`). The army's standing is its loyalty,
+   * which the regions hold.
+   */
+  readonly factions: FactionStandings;
+  /**
+   * The border incidents announced and not yet ended: those to come and those in force, one
+   * at most for each neighbour, in the order they were announced (see `borderIncidents.ts`).
+   */
+  readonly borderIncidents: readonly BorderIncident[];
+  /**
    * The austerity a bailout imposed, while it holds, or null. Neither a bailout nor a missed
    * payment during austerity ends the game.
    */
@@ -235,6 +280,22 @@ export interface TurnReport {
    * National approval after the quarter, in thousandths, with everything that moved it.
    */
   readonly approval: Figure;
+  /**
+   * National army loyalty after the quarter, in thousandths, with everything that moved it. A
+   * report carried over from a save written before format 13, when no army was kept, has none.
+   */
+  readonly armyLoyalty: Figure | null;
+  /**
+   * Deterrence after the quarter, in thousandths, with what moved it. A report carried over
+   * from a save written before format 15, when no neighbour had an ambition, has none.
+   */
+  readonly deterrence: Figure | null;
+  /**
+   * The standing of farmers, workers and business after the quarter, in thousandths, each
+   * with what its levers did to it. A report carried over from a save written before format
+   * 17, when there were no factions, has none.
+   */
+  readonly standings: Readonly<Record<CivilFaction, Figure>> | null;
   /**
    * National prosperity after the quarter, in thousandths, with what each of its parts did
    * to it. A report carried over from a save written before prosperity existed has none.
@@ -308,6 +369,12 @@ export interface Chance {
    * kind already announced or in force is not announced again.
    */
   readonly shocksAnnounced: readonly PriceShockType[];
+  /**
+   * The roll for each neighbour's border incident, from 0 up to 1, in the country file's
+   * order. A hostile neighbour with none of its own announced or in force announces one when
+   * its roll falls under the chance in balance data. A neighbour with no roll announces none.
+   */
+  readonly incidentRolls: readonly number[];
   /**
    * The roll for each kind of dilemma, from 0 up to 1, in the vocabulary's order. One
    * arises when its roll falls under its chance. A kind with no roll does not arise.
@@ -421,6 +488,35 @@ export interface Preview {
    * several quarters, so this is further off than the figure above.
    */
   readonly approvalHeading: Range;
+  /** National army loyalty once the quarter is over, in thousandths. */
+  readonly armyLoyalty: Range;
+  /**
+   * Where national army loyalty settles, in thousandths, if Defence spending and each region's
+   * unrest stay as they will be when the quarter ends. Loyalty moves there over several
+   * quarters, as approval does.
+   */
+  readonly armyLoyaltyHeading: Range;
+  /** Deterrence once the quarter is over, in thousandths. */
+  readonly deterrence: Range;
+  /**
+   * Where deterrence settles, in thousandths, if what is spent on Defence stays as it will be
+   * this quarter. Deterrence moves there over many quarters, more slowly than army loyalty.
+   */
+  readonly deterrenceHeading: Range;
+  /**
+   * What each neighbour will intend once the quarter is over, and what it would with
+   * deterrence where it settles, in the country file's order. Both are read in the tier the
+   * quarter leaves with world prices where they are: a tier that only a move in the world ore
+   * price carries the country past is the one thing they cannot see. The risks ahead look for
+   * that (`oreRise` in `riskScope.ts`).
+   */
+  readonly neighbours: readonly NeighbourOutlook[];
+  /**
+   * Where farmers, workers and business will each stand once the quarter is over, and where
+   * the quarter's budget is heading each, in the factions' order. The army's standing is army
+   * loyalty, above.
+   */
+  readonly standings: readonly FactionOutlook[];
   /**
    * National prosperity once the quarter is over, in thousandths. Only the world ore price,
    * which world markets move as the quarter ends, is left to chance: with no mine's chain

@@ -28,6 +28,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { withChances, withoutPoweredMines } from './countries';
 import { knowing, steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 /**
  * A country with a treasury that pays for everything it can build and for research, no
@@ -41,7 +42,7 @@ function rich(file: unknown, flood: Record<string, number> = {}): Country {
 
 /** The country's own spending with enough tax and upkeep for everything built. */
 function solvent(country: Country): Budget {
-  return { taxRatePercent: 25, spending: { ...country.start.budget.spending, upkeep: 40 } };
+  return budgetFrom(country.start.budget, { taxRatePercent: 25, spending: { upkeep: 40 } });
 }
 
 /** The first site of a type in the country, among the ids given if there are any. */

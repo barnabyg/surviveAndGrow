@@ -21,6 +21,10 @@ export interface Contribution {
   readonly amount: number;
   /** The region it happened in, when it belongs to one place. */
   readonly regionId?: string;
+  /** What the amount is split into, when it has parts: they add up to it. */
+  readonly parts?: readonly Contribution[];
+  /** A few words on what lies behind the amount, where its label alone does not say. */
+  readonly note?: string;
 }
 
 /**

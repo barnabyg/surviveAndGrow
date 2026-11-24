@@ -36,6 +36,12 @@ export const risksBalance = {
      * country that lives on its mine must be ready for, so it errs towards warning.
      */
     oreSlumpChancePermille: 100,
+    /**
+     * The chance, in thousandths, given to what only a rise in the world ore price to the high
+     * end of its forecast would bring: a richer country passes a tier sooner, and is worth
+     * more to a neighbour. A rise that steep is as rare as the slump, and is weighed the same.
+     */
+    oreRiseChancePermille: 100,
     likelihoodFromPermille: {
       remote: 20,
       unlikely: 100,

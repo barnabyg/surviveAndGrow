@@ -14,6 +14,10 @@ test('a site whose upkeep is cut decays, and paying its upkeep again restores it
   page,
 }) => {
   await startGame(page);
+  // $2.0m less on food relief, which nothing here needs, so that the treasury covers the
+  // budget for the year the risks ahead look over, and upkeep is all that can fall short.
+  await decisions(page).getByRole('slider', { name: 'Food relief' }).fill('5');
+  await decisions(page).getByRole('button', { name: 'Commit budget' }).click();
   const site = map(page).getByRole('button', { name: /^Lowmere grain store/ });
   await site.click();
   const card = page.getByRole('region', { name: 'Lowmere grain store' });

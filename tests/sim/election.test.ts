@@ -13,6 +13,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { startingAt, withDroughtChance } from './countries';
+import { budgetFrom } from '../budgets';
 
 /**
  * Each country with no drought, and approval worked out by hand from the approval rules.
@@ -30,10 +31,7 @@ const lands = [
   {
     name: 'Tavara',
     country: () => withDroughtChance(tavaraFile, {}),
-    steady: (budget: Budget): Budget => ({
-      ...budget,
-      spending: { ...budget.spending, foodRelief: 0 },
-    }),
+    steady: (budget: Budget): Budget => budgetFrom(budget, { spending: { foodRelief: 0 } }),
     steadyApproval: 518,
     // Tax at 17%: one point under 18% is worth +1.2 points.
     approving: () => startingAt(tavaraFile, 17),
@@ -65,10 +63,10 @@ const lands = [
 const unchanged = (budget: Budget): Budget => budget;
 
 function harsh(budget: Budget): Budget {
-  return {
+  return budgetFrom(budget, {
     taxRatePercent: 40,
-    spending: { ...budget.spending, health: 0, education: 0, security: 0 },
-  };
+    spending: { health: 0, education: 0, security: 0 },
+  });
 }
 
 interface Played {
@@ -328,10 +326,7 @@ describe.each([
     const rich = structuredClone(land.file) as { start: { treasury: number } };
     rich.start.treasury = 500;
     let game = createGame(withDroughtChance(rich, { [land.regionId]: 1 }), 3);
-    const budget: Budget = {
-      ...game.budget,
-      spending: { ...game.budget.spending, foodRelief: land.relief },
-    };
+    const budget: Budget = budgetFrom(game.budget, { spending: { foodRelief: land.relief } });
 
     const reports: TurnReport[] = [];
     for (let quarter = 1; quarter <= 20; quarter += 1) {

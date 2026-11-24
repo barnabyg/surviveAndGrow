@@ -30,6 +30,7 @@ import testlandFile from '../countries/testland.json';
 import { testlandFormat8File, withChances } from './countries';
 import { faultsOf, withValue } from './files';
 import { knowing, steward } from './playing';
+import { budgetFrom } from '../budgets';
 
 /** A country with a treasury that pays for anything, and no drought, flood or dilemma. */
 function rich(file: unknown): Country {
@@ -209,10 +210,10 @@ describe.each(scenarios)('in a whole game of $name, the dam', ({ file }) => {
     const dam = damOf(country);
     const line = lineTo(country, dam);
     const index = regionIndex(country, dam);
-    const budget = {
+    const budget = budgetFrom(country.start.budget, {
       taxRatePercent: 25,
-      spending: { ...country.start.budget.spending, upkeep: 40 },
-    };
+      spending: { upkeep: 40 },
+    });
     const start = knowing(createGame(country, 5), prerequisitesOf('hydropower'));
     const heldBefore = leftIn(siteEffects(start), WEATHER_HELD_BY, index);
 

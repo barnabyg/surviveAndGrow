@@ -29,7 +29,7 @@ the saved game or to start a new one:
 
 The first term is 20 quarters, ending in an election. Win it and you govern on into another term;
 the game itself is won on prosperity, held in the top tier.
-It is meant to be hard. You take office with approval near 52%, a budget that loses $5.0m a
+It is meant to be hard. You take office with approval near 52%, a budget that loses $7.0m a
 quarter, and a food reserve below its safe level. Left alone, the country votes you out, if a
 drought or a flood does not starve a region first.
 
@@ -39,6 +39,35 @@ drought or a flood does not starve a region first.
 - **Earn the vote over the whole term.** Approval moves slowly towards where your tax and
   spending would settle it, and the election forecast in the right column says where you stand.
   Below 40% a region strikes, which costs far more revenue than the tax that provoked it.
+- **Mind the factions.** Farmers, workers and business each have a standing with you, shown in
+  the left column with the army's, and each region follows them by its mix of the three: a
+  farming region the farmers, a port city business and workers. Farmers judge agriculture's
+  share of what you spend, and workers the share that goes to health and education, so a share
+  won for one is taken from the other; business minds the tax rate, how far the budget runs
+  short, the debt and the large sites in use. No budget pleases them all. The budget's outlook
+  says what a change would do to each standing, and a region's card what the factions do to its
+  approval, which is worth a look before a vote that turns on one region.
+- **Keep the army loyal.** Defence in the budget is judged against what the army expects for
+  the country's people. Cut it and army loyalty falls a part of the way each quarter, from loyal
+  to restless and then to plotting; strikes in a region pull the army there down, and protests
+  further. The top bar shows national loyalty and its stage, the budget panel what a change
+  would do to it, and each region's card its own. An army that plots for four quarters running
+  takes power, and the game is lost: the top bar counts the quarters left, the risks ahead list
+  the coup before it can come, and Defence restored in time calls it off. An empty treasury
+  cuts Defence with everything else, so insolvency can starve the army without your choosing to.
+- **Deter the neighbours before you prosper.** Each neighbour has an ambition, which weighs
+  nothing while the country is at Subsistence and more with every prosperity tier it passes.
+  Defence spending also builds deterrence, one figure for the whole country, and it moves
+  slowly, so raise Defence before the tier that needs it. A neighbour is peaceful, watchful or
+  hostile by how deterrence stands against what its ambition weighs: its name on the map
+  carries the word and a mark, its card says what it would take to change it, the budget's
+  outlook says what a change to Defence would do, and the risks ahead warn before one turns
+  hostile. A hostile neighbour may announce a border incident, two quarters ahead: for three
+  quarters its crossings carry nothing, so less grain can be bought, and the regions on its
+  border produce less and approve less, which can tip them into strikes. It is called off if
+  the neighbour is no longer hostile as it would begin, so Defence raised at once can still
+  stop it; the risks ahead give the chance of one, and what it would cost, while a neighbour
+  is hostile.
 - **Buy grain when the harvest fails.** The trade panel in the right column orders grain for the
   national reserve at the world price, which moves every quarter. Money can stand in for a bad
   season, and austerity does not stop it.
@@ -88,7 +117,7 @@ npm.cmd run dev -- --open '/?seed=1'
 ```
 
 This starts the game at http://localhost:41730/?seed=1 and opens it in your browser. On seed 1
-the scripted chain builder, which never trades, loses its first vote with 49.9%; the timing
+the scripted chain builder, which never trades, loses its first vote with 49.3%; the timing
 trader, which builds the same sites in the same order and trades grain besides, wins in quarter
 30, in the third year of its second term. The improver, which builds the same sites and
 researches the technologies that improve them, wins its first two votes and loses its third.
@@ -98,8 +127,8 @@ Try to win the way the timing trader does:
    Saltmouth port, the trunk road and the Korrgate mine, each once the treasury holds its cost.
 2. In the third quarter of the first year failed harvests abroad are announced: the report says
    so, and the grain price in the trade panel lists the shock and its forecast rises. The
-   reserve is below its safe level, so buy grain before the price rises, about 34,000 t, and
-   18,000 t more the quarter after.
+   reserve is below its safe level, so buy grain before the price rises, about 33,000 t, and
+   17,000 t more the quarter after.
 3. Once the first harvest is in, sell the surplus while grain is dear: 90,000 t a quarter, all
    the border crossings carry, at more than $320 a tonne while the shock lasts. Keep the
    reserve about a quarter above its safe level, and sell only while the price is at or above

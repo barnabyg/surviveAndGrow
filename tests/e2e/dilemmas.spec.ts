@@ -122,7 +122,7 @@ test('an option the treasury cannot pay for is shown but cannot be chosen', asyn
   const teachers = dilemma(page, 'Teachers demand a pay rise');
   const grant = teachers.getByRole('button', { name: /^Grant the rise/ });
   await expect(grant).toBeDisabled();
-  await expect(grant).toContainText('▲ Cannot be chosen. The treasury holds only $0.1m.');
+  await expect(grant).toContainText('▲ Cannot be chosen. The treasury holds only $0.2m.');
   await expect(teachers.getByRole('button', { name: /^Refuse it/ })).toBeEnabled();
 });
 

@@ -58,7 +58,8 @@ Every system must feed this tension. A feature that does not is cut.
   hold; it only withholds the win until the debt test passes.
 - **Terms:** an election every 20 quarters. Winning it begins a new term, with no limit on how many;
   it does not by itself win the game.
-- **Lose:** election defeat or state collapse from famine, and from Phase 6 a coup.
+- **Lose:** election defeat, state collapse from famine, or a coup: the army taking power once
+  it has plotted for a set number of quarters running.
 - **Insolvency is not an instant loss.** It triggers a bailout with forced austerity, which then
   threatens approval.
 - **Cascades are the threat.** Drought leads to shortage, then falling approval, strikes, lost
@@ -74,7 +75,7 @@ Prosperity, tiers and people.
 ## 4. Systems
 
 - **Economy and budget.** A tax rate and a small set of spending areas (agriculture, food relief,
-  health, education, security, upkeep). Revenue comes from tax on output. Underfunded upkeep makes
+  health, education, security, defence from Phase 6, upkeep). Revenue comes from tax on output. Underfunded upkeep makes
   infrastructure decay, newest sites first, so standing still loses. Rules: rules.md, The
   quarter and the budget, and Building.
 - **Food.** Each region's harvest is moved by weather and drought and feeds a national reserve, with
@@ -86,7 +87,8 @@ Prosperity, tiers and people.
   quarters. Rules: rules.md, Trade; balance: `docs/balance/phase-4.md`.
 - **Approval and elections.** One approval number with a visible breakdown. Strikes and protests
   begin below set thresholds. An election every 20 quarters turns approval into a vote share; below
-  50% the game is lost. Factions (farmers, workers, business, army) arrive in Phase 6.
+  50% the game is lost. Since Phase 6 the factions (farmers, workers, business, army) move each
+  region's approval by its mix of them.
 - **Events.** Events and dilemmas began in Phase 1 with a handful, and gain content in every phase.
   Events are local to regions wherever possible.
 - **Finance.** Loans, and bonds once the credit rating is good enough, pull the mine's chain
@@ -112,10 +114,45 @@ Prosperity, tiers and people.
   seed and the deposit, not the random generator, so it is fair and the same seed finds the same.
   Rules: rules.md, Surveys; balance: `docs/balance/phase-5.md`.
 
-### Still to come
+- **Defence and army loyalty** (Phase 6): the army is kept abstract, and there is no tactical
+  combat. Defence is a spending area that buys the army's loyalty, kept for each region and
+  nationally: it answers to defence spending per head against what the army expects and to the
+  region's own unrest, moves gradually as approval does, and is read as loyal, restless or
+  plotting. That gives the cascade the phase is built on: famine, then protests, then falling
+  loyalty. Rules: rules.md, Defence and army loyalty.
+- **Coup** (Phase 6): the third way to lose, decided by a countdown the player can watch, as
+  famine's collapse is. The army takes power when national army loyalty has stood at plotting
+  for a set number of quarters running; a quarter above plotting starts the count afresh.
+  Nothing is rolled, and it is checked before the election and the win. The top bar counts the
+  quarters left, the report says so each quarter, and the risks ahead list it before any quarter
+  in which it could come. Rules: rules.md, Elections, winning and the end of a game.
 
-- **Military** (Phase 6): kept abstract. Defence spending buys deterrence against neighbours and
-  loyalty from the army. There is no tactical combat.
+- **Neighbours and deterrence** (Phase 6): each neighbour has an ambition, from the country
+  file, and Defence spending builds deterrence against it, one national figure that moves
+  slowly and so has to be bought ahead. A state worth taking: what an ambition weighs grows
+  with the prosperity tier, so the neighbours are no threat early and the pressure arrives as
+  the country prospers. Each neighbour is peaceful, watchful or hostile by how deterrence
+  stands against what its ambition weighs, shown on its border, reported when it changes and
+  warned of ahead. There is no combat. Rules: rules.md, Neighbours and deterrence.
+- **Border incidents** (Phase 6): what a hostile neighbour does when deterrence fails. An
+  incident is abstract, and works only through money, time and approval: announced ahead, by
+  a draw from the seed and the quarter, it closes the neighbour's border crossings and cuts
+  the output and approval of the regions on its border for a set time, and is called off if
+  the neighbour is no longer hostile as it would begin. No territory changes hands and a
+  neighbour never ends the game, but what it costs a border region feeds the cascade to
+  unrest and a less loyal army. It is drawn on the border, reported at each step and listed in
+  the risks ahead before it begins. Rules: rules.md, Border incidents.
+
+- **Factions** (Phase 6): approval broken down by who is pleased and who is not, so that
+  pleasing everyone is impossible. The factions are the engine's own: farmers, workers, business
+  and the army. Farmers, workers and business each have one national standing that answers to a
+  few levers of its own and moves gradually, as approval does. Farmers and workers each judge
+  their share of what the budget spends, and business the tax rate, the deficit, the debt and
+  the large sites in use, so what pleases one costs another, directly or in money. A country
+  file gives each region its mix of the three, and the standings bear on the region's approval
+  by that mix, as one more effect over approval as built: a farming region follows the farmers,
+  a port city business and workers. The army has no share of the people and moves no approval;
+  its standing is its loyalty. Rules: rules.md, Factions.
 
 ## 5. The map
 

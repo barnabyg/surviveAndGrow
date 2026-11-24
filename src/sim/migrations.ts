@@ -3,9 +3,12 @@
  * save format means raising `SAVE_FORMAT_VERSION` here and adding the migration from the
  * version before it to `MIGRATIONS`; `loadSave` passes an old save through them in turn.
  */
+import { defenceToHoldLoyal, settledLoyalty } from './army';
 import { balance } from './balance';
 import { loadCountry } from './country';
 import { ratingOfScore } from './credit';
+import { deterrenceSettled } from './deterrence';
+import { neutralStandings } from './factions';
 import type { Project } from './projects';
 import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { damaged, isRecord, SaveError, type Json } from './saveChecks';
@@ -21,7 +24,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 12;
+export const SAVE_FORMAT_VERSION = 17;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -42,6 +45,11 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   9: fromFormat9,
   10: fromFormat10,
   11: fromFormat11,
+  12: fromFormat12,
+  13: fromFormat13,
+  14: fromFormat14,
+  15: fromFormat15,
+  16: fromFormat16,
 };
 
 /**
@@ -57,11 +65,7 @@ function fromFormat1(older: Json): Json {
   const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
   const budget = isRecord(state.budget) ? state.budget : {};
   const spending = isRecord(budget.spending) ? budget.spending : {};
-  const people = regions.reduce<number>(
-    (total, region) =>
-      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
-    0,
-  );
+  const people = peopleIn(regions);
   const level = (service: LastingService) => {
     const spent = spending[service];
     return typeof spent === 'number' ? settledServiceLevel(service, spent, people) : 0;
@@ -280,6 +284,130 @@ function fromFormat10(older: Json): Json {
  */
 function fromFormat11(older: Json): Json {
   return { ...older, formatVersion: 12 };
+}
+
+/**
+ * Format 13 added Defence, a spending area, and the army's loyalty, kept for each region. A
+ * game written in format 12 spent nothing on an army it did not have: it is read as spending
+ * the least that holds the army loyal for the people it now has, with the army in every
+ * region settled loyal on that. The quarters already recorded, and the last report, kept no
+ * army, so they say so. A budget whose spending cannot be read is left for checking to refuse.
+ */
+function fromFormat12(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
+  const people = peopleIn(regions);
+  const defence = defenceToHoldLoyal(people);
+  const budget = isRecord(state.budget) ? state.budget : null;
+  const spending = budget !== null && isRecord(budget.spending) ? budget.spending : null;
+  const loyal = settledLoyalty('calm', defence, people);
+  return {
+    ...older,
+    formatVersion: 13,
+    state: {
+      ...state,
+      budget:
+        budget === null || spending === null
+          ? state.budget
+          : { ...budget, spending: { ...spending, defence } },
+      regions: Array.isArray(state.regions)
+        ? regions.map((region) => (isRecord(region) ? { ...region, ...loyal } : region))
+        : state.regions,
+      history: Array.isArray(state.history)
+        ? (state.history as unknown[]).map((signs) =>
+            isRecord(signs) ? { ...signs, armyLoyalty: null } : signs,
+          )
+        : state.history,
+    },
+    report: isRecord(older.report) ? { ...older.report, armyLoyalty: null } : older.report,
+  };
+}
+
+/**
+ * Format 14 added the coup, and with it the count of quarters the army has plotted running. A
+ * game written in format 13 counted nothing, whatever its army was doing, so its count starts
+ * at nothing: an army already plotting gets the whole count from the quarter the save is
+ * opened in, and the player the whole warning.
+ */
+function fromFormat13(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return { ...older, formatVersion: 14, state: { ...state, plottingQuarters: 0 } };
+}
+
+/**
+ * Format 15 added deterrence against the neighbours, one national figure that Defence spending
+ * builds over the quarters. A game written in format 14 kept none: it is read as having the
+ * deterrence its Defence budget in force would settle for the people it now has, as a new game
+ * has what its starting budget would. Its country file is older than the format that gives a
+ * neighbour an ambition, so its neighbours stay peaceful whatever deterrence is. The last
+ * report measured no deterrence, so it says so.
+ */
+function fromFormat14(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
+  const people = peopleIn(regions);
+  const budget = isRecord(state.budget) ? state.budget : null;
+  const spending = budget !== null && isRecord(budget.spending) ? budget.spending : null;
+  const defence = typeof spending?.defence === 'number' ? spending.defence : 0;
+  return {
+    ...older,
+    formatVersion: 15,
+    state: { ...state, deterrence: deterrenceSettled(defence, people) },
+    report: isRecord(older.report) ? { ...older.report, deterrence: null } : older.report,
+  };
+}
+
+/**
+ * Format 16 added border incidents: what a hostile neighbour announces, and the state keeps
+ * until each ends. A game written in format 15 had none, whatever its neighbours intended, so
+ * it is read as having none announced: a neighbour already hostile may announce its first as
+ * the quarter the save is opened in ends, and the player gets the whole notice.
+ */
+function fromFormat15(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return { ...older, formatVersion: 16, state: { ...state, borderIncidents: [] } };
+}
+
+/**
+ * Format 17 added the factions. An earlier save had none, so farmers, workers and business
+ * each stand at neutral with nothing pushing them, and every region's approval gains a
+ * Factions effect of nothing: approval is where it was, and the standings then move a share
+ * of the way each quarter towards where the budget in force settles them. The quarters
+ * already recorded, and the last report, kept no standings, so they say so. Regions that
+ * cannot be read are left as they are, for checking to refuse.
+ */
+function fromFormat16(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return {
+    ...older,
+    formatVersion: 17,
+    state: {
+      ...state,
+      factions: neutralStandings(),
+      regions: Array.isArray(state.regions)
+        ? (state.regions as unknown[]).map((region) =>
+            isRecord(region) && isRecord(region.approvalEffects)
+              ? { ...region, approvalEffects: { ...region.approvalEffects, factions: 0 } }
+              : region,
+          )
+        : state.regions,
+      history: Array.isArray(state.history)
+        ? (state.history as unknown[]).map((record) =>
+            isRecord(record) ? { ...record, standings: null } : record,
+          )
+        : state.history,
+    },
+    report: isRecord(older.report) ? { ...older.report, standings: null } : older.report,
+  };
+}
+
+/** The people of a save's regions together, counting none for a region that cannot be read. */
+function peopleIn(regions: readonly unknown[]): number {
+  return regions.reduce<number>(
+    (total, region) =>
+      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
+    0,
+  );
 }
 
 /**

@@ -1,6 +1,13 @@
 import {
+  armyLoyaltyStatus,
+  borderIncidentTerms,
   chainsThrough,
+  coupAfterPlottingQuarters,
+  deterrenceStatus,
   electionStatus,
+  factionsNoticeablePermille,
+  formatPoints,
+  formatQuarters,
   researchStatuses,
   surveyStatus,
   surveyStatuses,
@@ -25,7 +32,11 @@ export type TipCondition =
   | 'election-near'
   | 'tier-passed'
   | 'research'
-  | 'survey';
+  | 'survey'
+  | 'army-loyalty'
+  | 'neighbours'
+  | 'border-incident'
+  | 'factions';
 
 /** A note shown once, the first time what it explains appears in a game. */
 export interface Tip {
@@ -117,6 +128,34 @@ export const TIPS: readonly Tip[] = [
     title: 'Surveys',
     text: 'A region marked with a magnifying glass may hide a deposit of ore. Its card says what a survey costs, how likely it is to find one and how large it could be. A survey is paid like any project and each region is surveyed once. If it finds a deposit, its mine and road appear on the map to be built.',
   },
+  {
+    id: 'army-loyalty',
+    when: 'army-loyalty',
+    target: 'vitals',
+    title: 'Defence and the army',
+    text: `The army’s loyalty is slipping, or is set to. Defence spending in the budget is judged against what the army expects for the country’s people: spend less and loyalty falls, a part of the way each quarter. Strikes in a region pull the army there down, and protests further. The army is read as loyal, restless or plotting, and an army left plotting for ${formatQuarters(coupAfterPlottingQuarters)} running takes power, and the game is lost. The top bar shows national loyalty with its stage, counts the quarters left while it plots, and opens to say what moves it; each region’s card shows its own.`,
+  },
+  {
+    id: 'neighbours',
+    when: 'neighbours',
+    target: 'map',
+    title: 'Neighbours and deterrence',
+    text: 'A neighbour is no longer peaceful. Each neighbour has an ambition, which weighs more against the country the more it prospers: a state worth taking. Defence spending builds deterrence, one figure for the whole country, a part of the way each quarter, so it has to be bought ahead. A neighbour is peaceful, watchful or hostile by how deterrence stands against what its ambition weighs. Each neighbour’s name on the map carries a mark and a word for what it intends: pick it to see what it would take to change that. The budget’s outlook says what a change to Defence would do.',
+  },
+  {
+    id: 'border-incident',
+    when: 'border-incident',
+    target: 'map',
+    title: 'Border incidents',
+    text: `A hostile neighbour has announced a border incident. It begins ${formatQuarters(borderIncidentTerms.noticeQuarters)} after it is announced and lasts ${formatQuarters(borderIncidentTerms.lastsQuarters)}. While it lasts the neighbour’s border crossings carry nothing, so less grain can be bought or sold, and each region on its border produces ${borderIncidentTerms.outputCutPercent}% less and takes a blow to approval as it begins. No land changes hands, and a neighbour never ends the game. It is called off if the neighbour is no longer hostile as it would begin, so raising Defence now can still stop it. The map marks it on the border with a barred diamond, hollow until it begins; the neighbour’s card and the risks ahead say what it costs.`,
+  },
+  {
+    id: 'factions',
+    when: 'factions',
+    target: 'factions',
+    title: 'Factions',
+    text: `The factions are now moving a region’s approval by ${formatPoints(factionsNoticeablePermille)} or more. Farmers, workers and business each have a standing with the government, and each region follows them by its mix of the three: a farming region the farmers, a port city business and workers. Farmers judge agriculture’s share of what the budget spends and the drought and flood on their land; workers the share that goes to health and education, and the tax rate; business the tax rate, how far the budget runs short, the debt and the large sites in use. A share won for one is taken from another, so no budget pleases them all. Each standing moves a part of the way each quarter. The left column shows the four, the army’s being its loyalty: open one to see what it is made of. The budget’s outlook says what a change would do to each.`,
+  },
 ];
 
 /**
@@ -177,5 +216,24 @@ export function tipsDue(view: TipView): ReadonlySet<TipCondition> {
   const regionId = view.selectedRegionId ?? null;
   const offered = regionId !== null && surveyStatus(game, regionId, plan).state !== 'barren';
   if (offered || surveying) due.add('survey');
+  // Defence and the army are explained once the army anywhere is less than loyal, or the
+  // budget in force would leave it so.
+  const army = armyLoyaltyStatus(game);
+  const slipping = [army, ...army.regions].some(
+    (each) => each.stage !== 'loyal' || each.settlesStage !== 'loyal',
+  );
+  if (slipping) due.add('army-loyalty');
+  // Neighbours and deterrence are explained once a neighbour is anything but peaceful.
+  const wary = deterrenceStatus(game).neighbours.some(
+    (neighbour) => neighbour.intention !== 'peaceful',
+  );
+  if (wary) due.add('neighbours');
+  // Border incidents are explained when one is first announced.
+  if (game.borderIncidents.length > 0) due.add('border-incident');
+  // The factions are explained once they move any region's approval noticeably.
+  const swayed = game.regions.some(
+    (region) => Math.abs(region.approvalEffects.factions) >= factionsNoticeablePermille,
+  );
+  if (swayed) due.add('factions');
   return due;
 }

@@ -10,6 +10,10 @@ test('research is started from the tree, finishes, and the technology is known',
   page,
 }) => {
   await startGame(page);
+  // $2.0m less on food relief, which nothing here needs, so that the treasury still holds the
+  // cost of a technology once the seed is known.
+  await decisions(page).getByRole('slider', { name: 'Food relief' }).fill('5');
+  await decisions(page).getByRole('button', { name: 'Commit budget' }).click();
 
   // An idle research slot says so on its tab, counting the seed and the two technologies that
   // need nothing first, and the tree shows the seed available.

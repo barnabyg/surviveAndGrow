@@ -2,17 +2,28 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   approvalStatus,
+  armyLoyaltyStatus,
   austerityStatus,
+  borderIncidentStatuses,
+  capacityOfTonnes,
+  coupStatus,
   debtStatus,
+  deterrenceStatus,
   electionStatus,
+  factionsStatus,
   knownTechnologies,
   loadCountry,
   loadSave,
   pendingDilemma,
+  previewQuarter,
   priceStatus,
+  regionFactions,
   siteOf,
   siteStatus,
+  startFault,
+  surveyedRegions,
   termRecords,
+  tradeCapacity,
   victoryStatus,
   type TurnReport,
 } from '../../src/sim';
@@ -27,8 +38,14 @@ import format8Save from '../saves/format-8.json';
 import format9Save from '../saves/format-9.json';
 import format10Save from '../saves/format-10.json';
 import format11Save from '../saves/format-11.json';
-import { withValue } from './files';
+import format12Save from '../saves/format-12.json';
+import format13Save from '../saves/format-13.json';
+import format14Save from '../saves/format-14.json';
+import format15Save from '../saves/format-15.json';
+import format16Save from '../saves/format-16.json';
+import { withValue, without } from './files';
 import { answering, inFirstTerm, steward } from './playing';
+import { budgetFrom, budgetOf } from '../budgets';
 
 // The saves kept from every format before the current one, each lifted by the migrations to
 // the current format. The save kept from the current format is checked in save.test.ts.
@@ -235,10 +252,10 @@ describe('the save kept from save format 3', () => {
   it('is won on prosperity two quarters on, if the top tier is held', () => {
     let { game } = loadSave(format3Save);
     const generous = (state: typeof game) => ({
-      budget: {
+      budget: budgetFrom(state.budget, {
         taxRatePercent: 10,
-        spending: { ...state.budget.spending, health: 200, education: 200 },
-      },
+        spending: { health: 200, education: 200 },
+      }),
     });
 
     game = advanceQuarter(game, answering(game, generous(game))).state;
@@ -288,7 +305,7 @@ describe('the save kept from save format 4', () => {
       game,
       answering(game, {
         ...steward(game),
-        budget: { ...game.budget, spending: { ...game.budget.spending, upkeep: 20 } },
+        budget: budgetFrom(game.budget, { spending: { upkeep: 20 } }),
       }),
     );
     game = result.state;
@@ -393,6 +410,23 @@ describe('the save kept from save format 6', () => {
     expect(game.austerity).toBeNull();
     expect(reports.at(-1)?.entries.map((entry) => entry.headline)).toContain('Austerity ends');
     expect(siteStatus(game, 'lowmere-irrigation').state).toBe('operating');
+  });
+
+  it('is lifted with a loyal army, and with Defence held within what austerity allows', () => {
+    const { game } = loadSave(format6Save);
+
+    // A save from before Defence is read as spending what holds the army loyal, $2.0m a
+    // quarter for Tavara's people. This one is under austerity, which caps Defence at what the
+    // country started on: the budget in force is within the cap as the save is opened.
+    const cap = austerityStatus(game)?.caps.defence;
+    expect(cap).toBe(20);
+    expect(game.budget.spending.defence).toBe(cap);
+    // The army is loyal in every region as the save opens.
+    const army = armyLoyaltyStatus(game);
+    expect(army.stage).toBe('loyal');
+    expect(army.regions.map((region) => region.stage)).toEqual(game.regions.map(() => 'loyal'));
+    // Austerity's cap is not what moves it: Defence is spent as the army expects.
+    expect(army.spent).toBe(cap);
   });
 
   it('refuses austerity with no quarter left of it', () => {
@@ -594,17 +628,7 @@ describe('the save kept from save format 10', () => {
     const decisions = answering(
       game,
       // Every tax the country can bear and nothing spent but upkeep, so the treasury grows.
-      steward(game, {
-        taxRatePercent: 40,
-        spending: {
-          agriculture: 0,
-          foodRelief: 0,
-          health: 0,
-          education: 0,
-          security: 0,
-          upkeep: 200,
-        },
-      }),
+      steward(game, budgetOf({ taxRatePercent: 40, spending: { upkeep: 200 } })),
     );
     const { state, report } = advanceQuarter(game, decisions);
 
@@ -622,6 +646,417 @@ describe('the save kept from save format 10', () => {
 
     expect(game.projects.every((project) => project.target.kind === 'site')).toBe(true);
     expect(game.projects.map((project) => project.status)).toEqual(['decaying', 'paused']);
+  });
+});
+
+describe('the save kept from save format 12', () => {
+  it('still opens on the game it was written from, a deposit found and a survey under way', () => {
+    const { game, report } = loadSave(format12Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 3 });
+    expect(
+      game.projects.map((project) => [project.target, project.status, project.quartersPaid]),
+    ).toEqual([
+      [{ kind: 'survey', regionId: 'salt-coast' }, 'surveyed', 2],
+      [{ kind: 'survey', regionId: 'dry-east' }, 'building', 1],
+    ]);
+    expect(surveyedRegions(game.projects)).toEqual(['salt-coast']);
+    expect(game.country.sites.slice(-2).map((site) => [site.id, site.capacity])).toEqual([
+      ['westhaven-mine', capacityOfTonnes(290_000)],
+      ['westhaven-trunk-road', undefined],
+    ]);
+    expect(report?.entries.map((entry) => entry.headline)).toEqual(
+      expect.arrayContaining(['Survey finished: Salt Coast', 'Survey begins: The Dry East']),
+    );
+  });
+
+  it('plays on, the Dry East surveyed, with the Westhaven mine there to be built', () => {
+    const { game } = loadSave(format12Save);
+
+    const { state, report } = advanceQuarter(game, answering(game, steward(game)));
+
+    expect(report.entries).toContainEqual(
+      expect.objectContaining({
+        headline: 'Survey finished: The Dry East',
+        cause:
+          'The surveyors have reported. They found a deposit of ore whose mine could yield 800,000 t a quarter. Dustwell mine and Trunk road, Dustwell mine to Saltmouth can be built from next quarter.',
+      }),
+    );
+    expect(surveyedRegions(state.projects)).toEqual(['salt-coast', 'dry-east']);
+    expect(
+      startFault({ ...state, treasury: 2000 }, ['westhaven-mine', 'dustwell-mine']),
+    ).toBeNull();
+  });
+
+  it('is lifted to format 13 spending what holds the army loyal, with a loyal army', () => {
+    const { game, report } = loadSave(format12Save);
+
+    // $2.0m a quarter is the least that holds the army of Tavara's 5.2 million people loyal.
+    expect(game.budget.spending.defence).toBe(20);
+    const army = armyLoyaltyStatus(game);
+    expect(army.stage).toBe('loyal');
+    expect(army.settlesStage).toBe('loyal');
+    expect(army.regions.map((region) => region.stage)).toEqual(game.regions.map(() => 'loyal'));
+    // It is settled there: on the same budget only the people's growing number, which the
+    // army's expectations follow, moves it, and by no more than a thousandth a quarter.
+    const ahead = previewQuarter(game, answering(game, steward(game))).armyLoyalty.max;
+    expect(army.loyalty - ahead).toBeGreaterThanOrEqual(0);
+    expect(army.loyalty - ahead).toBeLessThanOrEqual(1);
+    // The quarters it recorded, and its last report, kept no army.
+    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual(game.history.map(() => null));
+    expect(report?.armyLoyalty).toBeNull();
+    // The next quarter's record and report do.
+    const next = advanceQuarter(game, answering(game, steward(game)));
+    expect(next.state.history.at(-1)?.armyLoyalty).toBe(ahead);
+    expect(next.report.armyLoyalty?.value).toBe(ahead);
+  });
+});
+
+describe('the save kept from save format 13', () => {
+  it('still opens on the game it was written from, Defence cut and the army restless', () => {
+    const { game, report } = loadSave(format13Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 3 });
+    expect(game.budget.spending.defence).toBe(0);
+    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([584, 507, 445]);
+    const army = armyLoyaltyStatus(game);
+    expect(army).toMatchObject({ loyalty: 445, stage: 'restless', settlesStage: 'plotting' });
+    expect(army.regions.map((region) => region.stage)).toEqual(game.regions.map(() => 'restless'));
+    expect(report?.armyLoyalty).toEqual({
+      value: 445,
+      change: -62,
+      contributions: [
+        { label: 'Defence spending', amount: -62 },
+        { label: 'Unrest', amount: 0 },
+      ],
+    });
+    expect(report?.entries.map((entry) => entry.headline)).toContain('The army is restless');
+  });
+
+  it('plays on: loyalty falls further left undefended, and recovers with Defence restored', () => {
+    const { game } = loadSave(format13Save);
+
+    const left = advanceQuarter(game, answering(game, steward(game)));
+    expect(armyLoyaltyStatus(left.state).loyalty).toBeLessThan(445);
+
+    const restored = budgetFrom(game.budget, {
+      spending: { defence: game.country.start.budget.spending.defence },
+    });
+    const kept = advanceQuarter(game, answering(game, steward(game, restored)));
+    expect(armyLoyaltyStatus(kept.state)).toMatchObject({ loyalty: 473, stage: 'loyal' });
+    expect(kept.report.entries.map((entry) => entry.headline)).toContain('The army is loyal again');
+  });
+
+  it('is lifted to format 14 with nothing counted towards a coup, however its army stands', () => {
+    const { game } = loadSave(format13Save);
+
+    expect(game.plottingQuarters).toBe(0);
+    expect(coupStatus(game)).toMatchObject({ plotting: false, held: 0, left: 4 });
+    // Left undefended, the army plots in time, and the whole count runs from there.
+    const counts: number[] = [];
+    let state = game;
+    while (state.outcome.status === 'playing' && counts.length < 12) {
+      state = advanceQuarter(state, answering(state, steward(state))).state;
+      counts.push(state.plottingQuarters);
+    }
+    expect(state.outcome).toMatchObject({ status: 'lost', cause: 'coup' });
+    expect(counts.filter((count) => count > 0)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe('the save kept from save format 14', () => {
+  it('still opens on the game it was written from, the army two quarters into plotting', () => {
+    const { game, report } = loadSave(format14Save);
+
+    expect(game.date).toEqual({ year: 2, quarter: 4 });
+    expect(game.budget.spending.defence).toBe(0);
+    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([
+      584, 507, 445, 396, 356, 324, 299, 279,
+    ]);
+    expect(armyLoyaltyStatus(game)).toMatchObject({ loyalty: 279, stage: 'plotting' });
+    expect(game.plottingQuarters).toBe(2);
+    expect(coupStatus(game)).toMatchObject({ plotting: true, held: 2, needed: 4, left: 2 });
+    expect(report?.entries[0]).toMatchObject({
+      kind: 'coup',
+      seriousness: 'serious',
+      headline: 'The army plots: 2 quarters to a coup',
+    });
+  });
+
+  it('plays on to the coup left undefended, two quarters later', () => {
+    const { game } = loadSave(format14Save);
+
+    const third = advanceQuarter(game, answering(game, steward(game)));
+    expect(third.state.plottingQuarters).toBe(3);
+    expect(third.state.outcome.status).toBe('playing');
+    expect(third.report.entries.map((entry) => entry.headline)).toContain(
+      'The army plots: 1 quarter to a coup',
+    );
+    const fourth = advanceQuarter(third.state, answering(third.state, steward(third.state)));
+    expect(fourth.state.outcome).toMatchObject({ status: 'lost', cause: 'coup', quarters: 4 });
+    expect(fourth.report.entries[0]?.headline).toBe('The army has taken power');
+  });
+
+  it('plays on with the coup off once Defence is restored', () => {
+    const { game } = loadSave(format14Save);
+
+    const restored = budgetFrom(game.budget, {
+      spending: { defence: game.country.start.budget.spending.defence },
+    });
+    const kept = advanceQuarter(game, answering(game, steward(game, restored)));
+    expect(armyLoyaltyStatus(kept.state).stage).toBe('restless');
+    expect(kept.state.plottingQuarters).toBe(0);
+    expect(kept.report.entries.map((entry) => entry.headline)).toContain('The coup is off');
+  });
+
+  it('is lifted to format 15 with the deterrence its Defence would settle, and peaceful neighbours', () => {
+    const { game, report } = loadSave(format14Save);
+
+    // It spends nothing on Defence, which settles deterrence at nothing; and its country file
+    // is of format 11, which gives no neighbour an ambition, so none ever stirs.
+    expect(game.country.formatVersion).toBe(11);
+    const status = deterrenceStatus(game);
+    expect(status).toMatchObject({ deterrence: 0, settles: 0, spent: 0 });
+    expect(status.neighbours.map((neighbour) => [neighbour.ambition, neighbour.intention])).toEqual(
+      game.country.map.neighbours.map(() => [0, 'peaceful']),
+    );
+    expect(report?.deterrence).toBeNull();
+
+    // With Defence restored the next quarter builds it, and the report measures it.
+    const restored = budgetFrom(game.budget, {
+      spending: { defence: game.country.start.budget.spending.defence },
+    });
+    const next = advanceQuarter(game, answering(game, steward(game, restored)));
+    expect(next.state.deterrence).toBeGreaterThan(0);
+    expect(next.report.deterrence?.change).toBe(next.state.deterrence);
+    expect(next.report.entries.filter((entry) => entry.kind === 'neighbour')).toEqual([]);
+  });
+});
+
+describe('the save kept from save format 15', () => {
+  it('still opens on the game it was written from, Voskar hostile and Selama watchful', () => {
+    const { game, report } = loadSave(format15Save);
+
+    expect(game.date).toEqual({ year: 2, quarter: 3 });
+    expect(game.country.formatVersion).toBe(12);
+    expect(game.tier).toBe('developing');
+    expect(game.budget.spending.defence).toBe(10);
+    expect(game.deterrence).toBe(295);
+    const status = deterrenceStatus(game);
+    expect(status).toMatchObject({ deterrence: 295, settles: 239, spent: 10, expected: 21 });
+    expect(
+      status.neighbours.map((neighbour) => [neighbour.name, neighbour.weighs, neighbour.intention]),
+    ).toEqual([
+      ['Voskar', 330, 'hostile'],
+      ['Selama', 247, 'watchful'],
+    ]);
+    expect(report?.deterrence).toEqual({
+      value: 295,
+      change: -10,
+      contributions: [{ label: 'Defence spending', amount: -10 }],
+    });
+    expect(
+      report?.entries
+        .filter((entry) => entry.kind === 'neighbour')
+        .map((entry) => [entry.headline, entry.seriousness, entry.neighbourId]),
+    ).toEqual([
+      ['Voskar has turned hostile', 'serious', 'voskar'],
+      ['Selama has turned watchful', 'warning', 'selama'],
+    ]);
+  });
+
+  it('plays on: deterrence falls further left as it is, and is rebuilt with Defence raised', () => {
+    const { game } = loadSave(format15Save);
+
+    const left = advanceQuarter(game, answering(game, steward(game)));
+    expect(left.state.deterrence).toBe(286);
+    expect(left.report.entries.filter((entry) => entry.kind === 'neighbour')).toEqual([]);
+
+    const raised = budgetFrom(game.budget, { spending: { defence: 60 } });
+    let state = game;
+    const headlines: string[] = [];
+    for (let quarter = 0; quarter < 4; quarter += 1) {
+      const result = advanceQuarter(state, answering(state, steward(state, raised)));
+      state = result.state;
+      headlines.push(
+        ...result.report.entries
+          .filter((entry) => entry.kind === 'neighbour')
+          .map((entry) => entry.headline),
+      );
+    }
+    expect(state.deterrence).toBeGreaterThan(413);
+    expect(headlines).toEqual([
+      'Voskar is watchful again',
+      'Selama is peaceful again',
+      'Voskar is peaceful again',
+    ]);
+  });
+
+  it('is refused when its deterrence or a report’s neighbour is not one the game could hold', () => {
+    expect(() => loadSave(withValue(format15Save, ['state', 'deterrence'], 1001))).toThrow(
+      /state\.deterrence is 1001, which is out of range/,
+    );
+    const index = format15Save.report.entries.findIndex((entry) => entry.kind === 'neighbour');
+    expect(() =>
+      loadSave(withValue(format15Save, ['report', 'entries', index, 'neighbourId'], 'atlantis')),
+    ).toThrow(/neighbourId is "atlantis", which is not a neighbour this game has/);
+  });
+
+  it('is lifted to format 16 with no border incident announced, and its hostile neighbour may announce its first with the whole notice', () => {
+    const { game } = loadSave(format15Save);
+    expect(game.borderIncidents).toEqual([]);
+    expect(borderIncidentStatuses(game)).toEqual([]);
+    expect(tradeCapacity(game).links.map((link) => link.closed)).toEqual([null, null]);
+
+    // Voskar is hostile, and on this seed announces one as the quarter the save opens in
+    // ends: it begins two quarters after that, as any other does.
+    const next = advanceQuarter(game, answering(game, steward(game)));
+    expect(next.state.borderIncidents).toEqual([
+      {
+        neighbourId: 'voskar',
+        announced: { year: 2, quarter: 4 },
+        begins: { year: 3, quarter: 2 },
+      },
+    ]);
+    expect(next.report.entries.map((entry) => entry.headline)).toContain(
+      'Border incident with Voskar ahead',
+    );
+    expect(tradeCapacity(next.state).links.map((link) => link.closed)).toEqual([null, null]);
+  });
+});
+
+describe('the save kept from save format 16', () => {
+  it('still opens on the game it was written from, a border incident with Voskar in force', () => {
+    const { game, report } = loadSave(format16Save);
+
+    expect(game.date).toEqual({ year: 3, quarter: 3 });
+    expect(game.country.formatVersion).toBe(12);
+    expect(game.borderIncidents).toEqual([
+      {
+        neighbourId: 'voskar',
+        announced: { year: 2, quarter: 4 },
+        begins: { year: 3, quarter: 2 },
+      },
+    ]);
+    expect(borderIncidentStatuses(game)).toMatchObject([
+      {
+        name: 'Voskar',
+        inForce: true,
+        quartersLeft: 2,
+        regionIds: ['korr-highlands', 'salt-coast', 'dry-east'],
+      },
+    ]);
+    expect(
+      tradeCapacity(game).links.map((link) => [link.name, link.tonnes, link.closed?.quartersLeft]),
+    ).toEqual([
+      ['Korr Pass', 0, 2],
+      ['Selama bridge', 40_000, undefined],
+    ]);
+    // The last report has what its first quarter cost: tax in each region on the border, and
+    // the blow to approval that sent those regions from strikes to protests.
+    expect(
+      report?.treasury.contributions
+        .filter((line) => line.label.startsWith('Lost to the border incident with Voskar'))
+        .map((line) => [line.regionId, line.amount]),
+    ).toEqual([
+      ['korr-highlands', -7],
+      ['salt-coast', -12],
+      ['dry-east', -5],
+    ]);
+    expect(
+      report?.approval.contributions.find((line) => line.label === 'Border incident with Voskar'),
+    ).toEqual({ label: 'Border incident with Voskar', amount: -30 });
+    expect(
+      report?.entries.filter((entry) => entry.kind === 'protest').map((entry) => entry.regionId),
+    ).toEqual(['korr-highlands', 'salt-coast', 'dry-east']);
+  });
+
+  it('plays on: the incident runs its two quarters more and ends, and the pass carries again', () => {
+    let { game } = loadSave(format16Save);
+    const headlines: string[][] = [];
+    for (let quarter = 0; quarter < 2; quarter += 1) {
+      const result = advanceQuarter(game, answering(game, steward(game)));
+      game = result.state;
+      headlines.push(
+        result.report.entries
+          .filter((entry) => entry.kind === 'borderIncident')
+          .map((entry) => entry.headline),
+      );
+    }
+    expect(headlines).toEqual([[], ['Border incident with Voskar has ended']]);
+    expect(game.borderIncidents).toEqual([]);
+    expect(tradeCapacity(game).links[0]).toMatchObject({ tonnes: 50_000, closed: null });
+  });
+
+  it('is refused when an incident is not one the game could hold', () => {
+    const incident = ['state', 'borderIncidents', 0];
+    expect(() =>
+      loadSave(withValue(format16Save, [...incident, 'neighbourId'], 'atlantis')),
+    ).toThrow(
+      'The saved game is damaged and cannot be opened: state.borderIncidents[0].neighbourId is "atlantis", which is not a neighbour this game has.',
+    );
+    expect(() => loadSave(withValue(format16Save, [...incident, 'begins'], 'soon'))).toThrow(
+      /^The saved game is damaged and cannot be opened: state\.borderIncidents\[0\]\.begins/,
+    );
+    expect(() => loadSave(without(format16Save, ['state', 'borderIncidents']))).toThrow(
+      /^The saved game is damaged and cannot be opened: state\.borderIncidents/,
+    );
+  });
+
+  it('is lifted to format 17 with every faction at neutral, so approval is where it was and the standings then find their own level', () => {
+    const { game, report } = loadSave(format16Save);
+
+    // Its country file is of format 12, which gives no region a faction mix: an even mix.
+    expect(game.country.formatVersion).toBe(12);
+    for (const region of game.regions) {
+      expect(regionFactions(game, region.id)).toEqual({
+        regionId: region.id,
+        shares: { farmers: 333, workers: 333, business: 333 },
+        effect: 0,
+        parts: { farmers: 0, workers: 0, business: 0 },
+      });
+    }
+    expect(
+      factionsStatus(game)
+        .standings.filter((each) => each.faction !== 'army')
+        .map((each) => [each.standing, each.word]),
+    ).toEqual([
+      [500, 'Content'],
+      [500, 'Content'],
+      [500, 'Content'],
+    ]);
+    // Approval is what the save held, to the thousandth.
+    expect(game.regions.map((region) => region.approval)).toEqual(
+      format16Save.state.regions.map((region) => region.approval),
+    );
+    expect(report?.standings).toBeNull();
+    expect(game.history.every((record) => record.standings === null)).toBe(true);
+
+    // The next quarter moves each standing part of the way to where the budget settles it,
+    // records it, and reports it.
+    const next = advanceQuarter(game, answering(game, steward(game)));
+    const settles = factionsStatus(game).standings.map((each) => each.settles);
+    const moved = factionsStatus(next.state).standings.map((each) => each.standing);
+    for (const index of [0, 1, 2]) {
+      expect(Math.sign((moved[index] ?? 0) - 500)).toBe(Math.sign((settles[index] ?? 0) - 500));
+      expect(Math.abs((moved[index] ?? 0) - 500)).toBeLessThan(
+        Math.abs((settles[index] ?? 0) - 500),
+      );
+    }
+    expect(next.state.history.at(-1)?.standings).toEqual({
+      farmers: moved[0],
+      workers: moved[1],
+      business: moved[2],
+    });
+    expect(next.report.standings?.farmers.value).toBe(moved[0]);
+  });
+
+  it('is refused, not emptied, when its regions cannot be read', () => {
+    expect(() =>
+      loadSave({ ...format16Save, state: { ...format16Save.state, regions: 'none' } }),
+    ).toThrow(
+      /^The saved game is damaged and cannot be opened: state\.regions is missing or is not a list/,
+    );
   });
 });
 

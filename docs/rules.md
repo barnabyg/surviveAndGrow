@@ -44,21 +44,222 @@ main figures from the balance values and fails if this file, [playing.md](playin
   how many of the four you have held and whether the debt test is passed, and its breakdown shows
   how far the debt burden is from the limit and says when the debt test is all that stands between
   you and the win.
+- You lose the game to a coup when national army loyalty has ended four quarters running at
+  plotting, below 30% (see Defence and army loyalty): the army takes power. A quarter that ends
+  with loyalty back at 30% or above ends the count, and it starts afresh if the army plots again.
+  Nothing is rolled, so the same seed and decisions always bring the same coup. It is checked
+  with famine's collapse as a quarter ends, before the election and the win, so a quarter that
+  would have won the vote or the game still falls to it, and no vote is held. While the army
+  plots, the top bar counts the quarters left to a coup beneath army loyalty, and the figure's
+  breakdown says where the count stands. The turn report says in each quarter that ends with the
+  army plotting how many are left, from the first; that the coup is off, in the quarter loyalty
+  recovers; and, critically, that the army has taken power.
 - However the game ends, a summary gives the outcome and its cause, how long you were in office
-  over how many terms, the treasury, debt, debt burden, food reserve, approval and prosperity over
-  the whole game, and each term in turn with prosperity at its start and end. From it you can
-  replay the same game or start a new one.
+  over how many terms, the treasury, debt, debt burden, food reserve, approval, army loyalty and
+  prosperity over the whole game, and each term in turn with prosperity at its start and end. From
+  it you can replay the same game or start a new one.
 
 ## Approval and unrest
 
 - Approval is the third vital sign. Each region has its own, and the national figure is their
   average by population. It answers to the region's food situation, the tax rate, and health,
-  education and security spending per head, and it moves a tenth of the way each quarter towards
-  where those would settle it, so the public remembers: a last-minute giveaway moves the vote
+  education and security spending per head, and to the factions by the region's mix of them
+  (see Factions). It moves a tenth of the way each quarter towards where those would settle it, so the public remembers: a last-minute giveaway moves the vote
   little, and a hard year is not forgotten by polling day. The budget panel shows what a change would do to approval next
   quarter and where it is heading.
 - A region whose approval falls below 40% goes on strike and produces 30% less, which costs the
   treasury tax. Below 30% it protests and produces 60% less. Both end when approval recovers.
+
+## Factions
+
+- The factions are the game's own: farmers, workers, business and the army. A country file
+  cannot add one. Farmers, workers and business each have one national standing with the
+  government, from 0% to 100%, which rests at 50% when nothing moves it. The army has no share
+  of a region's people and moves no approval: its standing is national army loyalty, shown
+  beside the others.
+- Each standing answers to a few levers of its own. Each lever settles the standing up or down
+  by no more than what it is worth, in proportion between its marks:
+  - Farmers answer to agriculture's share of what the budget spends, worth 30 points either
+    way: a share of 24% leaves them where they are, 48% or more settles them the whole of it
+    higher, and none the whole of it lower. They also answer to drought and flood where farmers
+    live, worth 20 points: a harvest left whole changes nothing, and one cut by 50% or more
+    settles them the whole of it lower.
+  - Workers answer to health and education's share of what the budget spends, worth 30 points
+    either way: 37% leaves them where they are and 74% or more is their best. They also answer
+    to the tax rate, worth 15 points either way: 18% leaves them where they are, 8% or less is
+    their best and 28% or more their worst.
+  - Business answers to the tax rate, worth 20 points either way on the same marks; to the
+    budget's balance, worth 15 points: a budget that pays its way changes nothing, and one that
+    spends 40% more than the tax raises, or worse, settles it the whole of it lower; to the debt
+    burden, worth 10 points either way: 50% of a year's revenue leaves it where it is, none is
+    its best and 150% or more its worst; and to the large sites in use, worth 15 points: none
+    changes nothing, and 4 or more settle it the whole of it higher. A large site is one that
+    plays a part in a chain or makes power.
+- The shares are of what is actually spent on the spending areas in the quarter, after any
+  forced cut, with upkeep counted only as far as the sites in use need it. The budget's balance
+  is the tax raised less that spending: it leaves out the instalments on projects and the
+  repayments on debts. The debt burden, the large sites in use and the drought and flood in
+  force are read as the quarter begins.
+- A standing moves a fifth of the way each quarter towards where its levers settle it, lever
+  by lever, as approval does, so a budget is felt over quarters. It is read in a word: pleased
+  from 60%, content below that, uneasy below 40% and angry below 25%.
+- No budget settles farmers, workers and business all at their best. Farmers are at their best
+  with 48% of what is spent and workers with 74%, which is more than there is to share. Business
+  answers to money instead, and nothing sets it against the other two directly: moving money
+  from one area to another leaves it where it was. It is set against them when their share is
+  bought by spending more than is raised, or by taxing more, both of which it resents.
+- Each region has a faction mix: the share of its people who are farmers, workers and
+  business, from the country file. The standings bear on the region's approval as one more
+  effect, Factions: 0.3 of a point of approval for each point a faction stands above or below
+  50%, in proportion to its share of the region's people, each faction's part rounded towards
+  nothing. A farming region follows the farmers;
+  a port city follows business and workers. The effect follows the standings at once, since
+  they have already moved their fifth, and the rest of approval is as it was. People of no
+  faction, where a region's shares come to less than all of it, are moved by none.
+- A game opens with the standings where its starting budget settles them, so nothing moves
+  until something changes. In Tavara the farmers open at 56.1%, the workers at 47.8% and
+  business at 51.6%, which moves no region's approval by more than 1.2 points; in the test
+  country no more than 1.0 point.
+- Approval's breakdowns have a Factions line, split by faction: what moved approval names what
+  moved each faction most, where its part comes to anything, and what approval is made of gives
+  each faction's standing and word.
+  The left column shows the four standings, each with its word and a trend line, the army's
+  being its loyalty and stage; a standing opens to what it is made of and where the budget in
+  force is heading it. A region's card gives its mix and what the factions do to its approval.
+  The budget panel's outlook has a Factions fold: each standing next quarter and where it is
+  heading, with its word. A first-time tip explains factions once they move any region's
+  approval by 2.0 points or more.
+- A country file of an older format gives no mix, and each of its regions is read as an even
+  mix: a third of its people in each faction. A save from before the factions opens with every
+  standing at 50% and nothing pushing it, so approval is where it was, and the standings then
+  move their fifth each quarter towards where the budget in force settles them.
+
+## Defence and army loyalty
+
+- Defence is a spending area of its own, beside Security: Security answers to approval, as it
+  always has, and Defence to the army. It has a slider in the budget like the others.
+- Each region has an army loyalty, and the national figure is the regions' average by
+  population. A region's loyalty stands at 60% when Defence is spent as the army expects, $0.4m
+  a quarter for each million people, and the region is calm. Spending nothing settles it 40
+  points lower, double what the army expects or more settles it 40 points higher, and in between
+  in proportion. Strikes in a region settle the loyalty of the army there 10 points lower, and
+  protests 25 points lower. Loyalty moves a fifth of the way each quarter towards where those
+  would settle it, so a cut to Defence is felt over quarters and not at once. A region's unrest
+  is read as the quarter leaves it, which gives the cascade: hunger, then protests, then an army
+  less loyal there.
+- Loyalty is read in three stages: loyal, restless below 45% and plotting below 30%. The stages
+  are shown and reported. A restless army ends nothing; an army left plotting takes power (see
+  Elections, winning and the end of a game).
+- National army loyalty is a vital sign in the top bar, with its stage named beneath it, a trend
+  line with the restless mark drawn on it, what moved it last quarter, what it is made of and
+  each region's own. A region's card and the region list show its army's loyalty and stage, and
+  the card warns while its army is anything but loyal or is heading that way. The budget panel
+  shows what a change would do to loyalty next quarter and where it is heading, each with its
+  stage. The turn report says when the nation's stage or a region's changes, for the worse or
+  the better, and why; a region that moves with the nation is named in the nation's report, and
+  any other has a report of its own tied to its place. A first-time tip explains Defence and the
+  army once the army anywhere is less than loyal, or the budget in force would leave it so.
+- Austerity caps Defence at what the country started on, and not below it as it caps Security:
+  a cap that left the army short would turn a bailout into a coup the player could do nothing
+  about (see Bailout and austerity).
+- A country file says what the country starts by spending on Defence, and a game starts with
+  the army in each region where that and the region's unrest settle it. Tavara starts on $2.0m a
+  quarter, which holds its army loyal at 58.4%. A country file written before Defence, and a
+  save from before it, are read as spending the least the slider allows that holds the army
+  loyal in a calm region, with a loyal army. A save from before it that is under austerity
+  opens with a loyal army too, with Defence within austerity's cap like the rest of its budget:
+  the cap is what the country started on, so the army stays loyal while its regions are calm.
+
+## Neighbours and deterrence
+
+- Each neighbour has an ambition, given by the country file. There is no combat of any kind:
+  what a neighbour intends is read from its ambition against the country's deterrence.
+- Deterrence is one national figure that Defence spending builds. Where the spending settles
+  it is judged per head against what the army expects: nothing spent settles it at nothing,
+  150% of what the army expects settles it at half, and each dollar more buys less than the
+  last, so no spending reaches the whole. Deterrence moves 15% of the way each quarter
+  towards where what was spent on Defence would settle it, more slowly than army loyalty: it is
+  slow to build and slow to lose, so it has to be bought ahead. A treasury that cannot cover
+  the budget cuts Defence with the rest, and deterrence answers to what was really spent.
+- A state worth taking: what a neighbour's ambition weighs against deterrence grows with the
+  prosperity tier in force. It weighs nothing at Subsistence, 55% of the ambition at
+  Developing, 80% at Industrialising and the whole of it at Prosperous. Early in a game the
+  neighbours are no threat, whatever is spent on Defence; the pressure arrives as the country
+  prospers.
+- Each neighbour's intention is peaceful, watchful or hostile. It is hostile while deterrence
+  is below what its ambition weighs, watchful while deterrence is below 125% of that, and
+  otherwise peaceful. It is read afresh as each quarter ends, from the tier the quarter leaves
+  in force and deterrence as it then stands; nothing but deterrence is kept. A neighbour whose
+  ambition weighs nothing is peaceful whatever deterrence is.
+- A hostile neighbour may announce a border incident (see Border incidents). It does nothing
+  else: no territory changes hands, and a neighbour never ends the game.
+- Each neighbour is drawn on the map under every lens: its name with a tag beneath or above
+  it that gives what it intends as a mark and a word (a ring for peaceful, an eye for
+  watchful, a spearhead for hostile), and its border with the country drawn by the same
+  intention, dashed while it is watchful and solid and toothed while it is hostile. Picking a
+  neighbour, by its name, its tag or its land, opens its card: its intention, deterrence
+  against the marks below which it is watchful and hostile, what its ambition weighs in each
+  tier, what moved it last quarter, and where the Defence budget in force would settle
+  deterrence and leave the neighbour.
+- The budget panel's outlook has a Neighbours fold: deterrence next quarter and where it is
+  heading, and each neighbour's intention next quarter and where it is heading, before and
+  after a change to the Defence slider. A neighbour that the budget on the sliders leaves
+  hostile, or heading for it, is warned of above the fold. The forecast reads the tier the
+  quarter leaves with world prices where they are: a tier that only a rise in the world ore
+  price would carry the country past is not in it, and is warned of in the risks ahead.
+- The turn report says when a neighbour's intention changes, for the worse or the better, and
+  why: a tier passed, which makes the country more worth taking, or deterrence fallen or
+  rebuilt, with what is spent on Defence and where that settles deterrence. The report picks
+  the neighbour out on the map. A first-time tip explains neighbours and deterrence once a
+  neighbour is anything but peaceful.
+- A country file may give each neighbour an ambition, a whole percentage from 0 to 100. Tavara
+  gives Voskar 60% and Selama 45%. A neighbour given none, and every neighbour of a country
+  file written before ambitions, stays peaceful for good.
+- A game starts with deterrence where its starting Defence settles it: 39.0% in Tavara, on
+  $2.0m a quarter. A save from before deterrence is read as having what its Defence budget in
+  force would settle; its country file gives no neighbour an ambition, so none ever stirs.
+
+## Border incidents
+
+- A border incident is what a hostile neighbour does when deterrence fails. It is abstract and
+  works only through money, time and approval: no territory changes hands, and a neighbour
+  never ends the game.
+- As each quarter ends, each neighbour that is hostile as the quarter leaves it, with no
+  incident of its own announced or in force, has a 20% chance of announcing one. Its draw
+  comes from the seed and the quarter alone, like a world price shock's, so it leaves the
+  weather and events a seed brings as they were, and a game with no hostile neighbour plays
+  exactly as it would without border incidents.
+- An incident is announced two quarters before it begins. It is judged again as it would
+  begin: if the neighbour is no longer hostile as the quarter before ends, read from the tier
+  and deterrence that quarter leaves, it is called off, and the report says so. Raising
+  Defence in time can therefore still stop one. Once begun it runs its course, whatever the
+  neighbour then intends.
+- It lasts three quarters. While it lasts:
+  - the neighbour's border crossings carry nothing, so the trade links carry that much less
+    and less grain can be bought or sold (see Trade). Ore is shipped by a port, never over a
+    crossing, so a mine earns as before;
+  - each region that borders the neighbour produces 20% less, as a region in unrest produces
+    less: it pays tax on what is left, after anything strikes or protests there have already
+    taken, and the treasury's breakdown gives the tax lost in each region under the incident's
+    name. The debt burden is judged on the revenue the quarter leaves, so it counts the loss;
+  - each of those regions takes a blow of 8 points to approval in the quarter it begins, under
+    the incident's name in approval's breakdown, which then fades like any passing event.
+- The regions that border a neighbour are worked out from the map: each region with an edge
+  that faces the neighbour's land. A country file says nothing of them. A region that borders
+  two neighbours can be under two incidents at once, each taking its share in turn.
+- Its loss of output and approval feeds the cascade already built: a border region pushed into
+  strikes or protests has a less loyal army (see Defence and army loyalty).
+- The map draws an incident along the neighbour's border from its announcement until it ends,
+  under every lens: barred diamonds, hollow while it is announced and solid while it is in
+  force, and a tag by the neighbour's name that says which and for how long. While it is in
+  force each region on the border is tagged with what it costs, and each closed crossing is
+  drawn thinly dashed with a cross over its bar and tagged closed. The neighbour's card, the
+  region's card and the crossing's card each say what it does and for how long.
+- The turn report says when one is announced, begins, is called off and ends, each picking the
+  neighbour out on the map. A first-time tip explains border incidents when one is first
+  announced.
+- The live preview and the quarters ahead count an incident announced: the closed crossing,
+  the lost output and the blow to approval.
 
 ## Prosperity, tiers and people
 
@@ -329,8 +530,8 @@ main figures from the balance values and fails if this file, [playing.md](playin
   year, repaid over 16 quarters from the next; anything to be borrowed that quarter is not lent.
   The credit rating falls to B, and approval takes a 12-point blow in every region that fades
   like any passing event. Austerity then holds for 8 quarters: the tax rate cannot go below 25%,
-  spending on agriculture is capped at what the game began with and on health, education and
-  security at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or
+  spending on agriculture and defence is capped at what the game began with and on health,
+  education and security at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or
   project can be started; projects under way carry on, and food relief and upkeep are not
   capped. The bailout brings the budget in force within those limits. The budget's sliders stop
   at the floor and the caps and say so, the finance and projects panels and a site's card say
@@ -377,7 +578,10 @@ main figures from the balance values and fails if this file, [playing.md](playin
   Voskar carries 50,000 t and Selama bridge 40,000 t. A port in use adds what it ships for a
   chain: 900,000 t for a port and 360,000 t for a shallow port, half while it decays. The ore
   the mines' chains ship takes its share first, and grain bought and sold abroad together is
-  limited to what is left, so a mine that fills its port leaves grain the crossings alone. The
+  limited to what is left, so a mine that fills its port leaves grain the crossings alone. A
+  crossing to a neighbour whose border incident is in force is closed and carries nothing
+  while it lasts (see Border incidents): the trade panel and the crossing's card say it is
+  closed and for how long. The
   trade panel shows what the links carry, the ore's share, the grain ordered and what is free,
   and refuses an order beyond it. What the links carry is fixed as the quarter begins, so an
   order the panel accepts is never cut for want of room. A port's card says what it carries and
@@ -399,13 +603,14 @@ main figures from the balance values and fails if this file, [playing.md](playin
 
 - The left column lists the risks ahead: famine in a region, a flood that could begin, a world
   price shock announced or that could be, grain sold below the reserve's safe level, strikes, a treasury that runs out, a bailout from a missed
-  payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, and,
-  in the term's last four quarters, losing the vote. The game plays the next four quarters with
+  payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, a
+  neighbour turning hostile, a border incident, a coup, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with
   your committed decisions held as they are, once for each course the weather could take and each
   drought or flood that could still begin, and lists each danger with how likely it is, as a five-step meter and in words, and a line saying why, cut short until the risk is picked out (its whole text is in a tooltip). The four most likely are shown and the rest fold behind **Show more**. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
   further. A danger too unlikely to matter is left out, unless it would end the game, and a risk
-  to one region picks that region out on the map. Neither famine nor a lost election can end the
+  to one region picks that region out on the map, and one from a neighbour picks out the
+  neighbour. Neither famine, a coup nor a lost election can end the
   game without having been listed first. A flood is listed while it could begin within the four
   quarters, however unlikely, with the share of the harvest it would take and the sites it would
   damage, so none comes without warning. A world price shock is listed as almost certain once it
@@ -414,6 +619,36 @@ main figures from the balance values and fails if this file, [playing.md](playin
   what it would do. The quarters ahead are played with the shocks announced pushing the prices,
   so the dangers one brings, such as a treasury a glut would empty, are weighed from the quarter
   it is announced.
+- A coup is listed in every quarter from which the army could take power within the four
+  quarters, on your decisions as they are: while the count runs, and before it starts when
+  loyalty is on course to fall below 30% and stay there. It ends the game, so it is listed
+  however small the chance. Its line says where national army loyalty stands, how long the army
+  has plotted, when it would take power, and what is spent on Defence against what the army
+  expects. Raising Defence in the budget takes it off the list as soon as the quarters ahead no
+  longer end in one. While a mine earns, a coup that only a slump in the world ore price would
+  bring, through a treasury that cuts Defence with the rest of the budget, is listed as unlikely.
+- A neighbour turning hostile is listed, with how likely it is, for each neighbour not yet
+  hostile that would be within the four quarters on your decisions as they are: because
+  deterrence is on course to fall below what its ambition weighs, or because the country is on
+  course to pass a tier in which it weighs more than deterrence. Its line says which, when, and
+  what is spent on Defence against where that settles deterrence. A neighbour that would turn
+  only if a rise in the world ore price carried the country past a tier is listed as unlikely,
+  with the price it would take (the last bullet here says how that is looked for). What is not
+  looked for is the two together: a tier that takes both the best of the weather and the ore
+  price at the high end of its forecast.
+- A border incident is listed in three ways, each picking its neighbour out on the map. While
+  a neighbour is hostile, or on course to be as a quarter ends, with no incident of its own
+  pending, the chance that it announces one in time to begin within the four quarters is
+  listed, however small, with what it would close, which regions would produce less and what
+  that would cost in tax a quarter. Once one is announced it is listed until it begins, as
+  almost certain while your decisions leave the neighbour hostile as it would begin, and as
+  remote, on course to be called off, once they do not. While it is in force it is listed
+  with the quarters it has left. The quarters ahead are played with every incident announced
+  beginning, being called off and ending as the rules have it, so the dangers one brings,
+  such as strikes in a border region, are weighed from the quarter it is announced. No
+  incident begins without having been listed in every quarter since its announcement. Its
+  chance is listed the quarter before one could be announced, for a neighbour that only a rise
+  in the world ore price would turn hostile as for any other.
 - The treasury runs out when it cannot cover the budget, and every area is cut, or when it
   cannot cover an instalment on a project, which pauses. The warning says which gives way first
   and when: the budget, or the oldest project left unpaid, named for what it is, whether
@@ -425,7 +660,11 @@ main figures from the balance values and fails if this file, [playing.md](playin
   ore price slumping to the low end of its forecast. A treasury that would run out, or a
   repayment that would be missed, only in that slump is listed as unlikely, with the price it
   would take and, for the treasury, what would give way: the budget, or the building, research
-  or survey that would pause.
+  or survey that would pause. While a neighbour with an ambition is not yet hostile, the game
+  plays them once more with ordinary weather and the ore price rising to the high end of its
+  forecast: the mines earn more, and a country that would pass a tier only on that rise, into
+  one where the neighbour weighs more than deterrence, has the neighbour listed as unlikely,
+  and with it the chance of its border incident.
 
 ## Dilemmas
 

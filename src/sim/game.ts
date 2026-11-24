@@ -1,14 +1,20 @@
 import { approvalInputs, approvalStatus, resolveApproval } from './approval';
+import { resolveLoyalty } from './army';
 import { sum } from './arithmetic';
 import { bailoutPushes, budgetAfter, resolveBailout } from './bailout';
 import { balance } from './balance';
+import { announceIncidents, incidentPushes, rollIncidents, turnIncidents } from './borderIncidents';
 import { nextDate } from './calendar';
 import { budgetEntry, cutEntry } from './budget';
 import { collapseEntry, collapseOf } from './collapse';
+import { countEntries, coupEntry, coupOf, plottingAfter } from './coup';
 import { debtBurden, debtOf } from './debt';
 import { deficitOf, reassessCredit, recordAfter } from './credit';
 import { checkDecisions } from './decisions';
+import { resolveDeterrence } from './deterrence';
 import { answerDilemma, ariseDilemma, rollDilemmas, withAnswer } from './dilemmas';
+import { levelsOf, movedMost, resolveFactions } from './factions';
+import { factionInputs, factionOutlooks, homesOf } from './factionStatus';
 import { forecastVoteShare, holdElection, isElectionQuarter, rollSwing } from './election';
 import {
   beginEntry,
@@ -71,6 +77,8 @@ export function advanceQuarter(state: GameState, decisions: Decisions): TurnResu
     swing: campaign?.swing ?? 0,
     priceShocks,
     shocksAnnounced,
+    // So do the border incidents a hostile neighbour may announce.
+    incidentRolls: rollIncidents(state.country, state.seed, next),
     // Dilemmas answer to the seed and the quarter alone, and leave the generator untouched.
     dilemmaRolls: rollDilemmas(state.seed, next),
   });
@@ -100,7 +108,7 @@ export function resolveQuarter(
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
   const { serviced, taken, traded, credit, bailout } = lived;
-  const { prosperity, tier } = lived;
+  const { prosperity, tier, army, deterred, regions } = lived;
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
   // A harvest ends the events that were waiting on it; then the new quarter may bring more.
@@ -114,22 +122,35 @@ export function resolveQuarter(
     { country: state.country, projects: upkept.projects },
     siteDamageOf(state.country, begun),
   );
-  const collapse = collapseOf(state.country, approval.regions);
+  const collapse = collapseOf(state.country, regions);
+  // The army takes power once it has plotted for long enough. It is checked with collapse,
+  // before the vote and the win, so a quarter that would have won either still falls to it.
+  const plottingQuarters = plottingAfter(state.plottingQuarters, army.loyalty.value);
+  const coup = collapse === null ? coupOf(plottingQuarters, army.loyalty.value) : null;
+  const fallen = collapse ?? coup;
   // The vote is held as each term's last quarter ends, unless the state has already fallen.
   const election =
-    collapse === null && isElectionQuarter(state.date)
-      ? holdElection(approval.regions, chance.swing, state.date)
+    fallen === null && isElectionQuarter(state.date)
+      ? holdElection(regions, chance.swing, state.date)
       : null;
   // The game is won on prosperity held long enough, by a government still in office.
   const defeat = election?.defeat ?? null;
   const prosperousQuarters = heldAfter(state.prosperousQuarters, tier);
   const victory =
-    collapse === null && defeat === null ? victoryOf(prosperousQuarters, lived.debtBurden) : null;
-  const outcome: Outcome = collapse ?? defeat ?? victory?.outcome ?? { status: 'playing' };
+    fallen === null && defeat === null ? victoryOf(prosperousQuarters, lived.debtBurden) : null;
+  const outcome: Outcome = fallen ?? defeat ?? victory?.outcome ?? { status: 'playing' };
 
   const events = [...remaining, ...begun];
   // World price shocks whose time is up end, and those announced begin their notice.
   const shocks = turnShocks(state.priceShocks, chance.shocksAnnounced, date);
+  // A neighbour the quarter leaves hostile may announce a border incident, by its roll.
+  const announced = announceIncidents(
+    state.country,
+    lived.border.incidents,
+    lived.hostile,
+    chance.incidentRolls,
+    date,
+  );
   const dilemmasAnswered = [...state.dilemmasAnswered, ...answer.answered];
   // A game still being played may be put a new dilemma as the next quarter begins.
   const dilemma =
@@ -140,7 +161,7 @@ export function resolveQuarter(
             date,
             treasury: finances.treasury,
             foodReserve: food.foodReserve,
-            regions: approval.regions,
+            regions,
             events,
             dilemmasAnswered,
             worldPrices,
@@ -152,6 +173,7 @@ export function resolveQuarter(
   // Within one seriousness the report keeps this order, so what ends the game leads it.
   const entries: ReportEntry[] = [
     ...(collapse === null ? [] : [collapseEntry(collapse)]),
+    ...(coup === null ? [] : [coupEntry(coup)]),
     ...(victory === null ? [] : [victory.entry]),
     ...(election === null ? [] : [election.entry]),
     ...answer.entries,
@@ -161,6 +183,11 @@ export function resolveQuarter(
     ...(budget.cut ? [cutEntry(budget)] : []),
     ...food.entries,
     ...approval.entries,
+    ...army.entries,
+    ...countEntries(state.plottingQuarters, plottingQuarters, army.loyalty.value),
+    ...deterred.entries,
+    ...lived.border.entries,
+    ...announced.entries,
     ...building.entries,
     ...upkept.entries,
     ...taken.entries,
@@ -188,13 +215,14 @@ export function resolveQuarter(
       foodReserve: food.foodReserve,
       // The growing year ends with the harvest.
       agricultureSpentThisYear: food.harvest === null ? agricultureSpent : 0,
-      regions: approval.regions,
+      regions,
       events,
       projects: damaged.projects,
       debts: taken.debts,
       credit: credit.credit,
       worldPrices,
       priceShocks: shocks.shocks,
+      borderIncidents: announced.incidents,
       // What crossed the border by each link, as the links stood when the quarter began.
       tradeCarried: routeCarriage(state, traded.imported + traded.exported),
       history: [
@@ -207,8 +235,10 @@ export function resolveQuarter(
           date,
           treasury: finances.treasury,
           foodReserve: food.foodReserve,
-          regions: approval.regions,
+          regions,
           worldPrices,
+          borderIncidents: announced.incidents,
+          factions: lived.factions.standings,
           prosperity: prosperity.value,
           debtBurden: lived.debtBurden,
         }),
@@ -217,6 +247,9 @@ export function resolveQuarter(
       dilemmasAnswered,
       tier,
       prosperousQuarters,
+      plottingQuarters,
+      deterrence: deterred.deterrence.value,
+      factions: lived.factions.standings,
       austerity: bailout.austerity,
       outcome,
     },
@@ -233,6 +266,9 @@ export function resolveQuarter(
         contributions: [...answer.food, ...food.contributions],
       },
       approval: approval.approval,
+      armyLoyalty: army.loyalty,
+      deterrence: deterred.deterrence,
+      standings: lived.factions.figures,
       debt: {
         value: debtOf(taken.debts),
         change: debtOf(taken.debts) - debtOf(given.debts),
@@ -317,23 +353,69 @@ function liveQuarter(
     was: expectationsIn(state.tier, state.startingTier),
     now: expectationsIn(tier, state.startingTier),
   };
+  // The factions answer to what the quarter raised and spent and to the country as it began.
+  // Their standings move first, so that approval is judged with them as the quarter leaves them.
+  const factions = resolveFactions(
+    state.factions,
+    factionInputs(
+      state,
+      {
+        taxRatePercent: decisions.budget.taxRatePercent,
+        spent: finances.spent,
+        revenue: finances.revenue,
+      },
+      sites,
+    ),
+    homesOf(state.country, state.regions),
+  );
   // Strikes in force as the quarter began have already cut its revenue. The approval the
   // quarter leaves behind decides who strikes in the next.
   const approval = resolveApproval(state.country, state.regions, served, {
     ...approvalInputs(decisions, finances, answer),
-    // A bailout's blow lands at once, beside any the answer to a dilemma dealt.
-    pushes: [...answer.pushes, ...bailoutPushes(serviced, state)],
+    factions: {
+      was: levelsOf(state.factions),
+      now: levelsOf(factions.standings),
+      settles: factions.settles,
+      movedBy: movedMost(factions.figures),
+    },
+    // A bailout's blow lands at once, beside any the answer to a dilemma dealt, and so does
+    // that of a border incident in the quarter it begins, in the regions on its border.
+    pushes: [...answer.pushes, ...bailoutPushes(serviced, state), ...incidentPushes(state)],
     expectations,
   });
+  // The army answers to what was spent on Defence and to the unrest the quarter leaves, so a
+  // region whose approval has just broken into protest pulls its army's loyalty down at once.
+  const army = resolveLoyalty(
+    state.country,
+    state.regions,
+    approval.regions,
+    finances.spent.defence,
+  );
+  const { regions } = army;
+  // Deterrence answers to what was spent on Defence too, and the neighbours to the tier the
+  // quarter leaves in force: a country that has just passed one is more worth taking at once.
+  const deterred = resolveDeterrence(state, finances.spent.defence, regions, tier);
+  // Border incidents turn as the quarter ends, on what each neighbour then intends: one whose
+  // time is up ends, and one due to begin does so only if its neighbour is still hostile.
+  const after = nextDate(state.date);
+  const hostile = new Set(
+    deterred.neighbours
+      .filter((neighbour) => neighbour.intention === 'hostile')
+      .map((neighbour) => neighbour.neighbourId),
+  );
+  const border = turnIncidents(state, hostile, after);
   // The debt burden the quarter leaves: its debt against the revenue the regions and sites it
   // leaves would raise. The rating, the win, the record and the preview all judge this one.
   const owing = (worldPrices: WorldPrices) => ({
     country: state.country,
-    regions: approval.regions,
+    regions,
     projects: upkept.projects,
     budget: decisions.budget,
     debts: taken.debts,
     worldPrices,
+    // The revenue is the next quarter's, with the border incidents then in force.
+    date: after,
+    borderIncidents: border.incidents,
   });
   const burden = debtBurden(owing(pricesAfter));
   // The rating is reassessed as the quarter ends, on the debt and revenue it leaves behind.
@@ -360,7 +442,19 @@ function liveQuarter(
     agricultureSpent,
     sites,
     food,
+    factions,
     approval,
+    army,
+    deterred,
+    /** The neighbours hostile as the quarter ends. */
+    hostile,
+    /**
+     * The border as the quarter leaves it: its incidents, before any new one is announced, and
+     * what is reported of them.
+     */
+    border,
+    /** The regions as the quarter leaves them: fed, served, judged and with their armies. */
+    regions,
     prosperity,
     tier,
     credit,
@@ -464,8 +558,14 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     relief: thisQuarter.relief,
     approval: exactly(approval.approval.value),
     approvalHeading: exactly(approval.heading),
+    armyLoyalty: exactly(lived.army.loyalty.value),
+    armyLoyaltyHeading: exactly(lived.army.heading),
+    deterrence: exactly(lived.deterred.deterrence.value),
+    deterrenceHeading: exactly(lived.deterred.heading),
+    neighbours: lived.deterred.neighbours,
+    standings: factionOutlooks(lived.factions.standings, lived.factions.settles),
     prosperity: { min: lived.prosperityAt(low), max: lived.prosperityAt(high) },
-    unrest: approvalStatus({ regions: approval.regions }).unrest,
+    unrest: approvalStatus({ regions: lived.regions }).unrest,
     voteShare: forecastVoteShare(approval.approval.value),
   };
 }

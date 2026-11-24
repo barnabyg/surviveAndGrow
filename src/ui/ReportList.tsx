@@ -13,13 +13,13 @@ interface ReportListProps {
   readonly report: TurnReport | null;
   /** The place in the list of the report the player has selected, if any. */
   readonly selectedEntry: number | null;
-  /** Called with a report's place in the list when the player selects one that has a region. */
+  /** Called with a report's place in the list when the player selects one that has a place. */
   readonly onSelectEntry: (index: number) => void;
 }
 
 /**
  * What happened last quarter, where and why, the most serious first. A report about one
- * region is a button: selecting it picks that region out on the map.
+ * region or one neighbour is a button: selecting it picks that place out on the map.
  */
 export function ReportList({ report, selectedEntry, onSelectEntry }: ReportListProps) {
   const count = report?.entries.length ?? 0;
@@ -41,7 +41,7 @@ export function ReportList({ report, selectedEntry, onSelectEntry }: ReportListP
         <ul className="reports__list">
           {report.entries.map((entry, index) => (
             <li key={`${entry.headline}|${entry.cause}`}>
-              {entry.regionId === undefined ? (
+              {entry.regionId === undefined && entry.neighbourId === undefined ? (
                 <div className="report">
                   <ReportBody entry={entry} />
                 </div>
@@ -139,6 +139,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
   protest: {
     label: 'Protest report',
     path: 'M4,18 V11 M4,11 L2,6 M10,18 V9 M10,9 L10,3 M16,18 V11 M16,11 L18,6 M7,18 V14 M13,18 V14',
+  },
+  // A soldier's shield with a chevron of rank on it.
+  armyLoyalty: {
+    label: 'Army report',
+    path: 'M10,2 L17,5 V10 Q17,15 10,18 Q3,15 3,10 V5 Z M6.5,8 L10,11 L13.5,8 M6.5,11.5 L10,14.5 L13.5,11.5',
   },
   // A frame going up, with an arrow rising from it.
   projectStarted: {
@@ -250,10 +255,25 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Election report',
     path: 'M3,10 H17 V17 H3 Z M7,10 V4 H13 V10 M8.5,6.5 L10,8 L12,5.5',
   },
+  // Two countries either side of a border, an arrow crossing it.
+  neighbour: {
+    label: 'Neighbour report',
+    path: 'M10,2 V5 M10,8 V12 M10,15 V18 M2,10 H7 M13,10 H18 M15,7 L18,10 L15,13',
+  },
+  // A border barred: a line across it, and a bar set against the way through.
+  borderIncident: {
+    label: 'Border incident report',
+    path: 'M10,2 V18 M3,10 H8 M12,10 H17 M6,6 L14,14 M14,6 L6,14',
+  },
   // A broken column.
   collapse: {
     label: 'Collapse report',
     path: 'M3,17 H17 M6,17 V11 L8,9 L6,7 V4 M14,17 V12 L12,10 L14,8 V4 M4,4 H9 M11,4 H16',
+  },
+  // A soldier's shield, struck through.
+  coup: {
+    label: 'Coup report',
+    path: 'M10,2 L17,5 V10 Q17,15 10,18 Q3,15 3,10 V5 Z M3,17 L17,3',
   },
   // A star.
   victory: {

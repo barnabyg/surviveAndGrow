@@ -1,8 +1,11 @@
 import { Fragment, useId } from 'react';
 import {
+  BORDER_INCIDENT_NAME,
+  borderIncidentStatuses,
   chainOf,
   chains,
   chainsThrough,
+  deterrenceStatus,
   describeEvent,
   describeUnrest,
   drawAt,
@@ -11,6 +14,7 @@ import {
   formatPercent,
   isInUseState,
   MAP_FRAME,
+  neighbourBorder,
   settlementLooks,
   siteStatus,
   surveyStatuses,
@@ -29,6 +33,7 @@ import {
 } from '../sim';
 import { infrastructureWords, lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
 import { TIER_PALETTES, type MapPalette } from './mapPalette';
+import { NeighbourMark } from './NeighbourMark';
 import { SiteMark } from './SiteMark';
 import { TradeRouteMark } from './TradeRouteMark';
 import './MapView.css';
@@ -54,6 +59,9 @@ interface MapViewProps {
   /** The trade route the player has picked out, if any. */
   readonly selectedRouteId: string | null;
   readonly onSelectRoute: (routeId: string) => void;
+  /** The neighbour the player has picked out, if any. */
+  readonly selectedNeighbourId: string | null;
+  readonly onSelectNeighbour: (neighbourId: string) => void;
 }
 
 /** How one region is painted under the chosen lens. */
@@ -66,14 +74,15 @@ interface Paint {
 /**
  * The country, drawn entirely from its country file and the state of the game. Nothing
  * here knows any one country. A lens recolours the regions and changes the figure each is
- * labelled with; sites, routes, trade routes, events and tags are drawn the same under every
- * lens, except that the infrastructure lens marks and rings every missing link in a chain and
+ * labelled with; sites, routes, trade routes, neighbours, events and tags are drawn the same
+ * under every lens, except that the infrastructure lens marks and rings every missing link in a chain and
  * marks every missing or weak trade link.
  */
 export function MapView(props: MapViewProps) {
   const { game, lens, selectedRegionId, reliefRegionId, onSelectRegion } = props;
   const { selectedSiteId, onSelectSite, plannedSiteIds, plannedSurveys } = props;
   const { plannedTrade, selectedRouteId, onSelectRoute } = props;
+  const { selectedNeighbourId, onSelectNeighbour } = props;
   const { country } = game;
   // The whole map takes on the look of the tier of prosperity in force.
   const palette = TIER_PALETTES[game.tier];
@@ -120,6 +129,10 @@ export function MapView(props: MapViewProps) {
       country.map.neighbours.find((neighbour) => neighbour.id === crossing?.neighbourId) ?? null
     );
   };
+  // What each neighbour intends, which its mark and its border are drawn by, and the border
+  // incidents announced or in force, each drawn on its neighbour's border under every lens.
+  const neighbourStatuses = deterrenceStatus(game).neighbours;
+  const incidents = borderIncidentStatuses(game);
   // Settlements are built up and lit by their region's living standard, under every lens.
   const looks = settlementLooks(game);
   const lookOf = (settlementId: string): SettlementLook =>
@@ -178,29 +191,24 @@ export function MapView(props: MapViewProps) {
         ))}
       </g>
 
-      {/* Neighbours and sea are muted so that the player's country stands out. */}
+      {/* Neighbours and sea are muted so that the player's country stands out. A neighbour's
+          land picks it out at a click, as its mark does for the keyboard. */}
       {country.map.neighbours.map((neighbour) => (
         <polygon
           key={neighbour.id}
+          className="map__neighbour-land"
           points={outline(neighbour.shape)}
           fill={palette.neighbour}
           stroke={palette.neighbourBorder}
           strokeWidth="1"
+          onClick={() => {
+            onSelectNeighbour(neighbour.id);
+          }}
         />
       ))}
       {country.map.seas.map((sea) => (
         <text key={sea.name} className="map__sea-label" {...at(sea.label)} fill={palette.seaLabel}>
           {sea.name}
-        </text>
-      ))}
-      {country.map.neighbours.map((neighbour) => (
-        <text
-          key={neighbour.id}
-          className="map__neighbour-label"
-          {...at(neighbour.label)}
-          fill={palette.neighbourLabel}
-        >
-          {neighbour.name}
         </text>
       ))}
 
@@ -353,6 +361,28 @@ export function MapView(props: MapViewProps) {
           ))}
       </g>
 
+      {/* Each neighbour's name, what it intends and its border, under the trade routes, so a
+          crossing is never covered by the border it stands on. */}
+      {country.map.neighbours.map((neighbour) => {
+        const status = neighbourStatuses.find(
+          (candidate) => candidate.neighbourId === neighbour.id,
+        );
+        return (
+          status && (
+            <NeighbourMark
+              key={neighbour.id}
+              neighbour={neighbour}
+              status={status}
+              border={neighbourBorder(country, neighbour.id)}
+              incident={incidents.find((incident) => incident.neighbourId === neighbour.id) ?? null}
+              palette={palette}
+              selected={neighbour.id === selectedNeighbourId}
+              onSelect={onSelectNeighbour}
+            />
+          )
+        );
+      })}
+
       {/* Trade routes go under the sites, so a lane never covers its port. */}
       {routes.map((route) => (
         <TradeRouteMark
@@ -479,6 +509,7 @@ function RegionShape(props: RegionShapeProps) {
           : `food ${FOOD_STAGE_NAMES[stage].toLowerCase()}`,
     ...events.map((event) => describeEvent(game, event)),
     ...(unrest === null ? [] : [unrest]),
+    ...incidentTags(game, region.id).map((tag) => tag.toLowerCase()),
     ...(relieved ? ['food relief being sent'] : []),
   ].join(', ');
   return (
@@ -516,7 +547,7 @@ interface RegionLabelProps {
  * A region's name, with the figure the lens shows beneath: its approval under the approval
  * lens, its living standard under the living-standards lens, its infrastructure access under
  * the infrastructure lens, and its food stage otherwise. Then a tag for hunger, for each
- * event, for unrest and for relief. A region in trouble gets a dark tag with a warning mark, so its state never
+ * event, for unrest, for a border incident in force on its border and for relief. A region in trouble gets a dark tag with a warning mark, so its state never
  * rests on colour alone.
  */
 function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLabelProps) {
@@ -530,6 +561,7 @@ function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLab
       .filter((event) => event.regionId === region.id)
       .map((event) => describeEvent(game, event)),
     ...(unrest === null ? [] : [`▲ ${unrest}`]),
+    ...incidentTags(game, region.id).map((tag) => `▲ ${tag}`),
     ...(relieved ? ['Food relief on its way'] : []),
   ];
   // Under a lens the lettering is the figure the colour stands for, so it is written at
@@ -589,6 +621,16 @@ function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLab
       })}
     </g>
   );
+}
+
+/**
+ * What each border incident in force costs a region on its border, in a few words: "Border
+ * incident · output −20%". A region no incident touches has none.
+ */
+function incidentTags(game: GameState, regionId: string): string[] {
+  return borderIncidentStatuses(game)
+    .filter((incident) => incident.inForce && incident.regionIds.includes(regionId))
+    .map((incident) => `${BORDER_INCIDENT_NAME} · output −${incident.outputCutPercent}%`);
 }
 
 function outline(shape: readonly Point[]): string {
