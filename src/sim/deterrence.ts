@@ -25,7 +25,7 @@ import {
  */
 
 /** How one neighbour stands towards the country. All figures are in thousandths. */
-export interface NeighbourStanding {
+export interface NeighbourStatus {
   readonly neighbourId: string;
   readonly name: string;
   /** Its ambition, as the country file gives it. */
@@ -57,7 +57,7 @@ export interface DeterrenceStatus {
   /** The share of each neighbour's ambition that weighs against deterrence in that tier. */
   readonly worthTaking: number;
   /** Each neighbour, in the country file's order. */
-  readonly neighbours: readonly NeighbourStanding[];
+  readonly neighbours: readonly NeighbourStatus[];
 }
 
 /** What a neighbour will intend once a quarter is over, and where that is heading. */
@@ -79,8 +79,8 @@ export interface DeterrenceOutcome {
   readonly entries: readonly ReportEntry[];
 }
 
-/** What of a game says how its neighbours stand. */
-export interface Standing {
+/** What of a game says what its neighbours intend. */
+export interface Deterred {
   readonly country: Country;
   readonly tier: Tier;
   readonly deterrence: number;
@@ -133,7 +133,7 @@ export function intentionOf(neighbour: Neighbour, tier: Tier, deterrence: number
 }
 
 /** What one neighbour, by its id, intends as a game stands. One the country has not is peaceful. */
-export function intentionIn(game: Standing, neighbourId: string): Intention {
+export function intentionIn(game: Deterred, neighbourId: string): Intention {
   const neighbour = game.country.map.neighbours.find((candidate) => candidate.id === neighbourId);
   return neighbour === undefined ? 'peaceful' : intentionOf(neighbour, game.tier, game.deterrence);
 }
@@ -144,7 +144,7 @@ export function intentionIn(game: Standing, neighbourId: string): Intention {
  * (`resolveDeterrence`) reads the same sums.
  */
 export function deterrenceStatus(
-  game: Standing & { readonly regions: readonly RegionState[]; readonly budget: Budget },
+  game: Deterred & { readonly regions: readonly RegionState[]; readonly budget: Budget },
   budget: Budget = game.budget,
 ): DeterrenceStatus {
   const people = populationOf(game.regions);
@@ -185,7 +185,7 @@ export function deterrenceStatus(
  * which makes the country more worth taking, or deterrence moved.
  */
 export function resolveDeterrence(
-  before: Standing,
+  before: Deterred,
   spent: Money,
   regions: readonly RegionState[],
   tier: Tier,
@@ -229,7 +229,7 @@ export function resolveDeterrence(
 function turnEntry(
   neighbour: Neighbour,
   turn: { readonly was: Intention; readonly now: Intention },
-  left: { readonly before: Standing; readonly tier: Tier; readonly deterrence: number },
+  left: { readonly before: Deterred; readonly tier: Tier; readonly deterrence: number },
   defence: string,
 ): ReportEntry {
   const { was, now } = turn;

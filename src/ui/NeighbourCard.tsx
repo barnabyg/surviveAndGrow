@@ -13,7 +13,7 @@ import {
   type Budget,
   type DeterrenceStatus,
   type GameState,
-  type NeighbourStanding,
+  type NeighbourStatus,
   type TurnReport,
 } from '../sim';
 import { IntentionSign } from './IntentionSign';
@@ -37,9 +37,9 @@ interface NeighbourCardProps {
  */
 export function NeighbourCard({ game, report, neighbourId, budget, onClose }: NeighbourCardProps) {
   const status = deterrenceStatus(game, budget);
-  const standing = status.neighbours.find((candidate) => candidate.neighbourId === neighbourId);
-  if (standing === undefined) return null;
-  const { name, intention } = standing;
+  const neighbour = status.neighbours.find((candidate) => candidate.neighbourId === neighbourId);
+  if (neighbour === undefined) return null;
+  const { name, intention } = neighbour;
   const told = report?.entries.find(
     (entry) => entry.kind === 'neighbour' && entry.neighbourId === neighbourId,
   );
@@ -47,7 +47,7 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
     (candidate) => candidate.neighbourId === neighbourId,
   );
   const moved = report?.deterrence ?? null;
-  const worsening = INTENTIONS.indexOf(standing.settlesIntention) > INTENTIONS.indexOf(intention);
+  const worsening = INTENTIONS.indexOf(neighbour.settlesIntention) > INTENTIONS.indexOf(intention);
 
   return (
     <section className="map-card" aria-labelledby="neighbour-card-title">
@@ -68,21 +68,21 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
           <dt>Deterrence</dt>
           <dd>{formatPercent(status.deterrence)}</dd>
         </div>
-        {standing.weighs > 0 && (
+        {neighbour.weighs > 0 && (
           <>
             <div>
               <dt>Watchful below</dt>
-              <dd>{formatPercent(standing.watchfulBelow)}</dd>
+              <dd>{formatPercent(neighbour.watchfulBelow)}</dd>
             </div>
             <div>
               <dt>Hostile below</dt>
-              <dd>{formatPercent(standing.hostileBelow)}</dd>
+              <dd>{formatPercent(neighbour.hostileBelow)}</dd>
             </div>
           </>
         )}
         <div>
           <dt>Ambition</dt>
-          <dd>{formatPercent(standing.ambition, 0)}</dd>
+          <dd>{formatPercent(neighbour.ambition, 0)}</dd>
         </div>
       </dl>
       <p
@@ -91,7 +91,7 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
         aria-label="What it would take"
       >
         {intention === 'peaceful' ? '' : '▲ '}
-        {whatItWouldTake(status, standing)}
+        {whatItWouldTake(status, neighbour)}
       </p>
       {incident !== undefined && (
         <p className="warning-note" role="status" aria-label={BORDER_INCIDENT_NAME}>
@@ -108,7 +108,7 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
           ahead give the chance.
         </p>
       )}
-      {standing.ambition > 0 && (
+      {neighbour.ambition > 0 && (
         <table className="breakdown__table" aria-label="What its ambition weighs">
           <caption className="map-card__term">
             What its ambition weighs against deterrence as the country prospers
@@ -120,7 +120,7 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
                   {TIER_NAMES[tier]}
                   {tier === status.tier ? ' (now)' : ''}
                 </th>
-                <td>{formatPercent(standing.weighsIn[tier])}</td>
+                <td>{formatPercent(neighbour.weighsIn[tier])}</td>
               </tr>
             ))}
           </tbody>
@@ -142,7 +142,7 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
         {worsening ? '▲ ' : ''}
         Defence at {formatMoney(status.spent)} a quarter, against the {formatMoney(status.expected)}{' '}
         the army expects, settles deterrence at {formatPercent(status.settles)}, where {name} would
-        be {INTENTION_NAMES[standing.settlesIntention].toLowerCase()}. Deterrence moves there
+        be {INTENTION_NAMES[neighbour.settlesIntention].toLowerCase()}. Deterrence moves there
         slowly, so it has to be bought ahead.
       </p>
       <div className="button-row">
@@ -155,13 +155,13 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
 }
 
 /** Deterrence against what it would take to change the neighbour's intention, in a sentence. */
-function whatItWouldTake(status: DeterrenceStatus, standing: NeighbourStanding): string {
-  const { name, intention, watchfulBelow, hostileBelow } = standing;
+function whatItWouldTake(status: DeterrenceStatus, neighbour: NeighbourStatus): string {
+  const { name, intention, watchfulBelow, hostileBelow } = neighbour;
   const deterrence = `Deterrence is ${formatPercent(status.deterrence)}.`;
-  if (standing.ambition === 0) {
+  if (neighbour.ambition === 0) {
     return `${name} has no ambition here, and stays peaceful whatever deterrence is.`;
   }
-  if (standing.weighs === 0) {
+  if (neighbour.weighs === 0) {
     return `At ${TIER_NAMES[status.tier]} the country has nothing worth taking: ${name}’s ambition weighs nothing against deterrence, so it is peaceful whatever is spent on Defence. That changes as the country prospers.`;
   }
   switch (intention) {

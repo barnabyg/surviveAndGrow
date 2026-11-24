@@ -38,7 +38,7 @@ export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionLis
           const troubled = region.foodStage !== 'adequate';
           const standard = standards[index]?.value ?? 0;
           const army = armies[index];
-          const uneasy = army !== undefined && army.stage !== 'loyal';
+          const notLoyal = army !== undefined && army.stage !== 'loyal';
           return (
             <li key={region.id}>
               <button
@@ -66,11 +66,11 @@ export function RegionList({ game, selectedRegionId, onSelectRegion }: RegionLis
                 {army !== undefined && (
                   <span
                     className={
-                      uneasy ? 'region-row__army region-row__army--uneasy' : 'region-row__army'
+                      notLoyal ? 'region-row__army region-row__army--not-loyal' : 'region-row__army'
                     }
                     aria-label={`Army ${ARMY_STAGE_NAMES[army.stage].toLowerCase()}, loyalty ${formatPercent(army.loyalty)}`}
                   >
-                    {uneasy && '▲ '}
+                    {notLoyal && '▲ '}
                     {ARMY_STAGE_NAMES[army.stage]} {formatPercent(army.loyalty, 0)}
                   </span>
                 )}

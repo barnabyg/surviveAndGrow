@@ -131,7 +131,7 @@ export function MapView(props: MapViewProps) {
   };
   // What each neighbour intends, which its mark and its border are drawn by, and the border
   // incidents announced or in force, each drawn on its neighbour's border under every lens.
-  const standings = deterrenceStatus(game).neighbours;
+  const neighbourStatuses = deterrenceStatus(game).neighbours;
   const incidents = borderIncidentStatuses(game);
   // Settlements are built up and lit by their region's living standard, under every lens.
   const looks = settlementLooks(game);
@@ -364,13 +364,15 @@ export function MapView(props: MapViewProps) {
       {/* Each neighbour's name, what it intends and its border, under the trade routes, so a
           crossing is never covered by the border it stands on. */}
       {country.map.neighbours.map((neighbour) => {
-        const standing = standings.find((candidate) => candidate.neighbourId === neighbour.id);
+        const status = neighbourStatuses.find(
+          (candidate) => candidate.neighbourId === neighbour.id,
+        );
         return (
-          standing && (
+          status && (
             <NeighbourMark
               key={neighbour.id}
               neighbour={neighbour}
-              standing={standing}
+              status={status}
               border={neighbourBorder(country, neighbour.id)}
               incident={incidents.find((incident) => incident.neighbourId === neighbour.id) ?? null}
               palette={palette}

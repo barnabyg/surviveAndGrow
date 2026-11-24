@@ -4,7 +4,7 @@ import {
   type BorderEdge,
   type IncidentStatus,
   type Neighbour,
-  type NeighbourStanding,
+  type NeighbourStatus,
 } from '../sim';
 import { IncidentMark, incidentWords } from './IncidentMark';
 import { IntentionMark } from './IntentionSign';
@@ -15,16 +15,16 @@ import type { MapPalette } from './mapPalette';
  * border incident announced or in force on its border.
  */
 export function neighbourDescription(
-  standing: NeighbourStanding,
+  status: NeighbourStatus,
   incident: IncidentStatus | null = null,
 ): string {
-  const intends = `${standing.name}, neighbour: ${INTENTION_NAMES[standing.intention].toLowerCase()}`;
+  const intends = `${status.name}, neighbour: ${INTENTION_NAMES[status.intention].toLowerCase()}`;
   return incident === null ? intends : `${intends}, ${incidentWords(incident).toLowerCase()}`;
 }
 
 interface NeighbourMarkProps {
   readonly neighbour: Neighbour;
-  readonly standing: NeighbourStanding;
+  readonly status: NeighbourStatus;
   /** The country's border with the neighbour, which its intention is drawn along. */
   readonly border: readonly BorderEdge[];
   /** The border incident announced or in force on that border, if any. */
@@ -50,8 +50,8 @@ function tagWidthOf(word: string): number {
  * None of it rests on colour.
  */
 export function NeighbourMark(props: NeighbourMarkProps) {
-  const { neighbour, standing, border, incident, palette, selected, onSelect } = props;
-  const { intention } = standing;
+  const { neighbour, status, border, incident, palette, selected, onSelect } = props;
+  const { intention } = status;
   const word = INTENTION_NAMES[intention];
   const width = tagWidthOf(word);
   const [labelX, labelY] = neighbour.label;
@@ -98,7 +98,7 @@ export function NeighbourMark(props: NeighbourMarkProps) {
       className="map__neighbour"
       role="button"
       tabIndex={0}
-      aria-label={neighbourDescription(standing, incident)}
+      aria-label={neighbourDescription(status, incident)}
       aria-pressed={selected}
       data-intention={intention}
       data-incident={incident === null ? undefined : incident.inForce ? 'in-force' : 'announced'}
@@ -112,7 +112,7 @@ export function NeighbourMark(props: NeighbourMarkProps) {
         }
       }}
     >
-      <title>{neighbourDescription(standing, incident)}</title>
+      <title>{neighbourDescription(status, incident)}</title>
       {intention !== 'peaceful' && (
         <g className="map__neighbour-border" fill="none" strokeLinecap="round">
           <path d={lines.join(' ')} stroke={palette.tagBackground} strokeWidth="7" />

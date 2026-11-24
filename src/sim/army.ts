@@ -375,10 +375,10 @@ function stageEntries(
   const expected = Math.round(expectedFor(defence.people));
   const spending = `Defence spending is ${formatMoney(defence.spent)} a quarter, and the army expects ${formatMoney(expected)}.`;
   const unrestIn = (regions: readonly RegionState[]) => {
-    const uneasy = regions.filter((region) => region.unrest !== 'calm');
-    return uneasy.length === 0
+    const unsettled = regions.filter((region) => region.unrest !== 'calm');
+    return unsettled.length === 0
       ? ''
-      : ` ${capitalised(listed(uneasy.map((region) => `${UNREST_NAMES[region.unrest].toLowerCase()} in ${regionName(country, region.id)}`)))} pull it down further.`;
+      : ` ${capitalised(listed(unsettled.map((region) => `${UNREST_NAMES[region.unrest].toLowerCase()} in ${regionName(country, region.id)}`)))} pull it down further.`;
   };
   const seriousnessOf = (to: ArmyStage, from: ArmyStage): ReportEntry['seriousness'] => {
     if (!worse(to, from)) return 'notable';

@@ -114,7 +114,7 @@ Prosperity, tiers and people.
   seed and the deposit, not the random generator, so it is fair and the same seed finds the same.
   Rules: rules.md, Surveys; balance: `docs/balance/phase-5.md`.
 
-- **Defence and army loyalty** (Phase 6): the military is kept abstract, and there is no tactical
+- **Defence and army loyalty** (Phase 6): the army is kept abstract, and there is no tactical
   combat. Defence is a spending area that buys the army's loyalty, kept for each region and
   nationally: it answers to defence spending per head against what the army expects and to the
   region's own unrest, moves gradually as approval does, and is read as loyal, restless or

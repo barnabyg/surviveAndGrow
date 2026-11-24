@@ -79,7 +79,7 @@
   white-space: nowrap;
 }
 
-.region-row__army--uneasy {
+.region-row__army--not-loyal {
   color: var(--danger);
   font-weight: 600;
 }

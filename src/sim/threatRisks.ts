@@ -43,7 +43,7 @@ function coupIn(path: Path, watched: number): number | null {
  */
 export function coupRisk(scope: Scope, budget: Budget): Risk[] {
   const taken = (path: Path) => coupIn(path, scope.watched);
-  const stands = standing(scope, budget);
+  const stands = armyWords(scope, budget);
   const finding = weigh(scope, taken);
   if (finding === null) {
     // What a mine's chain pays in tax falls with the world ore price, and a treasury that
@@ -71,7 +71,7 @@ export function coupRisk(scope: Scope, budget: Budget): Risk[] {
 }
 
 /** Where loyalty and the count stand, and what Defence is against what the army expects. */
-function standing(scope: Scope, budget: Budget) {
+function armyWords(scope: Scope, budget: Budget) {
   const { state } = scope;
   const army = armyLoyaltyStatus(state, budget);
   const coup = coupStatus(state);

@@ -189,7 +189,7 @@ export {
   intentionIn,
   type DeterrenceStatus,
   type NeighbourOutlook,
-  type NeighbourStanding,
+  type NeighbourStatus,
 } from './deterrence';
 export {
   bestStanding,
