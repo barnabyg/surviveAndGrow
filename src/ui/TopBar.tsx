@@ -1,5 +1,7 @@
 import {
   approvalStatus,
+  ARMY_STAGE_NAMES,
+  armyLoyaltyStatus,
   austerityStatus,
   creditRules,
   creditStatus,
@@ -29,6 +31,7 @@ import {
   UNREST_NAMES,
   victoryStatus,
   type ApprovalStatus,
+  type ArmyLoyaltyStatus,
   type GameState,
   type TurnReport,
   type VictoryStatus,
@@ -104,11 +107,31 @@ function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
   return { text, tone } as const;
 }
 
+/**
+ * The stage the army is in, named beneath its loyalty whatever it is: in a word while it is
+ * loyal, and as a warning, with the mark it has fallen below, while it is restless or plotting.
+ */
+function armyRemark(army: ArmyLoyaltyStatus) {
+  const name = ARMY_STAGE_NAMES[army.stage];
+  if (army.stage === 'loyal') return { text: name, tone: 'plain' } as const;
+  const mark = army.stage === 'plotting' ? army.plottingBelow : army.restlessBelow;
+  return {
+    text: `${name}: below ${formatPercent(mark, 0)}`,
+    tone: army.stage === 'plotting' ? 'danger' : 'warning',
+  } as const;
+}
+
 export function TopBar(props: TopBarProps) {
   const { game, report, onEndQuarter, onRestart, onTour, tips } = props;
   const { date } = game;
   const food = foodStatus(game);
   const approval = approvalStatus(game);
+  const army = armyLoyaltyStatus(game);
+  const restlessMark: Mark = {
+    value: army.restlessBelow,
+    label: `Restless below ${formatPercent(army.restlessBelow, 0)}`,
+    name: `the ${formatPercent(army.restlessBelow, 0)} restless mark`,
+  };
   const debt = debtStatus(game);
   const credit = creditStatus(game);
   const election = electionStatus(game);
@@ -357,6 +380,71 @@ export function TopBar(props: TopBarProps) {
             {formatPercent(approval.strikesBelow, 0)} and protests below{' '}
             {formatPercent(approval.protestsBelow, 0)}.
           </p>
+        </VitalSign>
+        <VitalSign
+          label="Army loyalty"
+          value={formatPercent(army.loyalty)}
+          figure={report?.armyLoyalty ?? null}
+          formatChange={formatSignedPoints}
+          formatMovement={formatPoints}
+          remark={armyRemark(army)}
+          note={`${restlessMark.label} · plotting below ${formatPercent(army.plottingBelow, 0)}`}
+          breakdownTitle="What moved army loyalty"
+          trend={
+            <TrendLine
+              subject="Army loyalty"
+              // Quarters recorded before the army was kept are left out.
+              values={shown.flatMap((record) =>
+                record.armyLoyalty === null ? [] : [record.armyLoyalty],
+              )}
+              format={formatPercent}
+              mark={restlessMark}
+            />
+          }
+        >
+          <h2 className="label">What army loyalty is made of</h2>
+          <table className="breakdown__table" aria-label="What army loyalty is made of">
+            <tbody>
+              {army.causes.map((cause, index) => (
+                <tr key={cause.label}>
+                  <th scope="row">{cause.label}</th>
+                  <td>
+                    {index === 0 ? formatPercent(cause.amount) : formatSignedPoints(cause.amount)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">Army loyalty now</th>
+                <td>
+                  {formatPercent(army.loyalty)} · {ARMY_STAGE_NAMES[army.stage]}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+          <p className="breakdown__empty">
+            Army loyalty moves a part of the way each quarter towards where Defence spending and
+            each region’s unrest would settle it: {formatPercent(army.settles)},{' '}
+            {ARMY_STAGE_NAMES[army.settlesStage].toLowerCase()}, on the budget in force. Defence is{' '}
+            {formatMoney(army.spent)} a quarter, and the army expects {formatMoney(army.expected)}{' '}
+            for the country’s people. Strikes in a region pull the army there down, and protests
+            further. The army is restless below {formatPercent(army.restlessBelow, 0)} and plotting
+            below {formatPercent(army.plottingBelow, 0)}.
+          </p>
+          <h2 className="label">The army by region</h2>
+          <table className="breakdown__table" aria-label="The army by region">
+            <tbody>
+              {army.regions.map((region) => (
+                <tr key={region.regionId}>
+                  <th scope="row">{regionName(game.country, region.regionId)}</th>
+                  <td>
+                    {formatPercent(region.loyalty)} · {ARMY_STAGE_NAMES[region.stage]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </VitalSign>
         <VitalSign
           label="Prosperity"

@@ -24,7 +24,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: none;
@@ -66,12 +66,26 @@
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-  min-width: 82px;
+  min-width: 66px;
   font-variant-numeric: tabular-nums;
 }
 
+/* The army's stage in words, with its loyalty beside it; a sign marks one that is not loyal. */
+.region-row__army {
+  min-width: 86px;
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.region-row__army--uneasy {
+  color: var(--danger);
+  font-weight: 600;
+}
+
 .region-row__bar {
-  width: 40px;
+  width: 24px;
   height: 6px;
   background: var(--line);
 }

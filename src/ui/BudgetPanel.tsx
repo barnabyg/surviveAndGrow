@@ -1,5 +1,7 @@
 import { useId } from 'react';
 import {
+  ARMY_STAGE_NAMES,
+  armyStageAt,
   austerityStatus,
   budgetBounds,
   CREDIT_RATING_NAMES,
@@ -291,6 +293,18 @@ export function BudgetPanel(props: BudgetPanelProps) {
           format={formatPercent}
         />
         <Projection
+          label="Army loyalty next quarter"
+          before={before.armyLoyalty}
+          after={after.armyLoyalty}
+          format={loyaltyWithStage}
+        />
+        <Projection
+          label="Army loyalty is heading for"
+          before={before.armyLoyaltyHeading}
+          after={after.armyLoyaltyHeading}
+          format={loyaltyWithStage}
+        />
+        <Projection
           label="Prosperity next quarter"
           before={before.prosperity}
           after={after.prosperity}
@@ -355,6 +369,11 @@ export function BudgetPanel(props: BudgetPanelProps) {
       </section>
     </DecisionPanel>
   );
+}
+
+/** An army loyalty with the stage it is read as, in words: "58.4%, loyal". */
+function loyaltyWithStage(permille: number): string {
+  return `${formatPercent(permille)}, ${ARMY_STAGE_NAMES[armyStageAt(permille)].toLowerCase()}`;
 }
 
 /** Whether a pending change would move a projected figure. */

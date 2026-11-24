@@ -1,4 +1,6 @@
 import {
+  ARMY_STAGE_NAMES,
+  armyLoyaltyStatus,
   buildingBarred,
   DECAYING_SHARE,
   describeEvent,
@@ -25,6 +27,7 @@ import {
   type GameState,
   type LivingStandard,
   type Preview,
+  type RegionArmyLoyalty,
   type ProjectPlan,
   type SurveyStatus,
   type TurnReport,
@@ -67,6 +70,7 @@ export function RegionCard(props: RegionCardProps) {
   const unrest = describeUnrest(state.unrest);
   const standard = livingStandards(game).find((entry) => entry.regionId === regionId);
   const services = serviceLevels(game, budget).filter((entry) => entry.regionId === regionId);
+  const army = armyLoyaltyStatus(game, budget).regions.find((entry) => entry.regionId === regionId);
   // What moved the region's people last quarter: its growth, and any deaths in famine.
   const moved = (report?.population?.contributions ?? []).filter(
     (line) => line.regionId === regionId,
@@ -107,6 +111,14 @@ export function RegionCard(props: RegionCardProps) {
           <dt>Approval</dt>
           <dd>{formatPercent(state.approval)}</dd>
         </div>
+        {army !== undefined && (
+          <div>
+            <dt>Army loyalty</dt>
+            <dd>
+              {formatPercent(army.loyalty)} · {ARMY_STAGE_NAMES[army.stage]}
+            </dd>
+          </div>
+        )}
         {services.map((entry) => (
           <div key={entry.service}>
             <dt>{PROSPERITY_PART_NAMES[entry.service]}</dt>
@@ -145,6 +157,7 @@ export function RegionCard(props: RegionCardProps) {
         ))}
       <WeatherHoldParts hold={weatherHold(game, regionId)} />
       {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
+      {army !== undefined && <ArmyNote army={army} />}
       {events.map((event) => (
         <p key={event.type} className="warning-note">
           ▲ {describeEvent(game, event)}
@@ -274,6 +287,25 @@ function SurveyButton({
     >
       Survey
     </button>
+  );
+}
+
+/**
+ * A warning, by a sign as well as colour, while the army in the region is anything but loyal or
+ * is heading that way: how it stands and where it is heading, in a line. A loyal army that is
+ * staying loyal has its figure above and no more said of it, so the card stays short.
+ */
+function ArmyNote({ army }: { readonly army: RegionArmyLoyalty }) {
+  if (army.stage === 'loyal' && army.settlesStage === 'loyal') return null;
+  const heading =
+    army.settles === army.loyalty
+      ? ''
+      : `, and heading for ${formatPercent(army.settles)}, ${ARMY_STAGE_NAMES[army.settlesStage].toLowerCase()}, as Defence spending and the unrest here stand`;
+  return (
+    <p className="warning-note" role="status" aria-label="Army">
+      ▲ The army here is {ARMY_STAGE_NAMES[army.stage].toLowerCase()}
+      {heading}.
+    </p>
   );
 }
 

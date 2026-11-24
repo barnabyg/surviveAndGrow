@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { advanceQuarter, createGame, risksAhead, type GameState } from '../../src/sim';
+import {
+  advanceQuarter,
+  armyLoyaltyStatus,
+  createGame,
+  risksAhead,
+  type GameState,
+} from '../../src/sim';
+import { budgetFrom } from '../budgets';
 import { TIPS, tipsDue, type TipCondition } from '../../src/ui/tips';
 import { SCRIPTED_PLAYERS, withinRules } from '../balance/players';
 import { tavaraAsShipped } from '../sim/countries';
@@ -17,6 +24,7 @@ const ARISES: readonly [TipCondition, player: string, seed: number, quarter: num
   ['missing-link', 'Sensible borrower', 1, 1],
   ['decay', 'Sensible', 2, 5],
   ['unrest', 'Does nothing', 4, 7],
+  ['army-loyalty', 'Does nothing', 2, 12],
   ['tier-passed', 'Sensible', 1, 7],
   ['bailout', 'Reckless borrower', 5, 13],
   ['election-near', 'Sensible', 1, 16],
@@ -104,6 +112,21 @@ describe('the first-time tips', () => {
     expect(
       tipsDue({ game, risks: [], plannedSiteIds: [], selectedRegionId: 'arden-vale' }),
     ).not.toContain('survey');
+  });
+
+  it('wait for defence and the army once the budget in force would leave the army less than loyal', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [] })).not.toContain('army-loyalty');
+    // One quarter with Defence cut to nothing: the army is still loyal, but no longer heading so.
+    const cut = budgetFrom(game.budget, { spending: { defence: 0 } });
+    const undefended = advanceQuarter(game, { budget: cut }).state;
+    expect(armyLoyaltyStatus(undefended).stage).toBe('loyal');
+    expect(tipsDue({ game: undefended, risks: [], plannedSiteIds: [] })).toContain('army-loyalty');
+    // With Defence restored it waits again, since nothing is slipping.
+    const restored = advanceQuarter(undefended, { budget: game.budget }).state;
+    expect(tipsDue({ game: restored, risks: [], plannedSiteIds: [] })).not.toContain(
+      'army-loyalty',
+    );
   });
 
   it('wait for nothing in a game that has only just begun, risks ahead aside', () => {

@@ -15,8 +15,12 @@ interface VitalSignProps {
   readonly formatMovement: (size: number) => string;
   /** Which way the figure moving is good news, coloured so. It is rising unless said. */
   readonly goodWhen?: 'rising' | 'falling';
-  /** A standing remark beneath the figure, such as a warning that it is below a safe level. */
-  readonly remark?: { readonly text: string; readonly tone: 'warning' | 'danger' } | undefined;
+  /**
+   * A standing remark beneath the figure: a warning, such as that it is below a safe level, or
+   * in the plain tone how the figure stands in a word, such as the stage it is read as.
+   */
+  readonly remark?:
+    { readonly text: string; readonly tone: 'plain' | 'warning' | 'danger' } | undefined;
   /** A standing fact worth keeping in view, such as the level at which trouble begins. */
   readonly note?: string | undefined;
   /** The figure's trend line, drawn beside it. */
@@ -29,8 +33,9 @@ interface VitalSignProps {
 
 /**
  * One of the always-visible figures in the top bar. It shows its change this quarter, and
- * opens to list everything that contributed to the change. A warning stays in view on one
- * line; the standing note is in the tooltip, and read out with the figure.
+ * opens to list everything that contributed to the change. A remark stays in view beneath it,
+ * marked with a sign when it is a warning; the standing note is in the tooltip, and read out
+ * with the figure.
  */
 export function VitalSign(props: VitalSignProps) {
   const { label, value, unit, figure, formatChange, formatMovement, breakdownTitle } = props;
@@ -64,7 +69,10 @@ export function VitalSign(props: VitalSignProps) {
         </button>
         <Movement figure={figure} formatMovement={formatMovement} goodWhen={goodWhen} />
         {remark && (
-          <div className={`vital__remark vital__remark--${remark.tone}`}>▲ {remark.text}</div>
+          <div className={`vital__remark vital__remark--${remark.tone}`}>
+            {remark.tone !== 'plain' && '▲ '}
+            {remark.text}
+          </div>
         )}
         {note !== undefined && <span className="visually-hidden">{note}</span>}
       </div>

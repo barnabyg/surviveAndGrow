@@ -1,4 +1,5 @@
 import {
+  armyLoyaltyStatus,
   chainsThrough,
   electionStatus,
   researchStatuses,
@@ -25,7 +26,8 @@ export type TipCondition =
   | 'election-near'
   | 'tier-passed'
   | 'research'
-  | 'survey';
+  | 'survey'
+  | 'army-loyalty';
 
 /** A note shown once, the first time what it explains appears in a game. */
 export interface Tip {
@@ -117,6 +119,13 @@ export const TIPS: readonly Tip[] = [
     title: 'Surveys',
     text: 'A region marked with a magnifying glass may hide a deposit of ore. Its card says what a survey costs, how likely it is to find one and how large it could be. A survey is paid like any project and each region is surveyed once. If it finds a deposit, its mine and road appear on the map to be built.',
   },
+  {
+    id: 'army-loyalty',
+    when: 'army-loyalty',
+    target: 'vitals',
+    title: 'Defence and the army',
+    text: 'The army’s loyalty is slipping, or is set to. Defence spending in the budget is judged against what the army expects for the country’s people: spend less and loyalty falls, a part of the way each quarter. Strikes in a region pull the army there down, and protests further. The army is read as loyal, restless or plotting. The top bar shows national loyalty with its stage and opens to say what moves it, and each region’s card shows its own.',
+  },
 ];
 
 /**
@@ -177,5 +186,12 @@ export function tipsDue(view: TipView): ReadonlySet<TipCondition> {
   const regionId = view.selectedRegionId ?? null;
   const offered = regionId !== null && surveyStatus(game, regionId, plan).state !== 'barren';
   if (offered || surveying) due.add('survey');
+  // Defence and the army are explained once the army anywhere is less than loyal, or the
+  // budget in force would leave it so.
+  const army = armyLoyaltyStatus(game);
+  const slipping = [army, ...army.regions].some(
+    (each) => each.stage !== 'loyal' || each.settlesStage !== 'loyal',
+  );
+  if (slipping) due.add('army-loyalty');
   return due;
 }

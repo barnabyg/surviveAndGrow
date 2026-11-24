@@ -27,7 +27,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     target: 'vitals',
     title: 'Vital signs',
-    text: 'The treasury, debt, credit rating, food reserve, approval, prosperity against its target and the time to the next election, always in view. Click a figure to see what moved it. The short lines beside them are the last eight quarters.',
+    text: 'The treasury, debt, credit rating, food reserve, approval, army loyalty, prosperity against its target and the time to the next election, always in view. Click a figure to see what moved it. The short lines beside them are the last eight quarters.',
   },
   {
     target: 'end-quarter',
@@ -47,7 +47,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
   {
     target: 'regions',
     title: 'Living standards by region',
-    text: 'Each region’s living standard. National prosperity is built from these, so a region left behind holds the whole country back. Select a region to open its card.',
+    text: 'Each region’s food, living standard and army. National prosperity is built from the living standards, so a region left behind holds the whole country back. Select a region to open its card.',
   },
   {
     target: 'approval-chart',
