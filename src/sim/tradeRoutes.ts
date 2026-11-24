@@ -1,3 +1,4 @@
+import { borderEdges } from './borders';
 import { chains } from './chains';
 import type { Country, Point } from './country';
 import { contains } from './geometry';
@@ -230,34 +231,6 @@ function crossingPlace(
     if (best === null || distance < best.distance) best = { at, outward: edge.outward, distance };
   }
   return best === null ? [label, [0, 0]] : [best.at, best.outward];
-}
-
-/**
- * The edges of the country's regions that face a neighbour: just outside each lies the
- * neighbour and no region. Each comes with the way out of the country, a unit step.
- */
-function borderEdges(
-  country: Country,
-  shape: readonly Point[],
-): { from: Point; to: Point; outward: Point }[] {
-  return country.regions.flatMap((region) =>
-    region.shape.flatMap((from, index) => {
-      const to = region.shape[(index + 1) % region.shape.length] ?? from;
-      const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
-      if (length === 0) return [];
-      const middle: Point = [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2];
-      const normal: Point = [(to[1] - from[1]) / length, (from[0] - to[0]) / length];
-      const step = (sign: number): Point => [
-        middle[0] + sign * normal[0],
-        middle[1] + sign * normal[1],
-      ];
-      const outward: Point = contains(region.shape, step(1)) ? [-normal[0], -normal[1]] : normal;
-      const beyond = step(outward === normal ? 1 : -1);
-      const faces =
-        contains(shape, beyond) && !country.regions.some((other) => contains(other.shape, beyond));
-      return faces ? [{ from, to, outward }] : [];
-    }),
-  );
 }
 
 /** The point of a line from one point to another nearest a third. */

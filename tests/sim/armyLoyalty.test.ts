@@ -332,8 +332,7 @@ describe.each(bothCountries)('army loyalty in %s', (name, country) => {
 });
 
 describe('Defence in a country file', () => {
-  it.each(Object.entries(FILES))('is named by %s as it ships, at format 11', (_name, file) => {
-    expect(file.formatVersion).toBe(11);
+  it.each(Object.entries(FILES))('is named by %s as it ships', (_name, file) => {
     const country = loadCountry(file);
     expect(country.start.budget.spending.defence).toBe(file.start.budget.spending.defence * 10);
     expect(country.start.budget.spending.defence).toBeGreaterThan(0);

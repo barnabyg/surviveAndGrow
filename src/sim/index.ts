@@ -174,7 +174,15 @@ export { settlementLook, settlementLooks, type SettlementLook } from './settleme
 export { expectationsIn, nextTier, tierAt, tierFrom, tierStatus, type TierStatus } from './tiers';
 export { termRecords, type TermRecord } from './terms';
 export { victoryStatus, type DebtTest, type VictoryStatus } from './victory';
+export { neighbourBorder, type BorderEdge } from './borders';
 export { coupAfterPlottingQuarters, coupStatus, type Coup, type CoupStatus } from './coup';
+export {
+  deterrenceStatus,
+  intentionIn,
+  type DeterrenceStatus,
+  type NeighbourOutlook,
+  type NeighbourStanding,
+} from './deterrence';
 export { riskHorizonQuarters, risksAhead, type Risk } from './risks';
 export { SAVE_FORMAT_VERSION, type SaveMigration } from './migrations';
 export { loadSave, saveGame, type RestoredGame, type SavedGame } from './save';
@@ -271,6 +279,8 @@ export {
   FOOD_STAGES,
   GOOD_NAMES,
   GOODS,
+  INTENTION_NAMES,
+  INTENTIONS,
   ORDERED_GOODS,
   LASTING_SERVICE_NAMES,
   LIKELIHOOD_NAMES,
@@ -310,6 +320,7 @@ export {
   type EventType,
   type FoodStage,
   type Good,
+  type Intention,
   type LabelSide,
   type LastingService,
   type Likelihood,

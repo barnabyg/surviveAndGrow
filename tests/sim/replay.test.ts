@@ -105,14 +105,19 @@ function fingerprint(
  * quarters the army has plotted, and the report what it says of the count. With both left out
  * of the fingerprint, every game hashed as before. The army plots twice in Tavara's bailed-out
  * game, in the quarters after it spends nothing on Defence, and recovers each time before the
- * count is up; in the other three it never plots.
+ * count is up; in the other three it never plots. They were pinned again when the neighbours
+ * gained ambitions: the state gained deterrence, the report its figure and what it says when a
+ * neighbour's intention changes, and the preview its forecast of both. With all of those left
+ * out of the fingerprint, every game hashed as before. A hostile neighbour does nothing yet, so
+ * the summaries stand: only Tavara's building game passes a tier, in its second year, where
+ * Voskar turns watchful, and then hostile and back as its overspending cuts Defence.
  */
 const outcomes = [
   {
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'builds',
-    hash: '4bb40bff4fa0cd1411a1d5ed1df3468926584f01cabb0bb89c5146f9e49077ba',
+    hash: 'e23a155b1780cd287bd285ca1615402c6fd24bb62367bfd556a1708ac9aa4596',
     summary: {
       date: { year: 6, quarter: 1 },
       treasury: 4,
@@ -141,7 +146,7 @@ const outcomes = [
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'bailedOut',
-    hash: 'e367b4254e36dc749da633896406140c407d5b42444036402ff9a1624b16eccd',
+    hash: 'dd7a17712c1de5d86c068acc4accec0753217f3c5526f18557410662732601af',
     summary: {
       date: { year: 6, quarter: 1 },
       treasury: 6,
@@ -163,7 +168,7 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'builds',
-    hash: '1d0accb53a3e75462029763bf3b56885d63600f9d37a93e295978cca02a9ba88',
+    hash: '7cb4c9a19fcdee58ec2628be3d24ceb242045401efce8e2776536f28afd54066',
     summary: {
       date: { year: 7, quarter: 1 },
       treasury: 2,
@@ -185,7 +190,7 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'bailedOut',
-    hash: 'b1882cd1c48bec26d2cf5ba2380581191f562978dea588846329dae672a82ad4',
+    hash: '5aa388b4818b1f317eab83c9d3266fba8784c6129d4aaa439d2255f33b70bd69',
     summary: {
       date: { year: 7, quarter: 1 },
       treasury: 4,

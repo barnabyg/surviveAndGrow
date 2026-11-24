@@ -3,6 +3,7 @@ import { startingLoyalty } from './army';
 import type { Country } from './country';
 import { openingCredit } from './credit';
 import { startingDebts } from './debt';
+import { startingDeterrence } from './deterrence';
 import { regionKeep } from './food';
 import { vitalSigns } from './history';
 import { startingServices } from './prosperity';
@@ -59,6 +60,7 @@ export function createGame(country: Country, seed: number): GameState {
     startingTier: tier,
     prosperousQuarters: 0,
     plottingQuarters: 0,
+    deterrence: startingDeterrence(country),
     austerity: null,
     outcome: { status: 'playing' },
   };

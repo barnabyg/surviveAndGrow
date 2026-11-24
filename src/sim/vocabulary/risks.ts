@@ -13,6 +13,7 @@ export const RISK_KINDS = [
   'upkeep',
   'strikes',
   'tier',
+  'neighbour',
   'coup',
   'election',
 ] as const;

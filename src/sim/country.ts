@@ -9,6 +9,7 @@ import { sum } from './arithmetic';
 import { balance } from './balance';
 import { readDeposits } from './countryDeposits';
 import {
+  AMBITION_FORMAT,
   COUNTRY_FORMAT_VERSION,
   EVENT_FORMATS,
   OLDEST_COUNTRY_FORMAT_VERSION,
@@ -100,6 +101,19 @@ function readGrowth(reader: Reader, region: Json, path: string, formatVersion: n
   }
   // A year is four quarters; the rate is held in ten-thousandths a quarter.
   return Math.round((percent * 100) / 4);
+}
+
+/**
+ * A neighbour's ambition, which a file of format 12 or later may give as a whole percentage,
+ * held in thousandths. A neighbour given none, and every neighbour of an older file, has none.
+ */
+function readAmbition(reader: Reader, item: Json, path: string, formatVersion: number): number {
+  if (item.ambition === undefined) return 0;
+  if (formatVersion < AMBITION_FORMAT) {
+    reader.fault(join(path, 'ambition'), `needs country file format ${AMBITION_FORMAT} or later`);
+    return 0;
+  }
+  return reader.wholeNumber(item, 'ambition', path, 0, balance.neighbours.mostAmbitionPercent) * 10;
 }
 
 /**
@@ -329,6 +343,7 @@ export function loadCountry(file: unknown): Country {
       name: reader.text(item, 'name', path),
       shape: reader.points(item, 'shape', path, 3),
       label: reader.point(item, 'label', path),
+      ambition: readAmbition(reader, item, path, formatVersion),
     })),
     rivers: reader.list(map, 'rivers', 'map', (item, path): River => ({
       id: reader.unique(item, 'id', path, riverIds),

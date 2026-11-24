@@ -5,6 +5,7 @@ import type { Budget } from './budget';
 import type { Country } from './country';
 import type { Credit } from './credit';
 import type { Borrowing, Debt } from './debt';
+import type { NeighbourOutlook } from './deterrence';
 import type { AnsweredDilemma, PendingDilemma } from './dilemmas';
 import type { ActiveEvent, EventStrike } from './events';
 import type { Harvest } from './food';
@@ -188,6 +189,12 @@ export interface GameState {
    */
   readonly plottingQuarters: number;
   /**
+   * Deterrence against the neighbours, in thousandths: one national figure, which Defence
+   * spending builds and lets go over the quarters (see `deterrence.ts`). What each neighbour
+   * intends is read from it and the tier in force, and is not kept.
+   */
+  readonly deterrence: number;
+  /**
    * The austerity a bailout imposed, while it holds, or null. Neither a bailout nor a missed
    * payment during austerity ends the game.
    */
@@ -263,6 +270,11 @@ export interface TurnReport {
    * report carried over from a save written before format 13, when no army was kept, has none.
    */
   readonly armyLoyalty: Figure | null;
+  /**
+   * Deterrence after the quarter, in thousandths, with what moved it. A report carried over
+   * from a save written before format 15, when no neighbour had an ambition, has none.
+   */
+  readonly deterrence: Figure | null;
   /**
    * National prosperity after the quarter, in thousandths, with what each of its parts did
    * to it. A report carried over from a save written before prosperity existed has none.
@@ -457,6 +469,20 @@ export interface Preview {
    * quarters, as approval does.
    */
   readonly armyLoyaltyHeading: Range;
+  /** Deterrence once the quarter is over, in thousandths. */
+  readonly deterrence: Range;
+  /**
+   * Where deterrence settles, in thousandths, if what is spent on Defence stays as it will be
+   * this quarter. Deterrence moves there over many quarters, more slowly than army loyalty.
+   */
+  readonly deterrenceHeading: Range;
+  /**
+   * What each neighbour will intend once the quarter is over, and what it would with
+   * deterrence where it settles, in the country file's order. Both are read in the tier the
+   * quarter leaves with world prices where they are: a tier that only a move in the world ore
+   * price carries the country past is the one thing they cannot see.
+   */
+  readonly neighbours: readonly NeighbourOutlook[];
   /**
    * National prosperity once the quarter is over, in thousandths. Only the world ore price,
    * which world markets move as the quarter ends, is left to chance: with no mine's chain

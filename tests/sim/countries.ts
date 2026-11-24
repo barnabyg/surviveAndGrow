@@ -138,14 +138,33 @@ export function testlandFormat10File(): unknown {
   return beforeDefence(testlandFile);
 }
 
+/**
+ * Testland's file as format 11 could write it: its neighbour has no ambition, since giving
+ * one needs format 12.
+ */
+export function testlandFormat11File(): unknown {
+  return beforeAmbition(testlandFile);
+}
+
 /** A copy of a country file as format 10 could write it: with no Defence in its budget. */
 export function beforeDefence(file: unknown): unknown {
-  const copy = structuredClone(file) as {
+  const copy = beforeAmbition(file) as {
     formatVersion: number;
     start: { budget: { spending: { defence?: number } } };
   };
   delete copy.start.budget.spending.defence;
   copy.formatVersion = 10;
+  return copy;
+}
+
+/** A copy of a country file as format 11 could write it: no neighbour has an ambition. */
+export function beforeAmbition(file: unknown): unknown {
+  const copy = structuredClone(file) as {
+    formatVersion: number;
+    map: { neighbours: { ambition?: number }[] };
+  };
+  for (const neighbour of copy.map.neighbours) delete neighbour.ambition;
+  copy.formatVersion = 11;
   return copy;
 }
 

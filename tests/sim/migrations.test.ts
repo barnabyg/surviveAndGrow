@@ -7,6 +7,7 @@ import {
   capacityOfTonnes,
   coupStatus,
   debtStatus,
+  deterrenceStatus,
   electionStatus,
   knownTechnologies,
   loadCountry,
@@ -35,6 +36,7 @@ import format10Save from '../saves/format-10.json';
 import format11Save from '../saves/format-11.json';
 import format12Save from '../saves/format-12.json';
 import format13Save from '../saves/format-13.json';
+import format14Save from '../saves/format-14.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './playing';
 import { budgetFrom, budgetOf } from '../budgets';
@@ -736,6 +738,75 @@ describe('the save kept from save format 13', () => {
     }
     expect(state.outcome).toMatchObject({ status: 'lost', cause: 'coup' });
     expect(counts.filter((count) => count > 0)).toEqual([1, 2, 3, 4]);
+  });
+});
+
+describe('the save kept from save format 14', () => {
+  it('still opens on the game it was written from, the army two quarters into plotting', () => {
+    const { game, report } = loadSave(format14Save);
+
+    expect(game.date).toEqual({ year: 2, quarter: 4 });
+    expect(game.budget.spending.defence).toBe(0);
+    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([
+      584, 507, 445, 396, 356, 324, 299, 279,
+    ]);
+    expect(armyLoyaltyStatus(game)).toMatchObject({ loyalty: 279, stage: 'plotting' });
+    expect(game.plottingQuarters).toBe(2);
+    expect(coupStatus(game)).toMatchObject({ plotting: true, held: 2, needed: 4, left: 2 });
+    expect(report?.entries[0]).toMatchObject({
+      kind: 'coup',
+      seriousness: 'serious',
+      headline: 'The army plots: 2 quarters to a coup',
+    });
+  });
+
+  it('plays on to the coup left undefended, two quarters later', () => {
+    const { game } = loadSave(format14Save);
+
+    const third = advanceQuarter(game, answering(game, steward(game)));
+    expect(third.state.plottingQuarters).toBe(3);
+    expect(third.state.outcome.status).toBe('playing');
+    expect(third.report.entries.map((entry) => entry.headline)).toContain(
+      'The army plots: 1 quarter to a coup',
+    );
+    const fourth = advanceQuarter(third.state, answering(third.state, steward(third.state)));
+    expect(fourth.state.outcome).toMatchObject({ status: 'lost', cause: 'coup', quarters: 4 });
+    expect(fourth.report.entries[0]?.headline).toBe('The army has taken power');
+  });
+
+  it('plays on with the coup off once Defence is restored', () => {
+    const { game } = loadSave(format14Save);
+
+    const restored = budgetFrom(game.budget, {
+      spending: { defence: game.country.start.budget.spending.defence },
+    });
+    const kept = advanceQuarter(game, answering(game, steward(game, restored)));
+    expect(armyLoyaltyStatus(kept.state).stage).toBe('restless');
+    expect(kept.state.plottingQuarters).toBe(0);
+    expect(kept.report.entries.map((entry) => entry.headline)).toContain('The coup is off');
+  });
+
+  it('is lifted to format 15 with the deterrence its Defence would settle, and peaceful neighbours', () => {
+    const { game, report } = loadSave(format14Save);
+
+    // It spends nothing on Defence, which settles deterrence at nothing; and its country file
+    // is of format 11, which gives no neighbour an ambition, so none ever stirs.
+    expect(game.country.formatVersion).toBe(11);
+    const status = deterrenceStatus(game);
+    expect(status).toMatchObject({ deterrence: 0, settles: 0, spent: 0 });
+    expect(status.neighbours.map((neighbour) => [neighbour.ambition, neighbour.intention])).toEqual(
+      game.country.map.neighbours.map(() => [0, 'peaceful']),
+    );
+    expect(report?.deterrence).toBeNull();
+
+    // With Defence restored the next quarter builds it, and the report measures it.
+    const restored = budgetFrom(game.budget, {
+      spending: { defence: game.country.start.budget.spending.defence },
+    });
+    const next = advanceQuarter(game, answering(game, steward(game, restored)));
+    expect(next.state.deterrence).toBeGreaterThan(0);
+    expect(next.report.deterrence?.change).toBe(next.state.deterrence);
+    expect(next.report.entries.filter((entry) => entry.kind === 'neighbour')).toEqual([]);
   });
 });
 

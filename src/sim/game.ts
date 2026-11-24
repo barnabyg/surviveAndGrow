@@ -10,6 +10,7 @@ import { countEntries, coupEntry, coupOf, plottingAfter } from './coup';
 import { debtBurden, debtOf } from './debt';
 import { deficitOf, reassessCredit, recordAfter } from './credit';
 import { checkDecisions } from './decisions';
+import { resolveDeterrence } from './deterrence';
 import { answerDilemma, ariseDilemma, rollDilemmas, withAnswer } from './dilemmas';
 import { forecastVoteShare, holdElection, isElectionQuarter, rollSwing } from './election';
 import {
@@ -102,7 +103,7 @@ export function resolveQuarter(
   const { answer, state, budget, building, upkept, finances, agricultureSpent, food, approval } =
     lived;
   const { serviced, taken, traded, credit, bailout } = lived;
-  const { prosperity, tier, army, regions } = lived;
+  const { prosperity, tier, army, deterred, regions } = lived;
   const passed = tierEntry(state.tier, tier, state.startingTier, prosperity.value);
 
   // A harvest ends the events that were waiting on it; then the new quarter may bring more.
@@ -171,6 +172,7 @@ export function resolveQuarter(
     ...approval.entries,
     ...army.entries,
     ...countEntries(state.plottingQuarters, plottingQuarters, army.loyalty.value),
+    ...deterred.entries,
     ...building.entries,
     ...upkept.entries,
     ...taken.entries,
@@ -228,6 +230,7 @@ export function resolveQuarter(
       tier,
       prosperousQuarters,
       plottingQuarters,
+      deterrence: deterred.deterrence.value,
       austerity: bailout.austerity,
       outcome,
     },
@@ -245,6 +248,7 @@ export function resolveQuarter(
       },
       approval: approval.approval,
       armyLoyalty: army.loyalty,
+      deterrence: deterred.deterrence,
       debt: {
         value: debtOf(taken.debts),
         change: debtOf(taken.debts) - debtOf(given.debts),
@@ -346,6 +350,9 @@ function liveQuarter(
     finances.spent.defence,
   );
   const { regions } = army;
+  // Deterrence answers to what was spent on Defence too, and the neighbours to the tier the
+  // quarter leaves in force: a country that has just passed one is more worth taking at once.
+  const deterred = resolveDeterrence(state, finances.spent.defence, regions, tier);
   // The debt burden the quarter leaves: its debt against the revenue the regions and sites it
   // leaves would raise. The rating, the win, the record and the preview all judge this one.
   const owing = (worldPrices: WorldPrices) => ({
@@ -383,6 +390,7 @@ function liveQuarter(
     food,
     approval,
     army,
+    deterred,
     /** The regions as the quarter leaves them: fed, served, judged and with their armies. */
     regions,
     prosperity,
@@ -490,6 +498,9 @@ export function previewQuarter(given: GameState, decisions: Decisions): Preview 
     approvalHeading: exactly(approval.heading),
     armyLoyalty: exactly(lived.army.loyalty.value),
     armyLoyaltyHeading: exactly(lived.army.heading),
+    deterrence: exactly(lived.deterred.deterrence.value),
+    deterrenceHeading: exactly(lived.deterred.heading),
+    neighbours: lived.deterred.neighbours,
     prosperity: { min: lived.prosperityAt(low), max: lived.prosperityAt(high) },
     unrest: approvalStatus({ regions: lived.regions }).unrest,
     voteShare: forecastVoteShare(approval.approval.value),

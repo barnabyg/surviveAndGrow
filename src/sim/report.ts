@@ -10,6 +10,8 @@ export interface ReportEntry {
   readonly cause: string;
   /** The region it happened in, when it belongs to one place. */
   readonly regionId?: string;
+  /** The neighbour it concerns, when it concerns one. */
+  readonly neighbourId?: string;
 }
 
 /** What a report leads with when nothing in the quarter rose above the routine. */

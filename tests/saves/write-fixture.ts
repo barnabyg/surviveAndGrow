@@ -4,14 +4,15 @@ import { expect, it } from 'vitest';
 import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
-  armyLoyaltyStatus,
-  coupStatus,
   createGame,
+  deterrenceStatus,
   loadCountry,
   pendingDilemma,
   SAVE_FORMAT_VERSION,
   saveGame,
+  startFault,
   type Decisions,
+  type GameState,
   type TurnReport,
 } from '../../src/sim';
 
@@ -26,38 +27,51 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought and the teachers asking for a rise now
-  // and then. Format 14 added the coup, and the count of quarters the army has plotted running.
-  // The game, on seed 2026, cuts Defence to nothing from its first quarter and keeps the rest
-  // of the budget it starts with. It is saved as Year 2 · Quarter 4 begins: the army has
-  // plotted for two quarters running, two more bring a coup, and the last report says so.
+  // and then. Format 15 added deterrence against the neighbours, and their ambitions with
+  // country file format 12. The game, on seed 2026, halves Defence to $1.0m from its first
+  // quarter, taxes at 30% and each quarter starts the first site it can. It is saved as Year 2 ·
+  // Quarter 3 begins: deterrence has fallen from 39.0% to 29.5%, the country has just reached
+  // Developing, and with that Voskar has turned hostile and Selama watchful, as the last report
+  // says.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
     dilemmaLikelihood: { teachersPay: 0.3 },
   });
-  const undefended = {
-    ...country.start.budget,
-    spending: { ...country.start.budget.spending, defence: 0 },
+  const budget = {
+    taxRatePercent: 30,
+    spending: { ...country.start.budget.spending, defence: 10 },
   };
-  const quarters: Partial<Decisions>[] = Array.from({ length: 7 }, () => ({ budget: undefended }));
   let game = createGame(country, 2026);
+  expect(game.deterrence).toBe(390);
   let report: TurnReport | null = null;
-  for (const decisions of quarters) {
+  for (let quarter = 0; quarter < 6; quarter += 1) {
     // Each dilemma is answered with its last option, which costs neither money nor food.
     const dilemmaChoice = pendingDilemma(game)?.options.at(-1)?.id ?? null;
-    const result = advanceQuarter(game, { budget: game.budget, ...decisions, dilemmaChoice });
+    const state: GameState = game;
+    const first = country.sites.find((site) => startFault(state, [site.id]) === null);
+    const decisions: Decisions = {
+      budget,
+      dilemmaChoice,
+      startProjects: first === undefined ? [] : [first.id],
+    };
+    const result = advanceQuarter(game, decisions);
     game = result.state;
     report = result.report;
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.date).toEqual({ year: 2, quarter: 4 });
-  expect(game.budget.spending.defence).toBe(0);
-  expect(armyLoyaltyStatus(game).stage).toBe('plotting');
-  expect(game.plottingQuarters).toBe(2);
-  expect(coupStatus(game)).toMatchObject({ plotting: true, held: 2, needed: 4, left: 2 });
-  expect(report?.entries.map((entry) => entry.headline)).toContain(
-    'The army plots: 2 quarters to a coup',
+  expect(game.date).toEqual({ year: 2, quarter: 3 });
+  expect(game.tier).toBe('developing');
+  expect(game.deterrence).toBe(295);
+  expect(
+    deterrenceStatus(game).neighbours.map((neighbour) => [neighbour.name, neighbour.intention]),
+  ).toEqual([
+    ['Voskar', 'hostile'],
+    ['Selama', 'watchful'],
+  ]);
+  expect(report?.entries.map((entry) => entry.headline)).toEqual(
+    expect.arrayContaining(['Voskar has turned hostile', 'Selama has turned watchful']),
   );
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);

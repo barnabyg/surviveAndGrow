@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
   createGame,
+  intentionIn,
   quarterNumber,
   riskHorizonQuarters,
   risksAhead,
@@ -76,7 +77,8 @@ const ofKind = (risks: readonly Risk[], kind: Risk['kind']) =>
  * shock: every shock must have been listed as one that could come in the quarter before it
  * was announced, and as announced in every quarter from then until it first moved its price.
  * Nor does a coup: every game the army ended must have listed a coup in each quarter from
- * which the look-ahead reaches it. With `floods` or `shocks` set, the sweep also checks that
+ * which the look-ahead reaches it. Nor does a neighbour turn hostile unannounced: each must
+ * have been listed as turning in the quarter before it did. With `floods` or `shocks` set, the sweep also checks that
  * they really do come. With `coups` set, the player also spends nothing on Defence, so that the
  * army ends a good share of the games, and the sweep checks that it does.
  *
@@ -226,6 +228,21 @@ function playRun(country: () => Country, seeds: readonly number[], decide: Idler
       const risks = risksIn(game);
       for (const flood of begun) {
         const warned = floodIn(risks, flood.regionId);
+        expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
+      }
+    }
+    for (const [index, game] of states.slice(0, -1).entries()) {
+      const next = states[index + 1];
+      if (next === undefined) continue;
+      const turned = next.country.map.neighbours.filter(
+        (neighbour) =>
+          intentionIn(next, neighbour.id) === 'hostile' &&
+          intentionIn(game, neighbour.id) !== 'hostile',
+      );
+      for (const neighbour of turned) {
+        const warned = risksIn(game).find(
+          (risk) => risk.kind === 'neighbour' && risk.neighbourId === neighbour.id,
+        );
         expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
       }
     }

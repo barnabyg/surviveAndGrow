@@ -7,6 +7,7 @@ import { defenceToHoldLoyal, settledLoyalty } from './army';
 import { balance } from './balance';
 import { loadCountry } from './country';
 import { ratingOfScore } from './credit';
+import { deterrenceSettled } from './deterrence';
 import type { Project } from './projects';
 import { prosperityStatus, settledServiceLevel } from './prosperity';
 import { damaged, isRecord, SaveError, type Json } from './saveChecks';
@@ -22,7 +23,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 14;
+export const SAVE_FORMAT_VERSION = 15;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -45,6 +46,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   11: fromFormat11,
   12: fromFormat12,
   13: fromFormat13,
+  14: fromFormat14,
 };
 
 /**
@@ -335,6 +337,33 @@ function fromFormat12(older: Json): Json {
 function fromFormat13(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
   return { ...older, formatVersion: 14, state: { ...state, plottingQuarters: 0 } };
+}
+
+/**
+ * Format 15 added deterrence against the neighbours, one national figure that Defence spending
+ * builds over the quarters. A game written in format 14 kept none: it is read as having the
+ * deterrence its Defence budget in force would settle for the people it now has, as a new game
+ * has what its starting budget would. Its country file is older than the format that gives a
+ * neighbour an ambition, so its neighbours stay peaceful whatever deterrence is. The last
+ * report measured no deterrence, so it says so.
+ */
+function fromFormat14(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
+  const people = regions.reduce<number>(
+    (total, region) =>
+      total + (isRecord(region) && typeof region.population === 'number' ? region.population : 0),
+    0,
+  );
+  const budget = isRecord(state.budget) ? state.budget : null;
+  const spending = budget !== null && isRecord(budget.spending) ? budget.spending : null;
+  const defence = typeof spending?.defence === 'number' ? spending.defence : 0;
+  return {
+    ...older,
+    formatVersion: 15,
+    state: { ...state, deterrence: deterrenceSettled(defence, people) },
+    report: isRecord(older.report) ? { ...older.report, deterrence: null } : older.report,
+  };
 }
 
 /**

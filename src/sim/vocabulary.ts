@@ -10,6 +10,7 @@ export * from './vocabulary/events';
 export * from './vocabulary/finance';
 export * from './vocabulary/food';
 export * from './vocabulary/map';
+export * from './vocabulary/neighbours';
 export * from './vocabulary/outcome';
 export * from './vocabulary/politics';
 export * from './vocabulary/priceShocks';

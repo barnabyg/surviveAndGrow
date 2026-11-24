@@ -13,13 +13,13 @@ interface ReportListProps {
   readonly report: TurnReport | null;
   /** The place in the list of the report the player has selected, if any. */
   readonly selectedEntry: number | null;
-  /** Called with a report's place in the list when the player selects one that has a region. */
+  /** Called with a report's place in the list when the player selects one that has a place. */
   readonly onSelectEntry: (index: number) => void;
 }
 
 /**
  * What happened last quarter, where and why, the most serious first. A report about one
- * region is a button: selecting it picks that region out on the map.
+ * region or one neighbour is a button: selecting it picks that place out on the map.
  */
 export function ReportList({ report, selectedEntry, onSelectEntry }: ReportListProps) {
   const count = report?.entries.length ?? 0;
@@ -41,7 +41,7 @@ export function ReportList({ report, selectedEntry, onSelectEntry }: ReportListP
         <ul className="reports__list">
           {report.entries.map((entry, index) => (
             <li key={`${entry.headline}|${entry.cause}`}>
-              {entry.regionId === undefined ? (
+              {entry.regionId === undefined && entry.neighbourId === undefined ? (
                 <div className="report">
                   <ReportBody entry={entry} />
                 </div>
@@ -254,6 +254,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
   election: {
     label: 'Election report',
     path: 'M3,10 H17 V17 H3 Z M7,10 V4 H13 V10 M8.5,6.5 L10,8 L12,5.5',
+  },
+  // Two countries either side of a border, an arrow crossing it.
+  neighbour: {
+    label: 'Neighbour report',
+    path: 'M10,2 V5 M10,8 V12 M10,15 V18 M2,10 H7 M13,10 H18 M15,7 L18,10 L15,13',
   },
   // A broken column.
   collapse: {

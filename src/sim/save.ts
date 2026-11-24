@@ -147,6 +147,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       startingTier: game.startingTier,
       prosperousQuarters: game.prosperousQuarters,
       plottingQuarters: game.plottingQuarters,
+      deterrence: game.deterrence,
       austerity: game.austerity,
       outcome: game.outcome,
     },
@@ -240,6 +241,7 @@ export function loadSave(
     startingTier: oneOf(state.startingTier, 'state.startingTier', TIERS, 'a tier of prosperity'),
     prosperousQuarters: whole(state.prosperousQuarters, 'state.prosperousQuarters', 0),
     plottingQuarters: whole(state.plottingQuarters, 'state.plottingQuarters', 0),
+    deterrence: whole(state.deterrence, 'state.deterrence', 0, 1000),
     austerity:
       state.austerity === null
         ? null
@@ -247,7 +249,16 @@ export function loadSave(
     outcome: readOutcome(record(state.outcome, 'state.outcome'), 'state.outcome', region),
   };
   const report =
-    current.report === null ? null : readReport(record(current.report, 'report'), region);
+    current.report === null
+      ? null
+      : readReport(record(current.report, 'report'), region, (value, path) =>
+          oneOf(
+            value,
+            path,
+            country.map.neighbours.map((neighbour) => neighbour.id),
+            'a neighbour',
+          ),
+        );
   // Austerity's limits are this release's, so the budget in force is brought within them too.
   return { game: { ...game, budget: withinAusterity(game, game.budget) }, report };
 }
@@ -664,7 +675,11 @@ function readOutcome(
   return { ...ending, status, cause, regionId: region(saved.regionId, `${path}.regionId`) };
 }
 
-function readReport(saved: Json, region: (value: unknown, path: string) => string): TurnReport {
+function readReport(
+  saved: Json,
+  region: (value: unknown, path: string) => string,
+  neighbour: (value: unknown, path: string) => string,
+): TurnReport {
   /** The region something belongs to, kept only where the save names one. */
   const place = (item: Json, path: string) =>
     item.regionId === undefined ? {} : { regionId: region(item.regionId, `${path}.regionId`) };
@@ -712,6 +727,7 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
     approval: figure(saved.approval, 'report.approval'),
     armyLoyalty:
       saved.armyLoyalty === null ? null : figure(saved.armyLoyalty, 'report.armyLoyalty'),
+    deterrence: saved.deterrence === null ? null : figure(saved.deterrence, 'report.deterrence'),
     debt: saved.debt === null ? null : figure(saved.debt, 'report.debt'),
     credit: saved.credit === null ? null : figure(saved.credit, 'report.credit'),
     prosperity: saved.prosperity === null ? null : figure(saved.prosperity, 'report.prosperity'),
@@ -729,6 +745,9 @@ function readReport(saved: Json, region: (value: unknown, path: string) => strin
       headline: text(entry.headline, `${path}.headline`),
       cause: text(entry.cause, `${path}.cause`),
       ...place(entry, path),
+      ...(entry.neighbourId === undefined
+        ? {}
+        : { neighbourId: neighbour(entry.neighbourId, `${path}.neighbourId`) }),
     })),
   };
 }

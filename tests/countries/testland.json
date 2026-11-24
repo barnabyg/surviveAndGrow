@@ -1,5 +1,5 @@
 {
-  "formatVersion": 11,
+  "formatVersion": 12,
   "id": "testland",
   "name": "Testland",
   "map": {
@@ -14,7 +14,8 @@
           [1080, 720],
           [0, 720]
         ],
-        "label": [540, 60]
+        "label": [540, 60],
+        "ambition": 85
       }
     ],
     "rivers": [],

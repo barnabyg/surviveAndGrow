@@ -14,10 +14,17 @@ import type { EventType, SiteType, Technology } from './vocabulary';
  * which format 5 cannot, format 7 added world price shocks, which format 6 cannot, format 8
  * added hidden deposits that a survey may find, which format 7 cannot, format 9 added sites
  * locked until a technology is known, among them dams, which format 8 cannot, format 10
- * added clinics and schools, which format 9 cannot, and format 11 added Defence to the
- * starting budget, which format 10 cannot name.
+ * added clinics and schools, which format 9 cannot, format 11 added Defence to the starting
+ * budget, which format 10 cannot name, and format 12 added a neighbour's ambition, which format
+ * 11 cannot.
  */
-export const COUNTRY_FORMAT_VERSION = 11;
+export const COUNTRY_FORMAT_VERSION = 12;
+
+/**
+ * The country file format that first lets a file give a neighbour an ambition. The neighbours
+ * of an older file have none, and stay peaceful for good.
+ */
+export const AMBITION_FORMAT = 12;
 
 /**
  * The country file format that first lets, and makes, a file say what the country starts by

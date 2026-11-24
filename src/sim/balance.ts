@@ -5,6 +5,7 @@ import { dilemmasBalance } from './balance/dilemmas';
 import { eventsBalance } from './balance/events';
 import { financeBalance } from './balance/finance';
 import { foodBalance } from './balance/food';
+import { neighboursBalance } from './balance/neighbours';
 import { politicsBalance } from './balance/politics';
 import { powerBalance } from './balance/power';
 import { priceShocksBalance } from './balance/priceShocks';
@@ -38,6 +39,8 @@ export const balance = {
   ...politicsBalance,
   // army loyalty
   ...armyBalance,
+  // neighbours, deterrence
+  ...neighboursBalance,
   // risks
   ...risksBalance,
   // sites

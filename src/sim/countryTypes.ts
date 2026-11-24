@@ -100,6 +100,12 @@ export interface Neighbour {
   readonly name: string;
   readonly shape: readonly Point[];
   readonly label: Point;
+  /**
+   * How much it wants of the country, in thousandths. What it weighs against deterrence grows
+   * with the prosperity tier (`deterrence.ts`). A neighbour with none stays peaceful for good,
+   * as every neighbour of a file older than format 12 does.
+   */
+  readonly ambition: number;
 }
 
 /**
