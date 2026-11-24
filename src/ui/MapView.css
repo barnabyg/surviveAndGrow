@@ -94,6 +94,23 @@
   stroke: var(--blue);
 }
 
+/* A neighbour: its land, and its name with what it intends */
+
+.map__neighbour,
+.map__neighbour-land {
+  cursor: pointer;
+  outline: none;
+}
+
+.map__neighbour:hover,
+.map__neighbour-land:hover {
+  filter: brightness(1.12);
+}
+
+.map__neighbour:focus-visible .map__neighbour-tag {
+  stroke: var(--blue);
+}
+
 /* Labels and marks sit over the regions and must not swallow the clicks meant for them. */
 .map__overlay {
   pointer-events: none;

@@ -2,6 +2,7 @@ import {
   armyLoyaltyStatus,
   chainsThrough,
   coupAfterPlottingQuarters,
+  deterrenceStatus,
   electionStatus,
   formatQuarters,
   researchStatuses,
@@ -29,7 +30,8 @@ export type TipCondition =
   | 'tier-passed'
   | 'research'
   | 'survey'
-  | 'army-loyalty';
+  | 'army-loyalty'
+  | 'neighbours';
 
 /** A note shown once, the first time what it explains appears in a game. */
 export interface Tip {
@@ -128,6 +130,13 @@ export const TIPS: readonly Tip[] = [
     title: 'Defence and the army',
     text: `The army’s loyalty is slipping, or is set to. Defence spending in the budget is judged against what the army expects for the country’s people: spend less and loyalty falls, a part of the way each quarter. Strikes in a region pull the army there down, and protests further. The army is read as loyal, restless or plotting, and an army left plotting for ${formatQuarters(coupAfterPlottingQuarters)} running takes power, and the game is lost. The top bar shows national loyalty with its stage, counts the quarters left while it plots, and opens to say what moves it; each region’s card shows its own.`,
   },
+  {
+    id: 'neighbours',
+    when: 'neighbours',
+    target: 'map',
+    title: 'Neighbours and deterrence',
+    text: 'A neighbour is no longer peaceful. Each neighbour has an ambition, which weighs more against the country the more it prospers: a state worth taking. Defence spending builds deterrence, one figure for the whole country, a part of the way each quarter, so it has to be bought ahead. A neighbour is peaceful, watchful or hostile by how deterrence stands against what its ambition weighs. Each neighbour’s name on the map carries a mark and a word for what it intends: pick it to see what it would take to change that. The budget’s outlook says what a change to Defence would do.',
+  },
 ];
 
 /**
@@ -195,5 +204,10 @@ export function tipsDue(view: TipView): ReadonlySet<TipCondition> {
     (each) => each.stage !== 'loyal' || each.settlesStage !== 'loyal',
   );
   if (slipping) due.add('army-loyalty');
+  // Neighbours and deterrence are explained once a neighbour is anything but peaceful.
+  const wary = deterrenceStatus(game).neighbours.some(
+    (neighbour) => neighbour.intention !== 'peaceful',
+  );
+  if (wary) due.add('neighbours');
   return due;
 }

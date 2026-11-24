@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { Fragment, useId } from 'react';
 import {
   ARMY_STAGE_NAMES,
   armyStageAt,
@@ -12,6 +12,8 @@ import {
   formatIndex,
   formatPercent,
   formatTonnes,
+  INTENTION_NAMES,
+  INTENTIONS,
   missedPaymentMeans,
   MONEY_PER_MILLION,
   monthsOfFood,
@@ -328,6 +330,67 @@ export function BudgetPanel(props: BudgetPanelProps) {
             )
           );
         })}
+        {game.country.map.neighbours.some((neighbour) => neighbour.ambition > 0) && (
+          <>
+            {after.neighbours
+              .filter((neighbour) => neighbour.heading === 'hostile')
+              .map((neighbour) => (
+                <p key={neighbour.neighbourId} className="warning-note">
+                  ▲ {neighbourName(game, neighbour.neighbourId)}{' '}
+                  {neighbour.intention === 'hostile'
+                    ? 'is hostile when the quarter ends: deterrence is too low.'
+                    : 'is heading for hostile: Defence would settle deterrence too low.'}
+                </p>
+              ))}
+            <More
+              summary="Neighbours"
+              note={
+                moved(before.deterrence, after.deterrence) ||
+                moved(before.deterrenceHeading, after.deterrenceHeading)
+                  ? 'changed'
+                  : null
+              }
+            >
+              <Projection
+                label="Deterrence next quarter"
+                before={before.deterrence}
+                after={after.deterrence}
+                format={formatPercent}
+              />
+              <Projection
+                label="Deterrence is heading for"
+                before={before.deterrenceHeading}
+                after={after.deterrenceHeading}
+                format={formatPercent}
+              />
+              {after.neighbours.map((neighbour, index) => {
+                const was = before.neighbours[index] ?? neighbour;
+                const name = neighbourName(game, neighbour.neighbourId);
+                return (
+                  <Fragment key={neighbour.neighbourId}>
+                    <Projection
+                      label={`${name} next quarter`}
+                      before={exactly(INTENTIONS.indexOf(was.intention))}
+                      after={exactly(INTENTIONS.indexOf(neighbour.intention))}
+                      format={intentionAt}
+                    />
+                    <Projection
+                      label={`${name} is heading for`}
+                      before={exactly(INTENTIONS.indexOf(was.heading))}
+                      after={exactly(INTENTIONS.indexOf(neighbour.heading))}
+                      format={intentionAt}
+                    />
+                  </Fragment>
+                );
+              })}
+              <p className="outlook__note">
+                Defence spending builds deterrence a part of the way each quarter, and each
+                neighbour weighs its ambition against it. Pick a neighbour on the map to see what it
+                would take.
+              </p>
+            </More>
+          </>
+        )}
         <More
           summary="Food forecast"
           note={
@@ -369,6 +432,19 @@ export function BudgetPanel(props: BudgetPanelProps) {
       </section>
     </DecisionPanel>
   );
+}
+
+/** A neighbour's name, by its id. */
+function neighbourName(game: GameState, neighbourId: string): string {
+  return (
+    game.country.map.neighbours.find((neighbour) => neighbour.id === neighbourId)?.name ??
+    neighbourId
+  );
+}
+
+/** An intention by its place among the intentions, in a word: "watchful". */
+function intentionAt(rank: number): string {
+  return INTENTION_NAMES[INTENTIONS[rank] ?? 'peaceful'].toLowerCase();
 }
 
 /** An army loyalty with the stage it is read as, in words: "58.4%, loyal". */

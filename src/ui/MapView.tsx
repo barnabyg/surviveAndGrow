@@ -3,6 +3,7 @@ import {
   chainOf,
   chains,
   chainsThrough,
+  deterrenceStatus,
   describeEvent,
   describeUnrest,
   drawAt,
@@ -11,6 +12,7 @@ import {
   formatPercent,
   isInUseState,
   MAP_FRAME,
+  neighbourBorder,
   settlementLooks,
   siteStatus,
   surveyStatuses,
@@ -29,6 +31,7 @@ import {
 } from '../sim';
 import { infrastructureWords, lensFill, livingStandardOf, needsLightInk, type Lens } from './lens';
 import { TIER_PALETTES, type MapPalette } from './mapPalette';
+import { NeighbourMark } from './NeighbourMark';
 import { SiteMark } from './SiteMark';
 import { TradeRouteMark } from './TradeRouteMark';
 import './MapView.css';
@@ -54,6 +57,9 @@ interface MapViewProps {
   /** The trade route the player has picked out, if any. */
   readonly selectedRouteId: string | null;
   readonly onSelectRoute: (routeId: string) => void;
+  /** The neighbour the player has picked out, if any. */
+  readonly selectedNeighbourId: string | null;
+  readonly onSelectNeighbour: (neighbourId: string) => void;
 }
 
 /** How one region is painted under the chosen lens. */
@@ -66,14 +72,15 @@ interface Paint {
 /**
  * The country, drawn entirely from its country file and the state of the game. Nothing
  * here knows any one country. A lens recolours the regions and changes the figure each is
- * labelled with; sites, routes, trade routes, events and tags are drawn the same under every
- * lens, except that the infrastructure lens marks and rings every missing link in a chain and
+ * labelled with; sites, routes, trade routes, neighbours, events and tags are drawn the same
+ * under every lens, except that the infrastructure lens marks and rings every missing link in a chain and
  * marks every missing or weak trade link.
  */
 export function MapView(props: MapViewProps) {
   const { game, lens, selectedRegionId, reliefRegionId, onSelectRegion } = props;
   const { selectedSiteId, onSelectSite, plannedSiteIds, plannedSurveys } = props;
   const { plannedTrade, selectedRouteId, onSelectRoute } = props;
+  const { selectedNeighbourId, onSelectNeighbour } = props;
   const { country } = game;
   // The whole map takes on the look of the tier of prosperity in force.
   const palette = TIER_PALETTES[game.tier];
@@ -120,6 +127,8 @@ export function MapView(props: MapViewProps) {
       country.map.neighbours.find((neighbour) => neighbour.id === crossing?.neighbourId) ?? null
     );
   };
+  // What each neighbour intends, which its mark and its border are drawn by.
+  const standings = deterrenceStatus(game).neighbours;
   // Settlements are built up and lit by their region's living standard, under every lens.
   const looks = settlementLooks(game);
   const lookOf = (settlementId: string): SettlementLook =>
@@ -178,29 +187,24 @@ export function MapView(props: MapViewProps) {
         ))}
       </g>
 
-      {/* Neighbours and sea are muted so that the player's country stands out. */}
+      {/* Neighbours and sea are muted so that the player's country stands out. A neighbour's
+          land picks it out at a click, as its mark does for the keyboard. */}
       {country.map.neighbours.map((neighbour) => (
         <polygon
           key={neighbour.id}
+          className="map__neighbour-land"
           points={outline(neighbour.shape)}
           fill={palette.neighbour}
           stroke={palette.neighbourBorder}
           strokeWidth="1"
+          onClick={() => {
+            onSelectNeighbour(neighbour.id);
+          }}
         />
       ))}
       {country.map.seas.map((sea) => (
         <text key={sea.name} className="map__sea-label" {...at(sea.label)} fill={palette.seaLabel}>
           {sea.name}
-        </text>
-      ))}
-      {country.map.neighbours.map((neighbour) => (
-        <text
-          key={neighbour.id}
-          className="map__neighbour-label"
-          {...at(neighbour.label)}
-          fill={palette.neighbourLabel}
-        >
-          {neighbour.name}
         </text>
       ))}
 
@@ -352,6 +356,25 @@ export function MapView(props: MapViewProps) {
             />
           ))}
       </g>
+
+      {/* Each neighbour's name, what it intends and its border, under the trade routes, so a
+          crossing is never covered by the border it stands on. */}
+      {country.map.neighbours.map((neighbour) => {
+        const standing = standings.find((candidate) => candidate.neighbourId === neighbour.id);
+        return (
+          standing && (
+            <NeighbourMark
+              key={neighbour.id}
+              neighbour={neighbour}
+              standing={standing}
+              border={neighbourBorder(country, neighbour.id)}
+              palette={palette}
+              selected={neighbour.id === selectedNeighbourId}
+              onSelect={onSelectNeighbour}
+            />
+          )
+        );
+      })}
 
       {/* Trade routes go under the sites, so a lane never covers its port. */}
       {routes.map((route) => (

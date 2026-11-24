@@ -78,7 +78,9 @@ test('the harvest forecast is a range, and agriculture spending moves it and the
 
   await decisions(page).getByRole('slider', { name: 'Agriculture' }).fill('20');
   // The fold says when a pending change moves a figure inside it.
-  await expect(outlook(page).locator('summary')).toHaveText('Food forecast · changed');
+  await expect(outlook(page).locator('summary', { hasText: 'Food forecast' })).toHaveText(
+    'Food forecast · changed',
+  );
 
   // $20.0m a quarter on agriculture empties the treasury by quarter 3, when the budget is
   // cut, so the forecast counts less than a full year at that rate.

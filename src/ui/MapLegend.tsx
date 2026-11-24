@@ -1,8 +1,10 @@
+import { INTENTION_NAMES, INTENTIONS } from '../sim';
+import { IntentionMark } from './IntentionSign';
 import './MapLegend.css';
 
 /**
- * What the marks for sites, routes and trade routes mean. Each state has its own shape of line, so the
- * legend can be read without telling the colours apart.
+ * What the marks for sites, routes, trade routes and neighbours mean. Each state has its own
+ * shape or line, so the legend can be read without telling the colours apart.
  */
 export function MapLegend() {
   return (
@@ -145,6 +147,21 @@ export function MapLegend() {
         </svg>
         ▲ Weak trade link: a decaying port
       </li>
+      {INTENTIONS.map((intention) => (
+        <li key={intention}>
+          <svg width="16" height="16" viewBox="-8 -8 16 16" aria-hidden="true">
+            <IntentionMark intention={intention} ink="currentColor" />
+          </svg>
+          {INTENTION_NAMES[intention]} {LEGEND_OF_INTENTION[intention]}
+        </li>
+      ))}
     </ul>
   );
 }
+
+/** What the legend adds to each intention's mark and word: how the border is drawn for it. */
+const LEGEND_OF_INTENTION = {
+  peaceful: 'neighbour',
+  watchful: 'neighbour: its border dashed',
+  hostile: 'neighbour: its border solid and toothed',
+} as const;

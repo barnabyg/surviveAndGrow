@@ -14,7 +14,7 @@ interface RisksPanelProps {
   readonly risks: readonly Risk[];
   /** The place in the list of the risk the player has selected, if any. */
   readonly selectedRisk: number | null;
-  /** Called with a risk's place in the list when the player selects one that has a region. */
+  /** Called with a risk's place in the list when the player selects one that has a place. */
   readonly onSelectRisk: (index: number) => void;
 }
 
@@ -25,8 +25,8 @@ const SHOWN_RISKS = 4;
  * What could go wrong in the coming quarters if the player changes nothing, the most
  * likely first. Each risk takes two lines: what it is and how likely, and why, cut short
  * with its whole text in a tooltip. Beyond the first few, the least likely are folded away
- * until the player asks for them. A risk to one region is a button: selecting it picks that
- * region out on the map and shows the whole of why.
+ * until the player asks for them. A risk to one region, or from one neighbour, is a button:
+ * selecting it picks that place out on the map and shows the whole of why.
  */
 export function RisksPanel({ risks, selectedRisk, onSelectRisk }: RisksPanelProps) {
   const [all, setAll] = useState(false);
@@ -49,7 +49,7 @@ export function RisksPanel({ risks, selectedRisk, onSelectRisk }: RisksPanelProp
               hidden={index >= SHOWN_RISKS && folded > 0 && index !== selectedRisk}
               title={risk.reason}
             >
-              {risk.regionId === undefined ? (
+              {risk.regionId === undefined && risk.neighbourId === undefined ? (
                 <div className="risk">
                   <RiskBody risk={risk} />
                 </div>

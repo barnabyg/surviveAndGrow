@@ -178,6 +178,9 @@ test('a road is built along its route, and the legend explains every state', asy
     'Border crossing',
     '✕ Missing trade link (infrastructure lens)',
     '▲ Weak trade link: a decaying port',
+    'Peaceful neighbour',
+    'Watchful neighbour: its border dashed',
+    'Hostile neighbour: its border solid and toothed',
   ]);
 
   await endQuarters(page, 1);

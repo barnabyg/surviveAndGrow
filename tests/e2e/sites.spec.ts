@@ -78,7 +78,9 @@ test('the map shows one card at a time, for a site or for a region', async ({ pa
   await expect(region).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('a legend explains the marks for sites, routes and trade routes', async ({ page }) => {
+test('a legend explains the marks for sites, routes, trade routes and neighbours', async ({
+  page,
+}) => {
   await startGame(page);
 
   await expect(legend(page).getByRole('listitem')).toHaveText([
@@ -97,6 +99,9 @@ test('a legend explains the marks for sites, routes and trade routes', async ({ 
     'Border crossing',
     '✕ Missing trade link (infrastructure lens)',
     '▲ Weak trade link: a decaying port',
+    'Peaceful neighbour',
+    'Watchful neighbour: its border dashed',
+    'Hostile neighbour: its border solid and toothed',
   ]);
 });
 
