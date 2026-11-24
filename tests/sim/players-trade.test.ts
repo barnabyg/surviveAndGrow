@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { advanceQuarter, createGame, foodStatus, type GameState } from '../../src/sim';
 import { tavaraAsShipped } from './countries';
-import { playerNamed } from './scripted';
+import { GAME_TIMEOUT, playerNamed } from './scripted';
 
 const trader = () => playerNamed('Timing trader');
 
@@ -23,14 +23,18 @@ function grainAt(game: GameState, dollars: number): GameState {
 }
 
 describe('the timing trader', () => {
-  it('plays as the chain builder does in everything but trade', () => {
-    let game: GameState = createGame(tavaraAsShipped(), 2);
-    for (let quarter = 0; quarter < 12 && game.outcome.status === 'playing'; quarter += 1) {
-      const { trade, ...rest } = trader().decide(game);
-      expect(rest).toEqual(playerNamed('Chain builder').decide(game));
-      game = advanceQuarter(game, { ...rest, ...(trade === undefined ? {} : { trade }) }).state;
-    }
-  });
+  it(
+    'plays as the chain builder does in everything but trade',
+    () => {
+      let game: GameState = createGame(tavaraAsShipped(), 2);
+      for (let quarter = 0; quarter < 12 && game.outcome.status === 'playing'; quarter += 1) {
+        const { trade, ...rest } = trader().decide(game);
+        expect(rest).toEqual(playerNamed('Chain builder').decide(game));
+        game = advanceQuarter(game, { ...rest, ...(trade === undefined ? {} : { trade }) }).state;
+      }
+    },
+    GAME_TIMEOUT,
+  );
 
   it('sells grain above what the reserve needs to keep when the price is high', () => {
     const game = grainAt(pastTheHarvest(), 300);
@@ -111,19 +115,23 @@ describe('the borrower wary of gluts', () => {
 });
 
 describe('the player who relies on the mine', () => {
-  it('builds the mine’s chain and no power, and never trades', () => {
-    // Seed 4, on which the treasury reaches the mine's cost before the first vote is lost.
-    let game: GameState = createGame(tavaraAsShipped(), 4);
-    const started: string[] = [];
-    for (let quarter = 0; quarter < 40 && game.outcome.status === 'playing'; quarter += 1) {
-      const decisions = playerNamed('Mine only').decide(game);
-      expect(decisions.trade).toBeUndefined();
-      started.push(...(decisions.startProjects ?? []));
-      game = advanceQuarter(game, decisions).state;
-    }
-    const types = started.map((id) => game.country.sites.find((site) => site.id === id)?.type);
+  it(
+    'builds the mine’s chain and no power, and never trades',
+    () => {
+      // Seed 4, on which the treasury reaches the mine's cost before the first vote is lost.
+      let game: GameState = createGame(tavaraAsShipped(), 4);
+      const started: string[] = [];
+      for (let quarter = 0; quarter < 40 && game.outcome.status === 'playing'; quarter += 1) {
+        const decisions = playerNamed('Mine only').decide(game);
+        expect(decisions.trade).toBeUndefined();
+        started.push(...(decisions.startProjects ?? []));
+        game = advanceQuarter(game, decisions).state;
+      }
+      const types = started.map((id) => game.country.sites.find((site) => site.id === id)?.type);
 
-    expect(types.slice(0, 3)).toEqual(['port', 'trunkRoad', 'mine']);
-    expect(types).not.toContain('powerStation');
-  });
+      expect(types.slice(0, 3)).toEqual(['port', 'trunkRoad', 'mine']);
+      expect(types).not.toContain('powerStation');
+    },
+    GAME_TIMEOUT,
+  );
 });

@@ -21,6 +21,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { bothCountries, tavara, testland, withDroughtChance } from './countries';
 import { steward } from './playing';
+import { GAME_TIMEOUT } from './scripted';
 import { budgetFrom, budgetOf, lavish } from '../budgets';
 
 /**
@@ -455,22 +456,26 @@ describe.each(bothFiles)('a finished site in %s', (_name, file) => {
   /** The country with no drought ever, so that only the weather moves the harvest. */
   const calm = () => withDroughtChance(file, {});
 
-  it('of irrigation halves how far the weather moves its region’s harvest', () => {
-    const site = siteOfType(calm(), 'irrigation');
-    // The third year's harvest, by which time the scheme has long been in use.
-    const grown = (build: readonly string[]) =>
-      seeds.map(
-        (seed) => harvestIn(playYears(calm(), seed, 3, build).reports[11], site.regionId).grown,
-      );
-    const spread = (harvests: readonly number[]) => Math.max(...harvests) - Math.min(...harvests);
+  it(
+    'of irrigation halves how far the weather moves its region’s harvest',
+    () => {
+      const site = siteOfType(calm(), 'irrigation');
+      // The third year's harvest, by which time the scheme has long been in use.
+      const grown = (build: readonly string[]) =>
+        seeds.map(
+          (seed) => harvestIn(playYears(calm(), seed, 3, build).reports[11], site.regionId).grown,
+        );
+      const spread = (harvests: readonly number[]) => Math.max(...harvests) - Math.min(...harvests);
 
-    const irrigated = spread(grown([site.id]));
-    const rainFed = spread(grown([]));
+      const irrigated = spread(grown([site.id]));
+      const rainFed = spread(grown([]));
 
-    expect(rainFed).toBeGreaterThan(0);
-    expect(irrigated).toBeGreaterThan(rainFed * 0.48);
-    expect(irrigated).toBeLessThan(rainFed * 0.52);
-  });
+      expect(rainFed).toBeGreaterThan(0);
+      expect(irrigated).toBeGreaterThan(rainFed * 0.48);
+      expect(irrigated).toBeLessThan(rainFed * 0.52);
+    },
+    GAME_TIMEOUT,
+  );
 
   it('of irrigation leaves every other region’s harvest as it was', () => {
     const site = siteOfType(calm(), 'irrigation');

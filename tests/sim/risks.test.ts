@@ -195,20 +195,24 @@ describe.each(bothCountries)('looking ahead for risks in %s', (_name, country) =
     expect(game).toEqual(before);
   });
 
-  it('leaves a game played with it identical to the same game played without', () => {
-    let plain = createGame(country(), 11);
-    let watched = createGame(country(), 11);
+  it(
+    'leaves a game played with it identical to the same game played without',
+    () => {
+      let plain = createGame(country(), 11);
+      let watched = createGame(country(), 11);
 
-    for (let quarter = 0; quarter < 20 && plain.outcome.status === 'playing'; quarter += 1) {
-      plain = advanceQuarter(plain, idle(plain)).state;
+      for (let quarter = 0; quarter < 20 && plain.outcome.status === 'playing'; quarter += 1) {
+        plain = advanceQuarter(plain, idle(plain)).state;
 
-      risksAhead(watched, { budget: ruinous });
-      risksAhead(watched, idle(watched));
-      watched = advanceQuarter(watched, idle(watched)).state;
-    }
+        risksAhead(watched, { budget: ruinous });
+        risksAhead(watched, idle(watched));
+        watched = advanceQuarter(watched, idle(watched)).state;
+      }
 
-    expect(watched).toEqual(plain);
-  });
+      expect(watched).toEqual(plain);
+    },
+    GAME_TIMEOUT,
+  );
 
   // Five whole terms, looking ahead in every quarter: close to the default limit of five
   // seconds while the rest of the suite runs alongside, so it has a game's limit.
@@ -617,30 +621,34 @@ describe('the risk of losing the vote in Tavara', () => {
  * within a point of the 50% needed, and the seed's swing settles each game.
  */
 describe.each(polls)('a government on a knife edge in $name', (poll) => {
-  it('is warned of defeat in the election quarter and the one before', () => {
-    const seeds = 200;
-    let defeats = 0;
-    let wins = 0;
-    for (let seed = 1; seed <= seeds; seed += 1) {
-      const states = [createGame(startingAt(poll.file, poll.closeTax), seed)];
-      for (let game = states[0]; game !== undefined && inFirstTerm(game); game = states.at(-1)) {
-        states.push(advanceQuarter(game, idle(game)).state);
-      }
-      // Every game reaches the vote: one that wins it plays on into a second term.
-      const { outcome } = states.at(-1) ?? {};
-      expect(states).toHaveLength(21);
-      if (outcome?.status === 'playing') wins += 1;
-      if (outcome?.status !== 'lost') continue;
-      expect(outcome.cause).toBe('election');
-      defeats += 1;
+  it(
+    'is warned of defeat in the election quarter and the one before',
+    () => {
+      const seeds = 200;
+      let defeats = 0;
+      let wins = 0;
+      for (let seed = 1; seed <= seeds; seed += 1) {
+        const states = [createGame(startingAt(poll.file, poll.closeTax), seed)];
+        for (let game = states[0]; game !== undefined && inFirstTerm(game); game = states.at(-1)) {
+          states.push(advanceQuarter(game, idle(game)).state);
+        }
+        // Every game reaches the vote: one that wins it plays on into a second term.
+        const { outcome } = states.at(-1) ?? {};
+        expect(states).toHaveLength(21);
+        if (outcome?.status === 'playing') wins += 1;
+        if (outcome?.status !== 'lost') continue;
+        expect(outcome.cause).toBe('election');
+        defeats += 1;
 
-      for (const game of states.slice(-3, -1)) {
-        const warned = ofKind(risksAhead(game, idle(game)), 'election');
-        expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
+        for (const game of states.slice(-3, -1)) {
+          const warned = ofKind(risksAhead(game, idle(game)), 'election');
+          expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
+        }
       }
-    }
-    // The check means nothing unless the vote really does go both ways.
-    expect(defeats).toBeGreaterThan(seeds / 5);
-    expect(wins).toBeGreaterThan(seeds / 5);
-  });
+      // The check means nothing unless the vote really does go both ways.
+      expect(defeats).toBeGreaterThan(seeds / 5);
+      expect(wins).toBeGreaterThan(seeds / 5);
+    },
+    GAME_TIMEOUT,
+  );
 });

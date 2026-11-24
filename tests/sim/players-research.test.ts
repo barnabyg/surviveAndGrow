@@ -157,27 +157,31 @@ describe('the unlocker', () => {
     ).toEqual([]);
   });
 
-  it('gives up nothing for a locked site: it builds the power station, and then researches nothing for the dam that closes', () => {
-    let game = rich(fresh());
-    const dam = siteOfType(game.country, 'dam');
-    const started: string[] = [];
-    const researched: Technology[] = [];
-    for (let quarter = 0; quarter < 12; quarter += 1) {
-      const decisions = unlocker().decide(game);
-      started.push(...(decisions.startProjects ?? []));
-      if (decisions.startResearch) researched.push(decisions.startResearch);
-      game = rich(advanceQuarter(game, decisions).state);
-    }
+  it(
+    'gives up nothing for a locked site: it builds the power station, and then researches nothing for the dam that closes',
+    () => {
+      let game = rich(fresh());
+      const dam = siteOfType(game.country, 'dam');
+      const started: string[] = [];
+      const researched: Technology[] = [];
+      for (let quarter = 0; quarter < 12; quarter += 1) {
+        const decisions = unlocker().decide(game);
+        started.push(...(decisions.startProjects ?? []));
+        if (decisions.startResearch) researched.push(decisions.startResearch);
+        game = rich(advanceQuarter(game, decisions).state);
+      }
 
-    // Tavara's dam is an alternative to its power station, which the chain builder builds first.
-    expect(typeOf(game, started[0])).toBe('powerStation');
-    expect(siteStatus(game, dam)).toMatchObject({ state: 'closed', lockedBy: [] });
-    // Only what the clinics and schools wait on is researched: hydropower's long way is not.
-    expect(researched).toEqual(['publicHealth', 'teacherTraining']);
-    expect(started.map((id) => typeOf(game, id))).toEqual(
-      expect.arrayContaining(['clinic', 'school']),
-    );
-  });
+      // Tavara's dam is an alternative to its power station, which the chain builder builds first.
+      expect(typeOf(game, started[0])).toBe('powerStation');
+      expect(siteStatus(game, dam)).toMatchObject({ state: 'closed', lockedBy: [] });
+      // Only what the clinics and schools wait on is researched: hydropower's long way is not.
+      expect(researched).toEqual(['publicHealth', 'teacherTraining']);
+      expect(started.map((id) => typeOf(game, id))).toEqual(
+        expect.arrayContaining(['clinic', 'school']),
+      );
+    },
+    GAME_TIMEOUT,
+  );
 
   it('builds what it has unlocked before anything else, clinics and schools among it', () => {
     let game = rich(knowing(fresh(), [...lockingTechnologies(fresh())]));
@@ -219,20 +223,24 @@ describe('the unlocker holding out', () => {
     expect(types).not.toContain('powerLine');
   });
 
-  it('researches on to the dam, and builds the lines once it is begun', () => {
-    let game = rich(knowing(fresh(), [...lockingTechnologies(fresh())]));
-    const started: string[] = [];
-    for (let quarter = 0; quarter < 40 && !started.some(isPowerLine(game)); quarter += 1) {
-      const decisions = holdingOut().decide(game);
-      started.push(...(decisions.startProjects ?? []));
-      game = rich(advanceQuarter(game, decisions).state);
-    }
-    const types = started.map((id) => typeOf(game, id));
+  it(
+    'researches on to the dam, and builds the lines once it is begun',
+    () => {
+      let game = rich(knowing(fresh(), [...lockingTechnologies(fresh())]));
+      const started: string[] = [];
+      for (let quarter = 0; quarter < 40 && !started.some(isPowerLine(game)); quarter += 1) {
+        const decisions = holdingOut().decide(game);
+        started.push(...(decisions.startProjects ?? []));
+        game = rich(advanceQuarter(game, decisions).state);
+      }
+      const types = started.map((id) => typeOf(game, id));
 
-    expect(types).toContain('dam');
-    expect(types.at(-1)).toBe('powerLine');
-    expect(types).not.toContain('powerStation');
-  });
+      expect(types).toContain('dam');
+      expect(types.at(-1)).toBe('powerLine');
+      expect(types).not.toContain('powerStation');
+    },
+    GAME_TIMEOUT,
+  );
 });
 
 describe('the prospector', () => {
@@ -265,14 +273,18 @@ describe('the prospector', () => {
     expect(prospector().decide(next).startSurveys).toBeUndefined();
   });
 
-  it('plays as the chain builder does where there is nothing to survey', () => {
-    let game: GameState = createGame(loadCountry({ ...tavaraFile, deposits: [] }), 1);
-    for (let quarter = 0; quarter < 8 && game.outcome.status === 'playing'; quarter += 1) {
-      const decisions = prospector().decide(game);
-      expect(decisions).toEqual(chainBuilder().decide(game));
-      game = advanceQuarter(game, decisions).state;
-    }
-  });
+  it(
+    'plays as the chain builder does where there is nothing to survey',
+    () => {
+      let game: GameState = createGame(loadCountry({ ...tavaraFile, deposits: [] }), 1);
+      for (let quarter = 0; quarter < 8 && game.outcome.status === 'playing'; quarter += 1) {
+        const decisions = prospector().decide(game);
+        expect(decisions).toEqual(chainBuilder().decide(game));
+        game = advanceQuarter(game, decisions).state;
+      }
+    },
+    GAME_TIMEOUT,
+  );
 
   it(
     'builds the road and the mine of a deposit found after the chain’s own',

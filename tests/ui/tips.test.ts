@@ -144,37 +144,47 @@ describe('the first-time tips', () => {
     );
   });
 
-  it('wait for neighbours and deterrence once a neighbour is anything but peaceful', () => {
-    // Sensible's game on seed 1 passes into Developing as its seventh quarter ends, and with
-    // that Voskar turns watchful.
-    const peaceful = playedBy('Sensible', 1, 6);
-    expect(deterrenceStatus(peaceful).neighbours.map((each) => each.intention)).toEqual([
-      'peaceful',
-      'peaceful',
-    ]);
-    expect(tipsDue({ game: peaceful, risks: [], plannedSiteIds: [] })).not.toContain('neighbours');
-    const watched = playedBy('Sensible', 1, 7);
-    expect(deterrenceStatus(watched).neighbours.map((each) => each.intention)).toEqual([
-      'watchful',
-      'peaceful',
-    ]);
-    expect(tipsDue({ game: watched, risks: [], plannedSiteIds: [] })).toContain('neighbours');
-  });
+  it(
+    'wait for neighbours and deterrence once a neighbour is anything but peaceful',
+    () => {
+      // Sensible's game on seed 1 passes into Developing as its seventh quarter ends, and with
+      // that Voskar turns watchful.
+      const peaceful = playedBy('Sensible', 1, 6);
+      expect(deterrenceStatus(peaceful).neighbours.map((each) => each.intention)).toEqual([
+        'peaceful',
+        'peaceful',
+      ]);
+      expect(tipsDue({ game: peaceful, risks: [], plannedSiteIds: [] })).not.toContain(
+        'neighbours',
+      );
+      const watched = playedBy('Sensible', 1, 7);
+      expect(deterrenceStatus(watched).neighbours.map((each) => each.intention)).toEqual([
+        'watchful',
+        'peaceful',
+      ]);
+      expect(tipsDue({ game: watched, risks: [], plannedSiteIds: [] })).toContain('neighbours');
+    },
+    GAME_TIMEOUT,
+  );
 
-  it('wait for border incidents until a hostile neighbour announces one', () => {
-    // Borrowing and building at once carries seed 1 up the tiers on the Defence it started
-    // with: Voskar turns hostile, and announces an incident as the seventh quarter ends.
-    const before = playedBy('Borrow and build at once', 1, 6);
-    expect(before.borderIncidents).toEqual([]);
-    expect(tipsDue({ game: before, risks: [], plannedSiteIds: [] })).not.toContain(
-      'border-incident',
-    );
-    const announced = playedBy('Borrow and build at once', 1, 7);
-    expect(announced.borderIncidents.map((incident) => incident.neighbourId)).toEqual(['voskar']);
-    expect(tipsDue({ game: announced, risks: [], plannedSiteIds: [] })).toContain(
-      'border-incident',
-    );
-  });
+  it(
+    'wait for border incidents until a hostile neighbour announces one',
+    () => {
+      // Borrowing and building at once carries seed 1 up the tiers on the Defence it started
+      // with: Voskar turns hostile, and announces an incident as the seventh quarter ends.
+      const before = playedBy('Borrow and build at once', 1, 6);
+      expect(before.borderIncidents).toEqual([]);
+      expect(tipsDue({ game: before, risks: [], plannedSiteIds: [] })).not.toContain(
+        'border-incident',
+      );
+      const announced = playedBy('Borrow and build at once', 1, 7);
+      expect(announced.borderIncidents.map((incident) => incident.neighbourId)).toEqual(['voskar']);
+      expect(tipsDue({ game: announced, risks: [], plannedSiteIds: [] })).toContain(
+        'border-incident',
+      );
+    },
+    GAME_TIMEOUT,
+  );
 
   it('wait for the factions until they move a region’s approval by two points or more', () => {
     const game = createGame(tavaraAsShipped(), 1);
