@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   advanceQuarter,
+  borderIncidentTerms,
   createGame,
   intentionIn,
   quarterNumber,
@@ -77,13 +78,22 @@ const shockIn = (risks: readonly Risk[], headline: string) =>
   risks.find((risk) => risk.kind === 'priceShock' && risk.headline === headline);
 const ofKind = (risks: readonly Risk[], kind: Risk['kind']) =>
   risks.find((risk) => risk.kind === kind);
+/**
+ * Which of a neighbour's border incidents a risk is of, told by how soon it comes and not by
+ * its words: one in force is on the quarter being decided, one announced begins within its
+ * notice, and one that could still be announced begins only after a notice has run.
+ */
+const incidentStage = (risk: Risk): 'inForce' | 'announced' | 'possible' => {
+  if (risk.withinQuarters <= 1) return 'inForce';
+  return risk.withinQuarters <= borderIncidentTerms.noticeQuarters + 1 ? 'announced' : 'possible';
+};
 /** A border incident with a neighbour among the risks: one announced, or one that could be. */
-const incidentIn = (risks: readonly Risk[], neighbourId: string, announced: boolean) =>
+const incidentIn = (risks: readonly Risk[], neighbourId: string, stage: 'announced' | 'possible') =>
   risks.find(
     (risk) =>
       risk.kind === 'borderIncident' &&
       risk.neighbourId === neighbourId &&
-      risk.headline.endsWith(' ahead') === announced,
+      incidentStage(risk) === stage,
   );
 
 /**
@@ -306,7 +316,7 @@ function playRun(country: () => Country, seeds: readonly number[], decide: Idler
         incidents += 1;
         const where = `seed ${seed}, ${before.date.year}/${before.date.quarter}`;
         // The quarter before, while the player could still raise Defence, it could come.
-        expect(incidentIn(risksIn(before), incident.neighbourId, false), where).toBeDefined();
+        expect(incidentIn(risksIn(before), incident.neighbourId, 'possible'), where).toBeDefined();
         // From its announcement until it begins or is called off, it is listed as announced.
         const waiting = states.filter(
           (later) =>
@@ -316,7 +326,7 @@ function playRun(country: () => Country, seeds: readonly number[], decide: Idler
         );
         for (const later of waiting) {
           const when = `seed ${seed}, ${later.date.year}/${later.date.quarter}`;
-          expect(incidentIn(risksIn(later), incident.neighbourId, true), when).toBeDefined();
+          expect(incidentIn(risksIn(later), incident.neighbourId, 'announced'), when).toBeDefined();
         }
         const begun = states.some(
           (later) =>
