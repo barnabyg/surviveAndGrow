@@ -306,7 +306,7 @@ function settledEffects(
   // A lever the faction does not answer to settles at nothing, and so fades if it once did.
   const effects = mapLevers(() => 0);
   for (const [lever, marks] of LEVERS[faction]) {
-    effects[lever] = leverEffect(marks, measureOf(lever, faction, inputs, homes));
+    effects[lever] = leverEffect(marks, measureOf(lever, marks, faction, inputs, homes));
   }
   return effects;
 }
@@ -339,6 +339,7 @@ function leverEffect(marks: LeverBalance, measure: number): number {
 /** What a lever measures in a quarter, for one faction (see `FACTION_LEVERS`). */
 function measureOf(
   lever: FactionLever,
+  marks: LeverBalance,
   faction: CivilFaction,
   inputs: FactionInputs,
   homes: Homes,
@@ -353,8 +354,8 @@ function measureOf(
     case 'tax':
       return inputs.taxRatePercent;
     case 'budgetBalance':
-      // With nothing raised, anything spent is as deep a deficit as the lever knows.
-      if (inputs.revenue === 0) return spending === 0 ? 0 : -1000;
+      // With nothing raised, anything spent is as deep a deficit as the lever knows: its worst.
+      if (inputs.revenue === 0) return spending === 0 ? 0 : marks.worst;
       return Math.trunc(((inputs.revenue - spending) * 1000) / inputs.revenue);
     case 'debtBurden':
       return inputs.debtBurden;
