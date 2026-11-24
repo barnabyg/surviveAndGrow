@@ -1,7 +1,9 @@
 import {
   armyLoyaltyStatus,
   chainsThrough,
+  coupAfterPlottingQuarters,
   electionStatus,
+  formatQuarters,
   researchStatuses,
   surveyStatus,
   surveyStatuses,
@@ -124,7 +126,7 @@ export const TIPS: readonly Tip[] = [
     when: 'army-loyalty',
     target: 'vitals',
     title: 'Defence and the army',
-    text: 'The army’s loyalty is slipping, or is set to. Defence spending in the budget is judged against what the army expects for the country’s people: spend less and loyalty falls, a part of the way each quarter. Strikes in a region pull the army there down, and protests further. The army is read as loyal, restless or plotting. The top bar shows national loyalty with its stage and opens to say what moves it, and each region’s card shows its own.',
+    text: `The army’s loyalty is slipping, or is set to. Defence spending in the budget is judged against what the army expects for the country’s people: spend less and loyalty falls, a part of the way each quarter. Strikes in a region pull the army there down, and protests further. The army is read as loyal, restless or plotting, and an army left plotting for ${formatQuarters(coupAfterPlottingQuarters)} running takes power, and the game is lost. The top bar shows national loyalty with its stage, counts the quarters left while it plots, and opens to say what moves it; each region’s card shows its own.`,
   },
 ];
 

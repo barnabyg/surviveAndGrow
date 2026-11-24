@@ -2,6 +2,7 @@ import {
   approvalStatus,
   ARMY_STAGE_NAMES,
   armyLoyaltyStatus,
+  coupStatus,
   austerityStatus,
   creditRules,
   creditStatus,
@@ -32,6 +33,7 @@ import {
   victoryStatus,
   type ApprovalStatus,
   type ArmyLoyaltyStatus,
+  type CoupStatus,
   type GameState,
   type TurnReport,
   type VictoryStatus,
@@ -109,16 +111,33 @@ function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
 
 /**
  * The stage the army is in, named beneath its loyalty whatever it is: in a word while it is
- * loyal, and as a warning, with the mark it has fallen below, while it is restless or plotting.
+ * loyal, as a warning with the mark it has fallen below while it is restless, and while it is
+ * plotting with the quarters left to a coup, counted down.
  */
-function armyRemark(army: ArmyLoyaltyStatus) {
+function armyRemark(army: ArmyLoyaltyStatus, coup: CoupStatus) {
   const name = ARMY_STAGE_NAMES[army.stage];
   if (army.stage === 'loyal') return { text: name, tone: 'plain' } as const;
-  const mark = army.stage === 'plotting' ? army.plottingBelow : army.restlessBelow;
+  if (army.stage === 'plotting') {
+    return { text: `${name}: ${formatQuarters(coup.left)} to a coup`, tone: 'danger' } as const;
+  }
   return {
-    text: `${name}: below ${formatPercent(mark, 0)}`,
-    tone: army.stage === 'plotting' ? 'danger' : 'warning',
+    text: `${name}: below ${formatPercent(army.restlessBelow, 0)}`,
+    tone: 'warning',
   } as const;
+}
+
+/** What the count towards a coup stands at, in sentences for the army's breakdown. */
+function coupCount(coup: CoupStatus): string {
+  const mark = formatPercent(coup.plottingBelow, 0);
+  const rule = `The army takes power once national loyalty has ended ${formatQuarters(coup.needed)} running below ${mark}.`;
+  if (!coup.plotting) return `${rule} It is not plotting, so nothing is counted.`;
+  const counted =
+    coup.held === 0 ? 'None is counted yet' : `It has ended ${formatQuarters(coup.held)} there`;
+  const left =
+    coup.left === 1
+      ? `the coup comes as this quarter ends, unless loyalty is back at ${mark} or above by then`
+      : `${coup.left} more, this quarter among them, bring the coup`;
+  return `${rule} ${counted}: ${left}.`;
 }
 
 export function TopBar(props: TopBarProps) {
@@ -127,6 +146,7 @@ export function TopBar(props: TopBarProps) {
   const food = foodStatus(game);
   const approval = approvalStatus(game);
   const army = armyLoyaltyStatus(game);
+  const coup = coupStatus(game);
   const restlessMark: Mark = {
     value: army.restlessBelow,
     label: `Restless below ${formatPercent(army.restlessBelow, 0)}`,
@@ -387,8 +407,8 @@ export function TopBar(props: TopBarProps) {
           figure={report?.armyLoyalty ?? null}
           formatChange={formatSignedPoints}
           formatMovement={formatPoints}
-          remark={armyRemark(army)}
-          note={`${restlessMark.label} · plotting below ${formatPercent(army.plottingBelow, 0)}`}
+          remark={armyRemark(army, coup)}
+          note={`${restlessMark.label} · plotting below ${formatPercent(army.plottingBelow, 0)} · a coup after ${formatQuarters(coup.needed)} of plotting`}
           breakdownTitle="What moved army loyalty"
           trend={
             <TrendLine
@@ -432,6 +452,7 @@ export function TopBar(props: TopBarProps) {
             further. The army is restless below {formatPercent(army.restlessBelow, 0)} and plotting
             below {formatPercent(army.plottingBelow, 0)}.
           </p>
+          <p className="breakdown__empty">{coupCount(coup)}</p>
           <h2 className="label">The army by region</h2>
           <table className="breakdown__table" aria-label="The army by region">
             <tbody>

@@ -37,7 +37,7 @@ test('the game opens with a loyal army, named in the top bar, the region list an
   await expect(armyLoyalty(page)).toContainText('Loyal');
   await expect(armyLoyalty(page)).toHaveAttribute(
     'title',
-    'Loyal · Restless below 45% · plotting below 30%',
+    'Loyal · Restless below 45% · plotting below 30% · a coup after 4 quarters of plotting',
   );
   await expect(nextQuarter(page)).toHaveText('Army loyalty next quarter58.4%, loyal');
   await expect(heading(page)).toHaveText('Army loyalty is heading for58.4%, loyal');
