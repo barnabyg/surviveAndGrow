@@ -13,6 +13,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import { bothCountries, startingAt, tavara, withDroughtChance } from './countries';
 import { inFirstTerm } from './playing';
+import { GAME_TIMEOUT } from './scripted';
 import { budgetFrom, budgetOf } from '../budgets';
 
 /**
@@ -209,17 +210,23 @@ describe.each(bothCountries)('looking ahead for risks in %s', (_name, country) =
     expect(watched).toEqual(plain);
   });
 
-  it('lists the most likely first', () => {
-    const rank = (risk: Risk) => LIKELIHOODS.indexOf(risk.likelihood);
-    for (const seed of [1, 2, 3, 4, 5]) {
-      let game = createGame(country(), seed);
-      while (inFirstTerm(game)) {
-        const ranks = risksAhead(game, idle(game)).map(rank);
-        expect(ranks).toEqual([...ranks].sort((a, b) => b - a));
-        game = advanceQuarter(game, idle(game)).state;
+  // Five whole terms, looking ahead in every quarter: close to the default limit of five
+  // seconds while the rest of the suite runs alongside, so it has a game's limit.
+  it(
+    'lists the most likely first',
+    () => {
+      const rank = (risk: Risk) => LIKELIHOODS.indexOf(risk.likelihood);
+      for (const seed of [1, 2, 3, 4, 5]) {
+        let game = createGame(country(), seed);
+        while (inFirstTerm(game)) {
+          const ranks = risksAhead(game, idle(game)).map(rank);
+          expect(ranks).toEqual([...ranks].sort((a, b) => b - a));
+          game = advanceQuarter(game, idle(game)).state;
+        }
       }
-    }
-  });
+    },
+    GAME_TIMEOUT,
+  );
 
   it('refuses decisions the game would refuse, and a game that is over', () => {
     const game = createGame(country(), 11);
