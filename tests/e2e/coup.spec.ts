@@ -84,6 +84,12 @@ test('a starved army plots, the coup is warned of and counted down, and it ends 
   const summary = page.getByRole('dialog', { name: 'The army has taken power' });
   await expect(summary).toBeVisible();
   await expect(summary).toContainText('You have lost');
+  // Behind the summary the top bar has stopped counting: there is no quarter left to a coup.
+  const sign = page
+    .getByRole('banner', { includeHidden: true })
+    .getByRole('group', { name: 'Army loyalty', includeHidden: true });
+  await expect(sign).toContainText('▲ Plotting: the army has taken power');
+  await expect(sign).not.toContainText('to a coup');
   await expect(summary).toContainText(
     /National army loyalty stood below 30%, where the army plots, for 4 quarters running, and ended at \d\d\.\d%\. The army has taken power\./,
   );

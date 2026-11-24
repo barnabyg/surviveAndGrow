@@ -109,6 +109,9 @@ function unrestRemark(game: GameState, { unrest }: ApprovalStatus) {
   return { text, tone } as const;
 }
 
+/** What the army's sign says once the count is run and the game is lost to a coup. */
+const COUP_HAS_COME = 'the army has taken power';
+
 /**
  * The stage the army is in, named beneath its loyalty whatever it is: in a word while it is
  * loyal, as a warning with the mark it has fallen below while it is restless, and while it is
@@ -118,7 +121,12 @@ function armyRemark(army: ArmyLoyaltyStatus, coup: CoupStatus) {
   const name = ARMY_STAGE_NAMES[army.stage];
   if (army.stage === 'loyal') return { text: name, tone: 'plain' } as const;
   if (army.stage === 'plotting') {
-    return { text: `${name}: ${formatQuarters(coup.left)} to a coup`, tone: 'danger' } as const;
+    // Once the count is run the coup has come: the game is over, and nothing is left to count.
+    const text =
+      coup.left <= 0
+        ? `${name}: ${COUP_HAS_COME}`
+        : `${name}: ${formatQuarters(coup.left)} to a coup`;
+    return { text, tone: 'danger' } as const;
   }
   return {
     text: `${name}: below ${formatPercent(army.restlessBelow, 0)}`,
@@ -133,6 +141,7 @@ function coupCount(coup: CoupStatus): string {
   if (!coup.plotting) return `${rule} It is not plotting, so nothing is counted.`;
   const counted =
     coup.held === 0 ? 'None is counted yet' : `It has ended ${formatQuarters(coup.held)} there`;
+  if (coup.left <= 0) return `${rule} ${counted}: ${COUP_HAS_COME}.`;
   const left =
     coup.left === 1
       ? `the coup comes as this quarter ends, unless loyalty is back at ${mark} or above by then`
