@@ -270,7 +270,7 @@ effect for every faction, so retuning which a faction answers to is not a save-f
 
 `factionStatus.ts` gathers what a quarter is judged by (`factionInputs`: the turn and the preview
 give what was really raised and spent) and gives the interface each standing with its word, what
-it is made of and where a budget would settle it (`factionStandings`), a region's mix and the
+it is made of and where a budget would settle it (`factionsStatus`), a region's mix and the
 effect there (`regionFactions`), and the preview's forecast (`factionOutlooks`). The army is the
 fourth faction only there: its standing is `armyLoyaltyStatus`.
 

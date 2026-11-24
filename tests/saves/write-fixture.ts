@@ -5,7 +5,7 @@ import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   createGame,
-  factionStandings,
+  factionsStatus,
   loadCountry,
   pendingDilemma,
   SAVE_FORMAT_VERSION,
@@ -58,7 +58,7 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   }
   expect(game.date).toEqual({ year: 1, quarter: 4 });
   expect(game.history.map((record) => record.standings?.farmers)).toEqual([561, 582, 599, 613]);
-  expect(factionStandings(game).standings.map((each) => each.word)).toEqual([
+  expect(factionsStatus(game).standings.map((each) => each.word)).toEqual([
     'Pleased',
     'Content',
     'Content',

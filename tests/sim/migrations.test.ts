@@ -10,7 +10,7 @@ import {
   debtStatus,
   deterrenceStatus,
   electionStatus,
-  factionStandings,
+  factionsStatus,
   knownTechnologies,
   loadCountry,
   loadSave,
@@ -1000,7 +1000,7 @@ describe('the save kept from save format 16', () => {
       });
     }
     expect(
-      factionStandings(game)
+      factionsStatus(game)
         .standings.filter((each) => each.faction !== 'army')
         .map((each) => [each.standing, each.word]),
     ).toEqual([
@@ -1018,8 +1018,8 @@ describe('the save kept from save format 16', () => {
     // The next quarter moves each standing part of the way to where the budget settles it,
     // records it, and reports it.
     const next = advanceQuarter(game, answering(game, steward(game)));
-    const settles = factionStandings(game).standings.map((each) => each.settles);
-    const moved = factionStandings(next.state).standings.map((each) => each.standing);
+    const settles = factionsStatus(game).standings.map((each) => each.settles);
+    const moved = factionsStatus(next.state).standings.map((each) => each.standing);
     for (const index of [0, 1, 2]) {
       expect(Math.sign((moved[index] ?? 0) - 500)).toBe(Math.sign((settles[index] ?? 0) - 500));
       expect(Math.abs((moved[index] ?? 0) - 500)).toBeLessThan(

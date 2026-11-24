@@ -12,7 +12,7 @@ import {
   createGame,
   FACTION_NAMES,
   FACTIONS,
-  factionStandings,
+  factionsStatus,
   loadCountry,
   loadSave,
   previewQuarter,
@@ -60,7 +60,7 @@ function play(
 
 /** Each civil faction's standing, in the factions' order. */
 const standingsOf = (game: GameState): number[] =>
-  factionStandings(game)
+  factionsStatus(game)
     .standings.filter((each) => each.faction !== 'army')
     .map((each) => each.standing);
 
@@ -102,7 +102,7 @@ describe('the factions', () => {
 describe.each(bothCountries)('the factions in %s', (name) => {
   it('open where the starting budget settles them, so the first quarters move none', () => {
     const start = createGame(quiet(name), 7);
-    const status = factionStandings(start);
+    const status = factionsStatus(start);
 
     expect(status.standings.map((each) => each.faction)).toEqual([...CIVIL_FACTIONS, 'army']);
     for (const each of status.standings) expect(each.settles).toBe(each.standing);
@@ -125,14 +125,14 @@ describe.each(bothCountries)('the factions in %s', (name) => {
       // No more than a point and a half of approval either way, in any region.
       expect(Math.abs(regionFactions(start, region.id).effect)).toBeLessThanOrEqual(15);
     }
-    for (const each of factionStandings(start).standings) {
+    for (const each of factionsStatus(start).standings) {
       if (each.faction !== 'army') expect(each.word).toBe('Content');
     }
   });
 
   it('show the army’s standing as national army loyalty, with its stage for a word', () => {
     const start = createGame(quiet(name), 7);
-    const army = factionStandings(start).standings.find((each) => each.faction === 'army');
+    const army = factionsStatus(start).standings.find((each) => each.faction === 'army');
     const loyalty = armyLoyaltyStatus(start);
 
     expect(army).toMatchObject({
@@ -152,7 +152,7 @@ describe.each(bothCountries)('the factions in %s', (name) => {
   it('move a share of the way each quarter towards where their levers settle them', () => {
     const start = createGame(quiet(name), 7);
     const budget = favouringFarmers(start, MORE_FOR_FARMS[name as keyof typeof MORE_FOR_FARMS]);
-    const settles = factionStandings(start, budget).standings.find(
+    const settles = factionsStatus(start, budget).standings.find(
       (each) => each.faction === 'farmers',
     )?.settles;
     if (settles === undefined) throw new Error('The farmers have no standing');
@@ -178,7 +178,7 @@ describe.each(bothCountries)('the factions in %s', (name) => {
     );
     const atBest = (budget: Budget) =>
       Object.fromEntries(
-        factionStandings(start, budget).standings.map((each) => [
+        factionsStatus(start, budget).standings.map((each) => [
           each.faction,
           each.settles === each.best,
         ]),
@@ -261,7 +261,7 @@ describe.each(bothCountries)('the factions in %s', (name) => {
       const preview = previewQuarter(game, decisions);
       const before = game;
       game = advanceQuarter(game, decisions).state;
-      const status = factionStandings(game);
+      const status = factionsStatus(game);
 
       expect(preview.standings.map((each) => each.faction)).toEqual([...CIVIL_FACTIONS]);
       for (const outlook of preview.standings) {
@@ -354,7 +354,7 @@ describe.each(bothCountries)('the factions in %s', (name) => {
     );
     const restored = loadSave(JSON.parse(JSON.stringify(saveGame(game, report))));
     expect(restored.game.factions).toEqual(game.factions);
-    expect(factionStandings(restored.game)).toEqual(factionStandings(game));
+    expect(factionsStatus(restored.game)).toEqual(factionsStatus(game));
     expect(restored.report?.standings).toEqual(report?.standings);
     expect(restored.report?.approval).toEqual(report?.approval);
   });
@@ -374,7 +374,7 @@ describe('the factions in Tavara, by the figures', () => {
     const start = createGame(quiet('Tavara'), 7);
 
     expect(standingsOf(start)).toEqual([561, 478, 516]);
-    const [farmers, workers, business] = factionStandings(start).standings;
+    const [farmers, workers, business] = factionsStatus(start).standings;
     expect(farmers?.causes).toEqual([
       { label: 'Neutral', amount: 500 },
       { label: 'Agriculture’s share of spending', amount: 61 },
@@ -449,7 +449,7 @@ describe('the factions in Tavara, by the figures', () => {
     expect(standingOf(after, 'farmers')).toBeLessThan(standingOf(calm, 'farmers'));
     expect(standingOf(after, 'workers')).toBe(standingOf(calm, 'workers'));
     expect(
-      factionStandings(after).standings[0]?.causes.find(
+      factionsStatus(after).standings[0]?.causes.find(
         (cause) => cause.label === 'Drought and flood',
       )?.amount,
     ).toBeLessThan(0);

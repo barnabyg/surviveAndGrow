@@ -128,7 +128,7 @@ export function worksInUse(building: Pick<GameState, 'country' | 'projects'>): n
 /**
  * What the levers measure in a quarter that raises `revenue` at a tax rate and spends `spent`,
  * for the country as the quarter begins. The turn and the preview give what was really
- * raised and spent; `factionStandings` supposes a budget spent in full.
+ * raised and spent; `factionsStatus` supposes a budget spent in full.
  */
 export function factionInputs(
   state: Judged,
@@ -175,7 +175,7 @@ export function startingStandings(opening: Judged & { readonly budget: Budget })
  * How the four factions stand, and where the budget given, the one in force unless another
  * is, would settle each. The quarter's own reckoning (`resolveFactions`) reads the same sums.
  */
-export function factionStandings(
+export function factionsStatus(
   state: Judged & Pick<GameState, 'budget' | 'factions'>,
   budget: Budget = state.budget,
 ): FactionsStatus {

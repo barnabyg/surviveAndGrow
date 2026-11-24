@@ -4,7 +4,7 @@ import {
   armyLoyaltyStatus,
   balance,
   createGame,
-  factionStandings,
+  factionsStatus,
   formatCount,
   formatMoney,
   formatPercent,
@@ -122,7 +122,7 @@ const { farmers, workers, business } = factions.levers;
 const worthOf = (lever: { weightPermille: number }): string => String(lever.weightPermille / 10);
 /** A civil faction's standing as a game opens, as the rules give it: `56.1%`. */
 const openingAt = (game: GameState, index: number): string =>
-  formatPercent(factionStandings(game).standings[index]?.standing ?? 0);
+  formatPercent(factionsStatus(game).standings[index]?.standing ?? 0);
 /** The most the factions move any region's approval as a game opens, either way. */
 const mostSwayed = (game: GameState): string =>
   formatPoints(

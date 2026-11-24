@@ -204,7 +204,7 @@ export {
   type FactionStandings,
 } from './factions';
 export {
-  factionStandings,
+  factionsStatus,
   regionFactions,
   type FactionOutlook,
   type FactionsStatus,

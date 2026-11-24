@@ -1,5 +1,5 @@
 import {
-  factionStandings,
+  factionsStatus,
   formatPercent,
   formatSignedPoints,
   type FactionStatus,
@@ -25,7 +25,7 @@ export function isTroubled(status: Pick<FactionStatus, 'mood' | 'stage'>): boole
  * mark a faction that stands badly, and colour only adds to them.
  */
 export function FactionsPanel({ game }: { readonly game: GameState }) {
-  const { standings } = factionStandings(game);
+  const { standings } = factionsStatus(game);
   const shown = recent(game.history);
   return (
     <section className="factions" aria-labelledby="factions-title" data-tour="factions">

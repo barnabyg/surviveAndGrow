@@ -3,7 +3,7 @@ import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   createGame,
-  factionStandings,
+  factionsStatus,
   loadCountry,
   loadSave,
   regionFactions,
@@ -698,7 +698,7 @@ describe('the save kept from save format 17', () => {
     expect(game.country.formatVersion).toBe(13);
     expect(game.budget.spending.agriculture).toBe(160);
     expect(
-      factionStandings(game).standings.map((each) => [each.name, each.standing, each.word]),
+      factionsStatus(game).standings.map((each) => [each.name, each.standing, each.word]),
     ).toEqual([
       ['Farmers', 613, 'Pleased'],
       ['Workers', 461, 'Content'],
@@ -751,7 +751,7 @@ describe('the save kept from save format 17', () => {
     for (let quarter = 0; quarter < 2; quarter += 1) {
       game = advanceQuarter(game, answering(game, steward(game, started))).state;
     }
-    const [farmers, workers, business] = factionStandings(game).standings;
+    const [farmers, workers, business] = factionsStatus(game).standings;
     expect(farmers?.standing).toBeLessThan(613);
     expect(farmers?.standing).toBeGreaterThan(561);
     expect(workers?.standing).toBeGreaterThan(461);

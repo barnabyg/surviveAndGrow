@@ -144,9 +144,9 @@ export function resolveQuarter(
   // World price shocks whose time is up end, and those announced begin their notice.
   const shocks = turnShocks(state.priceShocks, chance.shocksAnnounced, date);
   // A neighbour the quarter leaves hostile may announce a border incident, by its roll.
-  const incidents = announceIncidents(
+  const announced = announceIncidents(
     state.country,
-    lived.incidents.incidents,
+    lived.border.incidents,
     lived.hostile,
     chance.incidentRolls,
     date,
@@ -186,8 +186,8 @@ export function resolveQuarter(
     ...army.entries,
     ...countEntries(state.plottingQuarters, plottingQuarters, army.loyalty.value),
     ...deterred.entries,
-    ...lived.incidents.entries,
-    ...incidents.entries,
+    ...lived.border.entries,
+    ...announced.entries,
     ...building.entries,
     ...upkept.entries,
     ...taken.entries,
@@ -222,7 +222,7 @@ export function resolveQuarter(
       credit: credit.credit,
       worldPrices,
       priceShocks: shocks.shocks,
-      borderIncidents: incidents.incidents,
+      borderIncidents: announced.incidents,
       // What crossed the border by each link, as the links stood when the quarter began.
       tradeCarried: routeCarriage(state, traded.imported + traded.exported),
       history: [
@@ -237,7 +237,7 @@ export function resolveQuarter(
           foodReserve: food.foodReserve,
           regions,
           worldPrices,
-          borderIncidents: incidents.incidents,
+          borderIncidents: announced.incidents,
           factions: lived.factions.standings,
           prosperity: prosperity.value,
           debtBurden: lived.debtBurden,
@@ -403,7 +403,7 @@ function liveQuarter(
       .filter((neighbour) => neighbour.intention === 'hostile')
       .map((neighbour) => neighbour.neighbourId),
   );
-  const incidents = turnIncidents(state, hostile, after);
+  const border = turnIncidents(state, hostile, after);
   // The debt burden the quarter leaves: its debt against the revenue the regions and sites it
   // leaves would raise. The rating, the win, the record and the preview all judge this one.
   const owing = (worldPrices: WorldPrices) => ({
@@ -415,7 +415,7 @@ function liveQuarter(
     worldPrices,
     // The revenue is the next quarter's, with the border incidents then in force.
     date: after,
-    borderIncidents: incidents.incidents,
+    borderIncidents: border.incidents,
   });
   const burden = debtBurden(owing(pricesAfter));
   // The rating is reassessed as the quarter ends, on the debt and revenue it leaves behind.
@@ -448,8 +448,11 @@ function liveQuarter(
     deterred,
     /** The neighbours hostile as the quarter ends. */
     hostile,
-    /** The border incidents as the quarter leaves them, before any new one is announced. */
-    incidents,
+    /**
+     * The border as the quarter leaves it: its incidents, before any new one is announced, and
+     * what is reported of them.
+     */
+    border,
     /** The regions as the quarter leaves them: fed, served, judged and with their armies. */
     regions,
     prosperity,
