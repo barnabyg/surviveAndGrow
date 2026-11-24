@@ -4,6 +4,8 @@ import {
   armyLoyaltyStatus,
   createGame,
   deterrenceStatus,
+  factionsNoticeablePermille,
+  regionFactions,
   risksAhead,
   type GameState,
 } from '../../src/sim';
@@ -11,6 +13,7 @@ import { budgetFrom } from '../budgets';
 import { TIPS, tipsDue, type TipCondition } from '../../src/ui/tips';
 import { withinRules } from '../balance/players';
 import { tavaraAsShipped } from '../sim/countries';
+import { answering } from '../sim/playing';
 import { GAME_TIMEOUT, playerNamed } from '../sim/scripted';
 
 /**
@@ -27,6 +30,7 @@ const ARISES: readonly [TipCondition, player: string, seed: number, quarter: num
   ['decay', 'Sensible', 2, 5],
   ['unrest', 'Does nothing', 4, 7],
   ['army-loyalty', 'Sensible', 3, 14],
+  ['factions', 'Sensible', 1, 2],
   ['tier-passed', 'Sensible', 1, 7],
   ['neighbours', 'Sensible', 1, 7],
   ['border-incident', 'Borrow and build at once', 1, 7],
@@ -170,6 +174,25 @@ describe('the first-time tips', () => {
     expect(tipsDue({ game: announced, risks: [], plannedSiteIds: [] })).toContain(
       'border-incident',
     );
+  });
+
+  it('wait for the factions until they move a region’s approval by two points or more', () => {
+    const game = createGame(tavaraAsShipped(), 1);
+    expect(factionsNoticeablePermille).toBe(20);
+    // The starting budget leaves the factions near neutral: a point or so in any region.
+    expect(game.regions.map((region) => region.approvalEffects.factions)).toEqual([
+      5, 2, 11, 12, 9, 0,
+    ]);
+    expect(tipsDue({ game, risks: [], plannedSiteIds: [] })).not.toContain('factions');
+    // $9.0m more for agriculture is a share the farmers notice: within the year the Dry East,
+    // three in four of them farmers, is two points up for it.
+    const favouring = budgetFrom(game.budget, { spending: { agriculture: 200 } });
+    let favoured = game;
+    for (let quarter = 0; quarter < 3; quarter += 1) {
+      favoured = advanceQuarter(favoured, answering(favoured, { budget: favouring })).state;
+    }
+    expect(regionFactions(favoured, 'dry-east').effect).toBeGreaterThanOrEqual(20);
+    expect(tipsDue({ game: favoured, risks: [], plannedSiteIds: [] })).toContain('factions');
   });
 
   it('wait for nothing in a game that has only just begun, risks ahead aside', () => {

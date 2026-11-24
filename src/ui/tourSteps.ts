@@ -50,6 +50,11 @@ export const TOUR_STEPS: readonly TourStep[] = [
     text: 'Each region’s food, living standard and army. National prosperity is built from the living standards, so a region left behind holds the whole country back. Select a region to open its card.',
   },
   {
+    target: 'factions',
+    title: 'Factions',
+    text: 'How farmers, workers, business and the army each stand with you, in a figure, a word and a trend. Each region follows the first three by its mix of them, so its approval moves as they do; the army’s standing is its loyalty. A share of the budget won for one is taken from another, so no budget pleases them all. Open one to see what it is made of.',
+  },
+  {
     target: 'approval-chart',
     title: 'Approval',
     text: 'Approval over time, with the strike threshold and the 50% line. Approval keeps you in office, and is not the score: at an election it becomes your vote share, and below 50% the game is lost.',

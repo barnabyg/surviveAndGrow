@@ -44,7 +44,7 @@ import { Crest } from './Crest';
 import { formatDate, formatSigned, formatSignedCount, formatSignedTonnes } from './format';
 import { recent, type Mark } from './trend';
 import { TrendLine } from './TrendLine';
-import { VitalSign } from './VitalSign';
+import { BreakdownRows, VitalSign } from './VitalSign';
 import type { TipsState } from './TipCard';
 import { TopBarActions } from './TopBarActions';
 import './TopBar.css';
@@ -379,12 +379,11 @@ export function TopBar(props: TopBarProps) {
           <table className="breakdown__table" aria-label="What approval is made of">
             <tbody>
               {approval.causes.map((cause, index) => (
-                <tr key={cause.label}>
-                  <th scope="row">{cause.label}</th>
-                  <td>
-                    {index === 0 ? formatPercent(cause.amount) : formatSignedPoints(cause.amount)}
-                  </td>
-                </tr>
+                <BreakdownRows
+                  key={cause.label}
+                  line={cause}
+                  format={index === 0 ? formatPercent : formatSignedPoints}
+                />
               ))}
             </tbody>
             <tfoot>
@@ -396,8 +395,9 @@ export function TopBar(props: TopBarProps) {
           </table>
           <p className="breakdown__empty">
             Approval moves a part of the way each quarter towards where the budget and the food
-            situation would settle it. A region strikes below{' '}
-            {formatPercent(approval.strikesBelow, 0)} and protests below{' '}
+            situation would settle it. The factions bear on each region by its mix of farmers,
+            workers and business, as far as each stands above or below neutral. A region strikes
+            below {formatPercent(approval.strikesBelow, 0)} and protests below{' '}
             {formatPercent(approval.protestsBelow, 0)}.
           </p>
         </VitalSign>

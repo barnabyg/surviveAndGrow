@@ -3,14 +3,17 @@ import {
   armyLoyaltyStatus,
   borderIncidentStatuses,
   buildingBarred,
+  CIVIL_FACTIONS,
   DECAYING_SHARE,
   describeEvent,
   describeUnrest,
+  FACTION_NAMES,
   FOOD_STAGE_NAMES,
   formatCount,
   formatMoney,
   formatPercent,
   formatPoints,
+  formatSignedPoints,
   formatIndex,
   formatQuarters,
   formatTonnes,
@@ -19,6 +22,7 @@ import {
   livingStandards,
   percentOff,
   PROSPERITY_PART_NAMES,
+  regionFactions,
   serviceLevels,
   surveyStatus,
   SURVEY_STATE_NAMES,
@@ -30,6 +34,7 @@ import {
   type LivingStandard,
   type Preview,
   type RegionArmyLoyalty,
+  type RegionFactions,
   type ProjectPlan,
   type SurveyStatus,
   type TurnReport,
@@ -178,6 +183,7 @@ export function RegionCard(props: RegionCardProps) {
         </p>
       ))}
       {army !== undefined && <ArmyNote army={army} />}
+      <FactionsNote factions={regionFactions(game, regionId)} />
       {events.map((event) => (
         <p key={event.type} className="warning-note">
           ▲ {describeEvent(game, event)}
@@ -325,6 +331,35 @@ function ArmyNote({ army }: { readonly army: RegionArmyLoyalty }) {
     <p className="warning-note" role="status" aria-label="Army">
       ▲ The army here is {ARMY_STAGE_NAMES[army.stage].toLowerCase()}
       {heading}.
+    </p>
+  );
+}
+
+/**
+ * The region's faction mix and what the factions as they stand do to its approval, in a line:
+ * the share of its people in each, then the effect and each faction's part of it. A region
+ * whose people follow none shows nothing.
+ */
+function FactionsNote({ factions }: { readonly factions: RegionFactions }) {
+  const mixed = CIVIL_FACTIONS.filter((faction) => factions.shares[faction] > 0);
+  // A region whose people follow no faction has nothing to say of them.
+  if (mixed.length === 0) return null;
+  const shares = listed(
+    mixed.map(
+      (faction) =>
+        `${formatPercent(factions.shares[faction], 0)} ${FACTION_NAMES[faction].toLowerCase()}`,
+    ),
+  );
+  const parts = listed(
+    mixed.map(
+      (faction) =>
+        `${FACTION_NAMES[faction].toLowerCase()} ${formatSignedPoints(factions.parts[faction])}`,
+    ),
+  );
+  return (
+    <p className="map-card__note" role="note" aria-label="Factions">
+      <span className="map-card__term">Factions</span> {shares}. As they stand they move approval
+      here by {formatSignedPoints(factions.effect)}: {parts}.
     </p>
   );
 }

@@ -17,6 +17,7 @@ import {
   type TurnReport,
 } from '../sim';
 import { ApprovalChart } from './ApprovalChart';
+import { FactionsPanel } from './FactionsPanel';
 import { BudgetPanel, budgetTab, countChanges } from './BudgetPanel';
 import { ConfirmDialog, RestartDialog } from './ConfirmDialog';
 import { DecisionTabs } from './DecisionPanel';
@@ -359,6 +360,7 @@ export function GameScreen(props: GameScreenProps) {
               selectedRegionId={selectedRegionId}
               onSelectRegion={selectRegion}
             />
+            <FactionsPanel game={game} />
             <ApprovalChart game={game} />
           </aside>
           <main className="column column--country" aria-label="Country">

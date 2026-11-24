@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react';
-import type { Figure } from '../sim';
+import type { Contribution, Figure } from '../sim';
 import './VitalSign.css';
 
 interface VitalSignProps {
@@ -90,10 +90,7 @@ export function VitalSign(props: VitalSignProps) {
             <table className="breakdown__table" aria-labelledby={titleId}>
               <tbody>
                 {figure.contributions.map((line) => (
-                  <tr key={line.label}>
-                    <th scope="row">{line.label}</th>
-                    <td>{formatChange(line.amount)}</td>
-                  </tr>
+                  <BreakdownRows key={line.label} line={line} format={formatChange} />
                 ))}
               </tbody>
               <tfoot>
@@ -108,6 +105,36 @@ export function VitalSign(props: VitalSignProps) {
         </section>
       )}
     </div>
+  );
+}
+
+/**
+ * One line of a breakdown, and beneath it the parts it is split into, each with the few words
+ * that say what lies behind it.
+ */
+export function BreakdownRows({
+  line,
+  format,
+}: {
+  readonly line: Contribution;
+  readonly format: (amount: number) => string;
+}) {
+  return (
+    <>
+      <tr>
+        <th scope="row">{line.label}</th>
+        <td>{format(line.amount)}</td>
+      </tr>
+      {line.parts?.map((part) => (
+        <tr key={part.label} className="breakdown__part">
+          <th scope="row">
+            {part.label}
+            {part.note !== undefined && <span className="breakdown__why"> · {part.note}</span>}
+          </th>
+          <td>{format(part.amount)}</td>
+        </tr>
+      ))}
+    </>
   );
 }
 

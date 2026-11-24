@@ -193,6 +193,22 @@ p {
   font-weight: 600;
 }
 
+/* A part of the line above it: set in, smaller, with a few words on what lies behind it. */
+.breakdown__table .breakdown__part th {
+  padding-left: 16px;
+  font-size: 14px;
+}
+
+.breakdown__table .breakdown__part td {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.breakdown__why {
+  color: var(--muted);
+}
+
 /* Section furniture shared by the side columns */
 
 .section-head {

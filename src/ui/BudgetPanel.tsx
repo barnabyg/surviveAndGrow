@@ -7,6 +7,8 @@ import {
   CREDIT_RATING_NAMES,
   CREDIT_RATINGS,
   exactly,
+  FACTION_MOOD_NAMES,
+  FACTION_NAMES,
   foodStatus,
   formatMoney,
   formatIndex,
@@ -17,6 +19,7 @@ import {
   missedPaymentMeans,
   MONEY_PER_MILLION,
   monthsOfFood,
+  moodAt,
   previewQuarter,
   ratingRank,
   regionName,
@@ -330,6 +333,44 @@ export function BudgetPanel(props: BudgetPanelProps) {
             )
           );
         })}
+        <More
+          summary="Factions"
+          note={
+            after.standings.some((outlook, index) => {
+              const was = before.standings[index] ?? outlook;
+              return was.standing !== outlook.standing || was.heading !== outlook.heading;
+            })
+              ? 'changed'
+              : null
+          }
+        >
+          {after.standings.map((outlook, index) => {
+            const was = before.standings[index] ?? outlook;
+            const name = FACTION_NAMES[outlook.faction];
+            return (
+              <Fragment key={outlook.faction}>
+                <Projection
+                  label={`${name} next quarter`}
+                  before={exactly(was.standing)}
+                  after={exactly(outlook.standing)}
+                  format={standingWithMood}
+                />
+                <Projection
+                  label={`${name} heading for`}
+                  before={exactly(was.heading)}
+                  after={exactly(outlook.heading)}
+                  format={standingWithMood}
+                />
+              </Fragment>
+            );
+          })}
+          <p className="outlook__note">
+            Farmers and workers each judge their share of what the budget spends, and business the
+            tax rate and how far the budget runs short, so what pleases one costs another. Each
+            standing moves a part of the way each quarter, and bears on approval where its people
+            live. The army’s standing is its loyalty, above.
+          </p>
+        </More>
         {game.country.map.neighbours.some((neighbour) => neighbour.ambition > 0) && (
           <>
             {after.neighbours
@@ -445,6 +486,11 @@ function neighbourName(game: GameState, neighbourId: string): string {
 /** An intention by its place among the intentions, in a word: "watchful". */
 function intentionAt(rank: number): string {
   return INTENTION_NAMES[INTENTIONS[rank] ?? 'peaceful'].toLowerCase();
+}
+
+/** A faction's standing with the mood it is read as, in words: "56.1%, content". */
+function standingWithMood(permille: number): string {
+  return `${formatPercent(permille)}, ${FACTION_MOOD_NAMES[moodAt(permille)].toLowerCase()}`;
 }
 
 /** An army loyalty with the stage it is read as, in words: "58.4%, loyal". */
