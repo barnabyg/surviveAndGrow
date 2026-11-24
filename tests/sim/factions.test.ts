@@ -209,18 +209,22 @@ describe.each(bothCountries)('the factions in %s', (name) => {
     expect(reached.farmers).toBeGreaterThan(0);
     expect(reached.workers).toBeGreaterThan(0);
 
-    // And with something spent everywhere, at the least, the middle and the most of every
-    // slider and of the tax rate, no budget settles all three at their best.
+    // Spending elsewhere and another tax rate change neither: at the least, the middle and
+    // the most of every slider and of the tax rate, still no budget settles the two at their
+    // best. So none settles all three, whatever business makes of it. Business is left out of
+    // the check because it could not fail it here: one of its levers is the large sites in
+    // use, and a game opens with none.
     const coarse = [spending.min, spending.max / 2, spending.max];
     const areas = Object.keys(start.budget.spending) as (keyof Budget['spending'])[];
-    const all = (index: number, chosen: Partial<Budget['spending']>): boolean =>
+    const both = (index: number, chosen: Partial<Budget['spending']>): boolean =>
       index === areas.length
         ? [taxRatePercent.min, 18, taxRatePercent.max].some((rate) => {
             const best = atBest(budgetOf({ taxRatePercent: rate, spending: chosen }));
-            return best.farmers && best.workers && best.business;
+            return best.farmers && best.workers;
           })
-        : coarse.some((amount) => all(index + 1, { ...chosen, [areas[index] ?? '']: amount }));
-    expect(all(0, {})).toBe(false);
+        : coarse.some((amount) => both(index + 1, { ...chosen, [areas[index] ?? '']: amount }));
+    expect(both(0, {})).toBe(false);
+    expect(atBest(start.budget).business).toBe(false);
   });
 
   it('set a budget that favours farmers against the starting budget: approval rises in a farming region and falls where business is strongest', () => {

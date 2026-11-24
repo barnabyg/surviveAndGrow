@@ -105,8 +105,9 @@ main figures from the balance values and fails if this file, [playing.md](playin
   from 60%, content below that, uneasy below 40% and angry below 25%.
 - No budget settles farmers, workers and business all at their best. Farmers are at their best
   with 48% of what is spent and workers with 74%, which is more than there is to share. Business
-  answers to money instead: every dollar spent to please the others deepens the deficit, or
-  raises the tax, that it resents.
+  answers to money instead, and nothing sets it against the other two directly: moving money
+  from one area to another leaves it where it was. It is set against them when their share is
+  bought by spending more than is raised, or by taxing more, both of which it resents.
 - Each region has a faction mix: the share of its people who are farmers, workers and
   business, from the country file. The standings bear on the region's approval as one more
   effect, Factions: 0.3 of a point of approval for each point a faction stands above or below

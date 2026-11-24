@@ -28,10 +28,12 @@ export const factionsBalance = {
     /**
      * What each civil faction answers to. No budget settles all three at their best: farmers
      * and workers each judge their share of what the budget spends, and the two shares at
-     * their best come to more than the whole of it. Business answers to money instead: every
-     * dollar spent to please the others deepens the deficit, or raises the tax, that it
-     * resents. Which levers a faction answers to may change with these values; a save holds
-     * every lever's effect for every faction, so it does not turn on them.
+     * their best come to more than the whole of it. Business answers to money instead, and
+     * nothing sets it against the other two directly: money moved from one area to another
+     * leaves it where it was. It is set against them when their share is bought by spending
+     * more than is raised, or by taxing more. Which levers a faction answers to may change
+     * with these values; a save holds every lever's effect for every faction, so it does not
+     * turn on them.
      */
     levers: {
       farmers: {
