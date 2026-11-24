@@ -1,9 +1,9 @@
 import { armyLoyaltyStatus } from './army';
 import {
   borderIncidentStatuses,
+  borderIncidentTerms,
   couldAnnounce,
   incidentChance,
-  incidentCost,
   incidentHeadline,
   incidentWouldDo,
   type IncidentStatus,
@@ -193,12 +193,15 @@ export function incidentRisk(scope: Scope, budget: Budget): Risk[] {
     };
   });
 
-  // One announced as the quarter a quarters ahead ends begins once its notice has run, and
-  // counts while that is inside the horizon.
+  // An incident announced as the quarter `ahead` quarters from now ends begins once its notice
+  // has run, `ahead + 1 + notice` quarters from now. It is a risk here while that is among the
+  // quarters watched, the last of which is `watched - 1` from now: so the last quarter whose
+  // end can announce one that counts is the notice and one more before that.
   const now = quarterNumber(state.date);
+  const notice = borderIncidentTerms.noticeQuarters;
+  const lastWatched = watched - 1;
+  const last = lastWatched - (notice + 1);
   const possible = state.country.map.neighbours.flatMap((neighbour): Risk[] => {
-    const notice = incidentCost(state.country, neighbour.id).noticeQuarters;
-    const last = watched - 2 - notice;
     const hostileIn = (path: Path) => {
       const quarter = path
         .slice(0, Math.max(0, last + 1))
