@@ -95,6 +95,11 @@ code, tests, issues and docs, and avoid the synonyms listed against them.
 - **Intention**: what a neighbour intends: **peaceful**, **watchful** or **hostile**
   (`INTENTIONS` in `src/sim/vocabulary/neighbours.ts`), read from its ambition at the tier in
   force against deterrence. Not "stance", "attitude" or "threat level".
+- **Border incident**: what a hostile neighbour does when deterrence fails: for a set time
+  its border crossings carry nothing and the regions on its border produce less and approve
+  less. It is **announced** ahead, **begins** unless it is **called off** because the
+  neighbour is no longer hostile, and **ends**. Not "attack", "invasion", "war" or "raid":
+  there is no combat, no territory changes hands, and it never ends the game.
 - **Prosperity**: the national living standard, on one scale. Its **tiers** are Subsistence,
   Developing, Industrialising and Prosperous; holding Prosperous for four quarters wins the game.
 - **Dilemma**: a choice the game puts to the player, with two or three options that each state

@@ -107,6 +107,10 @@ it at Prosperous), and the neighbour turns watchful and then hostile as deterren
 short of it, so an ambition near what the starting Defence deters threatens early and a low
 one late or never. A neighbour that leaves it out has none and stays peaceful for good. A file
 of an earlier format cannot give one, and still loads as it is, with peaceful neighbours.
+A hostile neighbour may announce border incidents, which close the crossings that lead to it
+and cost the regions on its border output and approval. A file says nothing of where they
+fall: a region is on a neighbour's border when one of its edges faces the neighbour's `shape`,
+so draw a neighbour against every region it should be able to trouble.
 Tavara gives Voskar 60 and Selama 45; the test country gives its one neighbour 85, since its
 few people make its starting Defence deter far more per head:
 

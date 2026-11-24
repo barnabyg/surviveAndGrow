@@ -4,7 +4,9 @@ A turn-based economics and politics survival game that runs in the browser. You 
 developing country: raise its living standards, and stay in office long enough to see it done.
 The game is won on prosperity held, and lost at the vote, to famine, or to a coup by an army
 left to plot. Neighbours with ambitions watch a country that prospers, and Defence spending
-buys the deterrence that keeps them peaceful.
+buys the deterrence that keeps them peaceful. A neighbour left hostile brings border
+incidents, which close its crossings and cost the regions on its border output and approval;
+it never takes land, and never ends the game.
 
 The design is in [docs/design.md](docs/design.md), and the rules as built in
 [docs/rules.md](docs/rules.md).
@@ -49,7 +51,9 @@ A country is one data file; the engine contains no country-specific code. The fo
 try a country of your own with `?country=`, are in [docs/countries.md](docs/countries.md). A
 country can hide deposits of ore for surveys to find, lock a site until a technology is known,
 say what it starts by spending on Defence, which holds its army loyal or does not, and give
-each neighbour an ambition, which Defence must deter as the country prospers.
+each neighbour an ambition, which Defence must deter as the country prospers. Where a
+neighbour's border incidents fall is worked out from the map: the crossings that lead to it and
+the regions that face it.
 
 ## Check it
 

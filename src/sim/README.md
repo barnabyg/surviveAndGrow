@@ -9,11 +9,17 @@ the rules. This page says where things live, so a change finds every file it nee
 `createGame` in `newGame.ts` starts a game. `advanceQuarter` in `game.ts` first checks the decisions
 (`checkDecisions` in `decisions.ts`), then draws everything chance decides, in this fixed order and
 nowhere else: the weather (`rollWeather` in `events.ts`), the world prices (`trade.ts`), the world
-price shocks announced (`priceShocks.ts`), the events that strike and the campaign swing in an
-election quarter. The world prices, the shocks and the dilemma rolls come from the seed and the
-quarter alone, and leave the generator untouched. Shocks are national, not regional, so they are not
+price shocks announced (`priceShocks.ts`), the events that strike, the campaign swing in an
+election quarter, the roll for each neighbour's border incident (`rollIncidents` in
+`borderIncidents.ts`) and the dilemma rolls. The world prices, the shocks, the incident rolls and
+the dilemma rolls come from the seed and the quarter alone, and leave the generator untouched, so
+where they stand in that order changes nothing: only the weather, the events and the swing draw
+from the generator, in that order. Shocks are national, not regional, so they are not
 among the events each region rolls for: a kind added at the end of `PRICE_SHOCK_TYPES` has its own
-draw and leaves the others as they were. Each good's price has its own draw, in the order of
+draw and leaves the others as they were. Each neighbour has a roll of its own, keyed by its place
+in the country file, so a neighbour added at the end leaves the others' incidents as they were; a
+roll announces an incident only if the neighbour is hostile as the quarter ends, which
+`resolveQuarter` decides, so the roll is drawn whatever the neighbour intends. Each good's price has its own draw, in the order of
 `GOODS`, so a good added at the end leaves the others' prices as they were. `resolveQuarter` takes
 all of these as given (the `Chance` it is handed, and the `QuarterResolved` it returns, are declared
 in `state.ts`), so the risks look-ahead (`risks.ts`) runs it on supposed chance, among it a slump in
@@ -27,10 +33,13 @@ the world ore price. It lives the quarter through `liveQuarter`, which the previ
    payment missed on any of them brings a bailout: everything owed is consolidated into one bailout
    loan (`debt.ts`). Then the budget (`budget.ts`) with what is left; then project instalments,
    oldest first (`projects.ts`); then upkeep and decay (`upkeep.ts`). Revenue taxes what each mine's
-   chain earns at the world ore price as the quarter began (`chains.ts`). What is borrowed arrives
+   chain earns at the world ore price as the quarter began (`chains.ts`), and a region on the
+   border of a neighbour whose border incident is in force is taxed on less
+   (`outputHeldIn` in `borderIncidents.ts`), as a region in unrest is. What is borrowed arrives
    as the quarter ends (`debt.ts`), unless a bailout has stopped it, and last of all grain sold and
    bought abroad is paid for (`trade.ts`), within what the trade links carry once the mines' ore has
-   its share (`tradeLinks.ts`), as they stood when the quarter began; grain sold is set aside from
+   its share (`tradeLinks.ts`), as they stood when the quarter began, a crossing closed by a
+   border incident carrying nothing; grain sold is set aside from
    the reserve as it stands after the dilemma's answer. What each link carried, the ore and the
    grain really bought and sold, is kept for the map to show next quarter (`tradeRoutes.ts`).
 3. Food (`food.ts`), with the sites in use as the quarter began (`sites.ts`, `chains.ts`,
@@ -41,22 +50,30 @@ the world ore price. It lives the quarter through `liveQuarter`, which the previ
 5. Prosperity (`prosperity.ts`) and the tier it reaches (`tiers.ts`), which sets expectations. It
    and the debt burden the quarter leaves are judged at the world prices once they have moved.
 6. Approval (`approval.ts`), which decides who strikes next quarter. A bailout's blow lands here
-   (`bailout.ts`).
+   (`bailout.ts`), and so does that of a border incident in the quarter it begins, in the regions
+   on its border (`incidentPushes`).
 7. Army loyalty (`army.ts`), in each region, from what was spent on Defence and the unrest the
    quarter's approval leaves there.
 8. Deterrence (`deterrence.ts`), from what was spent on Defence, with each neighbour's intention
    read afresh in the tier the quarter leaves in force.
-9. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the debt
-   burden the quarter leaves and its deficit. What was borrowed this quarter was taken at the rating
-   in force as it began. A missed payment puts it at the lowest step.
-10. Austerity (`bailout.ts`): a bailout imposes it and brings the budget in force within it, a
+9. Border incidents (`turnIncidents` in `borderIncidents.ts`), on what each neighbour then
+   intends: one whose time is up ends, and one due to begin does so if its neighbour is still
+   hostile, and is otherwise called off. None of that is left to chance, so the preview lives it
+   too.
+10. The credit rating (`credit.ts`), reassessed from the payment record the repayments left, the
+    debt burden the quarter leaves and its deficit. The burden is judged on the next quarter's
+    revenue, with the border incidents then in force. What was borrowed this quarter was taken at
+    the rating in force as it began. A missed payment puts it at the lowest step.
+11. Austerity (`bailout.ts`): a bailout imposes it and brings the budget in force within it, a
     missed payment during it extends it, and otherwise a quarter of it is spent. What it allows is
     in `austerity.ts`, which `checkDecisions` and the menus of loans and projects consult.
 
 `resolveQuarter` moves the world prices on (`trade.ts`), pushed by any world price shock in force
 (`priceShocks.ts`), before it lives the quarter. Then it moves the calendar (`calendar.ts`,
 `terms.ts`), ends and begins events (`events.ts`), ends the shocks whose time is up and starts the
-notice of those announced (`priceShocks.ts`), sets decaying the sites in use where an event that
+notice of those announced (`priceShocks.ts`), starts the notice of the border incidents the rolls
+bring from neighbours the quarter leaves hostile (`announceIncidents`), sets decaying the sites in
+use where an event that
 damages them has begun (`upkeep.ts`), checks for collapse (`collapse.ts`) and then for a coup
 (`coup.ts`), holds the election (`election.ts`) unless the state has fallen to either, checks for
 victory (`victory.ts`), may put a new dilemma, records the vital signs (`history.ts`), and compiles
@@ -206,6 +223,35 @@ wanted (`intentionOf`, `intentionIn`) from the ambition, the tier in force
 its `neighbourId`, as one about a region carries its `regionId`. The country's border with a
 neighbour, edge by edge with the region each edge belongs to, is worked out from the map in
 `borders.ts` (`neighbourBorder`), which also places a crossing (`tradeRoutes.ts`).
+
+## Border incidents
+
+What a hostile neighbour does (`borderIncidents.ts`), modelled on a world price shock: a roll from
+the seed and the quarter alone (`rollIncidents`, in `Chance.incidentRolls`), a notice, a set time
+in force, and a report at each step. The state keeps the incidents announced and not yet ended
+(`borderIncidents`: the neighbour, when it was announced and when it begins), one at most for each
+neighbour, and nothing else: whether one is in force is read from the date, and everything it does
+from the map and balance data (`balance.neighbours.incident`). A save holds them from format 16.
+
+As a quarter ends, `turnIncidents` (in `liveQuarter`, so the preview shares it) ends those whose
+time is up and begins or calls off those due, on the neighbours hostile as the quarter leaves them
+(`lived.hostile`, from `resolveDeterrence`), and then `announceIncidents` (in `resolveQuarter`)
+starts the notice of those the rolls bring. The look-ahead supposes no roll announces one
+(`incidentRolls: []` in `risks.ts`), so the quarters it plays live through the incidents already
+announced and no others; one that could still be announced is a risk of its own.
+
+What one does is read where it bears, each from the game's date and `borderIncidents`
+(`IncidentWatch`): `tradeLinks` closes the neighbour's crossings (`crossingClosure`), which the
+trade check, the routes on the map and the trade panel all read; `collectTaxes` in `budget.ts`
+taxes each region on its border on less (`outputHeldIn`), after unrest, under a line of its own,
+so the turn, the preview, the quarters to the harvest and the debt burden (`Owing` in `debt.ts`)
+count it alike; and `incidentPushes` lands the blow to approval in the quarter it begins. The
+regions on a neighbour's border come from the map (`borderRegions` in `borders.ts`, kept for each
+country once worked out, since taxes ask it of every region). `incidentRisk` in `threatRisks.ts`
+lists an incident in force, one announced (weighed by whether the quarters played leave it
+standing as it would begin) and one a hostile neighbour could still announce in time, each with
+what it costs in tax (`incidentTaxCost`). `borderIncidentStatuses` gives the interface each
+incident as it stands, and `borderIncidentTerms` what any incident is, for its tip.
 
 ## Adding a mechanic
 

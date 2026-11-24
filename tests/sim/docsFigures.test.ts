@@ -175,6 +175,12 @@ const RULES: readonly string[] = [
   `It is hostile while deterrence is below ${markOf(neighbours.intentions.hostileBelowPermilleOfWeight)}, watchful while deterrence is below ${percent(neighbours.intentions.watchfulBelowPermilleOfWeight)} of that`,
   `a whole percentage from 0 to ${String(neighbours.mostAmbitionPercent)}. Tavara gives Voskar ${ambitionOf(tavaraOpening.country, 'voskar')}% and Selama ${ambitionOf(tavaraOpening.country, 'selama')}%`,
   `A game starts with deterrence where its starting Defence settles it: ${formatPercent(tavaraOpening.deterrence)} in Tavara, on ${formatMoney(tavaraArmy.spent)} a quarter`,
+  // Border incidents
+  `has a ${percent(neighbours.incident.chancePermillePerQuarter)} chance of announcing one`,
+  `An incident is announced ${words(neighbours.incident.noticeQuarters)} quarters before it begins`,
+  `It lasts ${words(neighbours.incident.lastsQuarters)} quarters`,
+  `each region that borders the neighbour produces ${cut(neighbours.incident.outputPermille)} less`,
+  `takes a blow of ${String(-neighbours.incident.approvalPermille / 10)} points to approval in the quarter it begins`,
   // Bailout and austerity
   `approval takes a ${String(-finance.bailout.approvalPermille / 10)}-point blow`,
   `Austerity then holds for ${String(finance.austerity.quarters)} quarters: the tax rate cannot go below ${String(finance.austerity.taxFloorPercent)}%`,

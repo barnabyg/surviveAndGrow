@@ -133,11 +133,18 @@ Prosperity, tiers and people.
   the country prospers. Each neighbour is peaceful, watchful or hostile by how deterrence
   stands against what its ambition weighs, shown on its border, reported when it changes and
   warned of ahead. There is no combat. Rules: rules.md, Neighbours and deterrence.
+- **Border incidents** (Phase 6): what a hostile neighbour does when deterrence fails. An
+  incident is abstract, and works only through money, time and approval: announced ahead, by
+  a draw from the seed and the quarter, it closes the neighbour's border crossings and cuts
+  the output and approval of the regions on its border for a set time, and is called off if
+  the neighbour is no longer hostile as it would begin. No territory changes hands and a
+  neighbour never ends the game, but what it costs a border region feeds the cascade to
+  unrest and a less loyal army. It is drawn on the border, reported at each step and listed in
+  the risks ahead before it begins. Rules: rules.md, Border incidents.
 
 ### Still to come
 
-- **Border incidents and factions** (Phase 6): what a hostile neighbour does when deterrence
-  fails, and approval broken down by faction.
+- **Factions** (Phase 6): approval broken down by faction.
 
 ## 5. The map
 

@@ -31,7 +31,8 @@ What each part of the screen shows and does, as built. The rules the game plays 
   passed, research, once its tab is first opened or research is planned, surveys, once the
   card of a region that may hide a deposit is first opened or a survey is planned, Defence
   and the army, once the army anywhere is less than loyal or the budget in force would leave it so,
-  and neighbours and deterrence, once a neighbour is anything but peaceful. When several are due, the first in that order shows. Got it dismisses one, and the
+  neighbours and deterrence, once a neighbour is anything but peaceful, and border incidents,
+  once one is announced. When several are due, the first in that order shows. Got it dismisses one, and the
   browser remembers it was seen in every game and country, or for the visit if it will not store
   it. The top bar's Tips button turns them off, and on again, which shows them all afresh. A tip
   waits while the tour or a lesson is open. A tip about a decision panel behind another tab is
@@ -91,6 +92,18 @@ What each part of the screen shows and does, as built. The rules the game plays 
   settles deterrence and would leave the neighbour, as a warning when that is worse than now.
   A report or a risk about a neighbour picks it out on the map, as one about a region picks out
   the region.
+- A border incident is drawn along its neighbour's border, under every lens, from its
+  announcement until it ends: barred diamonds just outside the border, hollow with a dashed
+  edge while it is announced and solid while it is in force, and a second tag beside the
+  neighbour's intention, "▲ Border incident in 2 quarters" or "▲ Border incident: 3 quarters
+  left". While it is in force each region on the border carries the tag "▲ Border incident ·
+  output −20%", and each closed crossing is drawn thinly dashed, with a cross over its bar
+  and the tag "✕ Closed this quarter and 2 more" in place of what it carried. The legend
+  explains the two diamonds and the closed crossing. The neighbour's card says what the
+  incident does, when, and what it costs in tax a quarter, and, while the neighbour is
+  hostile with none announced, that one may come; a border region's card says what is coming
+  to it or what it is costing and for how long; and the crossing's card says it is closed, by
+  what and for how long.
 - The budget panel's outlook has a Neighbours fold, in a country whose neighbours have
   ambitions: deterrence next quarter and where it is heading, and each neighbour's intention
   next quarter and where it is heading, each before and after the change on the sliders. The
@@ -103,7 +116,8 @@ What each part of the screen shows and does, as built. The rules the game plays 
   port its chain runs to, and grain bought and sold abroad over the border crossings first, then
   by sea; grain an order could not pay for, or a dilemma's answer left the reserve without, never
   crossed. A port that has just come into use has carried nothing yet. A decaying port's lane is
-  dashed. Select a route to open its card: the mines' ore and the grain it carried last quarter
+  dashed, and a crossing closed by a border incident thinly dashed with a cross over its
+  bar. Select a route to open its card: the mines' ore and the grain it carried last quarter
   and is to carry this quarter with the grain ordered so far, and how much of its capacity is
   free.
 - The side columns scroll on their own when they run long, and the map gives up height to the

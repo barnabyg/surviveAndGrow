@@ -54,7 +54,12 @@ drought or a flood does not starve a region first.
   hostile by how deterrence stands against what its ambition weighs: its name on the map
   carries the word and a mark, its card says what it would take to change it, the budget's
   outlook says what a change to Defence would do, and the risks ahead warn before one turns
-  hostile.
+  hostile. A hostile neighbour may announce a border incident, two quarters ahead: for three
+  quarters its crossings carry nothing, so less grain can be bought, and the regions on its
+  border produce less and approve less, which can tip them into strikes. It is called off if
+  the neighbour is no longer hostile as it would begin, so Defence raised at once can still
+  stop it; the risks ahead give the chance of one, and what it would cost, while a neighbour
+  is hostile.
 - **Buy grain when the harvest fails.** The trade panel in the right column orders grain for the
   national reserve at the world price, which moves every quarter. Money can stand in for a bad
   season, and austerity does not stop it.

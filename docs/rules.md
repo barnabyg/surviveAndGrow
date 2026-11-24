@@ -123,7 +123,8 @@ main figures from the balance values and fails if this file, [playing.md](playin
   otherwise peaceful. It is read afresh as each quarter ends, from the tier the quarter leaves
   in force and deterrence as it then stands; nothing but deterrence is kept. A neighbour whose
   ambition weighs nothing is peaceful whatever deterrence is.
-- A hostile neighbour is shown, reported and warned of, and does nothing more.
+- A hostile neighbour may announce a border incident (see Border incidents). It does nothing
+  else: no territory changes hands, and a neighbour never ends the game.
 - Each neighbour is drawn on the map under every lens: its name with a tag beneath or above
   it that gives what it intends as a mark and a word (a ring for peaceful, an eye for
   watchful, a spearhead for hostile), and its border with the country drawn by the same
@@ -148,6 +149,48 @@ main figures from the balance values and fails if this file, [playing.md](playin
 - A game starts with deterrence where its starting Defence settles it: 39.0% in Tavara, on
   $2.0m a quarter. A save from before deterrence is read as having what its Defence budget in
   force would settle; its country file gives no neighbour an ambition, so none ever stirs.
+
+## Border incidents
+
+- A border incident is what a hostile neighbour does when deterrence fails. It is abstract and
+  works only through money, time and approval: no territory changes hands, and a neighbour
+  never ends the game.
+- As each quarter ends, each neighbour that is hostile as the quarter leaves it, with no
+  incident of its own announced or in force, has a 20% chance of announcing one. Its draw
+  comes from the seed and the quarter alone, like a world price shock's, so it leaves the
+  weather and events a seed brings as they were, and a game with no hostile neighbour plays
+  exactly as it would without border incidents.
+- An incident is announced two quarters before it begins. It is judged again as it would
+  begin: if the neighbour is no longer hostile as the quarter before ends, read from the tier
+  and deterrence that quarter leaves, it is called off, and the report says so. Raising
+  Defence in time can therefore still stop one. Once begun it runs its course, whatever the
+  neighbour then intends.
+- It lasts three quarters. While it lasts:
+  - the neighbour's border crossings carry nothing, so the trade links carry that much less
+    and less grain can be bought or sold (see Trade). Ore is shipped by a port, never over a
+    crossing, so a mine earns as before;
+  - each region that borders the neighbour produces 20% less, as a region in unrest produces
+    less: it pays tax on what is left, after anything strikes or protests there have already
+    taken, and the treasury's breakdown gives the tax lost in each region under the incident's
+    name. The debt burden is judged on the revenue the quarter leaves, so it counts the loss;
+  - each of those regions takes a blow of 8 points to approval in the quarter it begins, under
+    the incident's name in approval's breakdown, which then fades like any passing event.
+- The regions that border a neighbour are worked out from the map: each region with an edge
+  that faces the neighbour's land. A country file says nothing of them. A region that borders
+  two neighbours can be under two incidents at once, each taking its share in turn.
+- Its loss of output and approval feeds the cascade already built: a border region pushed into
+  strikes or protests has a less loyal army (see Defence and army loyalty).
+- The map draws an incident along the neighbour's border from its announcement until it ends,
+  under every lens: barred diamonds, hollow while it is announced and solid while it is in
+  force, and a tag by the neighbour's name that says which and for how long. While it is in
+  force each region on the border is tagged with what it costs, and each closed crossing is
+  drawn thinly dashed with a cross over its bar and tagged closed. The neighbour's card, the
+  region's card and the crossing's card each say what it does and for how long.
+- The turn report says when one is announced, begins, is called off and ends, each picking the
+  neighbour out on the map. A first-time tip explains border incidents when one is first
+  announced.
+- The live preview and the quarters ahead count an incident announced: the closed crossing,
+  the lost output and the blow to approval.
 
 ## Prosperity, tiers and people
 
@@ -466,7 +509,10 @@ main figures from the balance values and fails if this file, [playing.md](playin
   Voskar carries 50,000 t and Selama bridge 40,000 t. A port in use adds what it ships for a
   chain: 900,000 t for a port and 360,000 t for a shallow port, half while it decays. The ore
   the mines' chains ship takes its share first, and grain bought and sold abroad together is
-  limited to what is left, so a mine that fills its port leaves grain the crossings alone. The
+  limited to what is left, so a mine that fills its port leaves grain the crossings alone. A
+  crossing to a neighbour whose border incident is in force is closed and carries nothing
+  while it lasts (see Border incidents): the trade panel and the crossing's card say it is
+  closed and for how long. The
   trade panel shows what the links carry, the ore's share, the grain ordered and what is free,
   and refuses an order beyond it. What the links carry is fixed as the quarter begins, so an
   order the panel accepts is never cut for want of room. A port's card says what it carries and
@@ -489,7 +535,7 @@ main figures from the balance values and fails if this file, [playing.md](playin
 - The left column lists the risks ahead: famine in a region, a flood that could begin, a world
   price shock announced or that could be, grain sold below the reserve's safe level, strikes, a treasury that runs out, a bailout from a missed
   payment on a loan, a bond's maturity the treasury cannot cover, a cut in the credit rating, a
-  neighbour turning hostile, a coup, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with
+  neighbour turning hostile, a border incident, a coup, and, in the term's last four quarters, losing the vote. The game plays the next four quarters with
   your committed decisions held as they are, once for each course the weather could take and each
   drought or flood that could still begin, and lists each danger with how likely it is, as a five-step meter and in words, and a line saying why, cut short until the risk is picked out (its whole text is in a tooltip). The four most likely are shown and the rest fold behind **Show more**. Hunger
   shows a quarter after the harvest that causes it, so famine alone is looked for one quarter
@@ -518,6 +564,18 @@ main figures from the balance values and fails if this file, [playing.md](playin
   course to pass a tier in which it weighs more than deterrence. Its line says which, when, and
   what is spent on Defence against where that settles deterrence. No neighbour turns hostile
   without having been listed the quarter before.
+- A border incident is listed in three ways, each picking its neighbour out on the map. While
+  a neighbour is hostile, or on course to be as a quarter ends, with no incident of its own
+  pending, the chance that it announces one in time to begin within the four quarters is
+  listed, however small, with what it would close, which regions would produce less and what
+  that would cost in tax a quarter. Once one is announced it is listed until it begins, as
+  almost certain while your decisions leave the neighbour hostile as it would begin, and as
+  remote, on course to be called off, once they do not. While it is in force it is listed
+  with the quarters it has left. The quarters ahead are played with every incident announced
+  beginning, being called off and ending as the rules have it, so the dangers one brings,
+  such as strikes in a border region, are weighed from the quarter it is announced. No
+  incident begins without having been listed in every quarter since its announcement, and
+  none is announced without its chance having been listed the quarter before.
 - The treasury runs out when it cannot cover the budget, and every area is cut, or when it
   cannot cover an instalment on a project, which pauses. The warning says which gives way first
   and when: the budget, or the oldest project left unpaid, named for what it is, whether
