@@ -29,6 +29,7 @@ const ARISES: readonly [TipCondition, player: string, seed: number, quarter: num
   ['army-loyalty', 'Does nothing', 2, 12],
   ['tier-passed', 'Sensible', 1, 7],
   ['neighbours', 'Sensible', 1, 7],
+  ['border-incident', 'Borrow and build at once', 1, 7],
   ['bailout', 'Reckless borrower', 5, 13],
   ['election-near', 'Sensible', 1, 16],
 ];
@@ -154,6 +155,21 @@ describe('the first-time tips', () => {
       'peaceful',
     ]);
     expect(tipsDue({ game: watched, risks: [], plannedSiteIds: [] })).toContain('neighbours');
+  });
+
+  it('wait for border incidents until a hostile neighbour announces one', () => {
+    // Borrowing and building at once carries seed 1 up the tiers on the Defence it started
+    // with: Voskar turns hostile, and announces an incident as the seventh quarter ends.
+    const before = playedBy('Borrow and build at once', 1, 6);
+    expect(before.borderIncidents).toEqual([]);
+    expect(tipsDue({ game: before, risks: [], plannedSiteIds: [] })).not.toContain(
+      'border-incident',
+    );
+    const announced = playedBy('Borrow and build at once', 1, 7);
+    expect(announced.borderIncidents.map((incident) => incident.neighbourId)).toEqual(['voskar']);
+    expect(tipsDue({ game: announced, risks: [], plannedSiteIds: [] })).toContain(
+      'border-incident',
+    );
   });
 
   it('wait for nothing in a game that has only just begun, risks ahead aside', () => {

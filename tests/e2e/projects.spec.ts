@@ -181,6 +181,9 @@ test('a road is built along its route, and the legend explains every state', asy
     'Peaceful neighbour',
     'Watchful neighbour: its border dashed',
     'Hostile neighbour: its border solid and toothed',
+    '▲ Border incident announced: a hostile neighbour, on its border',
+    '▲ Border incident in force: its crossings closed, its border regions produce less',
+    '✕ Border crossing closed by a border incident',
   ]);
 
   await endQuarters(page, 1);

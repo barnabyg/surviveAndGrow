@@ -102,6 +102,9 @@ test('a legend explains the marks for sites, routes, trade routes and neighbours
     'Peaceful neighbour',
     'Watchful neighbour: its border dashed',
     'Hostile neighbour: its border solid and toothed',
+    '▲ Border incident announced: a hostile neighbour, on its border',
+    '▲ Border incident in force: its crossings closed, its border regions produce less',
+    '✕ Border crossing closed by a border incident',
   ]);
 });
 

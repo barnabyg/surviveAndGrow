@@ -6,6 +6,7 @@ import {
   type GameState,
   type TradeOrder,
 } from '../sim';
+import { quartersLeftWords } from './IncidentMark';
 import { routeTitle } from './TradeRouteMark';
 import './map-card.css';
 
@@ -20,7 +21,8 @@ interface TradeRouteCardProps {
 /**
  * The card for the trade route picked out on the map: what it can carry across the border,
  * what it carried last quarter, and what it is to carry this quarter with the grain ordered
- * so far, the mines' ore and grain each, with what is left free.
+ * so far, the mines' ore and grain each, with what is left free. A crossing closed by a border
+ * incident says so, and for how long.
  */
 export function TradeRouteCard({ game, routeId, plannedTrade, onClose }: TradeRouteCardProps) {
   const route = tradeRoutes(game, plannedTrade).find((candidate) => candidate.id === routeId);
@@ -29,11 +31,14 @@ export function TradeRouteCard({ game, routeId, plannedTrade, onClose }: TradeRo
   const neighbour = game.country.map.neighbours.find(
     (candidate) => candidate.id === crossing?.neighbourId,
   );
-  // A technology that makes the lane carry more is named beside what it carries.
+  // A technology that makes the lane carry more is named beside what it carries. A closed
+  // crossing carries nothing: what it is said to carry is what it does once open again.
   const capacity =
-    route.improvedBy.length === 0
-      ? formatTonnes(route.capacity)
-      : `${formatTonnes(route.capacity)} (${formatTonnes(route.unimproved)} without ${listed(route.improvedBy.map(technologyName))})`;
+    route.closed !== null
+      ? formatTonnes(route.unimproved)
+      : route.improvedBy.length === 0
+        ? formatTonnes(route.capacity)
+        : `${formatTonnes(route.capacity)} (${formatTonnes(route.unimproved)} without ${listed(route.improvedBy.map(technologyName))})`;
   const kind = route.kind === 'crossing' ? 'Border crossing' : 'Shipping lane';
   const { carried, planned } = route;
   const rows: [label: string, last: number, now: number][] = [
@@ -62,6 +67,12 @@ export function TradeRouteCard({ game, routeId, plannedTrade, onClose }: TradeRo
       {route.state === 'missing' && (
         <p className="warning-note" role="status">
           ✕ Missing trade link: once {route.name} is in use, this lane carries {capacity} a quarter.
+        </p>
+      )}
+      {route.closed !== null && (
+        <p className="warning-note" role="status" aria-label="Closed">
+          ✕ Closed by the border incident with {route.closed.name}: it carries nothing{' '}
+          {quartersLeftWords(route.closed.quartersLeft)}. Grain ordered goes by the links left open.
         </p>
       )}
       {route.state === 'weak' && (

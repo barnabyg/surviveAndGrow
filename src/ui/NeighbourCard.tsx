@@ -1,8 +1,10 @@
 import {
+  borderIncidentStatuses,
   deterrenceStatus,
   formatMoney,
   formatPercent,
   formatSignedPoints,
+  incidentTaxCost,
   INTENTION_NAMES,
   INTENTIONS,
   TIER_NAMES,
@@ -28,15 +30,21 @@ interface NeighbourCardProps {
 
 /**
  * The card for the neighbour picked out on the map: what it intends, deterrence against what
- * it would take to change that, what its ambition weighs as the country prospers, what moved
- * it last quarter, and where the Defence budget is taking it.
+ * it would take to change that, any border incident announced or in force on its border with
+ * what it costs, what its ambition weighs as the country prospers, what moved it last quarter,
+ * and where the Defence budget is taking it.
  */
 export function NeighbourCard({ game, report, neighbourId, budget, onClose }: NeighbourCardProps) {
   const status = deterrenceStatus(game, budget);
   const standing = status.neighbours.find((candidate) => candidate.neighbourId === neighbourId);
   if (standing === undefined) return null;
   const { name, intention } = standing;
-  const told = report?.entries.find((entry) => entry.neighbourId === neighbourId);
+  const told = report?.entries.find(
+    (entry) => entry.kind === 'neighbour' && entry.neighbourId === neighbourId,
+  );
+  const incident = borderIncidentStatuses(game).find(
+    (candidate) => candidate.neighbourId === neighbourId,
+  );
   const moved = report?.deterrence ?? null;
   const worsening = INTENTIONS.indexOf(standing.settlesIntention) > INTENTIONS.indexOf(intention);
 
@@ -84,6 +92,21 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
         {intention === 'peaceful' ? '' : '▲ '}
         {whatItWouldTake(status, standing)}
       </p>
+      {incident !== undefined && (
+        <p className="warning-note" role="status" aria-label="Border incident">
+          ▲ {incident.headline}
+          {incident.inForce ? '' : ' ahead'}. {incident.description} It costs about{' '}
+          {formatMoney(incidentTaxCost(game, budget, neighbourId))} a quarter in tax.
+        </p>
+      )}
+      {incident === undefined && intention === 'hostile' && (
+        <p className="warning-note" role="status" aria-label="Border incident">
+          ▲ While {name} is hostile, each quarter may announce a border incident: its crossings
+          would carry nothing and the regions on its border would produce less, at about{' '}
+          {formatMoney(incidentTaxCost(game, budget, neighbourId))} a quarter in tax. The risks
+          ahead give the chance.
+        </p>
+      )}
       {standing.ambition > 0 && (
         <table className="breakdown__table" aria-label="What its ambition weighs">
           <caption className="map-card__term">

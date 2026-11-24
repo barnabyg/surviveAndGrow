@@ -1,6 +1,7 @@
 import {
   ARMY_STAGE_NAMES,
   armyLoyaltyStatus,
+  borderIncidentStatuses,
   buildingBarred,
   DECAYING_SHARE,
   describeEvent,
@@ -9,6 +10,7 @@ import {
   formatCount,
   formatMoney,
   formatPercent,
+  formatPoints,
   formatIndex,
   formatQuarters,
   formatTonnes,
@@ -33,7 +35,8 @@ import {
   type TurnReport,
   type WeatherHold,
 } from '../sim';
-import { formatSignedCount } from './format';
+import { formatDate, formatSignedCount } from './format';
+import { quartersLeftWords } from './IncidentMark';
 import './map-card.css';
 
 interface RegionCardProps {
@@ -68,6 +71,10 @@ export function RegionCard(props: RegionCardProps) {
   const relieved = reliefRegionId === regionId;
   const survey = surveyStatus(game, regionId, plan);
   const unrest = describeUnrest(state.unrest);
+  // The border incidents announced or in force on a border this region is on.
+  const incidents = borderIncidentStatuses(game).filter((incident) =>
+    incident.regionIds.includes(regionId),
+  );
   const standard = livingStandards(game).find((entry) => entry.regionId === regionId);
   const services = serviceLevels(game, budget).filter((entry) => entry.regionId === regionId);
   const army = armyLoyaltyStatus(game, budget).regions.find((entry) => entry.regionId === regionId);
@@ -157,6 +164,19 @@ export function RegionCard(props: RegionCardProps) {
         ))}
       <WeatherHoldParts hold={weatherHold(game, regionId)} />
       {unrest !== null && <p className="warning-note">▲ {unrest}</p>}
+      {incidents.map((incident) => (
+        <p
+          key={incident.neighbourId}
+          className="warning-note"
+          role="status"
+          aria-label={incident.headline}
+        >
+          ▲{' '}
+          {incident.inForce
+            ? `${incident.headline} · output −${incident.outputCutPercent}% ${quartersLeftWords(incident.quartersLeft)}. The treasury’s breakdown shows the tax it costs here.`
+            : `${incident.headline} from ${formatDate(incident.begins)}: output −${incident.outputCutPercent}% for ${formatQuarters(incident.lastsQuarters)}, and a blow of ${formatPoints(Math.abs(incident.approvalPermille))} to approval here as it begins. It is called off if ${incident.name} is no longer hostile by then.`}
+        </p>
+      ))}
       {army !== undefined && <ArmyNote army={army} />}
       {events.map((event) => (
         <p key={event.type} className="warning-note">

@@ -1,5 +1,6 @@
 import {
   armyLoyaltyStatus,
+  borderIncidentTerms,
   chainsThrough,
   coupAfterPlottingQuarters,
   deterrenceStatus,
@@ -31,7 +32,8 @@ export type TipCondition =
   | 'research'
   | 'survey'
   | 'army-loyalty'
-  | 'neighbours';
+  | 'neighbours'
+  | 'border-incident';
 
 /** A note shown once, the first time what it explains appears in a game. */
 export interface Tip {
@@ -137,6 +139,13 @@ export const TIPS: readonly Tip[] = [
     title: 'Neighbours and deterrence',
     text: 'A neighbour is no longer peaceful. Each neighbour has an ambition, which weighs more against the country the more it prospers: a state worth taking. Defence spending builds deterrence, one figure for the whole country, a part of the way each quarter, so it has to be bought ahead. A neighbour is peaceful, watchful or hostile by how deterrence stands against what its ambition weighs. Each neighbour’s name on the map carries a mark and a word for what it intends: pick it to see what it would take to change that. The budget’s outlook says what a change to Defence would do.',
   },
+  {
+    id: 'border-incident',
+    when: 'border-incident',
+    target: 'map',
+    title: 'Border incidents',
+    text: `A hostile neighbour has announced a border incident. It begins ${formatQuarters(borderIncidentTerms.noticeQuarters)} after it is announced and lasts ${formatQuarters(borderIncidentTerms.lastsQuarters)}. While it lasts the neighbour’s border crossings carry nothing, so less grain can be bought or sold, and each region on its border produces ${borderIncidentTerms.outputCutPercent}% less and takes a blow to approval as it begins. No land changes hands, and a neighbour never ends the game. It is called off if the neighbour is no longer hostile as it would begin, so raising Defence now can still stop it. The map marks it on the border with a barred diamond, hollow until it begins; the neighbour’s card and the risks ahead say what it costs.`,
+  },
 ];
 
 /**
@@ -209,5 +218,7 @@ export function tipsDue(view: TipView): ReadonlySet<TipCondition> {
     (neighbour) => neighbour.intention !== 'peaceful',
   );
   if (wary) due.add('neighbours');
+  // Border incidents are explained when one is first announced.
+  if (game.borderIncidents.length > 0) due.add('border-incident');
   return due;
 }

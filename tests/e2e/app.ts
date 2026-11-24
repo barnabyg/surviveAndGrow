@@ -79,6 +79,22 @@ export function tavaraPoisedBelowDeveloping(): CountryFile {
 }
 
 /**
+ * Tavara with no drought, every region producing ten times as much, which starts it in
+ * Developing, a country worth taking, and half the Defence it ships with: deterrence opens at
+ * 23.9%, under what either neighbour's ambition weighs there, so both are hostile from the
+ * first quarter, while the army is restless and does not plot.
+ */
+export function tavaraUnderDefended(): CountryFile {
+  const country = tavaraWith({ drought: [] }) as CountryFile & {
+    regions: { output: number }[];
+    start: { budget: { spending: Record<string, number> } };
+  };
+  for (const region of country.regions) region.output *= 10;
+  country.start.budget.spending.defence = 1;
+  return country;
+}
+
+/**
  * Tavara with no drought, a tenth of its people, $2.0m a quarter on each of health and
  * education, and a treasury of $200.0m: it starts in Prosperous, the tier the game is won
  * in, and stays there. A year's revenue at its budget is $124.0m.

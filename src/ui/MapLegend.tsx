@@ -1,9 +1,10 @@
 import { INTENTION_NAMES, INTENTIONS } from '../sim';
+import { IncidentMark } from './IncidentMark';
 import { IntentionMark } from './IntentionSign';
 import './MapLegend.css';
 
 /**
- * What the marks for sites, routes, trade routes and neighbours mean. Each state has its own
+ * What the marks for sites, routes, trade routes, neighbours and border incidents mean. Each state has its own
  * shape or line, so the legend can be read without telling the colours apart.
  */
 export function MapLegend() {
@@ -155,6 +156,23 @@ export function MapLegend() {
           {INTENTION_NAMES[intention]} {LEGEND_OF_INTENTION[intention]}
         </li>
       ))}
+      {[false, true].map((inForce) => (
+        <li key={inForce ? 'in force' : 'announced'}>
+          <svg width="18" height="18" viewBox="-9 -9 18 18" aria-hidden="true">
+            <IncidentMark inForce={inForce} ink="currentColor" ground="var(--panel)" />
+          </svg>
+          {inForce
+            ? '▲ Border incident in force: its crossings closed, its border regions produce less'
+            : '▲ Border incident announced: a hostile neighbour, on its border'}
+        </li>
+      ))}
+      <li>
+        <svg width="26" height="16" viewBox="0 0 26 16" aria-hidden="true">
+          <path d="M1,8 H25" stroke="currentColor" strokeWidth="4" strokeDasharray="3 5" />
+          <path d="M8,3 L18,13 M18,3 L8,13" stroke="currentColor" strokeWidth="2" />
+        </svg>
+        ✕ Border crossing closed by a border incident
+      </li>
     </ul>
   );
 }
