@@ -260,6 +260,11 @@ const ICONS: Readonly<Record<ReportKind, { readonly label: string; readonly path
     label: 'Collapse report',
     path: 'M3,17 H17 M6,17 V11 L8,9 L6,7 V4 M14,17 V12 L12,10 L14,8 V4 M4,4 H9 M11,4 H16',
   },
+  // A soldier's shield, struck through.
+  coup: {
+    label: 'Coup report',
+    path: 'M10,2 L17,5 V10 Q17,15 10,18 Q3,15 3,10 V5 Z M3,17 L17,3',
+  },
   // A star.
   victory: {
     label: 'Victory report',

@@ -5,6 +5,7 @@ import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   armyLoyaltyStatus,
+  coupStatus,
   createGame,
   loadCountry,
   pendingDilemma,
@@ -25,10 +26,10 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
   expect(existsSync(file), `${file} is already kept and must never be written again`).toBe(false);
 
   // Tavara as it ships, with chance pinned: no drought and the teachers asking for a rise now
-  // and then. Format 13 added Defence, a spending area, and the army's loyalty in each region.
+  // and then. Format 14 added the coup, and the count of quarters the army has plotted running.
   // The game, on seed 2026, cuts Defence to nothing from its first quarter and keeps the rest
-  // of the budget it starts with. It is saved as Year 1 · Quarter 3 begins: national army
-  // loyalty down from 58.4% to 44.5%, the army restless, and the last report saying so.
+  // of the budget it starts with. It is saved as Year 2 · Quarter 4 begins: the army has
+  // plotted for two quarters running, two more bring a coup, and the last report says so.
   const country = loadCountry({
     ...tavaraFile,
     regions: tavaraFile.regions.map((region) => ({ ...region, eventLikelihood: { drought: 0 } })),
@@ -38,7 +39,7 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     ...country.start.budget,
     spending: { ...country.start.budget.spending, defence: 0 },
   };
-  const quarters: Partial<Decisions>[] = [{ budget: undefended }, { budget: undefended }];
+  const quarters: Partial<Decisions>[] = Array.from({ length: 7 }, () => ({ budget: undefended }));
   let game = createGame(country, 2026);
   let report: TurnReport | null = null;
   for (const decisions of quarters) {
@@ -50,11 +51,14 @@ it(`writes the kept save for save format ${SAVE_FORMAT_VERSION}`, () => {
     if (game.outcome.status !== 'playing')
       throw new Error(`The game ended: ${game.outcome.headline}`);
   }
-  expect(game.date).toEqual({ year: 1, quarter: 3 });
+  expect(game.date).toEqual({ year: 2, quarter: 4 });
   expect(game.budget.spending.defence).toBe(0);
-  expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([584, 507, 445]);
-  expect(armyLoyaltyStatus(game).stage).toBe('restless');
-  expect(report?.entries.map((entry) => entry.headline)).toContain('The army is restless');
+  expect(armyLoyaltyStatus(game).stage).toBe('plotting');
+  expect(game.plottingQuarters).toBe(2);
+  expect(coupStatus(game)).toMatchObject({ plotting: true, held: 2, needed: 4, left: 2 });
+  expect(report?.entries.map((entry) => entry.headline)).toContain(
+    'The army plots: 2 quarters to a coup',
+  );
 
   writeFileSync(file, `${JSON.stringify(saveGame(game, report), null, 2)}\n`);
 });

@@ -58,6 +58,7 @@ export function createGame(country: Country, seed: number): GameState {
     tier,
     startingTier: tier,
     prosperousQuarters: 0,
+    plottingQuarters: 0,
     austerity: null,
     outcome: { status: 'playing' },
   };

@@ -18,6 +18,7 @@ export const ENDINGS: readonly GameResult['ending'][] = [
   'inOffice',
   'lostElection',
   'famine',
+  'coup',
 ];
 
 /** The scripted player of a name, the one-lever players among them. */

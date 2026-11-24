@@ -101,13 +101,18 @@ function fingerprint(
  * army and Defence left out of the fingerprint and of the bailout's list of capped areas, every
  * game hashed as before. As pinned, each game spends on Defence what its country starts by
  * spending, which leaves it less to build with: the summaries below show what that cost it.
+ * They were pinned once more when the game gained the coup: the state gained the count of
+ * quarters the army has plotted, and the report what it says of the count. With both left out
+ * of the fingerprint, every game hashed as before. The army plots twice in Tavara's bailed-out
+ * game, in the quarters after it spends nothing on Defence, and recovers each time before the
+ * count is up; in the other three it never plots.
  */
 const outcomes = [
   {
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'builds',
-    hash: 'bc84eb5fe57e06682f7b49e164420ea43c9d13c96a3857813679673e3c0d35f9',
+    hash: '4bb40bff4fa0cd1411a1d5ed1df3468926584f01cabb0bb89c5146f9e49077ba',
     summary: {
       date: { year: 6, quarter: 1 },
       treasury: 4,
@@ -136,7 +141,7 @@ const outcomes = [
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'bailedOut',
-    hash: '428f74ae9b4b5186b19bf27223e250ebe1b67056596e41af97aab8a63e293460',
+    hash: 'e367b4254e36dc749da633896406140c407d5b42444036402ff9a1624b16eccd',
     summary: {
       date: { year: 6, quarter: 1 },
       treasury: 6,
@@ -158,7 +163,7 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'builds',
-    hash: '04ca76003d19531150b410bbbc0918ea0c2b0b0f06c1717a549ceeac4b1506c0',
+    hash: '1d0accb53a3e75462029763bf3b56885d63600f9d37a93e295978cca02a9ba88',
     summary: {
       date: { year: 7, quarter: 1 },
       treasury: 2,
@@ -180,7 +185,7 @@ const outcomes = [
     name: 'Testland',
     country: testlandAsShipped,
     script: 'bailedOut',
-    hash: 'bce6451d0e24b4daddf6ba31f525753973efcad9d2579200bbb8f292a5e18bfe',
+    hash: 'b1882cd1c48bec26d2cf5ba2380581191f562978dea588846329dae672a82ad4',
     summary: {
       date: { year: 7, quarter: 1 },
       treasury: 4,

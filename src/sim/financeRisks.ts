@@ -48,7 +48,7 @@ export function bondsAhead(state: GameState, courses: Scope['courses']): BondAhe
  * quarters ahead as they are supposed otherwise do not bring it: what a mine's chain earns
  * falls with the price, and the tax it pays with it.
  */
-function oreSlumpRisk(
+export function oreSlumpRisk(
   scope: Scope,
   shows: (path: Path) => number | null,
   risk: (quarter: number, slump: string) => Pick<Risk, 'kind' | 'headline' | 'reason'>,

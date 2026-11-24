@@ -30,6 +30,7 @@ import {
 } from './priceShocks';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
+import { coupRisk } from './threatRisks';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
 import { belowSafeAfterExport, FULL_SWING_PERMILLE } from './trade';
 import { UPKEEP_ORDER_RULE } from './upkeep';
@@ -65,11 +66,11 @@ export const riskHorizonQuarters = balance.risks.horizonQuarters;
 /**
  * The dangers of the coming quarters: famine in a region, grain sold below the reserve's safe
  * level, strikes, a treasury that runs out, a missed payment on a debt that brings a bailout, a
- * bond's maturity that cannot be met, and a lost election. It plays the quarters ahead with the
- * real rules, holding the decisions as they are, once for each course the weather could take and
- * each event that could still begin, and weighs how many of those lead to each danger. The most
- * likely comes first, and a danger too unlikely to matter is left out, unless it would end the
- * game. It changes nothing and draws nothing from the random generator.
+ * bond's maturity that cannot be met, a coup, and a lost election. It plays the quarters ahead
+ * with the real rules, holding the decisions as they are, once for each course the weather could
+ * take and each event that could still begin, and weighs how many of those lead to each danger.
+ * The most likely comes first, and a danger too unlikely to matter is left out, unless it would
+ * end the game. It changes nothing and draws nothing from the random generator.
  * @throws RangeError when a decision is outside what the game allows.
  * @throws Error when the game is already over.
  */
@@ -114,6 +115,7 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
     ...upkeepRisk(whole),
     ...strikeRisk(whole),
     ...tierRisk(whole),
+    ...coupRisk(whole, decisions.budget),
     ...electionRisk(whole),
   ];
   const rank = (risk: Risk) => LIKELIHOODS.indexOf(risk.likelihood);

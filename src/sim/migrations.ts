@@ -22,7 +22,7 @@ import { TIERS, type LastingService, type Tier } from './vocabulary';
  * a later release must still load a save written in any earlier version. Changing what a
  * save holds means raising this number and adding a migration below, never editing in place.
  */
-export const SAVE_FORMAT_VERSION = 13;
+export const SAVE_FORMAT_VERSION = 14;
 
 /** Lifts a save written in one format version to the version after it. */
 export type SaveMigration = (older: Json) => Json;
@@ -44,6 +44,7 @@ export const MIGRATIONS: Readonly<Record<number, SaveMigration>> = {
   10: fromFormat10,
   11: fromFormat11,
   12: fromFormat12,
+  13: fromFormat13,
 };
 
 /**
@@ -323,6 +324,17 @@ function fromFormat12(older: Json): Json {
     },
     report: isRecord(older.report) ? { ...older.report, armyLoyalty: null } : older.report,
   };
+}
+
+/**
+ * Format 14 added the coup, and with it the count of quarters the army has plotted running. A
+ * game written in format 13 counted nothing, whatever its army was doing, so its count starts
+ * at nothing: an army already plotting gets the whole count from the quarter the save is
+ * opened in, and the player the whole warning.
+ */
+function fromFormat13(older: Json): Json {
+  const state = isRecord(older.state) ? older.state : {};
+  return { ...older, formatVersion: 14, state: { ...state, plottingQuarters: 0 } };
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   armyLoyaltyStatus,
   austerityStatus,
   capacityOfTonnes,
+  coupStatus,
   debtStatus,
   electionStatus,
   knownTechnologies,
@@ -33,6 +34,7 @@ import format9Save from '../saves/format-9.json';
 import format10Save from '../saves/format-10.json';
 import format11Save from '../saves/format-11.json';
 import format12Save from '../saves/format-12.json';
+import format13Save from '../saves/format-13.json';
 import { withValue } from './files';
 import { answering, inFirstTerm, steward } from './playing';
 import { budgetFrom, budgetOf } from '../budgets';
@@ -682,6 +684,58 @@ describe('the save kept from save format 12', () => {
     const next = advanceQuarter(game, answering(game, steward(game)));
     expect(next.state.history.at(-1)?.armyLoyalty).toBe(ahead);
     expect(next.report.armyLoyalty?.value).toBe(ahead);
+  });
+});
+
+describe('the save kept from save format 13', () => {
+  it('still opens on the game it was written from, Defence cut and the army restless', () => {
+    const { game, report } = loadSave(format13Save);
+
+    expect(game.date).toEqual({ year: 1, quarter: 3 });
+    expect(game.budget.spending.defence).toBe(0);
+    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([584, 507, 445]);
+    const army = armyLoyaltyStatus(game);
+    expect(army).toMatchObject({ loyalty: 445, stage: 'restless', settlesStage: 'plotting' });
+    expect(army.regions.map((region) => region.stage)).toEqual(game.regions.map(() => 'restless'));
+    expect(report?.armyLoyalty).toEqual({
+      value: 445,
+      change: -62,
+      contributions: [
+        { label: 'Defence spending', amount: -62 },
+        { label: 'Unrest', amount: 0 },
+      ],
+    });
+    expect(report?.entries.map((entry) => entry.headline)).toContain('The army is restless');
+  });
+
+  it('plays on: loyalty falls further left undefended, and recovers with Defence restored', () => {
+    const { game } = loadSave(format13Save);
+
+    const left = advanceQuarter(game, answering(game, steward(game)));
+    expect(armyLoyaltyStatus(left.state).loyalty).toBeLessThan(445);
+
+    const restored = budgetFrom(game.budget, {
+      spending: { defence: game.country.start.budget.spending.defence },
+    });
+    const kept = advanceQuarter(game, answering(game, steward(game, restored)));
+    expect(armyLoyaltyStatus(kept.state)).toMatchObject({ loyalty: 473, stage: 'loyal' });
+    expect(kept.report.entries.map((entry) => entry.headline)).toContain('The army is loyal again');
+  });
+
+  it('is lifted to format 14 with nothing counted towards a coup, however its army stands', () => {
+    const { game } = loadSave(format13Save);
+
+    expect(game.plottingQuarters).toBe(0);
+    expect(coupStatus(game)).toMatchObject({ plotting: false, held: 0, left: 4 });
+    // Left undefended, the army plots in time, and the whole count runs from there.
+    const counts: number[] = [];
+    let state = game;
+    while (state.outcome.status === 'playing' && counts.length < 12) {
+      state = advanceQuarter(state, answering(state, steward(state))).state;
+      counts.push(state.plottingQuarters);
+    }
+    expect(state.outcome).toMatchObject({ status: 'lost', cause: 'coup' });
+    expect(counts.filter((count) => count > 0)).toEqual([1, 2, 3, 4]);
   });
 });
 

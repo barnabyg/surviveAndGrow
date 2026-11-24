@@ -40,7 +40,7 @@ export const DEFAULT_TERMS = 4;
  */
 export interface GameResult {
   readonly seed: number;
-  readonly ending: 'won' | 'inOffice' | 'lostElection' | 'famine';
+  readonly ending: 'won' | 'inOffice' | 'lostElection' | 'famine' | 'coup';
   /** The region whose famine brought the state down, or null when it did not. */
   readonly regionId: string | null;
   /** How many quarters were played. */
@@ -246,6 +246,8 @@ export function playGame(
   switch (outcome.cause) {
     case 'famine':
       return { ...figures, ...ended, ending: 'famine', regionId: outcome.regionId };
+    case 'coup':
+      return { ...figures, ...ended, ending: 'coup' };
     case 'election':
       return { ...figures, ...ended, ending: 'lostElection' };
     case 'prosperity':
@@ -270,6 +272,10 @@ export interface Summary {
   readonly lostElectionByTerm: readonly { readonly term: number; readonly games: number }[];
   /** The games lost to famine, by the region that collapsed, the most frequent first. */
   readonly famine: readonly { readonly regionId: string; readonly games: number }[];
+  /** The games lost to a coup. */
+  readonly coup: number;
+  /** The quarter in which the games lost to a coup ended, or null when none was. */
+  readonly coupQuarter: Spread | null;
   /** The share of games won on prosperity, in thousandths. */
   readonly winPermille: number;
   /** How many terms the government served. */
@@ -368,6 +374,10 @@ export function summarise(results: readonly GameResult[]): Summary {
     famine: [...byRegion]
       .map(([regionId, games]) => ({ regionId, games }))
       .sort((a, b) => b.games - a.games || a.regionId.localeCompare(b.regionId)),
+    coup: count('coup'),
+    coupQuarter: spreadOf(
+      results.flatMap((result) => (result.ending === 'coup' ? result.quarters : [])),
+    ),
     winPermille: results.length === 0 ? 0 : Math.round((count('won') * 1000) / results.length),
     terms: spreadOf(results.map((result) => result.terms)) ?? zero,
     winQuarter: spreadOf(results.flatMap((result) => result.winQuarter ?? [])),

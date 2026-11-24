@@ -82,7 +82,8 @@ interface Ending {
 /**
  * Whether the game is still being played, and if not, how it ended. The game runs over as
  * many terms as the government keeps winning. It is won by holding prosperity in the top
- * tier for long enough (see `victory.ts`), and lost by losing an election or by famine.
+ * tier for long enough (see `victory.ts`), and lost by losing an election, by famine or to a
+ * coup (see `coup.ts`).
  */
 export type Outcome =
   | { readonly status: 'playing' }
@@ -91,6 +92,14 @@ export type Outcome =
       readonly cause: 'famine';
       /** The region where the famine took hold. */
       readonly regionId: string;
+    })
+  | (Ending & {
+      readonly status: 'lost';
+      readonly cause: 'coup';
+      /** National army loyalty as the army took power, in thousandths. */
+      readonly loyalty: number;
+      /** How many quarters running the army had plotted. */
+      readonly quarters: number;
     })
   | (Ending & {
       readonly status: 'lost';
@@ -172,6 +181,12 @@ export interface GameState {
    * `balance.victory.quartersToHold`.
    */
   readonly prosperousQuarters: number;
+  /**
+   * How many quarters running national army loyalty has ended at plotting. It goes back to
+   * nothing in any quarter that ends above it, and the game is lost to a coup when it reaches
+   * `balance.army.coup.afterPlottingQuarters`.
+   */
+  readonly plottingQuarters: number;
   /**
    * The austerity a bailout imposed, while it holds, or null. Neither a bailout nor a missed
    * payment during austerity ends the game.

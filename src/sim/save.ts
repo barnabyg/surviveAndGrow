@@ -146,6 +146,7 @@ export function saveGame(game: GameState, report: TurnReport | null): SavedGame 
       tier: game.tier,
       startingTier: game.startingTier,
       prosperousQuarters: game.prosperousQuarters,
+      plottingQuarters: game.plottingQuarters,
       austerity: game.austerity,
       outcome: game.outcome,
     },
@@ -238,6 +239,7 @@ export function loadSave(
     tier: oneOf(state.tier, 'state.tier', TIERS, 'a tier of prosperity'),
     startingTier: oneOf(state.startingTier, 'state.startingTier', TIERS, 'a tier of prosperity'),
     prosperousQuarters: whole(state.prosperousQuarters, 'state.prosperousQuarters', 0),
+    plottingQuarters: whole(state.plottingQuarters, 'state.plottingQuarters', 0),
     austerity:
       state.austerity === null
         ? null
@@ -641,6 +643,15 @@ function readOutcome(
     return { ...ending, status, cause };
   }
   if (status !== 'lost') fail(`${path}.status`, `cannot be a win when the cause is ${cause}`);
+  if (cause === 'coup') {
+    return {
+      ...ending,
+      status,
+      cause,
+      loyalty: whole(saved.loyalty, `${path}.loyalty`, 0, 1000),
+      quarters: whole(saved.quarters, `${path}.quarters`, 0),
+    };
+  }
   if (cause === 'election') {
     return {
       ...ending,

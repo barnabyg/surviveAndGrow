@@ -29,5 +29,12 @@ export const armyBalance = {
        */
       stages: { restlessBelowPermille: 450, plottingBelowPermille: 300 },
     },
+    coup: {
+      /**
+       * The army takes power when national army loyalty has ended this many quarters running
+       * at plotting. A quarter that ends above it starts the count afresh.
+       */
+      afterPlottingQuarters: 4,
+    },
   },
 } as const;

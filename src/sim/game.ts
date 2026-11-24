@@ -6,6 +6,7 @@ import { balance } from './balance';
 import { nextDate } from './calendar';
 import { budgetEntry, cutEntry } from './budget';
 import { collapseEntry, collapseOf } from './collapse';
+import { countEntries, coupEntry, coupOf, plottingAfter } from './coup';
 import { debtBurden, debtOf } from './debt';
 import { deficitOf, reassessCredit, recordAfter } from './credit';
 import { checkDecisions } from './decisions';
@@ -116,17 +117,22 @@ export function resolveQuarter(
     siteDamageOf(state.country, begun),
   );
   const collapse = collapseOf(state.country, regions);
+  // The army takes power once it has plotted for long enough. It is checked with collapse,
+  // before the vote and the win, so a quarter that would have won either still falls to it.
+  const plottingQuarters = plottingAfter(state.plottingQuarters, army.loyalty.value);
+  const coup = collapse === null ? coupOf(plottingQuarters, army.loyalty.value) : null;
+  const fallen = collapse ?? coup;
   // The vote is held as each term's last quarter ends, unless the state has already fallen.
   const election =
-    collapse === null && isElectionQuarter(state.date)
+    fallen === null && isElectionQuarter(state.date)
       ? holdElection(regions, chance.swing, state.date)
       : null;
   // The game is won on prosperity held long enough, by a government still in office.
   const defeat = election?.defeat ?? null;
   const prosperousQuarters = heldAfter(state.prosperousQuarters, tier);
   const victory =
-    collapse === null && defeat === null ? victoryOf(prosperousQuarters, lived.debtBurden) : null;
-  const outcome: Outcome = collapse ?? defeat ?? victory?.outcome ?? { status: 'playing' };
+    fallen === null && defeat === null ? victoryOf(prosperousQuarters, lived.debtBurden) : null;
+  const outcome: Outcome = fallen ?? defeat ?? victory?.outcome ?? { status: 'playing' };
 
   const events = [...remaining, ...begun];
   // World price shocks whose time is up end, and those announced begin their notice.
@@ -153,6 +159,7 @@ export function resolveQuarter(
   // Within one seriousness the report keeps this order, so what ends the game leads it.
   const entries: ReportEntry[] = [
     ...(collapse === null ? [] : [collapseEntry(collapse)]),
+    ...(coup === null ? [] : [coupEntry(coup)]),
     ...(victory === null ? [] : [victory.entry]),
     ...(election === null ? [] : [election.entry]),
     ...answer.entries,
@@ -163,6 +170,7 @@ export function resolveQuarter(
     ...food.entries,
     ...approval.entries,
     ...army.entries,
+    ...countEntries(state.plottingQuarters, plottingQuarters, army.loyalty.value),
     ...building.entries,
     ...upkept.entries,
     ...taken.entries,
@@ -219,6 +227,7 @@ export function resolveQuarter(
       dilemmasAnswered,
       tier,
       prosperousQuarters,
+      plottingQuarters,
       austerity: bailout.austerity,
       outcome,
     },

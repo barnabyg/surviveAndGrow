@@ -14,6 +14,7 @@ import {
 } from '../../src/sim';
 import { DEFAULT_TERMS, playGame, summarise, type GameResult } from '../balance/batch';
 import { SCRIPTED_PLAYERS, withinRules } from '../balance/players';
+import { writeUp } from '../balance/report';
 import { tavaraAsShipped, testlandAsShipped } from './countries';
 import {
   PLAY_THROUGH_PLAYERS,
@@ -366,5 +367,27 @@ describe('a batch of games', () => {
       flood: 1,
     });
     expect(summary.shocks.failedHarvestsAbroad).toEqual({ min: 0, median: 1, max: 2 });
+  });
+
+  it('counts the games the army ended, and when, and writes them up', () => {
+    const results = [
+      gameResult(1, { ending: 'coup', quarters: 15, terms: 1, voteShare: null }),
+      gameResult(2, { ending: 'coup', quarters: 16, terms: 1, voteShare: null }),
+      gameResult(3, { ending: 'coup', quarters: 18, terms: 1, voteShare: null }),
+      gameResult(4),
+    ];
+    const summary = summarise(results);
+    expect(summary.coup).toBe(3);
+    expect(summary.coupQuarter).toEqual({ min: 15, median: 16, max: 18 });
+    expect(summarise([gameResult(3)])).toMatchObject({ coup: 0, coupQuarter: null });
+
+    const report = writeUp(tavaraAsShipped(), '1-4', 4, [{ player: 'Starver', summary }]);
+    expect(report).toContain('| Lost the vote | Lost to famine | Lost to a coup |');
+    expect(report).toContain('| Starver | 4 | 0.0% | 25.0% | 0.0% | 0.0% | 75.0% |');
+    expect(report).toContain('the army took power in 3 (in quarter 15 / 16 / 18).');
+    const none = writeUp(tavaraAsShipped(), '3', 4, [
+      { player: 'Idle', summary: summarise([gameResult(3)]) },
+    ]);
+    expect(none).toContain('the army took power in no game.');
   });
 });

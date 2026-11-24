@@ -36,6 +36,7 @@ export const REPORT_KINDS = [
   'tier',
   'election',
   'collapse',
+  'coup',
   'victory',
   'quiet',
 ] as const;

@@ -173,7 +173,8 @@ describe.each(bothCountries)('army loyalty in %s', (name, country) => {
     expect(armyLoyaltyStatus(start, cut).settles).toBe(preview.armyLoyaltyHeading.max);
 
     // Nothing else changes in this country, so each quarter closes on where the preview said
-    // it was heading, a share of the way at a time, and by the end of the term is all but there.
+    // it was heading, a share of the way at a time, until the army, left with nothing, takes
+    // power: by then it has closed most of the way.
     const heading = preview.armyLoyaltyHeading.max;
     const { states } = play(start, 19, () => cut);
     const gaps = states.map((state) => armyLoyaltyStatus(state).loyalty - heading);
@@ -181,7 +182,8 @@ describe.each(bothCountries)('army loyalty in %s', (name, country) => {
       expect(gaps[index]).toBeGreaterThanOrEqual(0);
       expect(gaps[index]).toBeLessThan(gaps[index - 1] ?? 0);
     }
-    expect(gaps.at(-1)).toBeLessThan(20);
+    expect(states.at(-1)?.outcome).toMatchObject({ cause: 'coup' });
+    expect(gaps.at(-1)).toBeLessThan((gaps[0] ?? 0) / 4);
     // Every later preview on the same budget says the same of where it is heading.
     for (const state of states.slice(0, -1)) {
       expect(previewQuarter(state, { budget: cut }).armyLoyaltyHeading.max).toBe(heading);

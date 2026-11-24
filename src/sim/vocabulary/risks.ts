@@ -13,6 +13,7 @@ export const RISK_KINDS = [
   'upkeep',
   'strikes',
   'tier',
+  'coup',
   'election',
 ] as const;
 export type RiskKind = (typeof RISK_KINDS)[number];

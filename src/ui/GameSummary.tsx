@@ -40,6 +40,8 @@ const FIGURES: readonly GameFigure[] = [
     format: (months) => `${months.toFixed(1)} months`,
   },
   { label: 'Approval', valueOf: (record) => record.approval, format: formatPercent },
+  // Quarters recorded before the army was kept are left out.
+  { label: 'Army loyalty', valueOf: (record) => record.armyLoyalty, format: formatPercent },
   // Quarters recorded before prosperity was measured are left out.
   {
     label: 'Prosperity',
@@ -53,6 +55,7 @@ const TERM_ENDINGS: Readonly<Record<TermRecord['ending'], string>> = {
   reelected: 'Re-elected',
   defeated: '▲ Lost the election',
   collapsed: '▲ The state collapsed',
+  overthrown: '▲ The army took power',
   won: '★ Won on prosperity',
   inOffice: 'In office',
 };
@@ -66,7 +69,8 @@ function tenure(terms: readonly TermRecord[]): string {
 
 /**
  * The end of the game, whichever way it ended: the outcome and its cause, the terms served,
- * and the main figures over the whole game, debt and prosperity among them, term by term. From here
+ * and the main figures over the whole game, debt, army loyalty and prosperity among them, term by
+ * term. From here
  * the player replays the same game or starts another.
  */
 export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {
@@ -104,6 +108,8 @@ export function GameSummary({ game, onReplay, onNewGame }: GameSummaryProps) {
           {tenure(terms)}
           {outcome.cause === 'famine' &&
             ' The warnings were in the quarterly reports and on the map: food relief sent in time would have held the famine off.'}
+          {outcome.cause === 'coup' &&
+            ' The count was in the top bar, the quarterly reports and the risks ahead: Defence spending restored in time would have brought the army back from plotting.'}
         </p>
       </div>
 

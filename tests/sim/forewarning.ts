@@ -3,6 +3,7 @@ import {
   advanceQuarter,
   createGame,
   quarterNumber,
+  riskHorizonQuarters,
   risksAhead,
   shockName,
   type Country,
@@ -12,6 +13,7 @@ import {
   type PriceShock,
   type Risk,
 } from '../../src/sim';
+import { budgetFrom } from '../budgets';
 import { answering, inFirstTerm } from './playing';
 
 /**
@@ -41,9 +43,15 @@ const runsOf = (seedsPerTest: number) =>
     return [seeds[0] ?? 0, seeds.at(-1) ?? 0, seeds] as const;
   });
 
+/** How a player who does nothing decides a quarter. */
+type Idler = (game: GameState) => Decisions;
+
 const idle = (game: GameState): Decisions => ({ budget: game.budget });
 // A dilemma must be answered, so this player takes the option that costs nothing.
-const doNothing = (game: GameState) => answering(game, idle(game));
+const doNothing: Idler = (game) => answering(game, idle(game));
+// The same player, but for spending nothing on Defence from the first quarter.
+const starveArmy: Idler = (game) =>
+  answering(game, { budget: budgetFrom(game.budget, { spending: { defence: 0 } }) });
 
 const famineIn = (risks: readonly Risk[], regionId: string) =>
   risks.find((risk) => risk.kind === 'famine' && risk.regionId === regionId);
@@ -67,7 +75,10 @@ const ofKind = (risks: readonly Risk[], kind: Risk['kind']) =>
  * which the player could act before its damage was done. Nor does any from a world price
  * shock: every shock must have been listed as one that could come in the quarter before it
  * was announced, and as announced in every quarter from then until it first moved its price.
- * With `floods` or `shocks` set, the sweep also checks that they really do come.
+ * Nor does a coup: every game the army ended must have listed a coup in each quarter from
+ * which the look-ahead reaches it. With `floods` or `shocks` set, the sweep also checks that
+ * they really do come. With `coups` set, the player also spends nothing on Defence, so that the
+ * army ends a good share of the games, and the sweep checks that it does.
  *
  * The unit suite plays a fixed sample of seeds; `npm run forewarning` plays three hundred.
  * Whole games, each looked ahead from every quarter, take seconds, so each test
@@ -84,23 +95,28 @@ export function sweepDoingNothing(
   {
     floods = false,
     shocks = false,
+    coups = false,
     seedsPerTest = 15,
   }: {
     readonly floods?: boolean;
     readonly shocks?: boolean;
+    /** Whether the player starves the army, so that coups end games for the sweep to check. */
+    readonly coups?: boolean;
     /** How many seeds each test plays: few enough to stay well inside a test's time limit. */
     readonly seedsPerTest?: number;
   } = {},
 ): void {
   const runs = runsOf(seedsPerTest);
-  describe(`a player who does nothing in ${name}`, () => {
+  const decide = coups ? starveArmy : doNothing;
+  const who = coups ? 'a player who does nothing but starve the army' : 'a player who does nothing';
+  describe(`${who} in ${name}`, () => {
     // What each run found, by its first seed. The last tests play any run not yet played, so
     // they hold however the tests are filtered or ordered.
     const foundByRun = new Map<number, Found>();
     const foundIn = (first: number, seeds: readonly number[]): Found => {
       const known = foundByRun.get(first);
       if (known !== undefined) return known;
-      const found = playRun(country, seeds);
+      const found = playRun(country, seeds, decide);
       foundByRun.set(first, found);
       return found;
     };
@@ -108,7 +124,7 @@ export function sweepDoingNothing(
       runs.reduce((sum, [first, , seeds]) => sum + count(foundIn(first, seeds)), 0);
 
     it.each(runs)(
-      'is warned of famine, defeat, floods and price shocks before any comes in games %i to %i',
+      'is warned of famine, a coup, defeat, floods and price shocks before any comes in games %i to %i',
       (first, _last, seeds) => {
         foundIn(first, seeds);
       },
@@ -117,10 +133,17 @@ export function sweepDoingNothing(
       SWEEP_TIMEOUT_MS,
     );
 
-    it('has famine end a good share of those games', () => {
-      // The check means nothing unless famine really does end a good share of these games.
-      expect(total((found) => found.famines)).toBeGreaterThan(SEEDS.length / 5);
-    });
+    if (coups) {
+      it('has a coup end a good share of those games', () => {
+        // The check means nothing unless the army really does end a good share of these games.
+        expect(total((found) => found.coups)).toBeGreaterThan(SEEDS.length / 5);
+      });
+    } else {
+      it('has famine end a good share of those games', () => {
+        // The check means nothing unless famine really does end a good share of these games.
+        expect(total((found) => found.famines)).toBeGreaterThan(SEEDS.length / 5);
+      });
+    }
 
     if (floods) {
       it('has floods come in a good share of those games', () => {
@@ -136,9 +159,13 @@ export function sweepDoingNothing(
   });
 }
 
-/** What a run of games found: how many famine ended, and how many floods and shocks came. */
+/**
+ * What a run of games found: how many famine ended, how many a coup ended, and how many floods
+ * and shocks came.
+ */
 interface Found {
   readonly famines: number;
+  readonly coups: number;
   readonly floods: number;
   readonly shocks: number;
 }
@@ -147,21 +174,22 @@ interface Found {
  * Plays the given seeds, checks every game was warned in time of what ended it
  * and of every flood, and gives back how many games famine ended and how many floods came.
  */
-function playRun(country: () => Country, seeds: readonly number[]): Found {
+function playRun(country: () => Country, seeds: readonly number[], decide: Idler): Found {
   let famines = 0;
+  let coups = 0;
   let floods = 0;
   let shocks = 0;
   for (const seed of seeds) {
     const states = [createGame(country(), seed)];
     for (let game = states[0]; game !== undefined && inFirstTerm(game); game = states.at(-1)) {
-      states.push(advanceQuarter(game, doNothing(game)).state);
+      states.push(advanceQuarter(game, decide(game)).state);
     }
     // Looking ahead is slow, so each quarter is looked ahead from once at most.
     const looked = new Map<GameState, readonly Risk[]>();
     const risksIn = (game: GameState) => {
       const known = looked.get(game);
       if (known !== undefined) return known;
-      const risks = risksAhead(game, doNothing(game));
+      const risks = risksAhead(game, decide(game));
       looked.set(game, risks);
       return risks;
     };
@@ -208,7 +236,19 @@ function playRun(country: () => Country, seeds: readonly number[]): Found {
       // The last state is the result. The two before it are the election quarter and
       // the quarter before, in both of which the player could still have acted.
       for (const game of states.slice(-3, -1)) {
-        const warned = ofKind(risksAhead(game, doNothing(game)), 'election');
+        const warned = ofKind(risksAhead(game, decide(game)), 'election');
+        expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
+      }
+      continue;
+    }
+    if (outcome.cause === 'coup') {
+      coups += 1;
+      // The last state is the coup. Every quarter before it from which the look-ahead reaches
+      // it must have listed it: the player could still have acted in each of them.
+      const inTime = states.slice(-1 - riskHorizonQuarters, -1);
+      expect(inTime.length).toBeGreaterThan(0);
+      for (const game of inTime) {
+        const warned = ofKind(risksIn(game), 'coup');
         expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
       }
       continue;
@@ -220,11 +260,11 @@ function playRun(country: () => Country, seeds: readonly number[]): Found {
     const inTime = states.slice(-5, -2);
     expect(inTime.length).toBeGreaterThan(0);
     for (const game of inTime) {
-      const warned = famineIn(risksAhead(game, doNothing(game)), outcome.regionId);
+      const warned = famineIn(risksAhead(game, decide(game)), outcome.regionId);
       expect(warned, `seed ${seed}, ${game.date.year}/${game.date.quarter}`).toBeDefined();
     }
   }
-  return { famines, floods, shocks };
+  return { famines, coups, floods, shocks };
 }
 
 const sameShock = (a: PriceShock, b: PriceShock) =>

@@ -3,6 +3,7 @@ import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   armyLoyaltyStatus,
+  coupStatus,
   createGame,
   loadCountry,
   loadSave,
@@ -19,7 +20,7 @@ import {
 import testlandFile from '../countries/testland.json';
 import format11Save from '../saves/format-11.json';
 import format12Save from '../saves/format-12.json';
-import format13Save from '../saves/format-13.json';
+import format14Save from '../saves/format-14.json';
 import {
   bothCountries,
   tavara,
@@ -103,7 +104,7 @@ describe.each(bothCountries)('saving a game in %s', (_name, country) => {
 
     const save = saveGame(game, null);
 
-    expect(save.formatVersion).toBe(13);
+    expect(save.formatVersion).toBe(14);
     expect(save.country.id).toBe(country().id);
     expect(save.country.formatVersion).toBe(country().formatVersion);
     expect(save.seed).toBe(2026);
@@ -333,8 +334,8 @@ describe.each(bothCountries)('a save of a game in %s is refused', (_name, countr
   it('when it was written by a newer release', () => {
     const { save } = midGameSave(country);
 
-    expect(refusal(withValue(save, ['formatVersion'], 14))).toBe(
-      'The saved game was written by a newer release of the game (save format 14; this release reads format 13). Open it with that release.',
+    expect(refusal(withValue(save, ['formatVersion'], 15))).toBe(
+      'The saved game was written by a newer release of the game (save format 15; this release reads format 14). Open it with that release.',
     );
   });
 
@@ -689,49 +690,59 @@ describe('a save written under other budget limits', () => {
   });
 });
 
-describe('the save kept from save format 13', () => {
-  it('still opens on the game it was written from, Defence cut and the army restless', () => {
-    const { game, report } = loadSave(format13Save);
+describe('the save kept from save format 14', () => {
+  it('still opens on the game it was written from, the army two quarters into plotting', () => {
+    const { game, report } = loadSave(format14Save);
 
-    expect(game.date).toEqual({ year: 1, quarter: 3 });
+    expect(game.date).toEqual({ year: 2, quarter: 4 });
     expect(game.budget.spending.defence).toBe(0);
-    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([584, 507, 445]);
-    const army = armyLoyaltyStatus(game);
-    expect(army).toMatchObject({ loyalty: 445, stage: 'restless', settlesStage: 'plotting' });
-    expect(army.regions.map((region) => region.stage)).toEqual(game.regions.map(() => 'restless'));
-    expect(report?.armyLoyalty).toEqual({
-      value: 445,
-      change: -62,
-      contributions: [
-        { label: 'Defence spending', amount: -62 },
-        { label: 'Unrest', amount: 0 },
-      ],
+    expect(game.history.map((signs) => signs.armyLoyalty)).toEqual([
+      584, 507, 445, 396, 356, 324, 299, 279,
+    ]);
+    expect(armyLoyaltyStatus(game)).toMatchObject({ loyalty: 279, stage: 'plotting' });
+    expect(game.plottingQuarters).toBe(2);
+    expect(coupStatus(game)).toMatchObject({ plotting: true, held: 2, needed: 4, left: 2 });
+    expect(report?.entries[0]).toMatchObject({
+      kind: 'coup',
+      seriousness: 'serious',
+      headline: 'The army plots: 2 quarters to a coup',
     });
-    expect(report?.entries.map((entry) => entry.headline)).toContain('The army is restless');
   });
 
-  it('plays on: loyalty falls further left undefended, and recovers with Defence restored', () => {
-    const { game } = loadSave(format13Save);
+  it('plays on to the coup left undefended, two quarters later', () => {
+    const { game } = loadSave(format14Save);
 
-    const left = advanceQuarter(game, answering(game, steward(game)));
-    expect(armyLoyaltyStatus(left.state).loyalty).toBeLessThan(445);
+    const third = advanceQuarter(game, answering(game, steward(game)));
+    expect(third.state.plottingQuarters).toBe(3);
+    expect(third.state.outcome.status).toBe('playing');
+    expect(third.report.entries.map((entry) => entry.headline)).toContain(
+      'The army plots: 1 quarter to a coup',
+    );
+    const fourth = advanceQuarter(third.state, answering(third.state, steward(third.state)));
+    expect(fourth.state.outcome).toMatchObject({ status: 'lost', cause: 'coup', quarters: 4 });
+    expect(fourth.report.entries[0]?.headline).toBe('The army has taken power');
+  });
+
+  it('plays on with the coup off once Defence is restored', () => {
+    const { game } = loadSave(format14Save);
 
     const restored = budgetFrom(game.budget, {
       spending: { defence: game.country.start.budget.spending.defence },
     });
     const kept = advanceQuarter(game, answering(game, steward(game, restored)));
-    expect(armyLoyaltyStatus(kept.state)).toMatchObject({ loyalty: 473, stage: 'loyal' });
-    expect(kept.report.entries.map((entry) => entry.headline)).toContain('The army is loyal again');
+    expect(armyLoyaltyStatus(kept.state).stage).toBe('restless');
+    expect(kept.state.plottingQuarters).toBe(0);
+    expect(kept.report.entries.map((entry) => entry.headline)).toContain('The coup is off');
   });
 
-  // This holds for as long as format 13 is the current format: saving must write exactly
+  // This holds for as long as format 14 is the current format: saving must write exactly
   // what the kept save holds. If it fails, what a save holds has changed, which needs a new
   // format version and a migration, and then this check moves to the newer kept save.
   it('is exactly what the game still writes', () => {
-    expect(SAVE_FORMAT_VERSION).toBe(13);
-    const { game, report } = loadSave(format13Save);
+    expect(SAVE_FORMAT_VERSION).toBe(14);
+    const { game, report } = loadSave(format14Save);
 
-    expect(stored(saveGame(game, report))).toEqual(format13Save);
+    expect(stored(saveGame(game, report))).toEqual(format14Save);
   });
 });
 
