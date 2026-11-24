@@ -385,22 +385,24 @@ function fromFormat15(older: Json): Json {
  * each stand at neutral with nothing pushing them, and every region's approval gains a
  * Factions effect of nothing: approval is where it was, and the standings then move a share
  * of the way each quarter towards where the budget in force settles them. The quarters
- * already recorded, and the last report, kept no standings, so they say so.
+ * already recorded, and the last report, kept no standings, so they say so. Regions that
+ * cannot be read are left as they are, for checking to refuse.
  */
 function fromFormat16(older: Json): Json {
   const state = isRecord(older.state) ? older.state : {};
-  const regions = Array.isArray(state.regions) ? (state.regions as unknown[]) : [];
   return {
     ...older,
     formatVersion: 17,
     state: {
       ...state,
       factions: neutralStandings(),
-      regions: regions.map((region) =>
-        isRecord(region) && isRecord(region.approvalEffects)
-          ? { ...region, approvalEffects: { ...region.approvalEffects, factions: 0 } }
-          : region,
-      ),
+      regions: Array.isArray(state.regions)
+        ? (state.regions as unknown[]).map((region) =>
+            isRecord(region) && isRecord(region.approvalEffects)
+              ? { ...region, approvalEffects: { ...region.approvalEffects, factions: 0 } }
+              : region,
+          )
+        : state.regions,
       history: Array.isArray(state.history)
         ? (state.history as unknown[]).map((record) =>
             isRecord(record) ? { ...record, standings: null } : record,

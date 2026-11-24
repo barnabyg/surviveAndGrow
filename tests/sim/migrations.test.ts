@@ -1033,6 +1033,14 @@ describe('the save kept from save format 16', () => {
     });
     expect(next.report.standings?.farmers.value).toBe(moved[0]);
   });
+
+  it('is refused, not emptied, when its regions cannot be read', () => {
+    expect(() =>
+      loadSave({ ...format16Save, state: { ...format16Save.state, regions: 'none' } }),
+    ).toThrow(
+      /^The saved game is damaged and cannot be opened: state\.regions is missing or is not a list/,
+    );
+  });
 });
 
 describe('the save kept from save format 11', () => {
