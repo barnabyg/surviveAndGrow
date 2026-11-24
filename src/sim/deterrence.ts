@@ -9,6 +9,7 @@ import type { Figure, Money } from './types';
 import {
   INTENTION_NAMES,
   INTENTIONS,
+  LOYALTY_DRIVER_NAMES,
   TIER_NAMES,
   TIERS,
   type Intention,
@@ -208,7 +209,7 @@ export function resolveDeterrence(
     deterrence: {
       value,
       change,
-      contributions: [{ label: 'Defence spending', amount: change }],
+      contributions: [{ label: LOYALTY_DRIVER_NAMES.defence, amount: change }],
     },
     heading,
     neighbours: turned.map(({ neighbour, now, settled }) => ({

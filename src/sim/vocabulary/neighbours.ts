@@ -12,3 +12,6 @@ export const INTENTION_NAMES: Readonly<Record<Intention, string>> = {
   watchful: 'Watchful',
   hostile: 'Hostile',
 };
+
+/** What a hostile neighbour does on its border when deterrence fails, as a headline names it. */
+export const BORDER_INCIDENT_NAME = 'Border incident';

@@ -1,5 +1,6 @@
 import { Fragment, useId } from 'react';
 import {
+  BORDER_INCIDENT_NAME,
   borderIncidentStatuses,
   chainOf,
   chains,
@@ -627,7 +628,7 @@ function RegionLabel({ region, game, lens, palette, paint, relieved }: RegionLab
 function incidentTags(game: GameState, regionId: string): string[] {
   return borderIncidentStatuses(game)
     .filter((incident) => incident.inForce && incident.regionIds.includes(regionId))
-    .map((incident) => `Border incident · output −${incident.outputCutPercent}%`);
+    .map((incident) => `${BORDER_INCIDENT_NAME} · output −${incident.outputCutPercent}%`);
 }
 
 function outline(shape: readonly Point[]): string {

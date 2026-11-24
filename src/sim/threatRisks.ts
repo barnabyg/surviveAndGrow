@@ -4,6 +4,7 @@ import {
   couldAnnounce,
   incidentChance,
   incidentCost,
+  incidentHeadline,
   incidentWouldDo,
   type IncidentStatus,
 } from './borderIncidents';
@@ -222,7 +223,7 @@ export function incidentRisk(scope: Scope, budget: Budget): Risk[] {
       {
         kind: 'borderIncident',
         likelihood: likelihoodOf(Math.round(chance * 1000)) ?? 'remote',
-        headline: `Border incident with ${neighbour.name}`,
+        headline: incidentHeadline(state.country, neighbour.id),
         reason: `${stands}, and each quarter it is so it may announce a border incident, ${articleFor(percent)} ${percent}% chance. One announced ${finding.soonest === 0 ? 'as this quarter ends' : when(finding.soonest)} would begin ${when(soonest)}. ${incidentWouldDo(state.country, neighbour.id)} It would cost about ${taxCost(state, budget, neighbour.id)}.`,
         neighbourId: neighbour.id,
         withinQuarters: soonest + 1,

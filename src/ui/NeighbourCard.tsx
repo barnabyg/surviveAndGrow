@@ -1,4 +1,5 @@
 import {
+  BORDER_INCIDENT_NAME,
   borderIncidentStatuses,
   deterrenceStatus,
   formatMoney,
@@ -93,14 +94,14 @@ export function NeighbourCard({ game, report, neighbourId, budget, onClose }: Ne
         {whatItWouldTake(status, standing)}
       </p>
       {incident !== undefined && (
-        <p className="warning-note" role="status" aria-label="Border incident">
+        <p className="warning-note" role="status" aria-label={BORDER_INCIDENT_NAME}>
           ▲ {incident.headline}
           {incident.inForce ? '' : ' ahead'}. {incident.description} It costs about{' '}
           {formatMoney(incidentTaxCost(game, budget, neighbourId))} a quarter in tax.
         </p>
       )}
       {incident === undefined && intention === 'hostile' && (
-        <p className="warning-note" role="status" aria-label="Border incident">
+        <p className="warning-note" role="status" aria-label={BORDER_INCIDENT_NAME}>
           ▲ While {name} is hostile, each quarter may announce a border incident: its crossings
           would carry nothing and the regions on its border would produce less, at about{' '}
           {formatMoney(incidentTaxCost(game, budget, neighbourId))} a quarter in tax. The risks

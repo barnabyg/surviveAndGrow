@@ -8,6 +8,7 @@ import type { ReportEntry } from './report';
 import { drawAt } from './rng';
 import { capitalised, formatPoints, formatQuarters, formatTonnes, listed } from './text';
 import type { GameDate } from './types';
+import { BORDER_INCIDENT_NAME } from './vocabulary';
 
 /*
  * Border incidents: what a hostile neighbour does when deterrence fails. An incident is
@@ -231,7 +232,12 @@ function called(country: Country, neighbourId: string): string {
 
 /** An incident as a headline or a breakdown names it, without its capital: "border incident with Voskar". */
 function headlineOf(country: Country, neighbourId: string): string {
-  return `border incident with ${nameOf(country, neighbourId)}`;
+  return `${BORDER_INCIDENT_NAME.toLowerCase()} with ${nameOf(country, neighbourId)}`;
+}
+
+/** An incident with a neighbour as a headline names it: "Border incident with Voskar". */
+export function incidentHeadline(country: Country, neighbourId: string): string {
+  return capitalised(headlineOf(country, neighbourId));
 }
 
 /** A date as the player reads it: "Year 1 · Quarter 4". */

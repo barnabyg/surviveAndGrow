@@ -1,4 +1,4 @@
-import { formatQuarters, type IncidentStatus } from '../sim';
+import { BORDER_INCIDENT_NAME, formatQuarters, type IncidentStatus } from '../sim';
 
 /**
  * The mark for a border incident, drawn about the centre of a 16 by 16 box: a diamond barred
@@ -45,8 +45,8 @@ export function quartersLeftWords(quartersLeft: number): string {
 export function incidentWords(
   incident: Pick<IncidentStatus, 'inForce' | 'beginsIn' | 'quartersLeft'>,
 ) {
-  if (!incident.inForce) return `Border incident in ${formatQuarters(incident.beginsIn)}`;
+  if (!incident.inForce) return `${BORDER_INCIDENT_NAME} in ${formatQuarters(incident.beginsIn)}`;
   return incident.quartersLeft <= 1
-    ? 'Border incident: last quarter'
-    : `Border incident: ${formatQuarters(incident.quartersLeft)} left`;
+    ? `${BORDER_INCIDENT_NAME}: last quarter`
+    : `${BORDER_INCIDENT_NAME}: ${formatQuarters(incident.quartersLeft)} left`;
 }

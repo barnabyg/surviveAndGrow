@@ -1,4 +1,4 @@
-import { INTENTION_NAMES, INTENTIONS } from '../sim';
+import { BORDER_INCIDENT_NAME, INTENTION_NAMES, INTENTIONS } from '../sim';
 import { IncidentMark } from './IncidentMark';
 import { IntentionMark } from './IntentionSign';
 import './MapLegend.css';
@@ -162,8 +162,8 @@ export function MapLegend() {
             <IncidentMark inForce={inForce} ink="currentColor" ground="var(--panel)" />
           </svg>
           {inForce
-            ? '▲ Border incident in force: its crossings closed, its border regions produce less'
-            : '▲ Border incident announced: a hostile neighbour, on its border'}
+            ? `▲ ${BORDER_INCIDENT_NAME} in force: its crossings closed, its border regions produce less`
+            : `▲ ${BORDER_INCIDENT_NAME} announced: a hostile neighbour, on its border`}
         </li>
       ))}
       <li>
