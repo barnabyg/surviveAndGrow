@@ -34,6 +34,23 @@ export const testlandGrowing = (): Country => withChances(testlandFile, { growin
 export const tavaraAsShipped = (): Country => loadCountry(tavaraFile);
 export const testlandAsShipped = (): Country => loadCountry(testlandFile);
 
+/**
+ * Tavara with a tenth of its people, $2.0m a quarter on each of health and education and a
+ * treasury that lasts: it starts in Prosperous and stays there, so it wins in its fourth
+ * quarter. A year's revenue at its budget is $124.0m. No drought or dilemma comes.
+ */
+export function prosperousTavara(): Country {
+  const copy = structuredClone(tavaraFile) as unknown as {
+    regions: { population: number }[];
+    start: { treasury: number; budget: { spending: Record<string, number> } };
+  };
+  for (const region of copy.regions) region.population = Math.round(region.population / 10);
+  copy.start.treasury = 2000;
+  copy.start.budget.spending.health = 20;
+  copy.start.budget.spending.education = 20;
+  return withChances(copy, {});
+}
+
 /** Every scenario that is not about one country's particular figures runs against both. */
 export const bothCountries: [name: string, country: () => Country][] = [
   ['Tavara', tavara],

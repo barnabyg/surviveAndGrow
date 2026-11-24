@@ -18,7 +18,7 @@ import {
 } from '../../src/sim';
 import testlandFile from '../countries/testland.json';
 import { budgetFrom } from '../budgets';
-import { bothCountries, withChances } from './countries';
+import { bothCountries, prosperousTavara, withChances } from './countries';
 import { withValue } from './files';
 import { steward } from './playing';
 
@@ -56,6 +56,37 @@ function play(
 }
 
 /** A whole first term with Defence at nothing throughout. */
+/**
+ * A game whose government is well liked on polling day: every region's approval lifted by a
+ * passing push, as good news would leave it, enough to win any vote.
+ */
+const wellLiked = (game: GameState): GameState => ({
+  ...game,
+  regions: game.regions.map((region) => ({
+    ...region,
+    approval: Math.min(1000, region.approval + GOOD_NEWS),
+    approvalEffects: {
+      ...region.approvalEffects,
+      events: region.approvalEffects.events + GOOD_NEWS,
+    },
+  })),
+});
+const GOOD_NEWS = 400;
+
+/** A game with the army far gone in every region and one quarter from the coup. */
+const aboutToFall = (game: GameState): GameState => ({
+  ...game,
+  plottingQuarters: afterPlottingQuarters - 1,
+  regions: game.regions.map((region) => ({
+    ...region,
+    armyLoyalty: 0,
+    armyLoyaltyEffects: {
+      defence: -loyalty.defence.weightPermille,
+      unrest: loyalty.unrest.protests,
+    },
+  })),
+});
+
 const starved = (country: Country) =>
   play(createGame(country, 7), 20, (game) => defending(game.country, 0));
 
@@ -214,22 +245,15 @@ describe.each(bothCountries)('a coup in %s', (name, country) => {
     // The last quarter of the first term, with the army far gone and one quarter from the coup.
     const start = createGame(quiet(name), 7);
     const { states } = play(start, 19, (game) => game.country.start.budget);
-    const polling = states.at(-1);
-    if (polling === undefined) throw new Error('No quarter was played');
-    expect(advanceQuarter(polling, steward(polling)).report.election).not.toBeNull();
+    const last = states.at(-1);
+    if (last === undefined) throw new Error('No quarter was played');
+    const polling = wellLiked(last);
+    // Left alone, the quarter holds the election and the government wins it.
+    const voted = advanceQuarter(polling, steward(polling));
+    expect(voted.report.election?.won).toBe(true);
+    expect(voted.state.outcome.status).toBe('playing');
 
-    const plotting: GameState = {
-      ...polling,
-      plottingQuarters: afterPlottingQuarters - 1,
-      regions: polling.regions.map((region) => ({
-        ...region,
-        armyLoyalty: 0,
-        armyLoyaltyEffects: {
-          defence: -loyalty.defence.weightPermille,
-          unrest: loyalty.unrest.protests,
-        },
-      })),
-    };
+    const plotting = aboutToFall(polling);
     expect(coupStatus(plotting)).toMatchObject({
       plotting: true,
       held: afterPlottingQuarters - 1,
@@ -240,5 +264,24 @@ describe.each(bothCountries)('a coup in %s', (name, country) => {
     expect(armyLoyaltyStatus(fell.state).loyalty).toBeLessThan(plottingBelowPermille);
     expect(fell.state.outcome).toMatchObject({ status: 'lost', cause: 'coup' });
     expect(fell.report.election).toBeNull();
+  });
+});
+
+describe('a coup in a quarter that would have won the game', () => {
+  it('comes before the win: the quarter falls to it', () => {
+    // A country that starts in Prosperous and holds it: its fourth quarter wins the game.
+    const start = createGame(prosperousTavara(), 3);
+    const { states } = play(start, 3, (game) => game.budget);
+    const winning = states.at(-1);
+    if (winning === undefined) throw new Error('No quarter was played');
+    expect(advanceQuarter(winning, steward(winning)).state.outcome).toMatchObject({
+      status: 'won',
+      cause: 'prosperity',
+    });
+
+    // The same quarter with the army far gone and one quarter from the coup.
+    const fell = advanceQuarter(aboutToFall(winning), steward(winning));
+    expect(fell.state.outcome).toMatchObject({ status: 'lost', cause: 'coup' });
+    expect(fell.report.entries[0]?.kind).toBe('coup');
   });
 });

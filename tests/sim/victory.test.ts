@@ -1,33 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import tavaraFile from '../../src/countries/tavara.json';
 import {
   advanceQuarter,
   createGame,
   victoryStatus,
-  type Country,
   type Decisions,
   type GameState,
 } from '../../src/sim';
-import { withChances } from './countries';
-
-interface Wealth {
-  regions: { population: number }[];
-  start: { treasury: number; budget: { spending: Record<string, number> } };
-}
-
-/**
- * Tavara with a tenth of its people, $2.0m a quarter on each of health and education and a
- * treasury that lasts: it starts in Prosperous and stays there. A year's revenue at its
- * budget is $124.0m. No drought or dilemma comes.
- */
-function prosperousTavara(): Country {
-  const copy = structuredClone(tavaraFile) as unknown as Wealth;
-  for (const region of copy.regions) region.population = Math.round(region.population / 10);
-  copy.start.treasury = 2000;
-  copy.start.budget.spending.health = 20;
-  copy.start.budget.spending.education = 20;
-  return withChances(copy, {});
-}
+import { prosperousTavara } from './countries';
 
 /** Plays quarters on an unchanged budget, the first with the decisions given. */
 function play(start: GameState, quarters: number, first: Partial<Decisions> = {}): GameState[] {
