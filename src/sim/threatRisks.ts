@@ -11,7 +11,7 @@ import {
 import { revenueOf, type Budget } from './budget';
 import { quarterNumber } from './calendar';
 import { coupStatus } from './coup';
-import { ambitionWeighs, deterrenceStatus, intentionOf } from './deterrence';
+import { deterrenceStatus, hostileBelowIn, intentionOf } from './deterrence';
 import { oreSlumpRisk } from './financeRisks';
 import { likelihoodOf, typicalOf, weigh, when, type Path, type Scope } from './riskScope';
 import type { Risk } from './risks';
@@ -97,8 +97,8 @@ function armyWords(scope: Scope, budget: Budget) {
 }
 
 /**
- * A neighbour turns hostile when deterrence stands below what its ambition weighs in the tier
- * in force. Each neighbour not yet hostile is looked for in every quarter the look-ahead
+ * A neighbour turns hostile when deterrence stands below its hostile mark in the tier in
+ * force (`hostileBelowIn`). Each neighbour not yet hostile is looked for in every quarter the look-ahead
  * plays, so it is listed while there is still time to raise Defence: before deterrence falls
  * that far, and before the country passes the tier that would make it worth taking. `budget`
  * is the one being decided, which says what is spent on Defence.
@@ -126,13 +126,13 @@ export function neighbourRisk(scope: Scope, budget: Budget): Risk[] {
       .flatMap((path) => path[turnsIn(path) ?? -1]?.state ?? [])
       .at(0);
     const tier = turned?.tier ?? state.tier;
-    const weighs = ambitionWeighs(neighbour, tier);
+    const mark = formatPercent(hostileBelowIn(neighbour, tier));
     // A tier is why when passing it would turn the neighbour with deterrence as it stands.
     const byTier =
       tier !== state.tier && intentionOf(neighbour, tier, state.deterrence) === 'hostile';
     const course = byTier
-      ? `The country is on course to reach ${TIER_NAMES[tier]} ${when(finding.soonest)}, where ${neighbour.name}’s ambition weighs ${formatPercent(weighs)} against deterrence, now ${formatPercent(state.deterrence)}.`
-      : `Deterrence, now ${formatPercent(state.deterrence)}, is on course to fall below the ${formatPercent(weighs)} that ${neighbour.name}’s ambition weighs ${when(finding.soonest)}.`;
+      ? `The country is on course to reach ${TIER_NAMES[tier]} ${when(finding.soonest)}, where ${neighbour.name} is hostile while deterrence is below ${mark}. Deterrence is now ${formatPercent(state.deterrence)}.`
+      : `Deterrence, now ${formatPercent(state.deterrence)}, is on course to fall below the ${mark} under which ${neighbour.name} is hostile ${when(finding.soonest)}.`;
     return [
       {
         kind: 'neighbour',

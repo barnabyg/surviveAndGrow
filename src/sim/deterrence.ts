@@ -123,6 +123,11 @@ function marksOf(weighs: number): { watchfulBelow: number; hostileBelow: number 
   };
 }
 
+/** The deterrence below which a neighbour is hostile in a tier, in thousandths. */
+export function hostileBelowIn(neighbour: Neighbour, tier: Tier): number {
+  return marksOf(ambitionWeighs(neighbour, tier)).hostileBelow;
+}
+
 /** What a neighbour intends in a tier, with deterrence at a figure. */
 export function intentionOf(neighbour: Neighbour, tier: Tier, deterrence: number): Intention {
   const { watchfulBelow, hostileBelow } = marksOf(ambitionWeighs(neighbour, tier));

@@ -177,6 +177,8 @@ describe.each(bothCountries)('neighbours of %s', (name, country) => {
     expect(warned?.likelihood).toBeDefined();
     expect(warned?.withinQuarters).toBe(1);
     expect(warned?.reason).toContain('The country is on course to reach');
+    // It names the mark the neighbour is hostile below, not what its ambition weighs.
+    expect(warned?.reason).toMatch(/is hostile while deterrence is below \d+\.\d%/);
 
     // Raised ahead: the same game with Defence doubled from the first quarter. The country
     // passes the same tiers, and no neighbour turns hostile.

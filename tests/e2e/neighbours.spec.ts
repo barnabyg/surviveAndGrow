@@ -157,7 +157,7 @@ test('a tier passed turns a neighbour watchful: reported, drawn, explained, and 
   await expect(risk).toContainText('Almost certain');
   await expect(risk).toHaveAttribute(
     'title',
-    'Deterrence, now 39.0%, is on course to fall below the 33.0% that Voskar’s ambition weighs next quarter. Defence is $0.0m a quarter, which settles deterrence at 0.0%.',
+    'Deterrence, now 39.0%, is on course to fall below the 33.0% under which Voskar is hostile next quarter. Defence is $0.0m a quarter, which settles deterrence at 0.0%.',
   );
   await endQuarters(page, 1);
   await expect(voskar).toContainText('Deterrence33.1%');
