@@ -320,14 +320,15 @@ describe.each(bothCountries)('army loyalty in %s', (name, country) => {
     expect(restored.report?.armyLoyalty).toEqual(reports.at(-1)?.armyLoyalty);
   });
 
-  it('is capped by austerity at the same share of the starting figure as Security', () => {
+  it('is capped by austerity at what the country started on, which holds a calm army loyal', () => {
     const start = createGame(country(), 7);
-    const caps = austerityStatus({ ...start, austerity: { quartersLeft: 4 } })?.caps;
-    const { spendingCapPermille } = balance.finance.austerity;
-    expect(spendingCapPermille.defence).toBe(spendingCapPermille.security);
-    expect(caps?.defence).not.toBeNull();
-    expect(caps?.defence).toBeLessThanOrEqual(start.country.start.budget.spending.defence);
-    expect(caps?.defence).toBeGreaterThan(0);
+    const austere = { ...start, austerity: { quartersLeft: 4 } };
+    const cap = austerityStatus(austere)?.caps.defence;
+    expect(cap).toBe(start.country.start.budget.spending.defence);
+    // Austerity may not leave the army short: on the most it allows, a calm army settles loyal.
+    const capped = budgetFrom(start.budget, { spending: { defence: cap ?? 0 } });
+    const calm = austere.regions.map((region) => ({ ...region, unrest: 'calm' as const }));
+    expect(armyLoyaltyStatus({ ...austere, regions: calm }, capped).settlesStage).toBe('loyal');
   });
 });
 

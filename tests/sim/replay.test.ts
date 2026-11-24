@@ -125,7 +125,11 @@ function fingerprint(
  * first vote, with one site fewer kept up. Its bailed-out game, already in protest under
  * austerity's cap on Defence, now falls to a coup in its fourth year, before the vote it used to
  * lose. Testland's building game, which used to win its first vote narrowly, loses it with
- * 48.8%. Testland's bailed-out game plays on as before.
+ * 48.8%. Testland's bailed-out game plays on as before. Tavara's bailed-out game was pinned
+ * once more when austerity came to cap Defence at what the country started on, where it had
+ * capped it at half: the other three, which meet no cap on Defence below what they spend, kept
+ * their hashes. Its army is now restless under austerity and never plots, so no coup comes, and
+ * it loses the vote in its sixth year with 36.9%, as it did before the factions.
  */
 const outcomes = [
   {
@@ -161,9 +165,9 @@ const outcomes = [
     name: 'Tavara',
     country: tavaraAsShipped,
     script: 'bailedOut',
-    hash: '3e8461ac87006a0c62a9a88fce0990fb765e396267b14e6645bd4aac98b10fcf',
+    hash: '808d7e0c6f89ab3ee2f8e1b62cc37d267147bcb377c230da7c1fcd3eb3512ac5',
     summary: {
-      date: { year: 4, quarter: 3 },
+      date: { year: 6, quarter: 1 },
       treasury: 6,
       outcome: 'lost',
       sites: [

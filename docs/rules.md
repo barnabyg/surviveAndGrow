@@ -159,14 +159,16 @@ main figures from the balance values and fails if this file, [playing.md](playin
   the better, and why; a region that moves with the nation is named in the nation's report, and
   any other has a report of its own tied to its place. A first-time tip explains Defence and the
   army once the army anywhere is less than loyal, or the budget in force would leave it so.
-- Austerity caps Defence as it caps Security (see Bailout and austerity).
+- Austerity caps Defence at what the country started on, and not below it as it caps Security:
+  a cap that left the army short would turn a bailout into a coup the player could do nothing
+  about (see Bailout and austerity).
 - A country file says what the country starts by spending on Defence, and a game starts with
   the army in each region where that and the region's unrest settle it. Tavara starts on $2.0m a
   quarter, which holds its army loyal at 58.4%. A country file written before Defence, and a
   save from before it, are read as spending the least the slider allows that holds the army
   loyal in a calm region, with a loyal army. A save from before it that is under austerity
-  opens with a loyal army too, but with Defence brought within austerity's cap like the rest of
-  its budget, and on that the army slips over the quarters that follow.
+  opens with a loyal army too, with Defence within austerity's cap like the rest of its budget:
+  the cap is what the country started on, so the army stays loyal while its regions are calm.
 
 ## Neighbours and deterrence
 
@@ -528,8 +530,8 @@ main figures from the balance values and fails if this file, [playing.md](playin
   year, repaid over 16 quarters from the next; anything to be borrowed that quarter is not lent.
   The credit rating falls to B, and approval takes a 12-point blow in every region that fades
   like any passing event. Austerity then holds for 8 quarters: the tax rate cannot go below 25%,
-  spending on agriculture is capped at what the game began with and on health, education,
-  security and defence at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or
+  spending on agriculture and defence is capped at what the game began with and on health,
+  education and security at four fifths of it (on a $1.0m step, never below one step), and no loan, bond or
   project can be started; projects under way carry on, and food relief and upkeep are not
   capped. The bailout brings the budget in force within those limits. The budget's sliders stop
   at the floor and the caps and say so, the finance and projects panels and a site's card say

@@ -416,18 +416,17 @@ describe('the save kept from save format 6', () => {
     const { game } = loadSave(format6Save);
 
     // A save from before Defence is read as spending what holds the army loyal, $2.0m a
-    // quarter for Tavara's people. This one is under austerity, which caps Defence as it caps
-    // Security: the budget in force is brought within the cap as the save is opened.
+    // quarter for Tavara's people. This one is under austerity, which caps Defence at what the
+    // country started on: the budget in force is within the cap as the save is opened.
     const cap = austerityStatus(game)?.caps.defence;
-    expect(cap).toBe(10);
+    expect(cap).toBe(20);
     expect(game.budget.spending.defence).toBe(cap);
     // The army is loyal in every region as the save opens.
     const army = armyLoyaltyStatus(game);
     expect(army.stage).toBe('loyal');
     expect(army.regions.map((region) => region.stage)).toEqual(game.regions.map(() => 'loyal'));
-    // What austerity allows does not hold it there: on that Defence it slips, over quarters.
-    expect(army.settles).toBeLessThan(army.loyalty);
-    expect(army.settlesStage).not.toBe('loyal');
+    // Austerity's cap is not what moves it: Defence is spent as the army expects.
+    expect(army.spent).toBe(cap);
   });
 
   it('refuses austerity with no quarter left of it', () => {
