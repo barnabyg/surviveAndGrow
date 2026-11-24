@@ -30,6 +30,7 @@ import {
 } from './priceShocks';
 import { prosperityStatus } from './prosperity';
 import { articleFor, formatIndex, formatPercent, formatPoints, formatQuarters } from './text';
+import { couldStillTurn } from './deterrence';
 import { coupRisk, incidentRisk, neighbourRisk } from './threatRisks';
 import { tierBelow, tierLostBelow, tierRank } from './tiers';
 import { belowSafeAfterExport, FULL_SWING_PERMILLE } from './trade';
@@ -105,6 +106,11 @@ export function risksAhead(state: GameState, decisions: Decisions): readonly Ris
     courses,
     bonds: bondsAhead(state, courses),
     oreSlump: play(state, decisions, played, 0, [], ORE_SLUMP),
+    // A rise matters only through a tier passed sooner, and that only to a neighbour that
+    // could still turn hostile: without one the course is not played again.
+    oreRise: couldStillTurn(state)
+      ? play(state, decisions, played, 0, [], ORE_RISE)
+      : typicalOf(courses),
   };
 
   const risks = [
@@ -160,6 +166,12 @@ const STEADY: PriceCourse = () => [];
 const ORE_SLUMP: PriceCourse = (quarter) =>
   quarter < balance.trade.forecastQuarters
     ? GOODS.map((good) => (good === 'ore' ? -FULL_SWING_PERMILLE : 0))
+    : [];
+
+/** The world ore price rising as far as its forecast allows, and then left be. */
+const ORE_RISE: PriceCourse = (quarter) =>
+  quarter < balance.trade.forecastQuarters
+    ? GOODS.map((good) => (good === 'ore' ? FULL_SWING_PERMILLE : 0))
     : [];
 
 /** Plays the quarters ahead with the weather at one share of its swing throughout. */

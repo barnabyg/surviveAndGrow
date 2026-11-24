@@ -12,7 +12,7 @@ import { revenueOf, type Budget } from './budget';
 import { quarterNumber } from './calendar';
 import { coupStatus } from './coup';
 import { deterrenceStatus, hostileBelowIn, intentionOf } from './deterrence';
-import { oreSlumpRisk } from './financeRisks';
+import { oreRise, oreSlumpRisk } from './financeRisks';
 import { likelihoodOf, typicalOf, weigh, when, type Path, type Scope } from './riskScope';
 import type { Risk } from './risks';
 import type { GameState } from './state';
@@ -119,7 +119,25 @@ export function neighbourRisk(scope: Scope, budget: Budget): Risk[] {
     };
     const finding = weigh(scope, turnsIn);
     const likelihood = finding === null ? null : likelihoodOf(finding.chance);
-    if (finding === null || likelihood === null) return [];
+    const defence = `Defence is ${formatMoney(status.spent)} a quarter, which settles deterrence at ${formatPercent(status.settles)}.`;
+    if (finding === null || likelihood === null) {
+      // The quarters played leave the world prices be. A mine's chain earns more as the ore
+      // price rises, and that alone may carry the country past a tier.
+      const risen = oreRise(scope, turnsIn);
+      const rare = risen === null ? null : likelihoodOf(risen.chance);
+      if (risen === null || rare === null) return [];
+      const reached = scope.oreRise[risen.quarter]?.state.tier ?? state.tier;
+      return [
+        {
+          kind: 'neighbour',
+          likelihood: rare,
+          headline: `${neighbour.name} turning hostile`,
+          reason: `${risen.rise}, and the country would reach ${TIER_NAMES[reached]} ${when(risen.quarter)}, where ${neighbour.name} is hostile while deterrence is below ${formatPercent(hostileBelowIn(neighbour, reached))}. Deterrence is now ${formatPercent(state.deterrence)}. ${defence}`,
+          neighbourId: neighbour.id,
+          withinQuarters: risen.quarter + 1,
+        },
+      ];
+    }
     // Why is read off the first course that shows it, in the quarter it turns.
     const turned = scope.courses
       .flatMap((course) => course.paths)
@@ -138,7 +156,7 @@ export function neighbourRisk(scope: Scope, budget: Budget): Risk[] {
         kind: 'neighbour',
         likelihood,
         headline: `${neighbour.name} turning hostile`,
-        reason: `${course} Defence is ${formatMoney(status.spent)} a quarter, which settles deterrence at ${formatPercent(status.settles)}.`,
+        reason: `${course} ${defence}`,
         neighbourId: neighbour.id,
         withinQuarters: finding.soonest + 1,
       },
@@ -212,15 +230,23 @@ export function incidentRisk(scope: Scope, budget: Budget): Risk[] {
         );
       return quarter === -1 ? null : quarter;
     };
-    const finding = weigh(scope, hostileIn);
+    // Hostile on the quarters as they are supposed, or failing that only should the world ore
+    // price rise, which may carry the country past a tier.
+    const weighed = weigh(scope, hostileIn);
+    const risen = weighed === null ? oreRise(scope, hostileIn) : null;
+    const finding =
+      weighed ?? (risen === null ? null : { chance: risen.chance, soonest: risen.quarter });
     if (finding === null) return [];
     const draws = last - finding.soonest + 1;
     const chance = (finding.chance / 1000) * (1 - (1 - incidentChance) ** draws);
     const percent = Math.round(incidentChance * 100);
     const hostile = intentionOf(neighbour, state.tier, state.deterrence) === 'hostile';
-    const stands = hostile
-      ? `${neighbour.name} is hostile`
-      : `${neighbour.name} is on course to turn hostile`;
+    const stands =
+      risen !== null
+        ? `${risen.rise}, and ${neighbour.name} would turn hostile`
+        : hostile
+          ? `${neighbour.name} is hostile`
+          : `${neighbour.name} is on course to turn hostile`;
     const soonest = finding.soonest + 1 + notice;
     return [
       {

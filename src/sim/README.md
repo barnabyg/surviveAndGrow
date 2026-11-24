@@ -23,8 +23,9 @@ roll announces an incident only if the neighbour is hostile as the quarter ends,
 `GOODS`, so a good added at the end leaves the others' prices as they were. `resolveQuarter` takes
 all of these as given (the `Chance` it is handed, and the `QuarterResolved` it returns, are declared
 in `state.ts`), so the risks look-ahead (`risks.ts`) runs it on supposed chance, among it a slump in
-the world ore price. It lives the quarter through `liveQuarter`, which the preview
-(`previewQuarter`) shares, so turn and preview cannot come to differ:
+the world ore price and, while a neighbour could still turn hostile, a rise. It lives the quarter
+through `liveQuarter`, which the preview (`previewQuarter`) shares, so turn and preview cannot come
+to differ:
 
 1. The answer to a dilemma (`dilemmas.ts`).
 2. Money (`resolveMoney` in `money.ts`, which also projects the quarters to the harvest for the

@@ -200,7 +200,8 @@ main figures from the balance values and fails if this file, [playing.md](playin
   heading, and each neighbour's intention next quarter and where it is heading, before and
   after a change to the Defence slider. A neighbour that the budget on the sliders leaves
   hostile, or heading for it, is warned of above the fold. The forecast reads the tier the
-  quarter leaves with world prices where they are.
+  quarter leaves with world prices where they are: a tier that only a rise in the world ore
+  price would carry the country past is not in it, and is warned of in the risks ahead.
 - The turn report says when a neighbour's intention changes, for the worse or the better, and
   why: a tier passed, which makes the country more worth taking, or deterrence fallen or
   rebuilt, with what is spent on Defence and where that settles deterrence. The report picks
@@ -625,8 +626,11 @@ main figures from the balance values and fails if this file, [playing.md](playin
   hostile that would be within the four quarters on your decisions as they are: because
   deterrence is on course to fall below what its ambition weighs, or because the country is on
   course to pass a tier in which it weighs more than deterrence. Its line says which, when, and
-  what is spent on Defence against where that settles deterrence. No neighbour turns hostile
-  without having been listed the quarter before.
+  what is spent on Defence against where that settles deterrence. A neighbour that would turn
+  only if a rise in the world ore price carried the country past a tier is listed as unlikely,
+  with the price it would take (the last bullet here says how that is looked for). What is not
+  looked for is the two together: a tier that takes both the best of the weather and the ore
+  price at the high end of its forecast.
 - A border incident is listed in three ways, each picking its neighbour out on the map. While
   a neighbour is hostile, or on course to be as a quarter ends, with no incident of its own
   pending, the chance that it announces one in time to begin within the four quarters is
@@ -637,8 +641,9 @@ main figures from the balance values and fails if this file, [playing.md](playin
   with the quarters it has left. The quarters ahead are played with every incident announced
   beginning, being called off and ending as the rules have it, so the dangers one brings,
   such as strikes in a border region, are weighed from the quarter it is announced. No
-  incident begins without having been listed in every quarter since its announcement, and
-  none is announced without its chance having been listed the quarter before.
+  incident begins without having been listed in every quarter since its announcement. Its
+  chance is listed the quarter before one could be announced, for a neighbour that only a rise
+  in the world ore price would turn hostile as for any other.
 - The treasury runs out when it cannot cover the budget, and every area is cut, or when it
   cannot cover an instalment on a project, which pauses. The warning says which gives way first
   and when: the budget, or the oldest project left unpaid, named for what it is, whether
@@ -650,7 +655,11 @@ main figures from the balance values and fails if this file, [playing.md](playin
   ore price slumping to the low end of its forecast. A treasury that would run out, or a
   repayment that would be missed, only in that slump is listed as unlikely, with the price it
   would take and, for the treasury, what would give way: the budget, or the building, research
-  or survey that would pause.
+  or survey that would pause. While a neighbour with an ambition is not yet hostile, the game
+  plays them once more with ordinary weather and the ore price rising to the high end of its
+  forecast: the mines earn more, and a country that would pass a tier only on that rise, into
+  one where the neighbour weighs more than deterrence, has the neighbour listed as unlikely,
+  and with it the chance of its border incident.
 
 ## Dilemmas
 

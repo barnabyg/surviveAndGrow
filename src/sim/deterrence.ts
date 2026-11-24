@@ -135,6 +135,20 @@ export function intentionOf(neighbour: Neighbour, tier: Tier, deterrence: number
   return deterrence < watchfulBelow ? 'watchful' : 'peaceful';
 }
 
+/**
+ * Whether a neighbour could still turn hostile on the country growing richer: one with an
+ * ambition is not yet hostile, and there is a tier above the one in force.
+ */
+export function couldStillTurn(game: Deterred): boolean {
+  return (
+    game.tier !== TIERS.at(-1) &&
+    game.country.map.neighbours.some(
+      (neighbour) =>
+        neighbour.ambition > 0 && intentionOf(neighbour, game.tier, game.deterrence) !== 'hostile',
+    )
+  );
+}
+
 /** What one neighbour, by its id, intends as a game stands. One the country has not is peaceful. */
 export function intentionIn(game: Deterred, neighbourId: string): Intention {
   const neighbour = neighbourOf(game.country, neighbourId);

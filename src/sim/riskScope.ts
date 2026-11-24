@@ -36,6 +36,13 @@ export interface Scope {
    * quarter the forecast looks ahead. What a mine's chain earns falls with it.
    */
   readonly oreSlump: Path;
+  /**
+   * The same course played with the world ore price rising as far as its forecast allows. What
+   * a mine's chain earns rises with it, and a richer country may pass a tier that makes it
+   * worth more to a neighbour. It is played only while that could matter (`risksAhead`), and
+   * is otherwise the course with ordinary weather and prices left be.
+   */
+  readonly oreRise: Path;
 }
 
 /** A bond whose whole sum is still to fall due. */

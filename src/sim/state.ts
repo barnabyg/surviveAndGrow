@@ -507,7 +507,8 @@ export interface Preview {
    * What each neighbour will intend once the quarter is over, and what it would with
    * deterrence where it settles, in the country file's order. Both are read in the tier the
    * quarter leaves with world prices where they are: a tier that only a move in the world ore
-   * price carries the country past is the one thing they cannot see.
+   * price carries the country past is the one thing they cannot see. The risks ahead look for
+   * that (`oreRise` in `riskScope.ts`).
    */
   readonly neighbours: readonly NeighbourOutlook[];
   /**

@@ -62,6 +62,26 @@ export function oreSlumpRisk(
 }
 
 /**
+ * What only a rise in the world ore price inside its forecast would bring, when the quarters
+ * ahead as they are supposed otherwise do not: what a mine's chain earns rises with the price,
+ * and a richer country passes a tier sooner. `chance` is what it is weighed at, in thousandths,
+ * and `rise` the words for the supposition.
+ */
+export function oreRise(
+  scope: Scope,
+  shows: (path: Path) => number | null,
+): { readonly quarter: number; readonly chance: number; readonly rise: string } | null {
+  const quarter = shows(scope.oreRise);
+  if (quarter === null) return null;
+  const { forecast } = priceStatus(scope.state, 'ore');
+  return {
+    quarter,
+    chance: balance.risks.oreRiseChancePermille,
+    rise: `Should the world ore price rise to ${formatPrice(forecast.max)}, the high end of its forecast ${forecastSpan()}, the mines would earn more`,
+  };
+}
+
+/**
  * What gives way in a quarter the treasury runs out in, and when: the budget, whose every area
  * is cut, or failing that the oldest project left unpaid, named in the words of its kind,
  * whether it is building on a site, research or a survey. It is said as it stands, or as

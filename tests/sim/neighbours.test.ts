@@ -14,6 +14,7 @@ import {
   previewQuarter,
   risksAhead,
   saveGame,
+  TIER_NAMES,
   TIERS,
   type Budget,
   type Country,
@@ -22,9 +23,16 @@ import {
   type TurnReport,
 } from '../../src/sim';
 import { budgetFrom } from '../budgets';
-import { beforeAmbition, beforeFactions, bothCountries, withChances } from './countries';
+import {
+  beforeAmbition,
+  beforeFactions,
+  bothCountries,
+  tavaraAsShipped,
+  withChances,
+} from './countries';
 import { faultsOf, withValue } from './files';
 import { steward } from './playing';
+import { GAME_TIMEOUT, playerNamed } from './scripted';
 import { enriched, established, fileOf, FILES } from './worthTaking';
 
 const { deterrence: pace, worthTakingPermille, intentions: marks } = balance.neighbours;
@@ -349,6 +357,79 @@ describe.each(bothCountries)('neighbours of %s', (name, country) => {
     expect(restored.report?.deterrence).toEqual(report?.deterrence);
     expect(restored.report?.entries).toEqual(report?.entries);
   });
+});
+
+describe('a tier that only the world ore price carries the country past', () => {
+  // Tavara as it ships, played by the chain builder: late in the game its mines earn and its
+  // prosperity hovers just under Prosperous, where Selama weighs more than deterrence. Whether
+  // a quarter passes the tier then turns on that quarter's world ore price alone.
+  const next = (game: GameState) => TIERS[TIERS.indexOf(game.tier) + 1];
+  /** Whether a neighbour not yet hostile would be in the next tier, with deterrence as it is. */
+  const wouldTurn = (game: GameState, neighbourId: string): boolean => {
+    const above = next(game);
+    const neighbour = deterrenceStatus(game).neighbours.find(
+      (each) => each.neighbourId === neighbourId,
+    );
+    if (above === undefined || neighbour === undefined || neighbour.intention === 'hostile') {
+      return false;
+    }
+    const mark = Math.ceil((neighbour.weighsIn[above] * marks.hostileBelowPermilleOfWeight) / 1000);
+    return game.deterrence < mark;
+  };
+
+  it(
+    'is listed in the risks ahead as what a rise in the ore price would bring',
+    () => {
+      const player = playerNamed('Chain builder');
+      let game: GameState = createGame(tavaraAsShipped(), 3);
+      let onTheEdge = 0;
+      let byTheRise = 0;
+      let turnedForReal = 0;
+      for (let quarter = 0; quarter < 44 && game.outcome.status === 'playing'; quarter += 1) {
+        const decisions = player.decide(game);
+        const above = next(game);
+        // The preview gives prosperity as the range the world prices' limits allow. A quarter
+        // is on the edge when the next tier begins inside that range.
+        const { prosperity } = previewQuarter(game, decisions);
+        const from = above === undefined ? null : balance.prosperity.tiers[above].fromPermille;
+        if (from !== null && prosperity.min < from && prosperity.max >= from) {
+          const risks = risksAhead(game, decisions);
+          for (const neighbour of game.country.map.neighbours) {
+            if (!wouldTurn(game, neighbour.id)) continue;
+            onTheEdge += 1;
+            const listed = risks.find(
+              (risk) => risk.kind === 'neighbour' && risk.neighbourId === neighbour.id,
+            );
+            expect(listed, `quarter ${quarter}, ${neighbour.name}`).toBeDefined();
+            if (listed?.reason.startsWith('Should the world ore price rise to') !== true) continue;
+            byTheRise += 1;
+            expect(listed.likelihood).toBe('unlikely');
+            expect(listed.reason).toContain(
+              `the country would reach ${TIER_NAMES[above ?? 'prosperous']}`,
+            );
+            // And it is no idle warning: the same quarter on other seeds, whose markets move
+            // the ore price otherwise, does turn the neighbour hostile on some and not others.
+            const turned = Array.from({ length: 30 }, (_, index) => index + 1).filter((seed) => {
+              const after = advanceQuarter({ ...game, seed }, decisions).state;
+              return (
+                deterrenceStatus(after).neighbours.find((each) => each.neighbourId === neighbour.id)
+                  ?.intention === 'hostile'
+              );
+            });
+            expect(turned.length).toBeGreaterThan(0);
+            expect(turned.length).toBeLessThan(30);
+            turnedForReal += turned.length;
+          }
+        }
+        game = advanceQuarter(game, decisions).state;
+      }
+      // The game does come to that edge, and at least once only the rise would carry it over.
+      expect(onTheEdge).toBeGreaterThan(0);
+      expect(byTheRise).toBeGreaterThan(0);
+      expect(turnedForReal).toBeGreaterThan(0);
+    },
+    GAME_TIMEOUT,
+  );
 });
 
 describe('a neighbour’s ambition in a country file', () => {
